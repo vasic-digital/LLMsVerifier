@@ -284,137 +284,157 @@ func (d *Database) Transaction(fn func(*sql.Tx) error) error {
 
 // Provider represents a model provider
 type Provider struct {
-	ID                    int64     `json:"id"`
-	Name                  string    `json:"name"`
-	Endpoint              string    `json:"endpoint"`
-	APIKeyEncrypted       string    `json:"api_key_encrypted"`
-	Description           string    `json:"description"`
-	Website               string    `json:"website"`
-	SupportEmail          string    `json:"support_email"`
-	DocumentationURL      string    `json:"documentation_url"`
-	CreatedAt             time.Time `json:"created_at"`
-	UpdatedAt             time.Time `json:"updated_at"`
+	ID                    int64      `json:"id"`
+	Name                  string     `json:"name"`
+	Endpoint              string     `json:"endpoint"`
+	APIKeyEncrypted       string     `json:"api_key_encrypted"`
+	Description           string     `json:"description"`
+	Website               string     `json:"website"`
+	SupportEmail          string     `json:"support_email"`
+	DocumentationURL      string     `json:"documentation_url"`
+	CreatedAt             time.Time  `json:"created_at"`
+	UpdatedAt             time.Time  `json:"updated_at"`
 	LastChecked           *time.Time `json:"last_checked"`
-	IsActive              bool      `json:"is_active"`
-	ReliabilityScore      float64   `json:"reliability_score"`
-	AverageResponseTimeMs int       `json:"average_response_time_ms"`
+	IsActive              bool       `json:"is_active"`
+	ReliabilityScore      float64    `json:"reliability_score"`
+	AverageResponseTimeMs int        `json:"average_response_time_ms"`
 }
 
 // Model represents an LLM model
 type Model struct {
-	ID                    int64     `json:"id"`
-	ProviderID            int64     `json:"provider_id"`
-	ModelID               string    `json:"model_id"`
-	Name                  string    `json:"name"`
-	Description           string    `json:"description"`
-	Version               string    `json:"version"`
-	Architecture          string    `json:"architecture"`
-	ParameterCount        *int64    `json:"parameter_count"`
-	ContextWindowTokens   *int      `json:"context_window_tokens"`
-	MaxOutputTokens       *int      `json:"max_output_tokens"`
+	ID                    int64      `json:"id"`
+	ProviderID            int64      `json:"provider_id"`
+	ModelID               string     `json:"model_id"`
+	Name                  string     `json:"name"`
+	Description           string     `json:"description"`
+	Version               string     `json:"version"`
+	Architecture          string     `json:"architecture"`
+	ParameterCount        *int64     `json:"parameter_count"`
+	ContextWindowTokens   *int       `json:"context_window_tokens"`
+	MaxOutputTokens       *int       `json:"max_output_tokens"`
 	TrainingDataCutoff    *time.Time `json:"training_data_cutoff"`
 	ReleaseDate           *time.Time `json:"release_date"`
-	IsMultimodal          bool      `json:"is_multimodal"`
-	SupportsVision        bool      `json:"supports_vision"`
-	SupportsAudio         bool      `json:"supports_audio"`
-	SupportsVideo         bool      `json:"supports_video"`
-	SupportsReasoning     bool      `json:"supports_reasoning"`
-	OpenSource            bool      `json:"open_source"`
-	Deprecated            bool      `json:"deprecated"`
-	Tags                  []string  `json:"tags"`
-	LanguageSupport       []string  `json:"language_support"`
-	UseCase               string    `json:"use_case"`
-	CreatedAt             time.Time `json:"created_at"`
-	UpdatedAt             time.Time `json:"updated_at"`
+	IsMultimodal          bool       `json:"is_multimodal"`
+	SupportsVision        bool       `json:"supports_vision"`
+	SupportsAudio         bool       `json:"supports_audio"`
+	SupportsVideo         bool       `json:"supports_video"`
+	SupportsReasoning     bool       `json:"supports_reasoning"`
+	OpenSource            bool       `json:"open_source"`
+	Deprecated            bool       `json:"deprecated"`
+	Tags                  []string   `json:"tags"`
+	LanguageSupport       []string   `json:"language_support"`
+	UseCase               string     `json:"use_case"`
+	CreatedAt             time.Time  `json:"created_at"`
+	UpdatedAt             time.Time  `json:"updated_at"`
 	LastVerified          *time.Time `json:"last_verified"`
-	VerificationStatus    string    `json:"verification_status"`
-	OverallScore          float64   `json:"overall_score"`
-	CodeCapabilityScore   float64   `json:"code_capability_score"`
-	ResponsivenessScore   float64   `json:"responsiveness_score"`
-	ReliabilityScore      float64   `json:"reliability_score"`
-	FeatureRichnessScore  float64   `json:"feature_richness_score"`
-	ValuePropositionScore float64   `json:"value_proposition_score"`
+	VerificationStatus    string     `json:"verification_status"`
+	OverallScore          float64    `json:"overall_score"`
+	CodeCapabilityScore   float64    `json:"code_capability_score"`
+	ResponsivenessScore   float64    `json:"responsiveness_score"`
+	ReliabilityScore      float64    `json:"reliability_score"`
+	FeatureRichnessScore  float64    `json:"feature_richness_score"`
+	ValuePropositionScore float64    `json:"value_proposition_score"`
 }
 
 // VerificationResult represents a verification run result
 type VerificationResult struct {
-	ID                           int64      `json:"id"`
-	ModelID                      int64      `json:"model_id"`
-	VerificationType             string     `json:"verification_type"`
-	StartedAt                    time.Time  `json:"started_at"`
-	CompletedAt                  *time.Time `json:"completed_at"`
-	Status                       string     `json:"status"`
-	ErrorMessage                 *string    `json:"error_message"`
-	Exists                       *bool      `json:"exists"`
-	Responsive                   *bool      `json:"responsive"`
-	Overloaded                   *bool      `json:"overloaded"`
-	LatencyMs                    *int       `json:"latency_ms"`
-	SupportsToolUse              bool       `json:"supports_tool_use"`
-	SupportsFunctionCalling      bool       `json:"supports_function_calling"`
-	SupportsCodeGeneration       bool       `json:"supports_code_generation"`
-	SupportsCodeCompletion       bool       `json:"supports_code_completion"`
-	SupportsCodeReview           bool       `json:"supports_code_review"`
-	SupportsCodeExplanation      bool       `json:"supports_code_explanation"`
-	SupportsEmbeddings           bool       `json:"supports_embeddings"`
-	SupportsReranking            bool       `json:"supports_reranking"`
-	SupportsImageGeneration      bool       `json:"supports_image_generation"`
-	SupportsAudioGeneration      bool       `json:"supports_audio_generation"`
-	SupportsVideoGeneration      bool       `json:"supports_video_generation"`
-	SupportsMCPs                 bool       `json:"supports_mcps"`
-	SupportsLSPs                 bool       `json:"supports_lsps"`
-	SupportsMultimodal           bool       `json:"supports_multimodal"`
-	SupportsStreaming            bool       `json:"supports_streaming"`
-	SupportsJSONMode             bool       `json:"supports_json_mode"`
-	SupportsStructuredOutput     bool       `json:"supports_structured_output"`
-	SupportsReasoning            bool       `json:"supports_reasoning"`
-	SupportsParallelToolUse      bool       `json:"supports_parallel_tool_use"`
-	MaxParallelCalls             int        `json:"max_parallel_calls"`
-	SupportsBatchProcessing      bool       `json:"supports_batch_processing"`
-	CodeLanguageSupport          []string   `json:"code_language_support"`
-	CodeDebugging                bool       `json:"code_debugging"`
-	CodeOptimization             bool       `json:"code_optimization"`
-	TestGeneration               bool       `json:"test_generation"`
-	DocumentationGeneration      bool       `json:"documentation_generation"`
-	Refactoring                  bool       `json:"refactoring"`
-	ErrorResolution              bool       `json:"error_resolution"`
-	ArchitectureDesign           bool       `json:"architecture_design"`
-	SecurityAssessment           bool       `json:"security_assessment"`
-	PatternRecognition           bool       `json:"pattern_recognition"`
-	DebuggingAccuracy            float64    `json:"debugging_accuracy"`
-	MaxHandledDepth              int        `json:"max_handled_depth"`
-	CodeQualityScore             float64    `json:"code_quality_score"`
-	LogicCorrectnessScore        float64    `json:"logic_correctness_score"`
-	RuntimeEfficiencyScore       float64    `json:"runtime_efficiency_score"`
-	OverallScore                 float64    `json:"overall_score"`
-	CodeCapabilityScore          float64    `json:"code_capability_score"`
-	ResponsivenessScore          float64    `json:"responsiveness_score"`
-	ReliabilityScore             float64    `json:"reliability_score"`
-	FeatureRichnessScore         float64    `json:"feature_richness_score"`
-	ValuePropositionScore        float64    `json:"value_proposition_score"`
-	ScoreDetails                 string     `json:"score_details"`
-	AvgLatencyMs                 int        `json:"avg_latency_ms"`
-	P95LatencyMs                 int        `json:"p95_latency_ms"`
-	MinLatencyMs                 int        `json:"min_latency_ms"`
-	MaxLatencyMs                 int        `json:"max_latency_ms"`
-	ThroughputRPS                float64    `json:"throughput_rps"`
-	RawRequest                   *string    `json:"raw_request"`
-	RawResponse                  *string    `json:"raw_response"`
-	CreatedAt                    time.Time  `json:"created_at"`
+	ID                       int64      `json:"id"`
+	ModelID                  int64      `json:"model_id"`
+	VerificationType         string     `json:"verification_type"`
+	StartedAt                time.Time  `json:"started_at"`
+	CompletedAt              *time.Time `json:"completed_at"`
+	Status                   string     `json:"status"`
+	ErrorMessage             *string    `json:"error_message"`
+	Exists                   *bool      `json:"exists"`
+	Responsive               *bool      `json:"responsive"`
+	Overloaded               *bool      `json:"overloaded"`
+	LatencyMs                *int       `json:"latency_ms"`
+	SupportsToolUse          bool       `json:"supports_tool_use"`
+	SupportsFunctionCalling  bool       `json:"supports_function_calling"`
+	SupportsCodeGeneration   bool       `json:"supports_code_generation"`
+	SupportsCodeCompletion   bool       `json:"supports_code_completion"`
+	SupportsCodeReview       bool       `json:"supports_code_review"`
+	SupportsCodeExplanation  bool       `json:"supports_code_explanation"`
+	SupportsEmbeddings       bool       `json:"supports_embeddings"`
+	SupportsReranking        bool       `json:"supports_reranking"`
+	SupportsImageGeneration  bool       `json:"supports_image_generation"`
+	SupportsAudioGeneration  bool       `json:"supports_audio_generation"`
+	SupportsVideoGeneration  bool       `json:"supports_video_generation"`
+	SupportsMCPs             bool       `json:"supports_mcps"`
+	SupportsLSPs             bool       `json:"supports_lsps"`
+	SupportsMultimodal       bool       `json:"supports_multimodal"`
+	SupportsStreaming        bool       `json:"supports_streaming"`
+	SupportsJSONMode         bool       `json:"supports_json_mode"`
+	SupportsStructuredOutput bool       `json:"supports_structured_output"`
+	SupportsReasoning        bool       `json:"supports_reasoning"`
+	SupportsParallelToolUse  bool       `json:"supports_parallel_tool_use"`
+	MaxParallelCalls         int        `json:"max_parallel_calls"`
+	SupportsBatchProcessing  bool       `json:"supports_batch_processing"`
+	CodeLanguageSupport      []string   `json:"code_language_support"`
+	CodeDebugging            bool       `json:"code_debugging"`
+	CodeOptimization         bool       `json:"code_optimization"`
+	TestGeneration           bool       `json:"test_generation"`
+	DocumentationGeneration  bool       `json:"documentation_generation"`
+	Refactoring              bool       `json:"refactoring"`
+	ErrorResolution          bool       `json:"error_resolution"`
+	ArchitectureDesign       bool       `json:"architecture_design"`
+	SecurityAssessment       bool       `json:"security_assessment"`
+	PatternRecognition       bool       `json:"pattern_recognition"`
+	DebuggingAccuracy        float64    `json:"debugging_accuracy"`
+	MaxHandledDepth          int        `json:"max_handled_depth"`
+	CodeQualityScore         float64    `json:"code_quality_score"`
+	LogicCorrectnessScore    float64    `json:"logic_correctness_score"`
+	RuntimeEfficiencyScore   float64    `json:"runtime_efficiency_score"`
+	OverallScore             float64    `json:"overall_score"`
+	CodeCapabilityScore      float64    `json:"code_capability_score"`
+	ResponsivenessScore      float64    `json:"responsiveness_score"`
+	ReliabilityScore         float64    `json:"reliability_score"`
+	FeatureRichnessScore     float64    `json:"feature_richness_score"`
+	ValuePropositionScore    float64    `json:"value_proposition_score"`
+	ScoreDetails             string     `json:"score_details"`
+	AvgLatencyMs             int        `json:"avg_latency_ms"`
+	P95LatencyMs             int        `json:"p95_latency_ms"`
+	MinLatencyMs             int        `json:"min_latency_ms"`
+	MaxLatencyMs             int        `json:"max_latency_ms"`
+	ThroughputRPS            float64    `json:"throughput_rps"`
+	RawRequest               *string    `json:"raw_request"`
+	RawResponse              *string    `json:"raw_response"`
+	CreatedAt                time.Time  `json:"created_at"`
 }
 
 // Event represents a system event
 type Event struct {
-	ID                   int64      `json:"id"`
-	EventType            string     `json:"event_type"`
-	Severity             string     `json:"severity"`
-	Title                string     `json:"title"`
-	Message              string     `json:"message"`
-	Details              *string    `json:"details"`
-	ModelID              *int64     `json:"model_id"`
-	ProviderID           *int64     `json:"provider_id"`
-	VerificationResultID *int64     `json:"verification_result_id"`
-	IssueID              *int64     `json:"issue_id"`
-	CreatedAt            time.Time  `json:"created_at"`
+	ID                   int64     `json:"id"`
+	EventType            string    `json:"event_type"`
+	Severity             string    `json:"severity"`
+	Title                string    `json:"title"`
+	Message              string    `json:"message"`
+	Details              *string   `json:"details"`
+	ModelID              *int64    `json:"model_id"`
+	ProviderID           *int64    `json:"provider_id"`
+	VerificationResultID *int64    `json:"verification_result_id"`
+	IssueID              *int64    `json:"issue_id"`
+	CreatedAt            time.Time `json:"created_at"`
+}
+
+// Schedule represents a scheduled verification task
+type Schedule struct {
+	ID              int64      `json:"id"`
+	Name            string     `json:"name"`
+	Description     *string    `json:"description"`
+	ScheduleType    string     `json:"schedule_type"` // cron, interval, manual
+	CronExpression  *string    `json:"cron_expression"`
+	IntervalSeconds *int       `json:"interval_seconds"`
+	TargetType      string     `json:"target_type"` // all_models, provider, specific_model
+	TargetID        *int64     `json:"target_id"`   // provider_id or model_id depending on target_type
+	IsActive        bool       `json:"is_active"`
+	LastRun         *time.Time `json:"last_run"`
+	NextRun         *time.Time `json:"next_run"`
+	RunCount        int        `json:"run_count"`
+	MaxRuns         *int       `json:"max_runs"` // NULL for unlimited
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
+	CreatedBy       *string    `json:"created_by"` // For future multi-user support
 }
 
 // ConfigExport represents a configuration export
@@ -437,16 +457,17 @@ type ConfigExport struct {
 
 // LogEntry represents a log entry
 type LogEntry struct {
-	ID                   int64      `json:"id"`
-	Timestamp            time.Time  `json:"timestamp"`
-	Level                string     `json:"level"`
-	Logger               string     `json:"logger"`
-	Message              string     `json:"message"`
-	Details              *string    `json:"details"`
-	RequestID            *string    `json:"request_id"`
-	ModelID              *int64     `json:"model_id"`
-	ProviderID           *int64     `json:"provider_id"`
-	VerificationResultID *int64     `json:"verification_result_id"`
+	ID                   int64     `json:"id"`
+	Timestamp            time.Time `json:"timestamp"`
+	Level                string    `json:"level"`
+	Logger               string    `json:"logger"`
+	Message              string    `json:"message"`
+	Details              *string   `json:"details"`
+	RequestID            *string   `json:"request_id"`
+	UserID               *int64    `json:"user_id"` // For future multi-user support
+	ModelID              *int64    `json:"model_id"`
+	ProviderID           *int64    `json:"provider_id"`
+	VerificationResultID *int64    `json:"verification_result_id"`
 }
 
 // Helper function to scan nullable time
@@ -503,7 +524,7 @@ func scanNullableBoolFromString(nullString sql.NullString) *bool {
 	if !nullString.Valid || nullString.String == "" {
 		return nil
 	}
-	
+
 	if nullString.String == "true" || nullString.String == "1" {
 		val := true
 		return &val
@@ -511,7 +532,7 @@ func scanNullableBoolFromString(nullString sql.NullString) *bool {
 		val := false
 		return &val
 	}
-	
+
 	return nil
 }
 
@@ -520,22 +541,20 @@ func scanNullableTimeFromString(nullString sql.NullString) *time.Time {
 	if !nullString.Valid || nullString.String == "" {
 		return nil
 	}
-	
+
 	// Try to parse as RFC3339 timestamp
 	if t, err := time.Parse(time.RFC3339, nullString.String); err == nil {
 		return &t
 	}
-	
+
 	// Try to parse as Unix timestamp
 	if timestamp, err := strconv.ParseInt(nullString.String, 10, 64); err == nil {
 		t := time.Unix(timestamp, 0)
 		return &t
 	}
-	
+
 	return nil
 }
-
-
 
 // Helper function to scan nullable int from int64
 func scanNullableIntFromInt64(nullInt64 sql.NullInt64) *int {
@@ -551,7 +570,7 @@ func scanJSONString(nullString sql.NullString) []string {
 	if !nullString.Valid || nullString.String == "" {
 		return []string{}
 	}
-	
+
 	var result []string
 	if err := json.Unmarshal([]byte(nullString.String), &result); err != nil {
 		return []string{}

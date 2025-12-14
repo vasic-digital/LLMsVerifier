@@ -17,7 +17,7 @@ func (d *Database) CreatePricing(pricing *Pricing) error {
 			effective_to
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	
+
 	result, err := d.conn.Exec(query,
 		pricing.ModelID,
 		pricing.InputTokenCost,
@@ -30,16 +30,16 @@ func (d *Database) CreatePricing(pricing *Pricing) error {
 		pricing.EffectiveFrom,
 		pricing.EffectiveTo,
 	)
-	
+
 	if err != nil {
 		return fmt.Errorf("failed to create pricing: %w", err)
 	}
-	
+
 	id, err := result.LastInsertId()
 	if err != nil {
 		return fmt.Errorf("failed to get last insert ID: %w", err)
 	}
-	
+
 	pricing.ID = id
 	return nil
 }
@@ -52,10 +52,10 @@ func (d *Database) GetPricing(id int64) (*Pricing, error) {
 			effective_to, created_at, updated_at
 		FROM pricing WHERE id = ?
 	`
-	
+
 	var pricing Pricing
 	var effectiveFrom, effectiveTo sql.NullTime
-	
+
 	err := d.conn.QueryRow(query, id).Scan(
 		&pricing.ID,
 		&pricing.ModelID,
@@ -71,17 +71,17 @@ func (d *Database) GetPricing(id int64) (*Pricing, error) {
 		&pricing.CreatedAt,
 		&pricing.UpdatedAt,
 	)
-	
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("pricing not found: %d", id)
 		}
 		return nil, fmt.Errorf("failed to get pricing: %w", err)
 	}
-	
+
 	pricing.EffectiveFrom = scanNullableTime(effectiveFrom)
 	pricing.EffectiveTo = scanNullableTime(effectiveTo)
-	
+
 	return &pricing, nil
 }
 
@@ -96,11 +96,11 @@ func (d *Database) GetLatestPricing(modelID int64) (*Pricing, error) {
 		ORDER BY created_at DESC
 		LIMIT 1
 	`
-	
+
 	var pricing Pricing
 	var effectiveFrom, effectiveTo sql.NullTime
 	currentTime := time.Now()
-	
+
 	err := d.conn.QueryRow(query, modelID, currentTime).Scan(
 		&pricing.ID,
 		&pricing.ModelID,
@@ -116,17 +116,17 @@ func (d *Database) GetLatestPricing(modelID int64) (*Pricing, error) {
 		&pricing.CreatedAt,
 		&pricing.UpdatedAt,
 	)
-	
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("no valid pricing found for model: %d", modelID)
 		}
 		return nil, fmt.Errorf("failed to get latest pricing: %w", err)
 	}
-	
+
 	pricing.EffectiveFrom = scanNullableTime(effectiveFrom)
 	pricing.EffectiveTo = scanNullableTime(effectiveTo)
-	
+
 	return &pricing, nil
 }
 
@@ -140,18 +140,18 @@ func (d *Database) ListPricing(modelID int64) ([]*Pricing, error) {
 		WHERE model_id = ?
 		ORDER BY created_at DESC
 	`
-	
+
 	rows, err := d.conn.Query(query, modelID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pricing: %w", err)
 	}
 	defer rows.Close()
-	
+
 	var pricingList []*Pricing
 	for rows.Next() {
 		var pricing Pricing
 		var effectiveFrom, effectiveTo sql.NullTime
-		
+
 		err := rows.Scan(
 			&pricing.ID,
 			&pricing.ModelID,
@@ -167,22 +167,75 @@ func (d *Database) ListPricing(modelID int64) ([]*Pricing, error) {
 			&pricing.CreatedAt,
 			&pricing.UpdatedAt,
 		)
-		
+
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan pricing: %w", err)
 		}
-		
+
 		pricing.EffectiveFrom = scanNullableTime(effectiveFrom)
 		pricing.EffectiveTo = scanNullableTime(effectiveTo)
-		
+
 		pricingList = append(pricingList, &pricing)
 	}
-	
+
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating pricing: %w", err)
 	}
-	
+
 	return pricingList, nil
+}
+
+// UpdatePricing updates an existing pricing record
+func (d *Database) UpdatePricing(pricing *Pricing) error {
+	query := `
+		UPDATE pricing SET
+			model_id = ?, input_token_cost = ?, output_token_cost = ?,
+			cached_input_token_cost = ?, storage_cost = ?, request_cost = ?,
+			currency = ?, pricing_model = ?, effective_from = ?, effective_to = ?
+		WHERE id = ?
+	`
+
+	var effectiveFrom, effectiveTo sql.NullTime
+	if pricing.EffectiveFrom != nil {
+		effectiveFrom.Valid = true
+		effectiveFrom.Time = *pricing.EffectiveFrom
+	}
+	if pricing.EffectiveTo != nil {
+		effectiveTo.Valid = true
+		effectiveTo.Time = *pricing.EffectiveTo
+	}
+
+	_, err := d.conn.Exec(query,
+		pricing.ModelID,
+		pricing.InputTokenCost,
+		pricing.OutputTokenCost,
+		pricing.CachedInputTokenCost,
+		pricing.StorageCost,
+		pricing.RequestCost,
+		pricing.Currency,
+		pricing.PricingModel,
+		effectiveFrom,
+		effectiveTo,
+		pricing.ID,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to update pricing: %w", err)
+	}
+
+	return nil
+}
+
+// DeletePricing deletes a pricing record by ID
+func (d *Database) DeletePricing(id int64) error {
+	query := `DELETE FROM pricing WHERE id = ?`
+
+	_, err := d.conn.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete pricing: %w", err)
+	}
+
+	return nil
 }
 
 // ==================== Limits CRUD Operations ====================
@@ -195,7 +248,7 @@ func (d *Database) CreateLimit(limit *Limit) error {
 			reset_time, is_hard_limit
 		) VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
-	
+
 	result, err := d.conn.Exec(query,
 		limit.ModelID,
 		limit.LimitType,
@@ -205,16 +258,16 @@ func (d *Database) CreateLimit(limit *Limit) error {
 		limit.ResetTime,
 		limit.IsHardLimit,
 	)
-	
+
 	if err != nil {
 		return fmt.Errorf("failed to create limit: %w", err)
 	}
-	
+
 	id, err := result.LastInsertId()
 	if err != nil {
 		return fmt.Errorf("failed to get last insert ID: %w", err)
 	}
-	
+
 	limit.ID = id
 	return nil
 }
@@ -226,10 +279,10 @@ func (d *Database) GetLimit(id int64) (*Limit, error) {
 			reset_time, is_hard_limit, created_at, updated_at
 		FROM limits WHERE id = ?
 	`
-	
+
 	var limit Limit
 	var resetTime sql.NullTime
-	
+
 	err := d.conn.QueryRow(query, id).Scan(
 		&limit.ID,
 		&limit.ModelID,
@@ -242,16 +295,16 @@ func (d *Database) GetLimit(id int64) (*Limit, error) {
 		&limit.CreatedAt,
 		&limit.UpdatedAt,
 	)
-	
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("limit not found: %d", id)
 		}
 		return nil, fmt.Errorf("failed to get limit: %w", err)
 	}
-	
+
 	limit.ResetTime = scanNullableTime(resetTime)
-	
+
 	return &limit, nil
 }
 
@@ -264,18 +317,18 @@ func (d *Database) GetLimitsForModel(modelID int64) ([]*Limit, error) {
 		WHERE model_id = ?
 		ORDER BY limit_type
 	`
-	
+
 	rows, err := d.conn.Query(query, modelID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get limits for model: %w", err)
 	}
 	defer rows.Close()
-	
+
 	var limits []*Limit
 	for rows.Next() {
 		var limit Limit
 		var resetTime sql.NullTime
-		
+
 		err := rows.Scan(
 			&limit.ID,
 			&limit.ModelID,
@@ -288,31 +341,31 @@ func (d *Database) GetLimitsForModel(modelID int64) ([]*Limit, error) {
 			&limit.CreatedAt,
 			&limit.UpdatedAt,
 		)
-		
+
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan limit: %w", err)
 		}
-		
+
 		limit.ResetTime = scanNullableTime(resetTime)
 		limits = append(limits, &limit)
 	}
-	
+
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating limits: %w", err)
 	}
-	
+
 	return limits, nil
 }
 
 // UpdateLimitCurrentUsage updates the current usage for a limit
 func (d *Database) UpdateLimitCurrentUsage(limitID int64, currentUsage int) error {
 	query := `UPDATE limits SET current_usage = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
-	
+
 	_, err := d.conn.Exec(query, currentUsage, limitID)
 	if err != nil {
 		return fmt.Errorf("failed to update limit current usage: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -323,23 +376,56 @@ func (d *Database) ResetLimitUsage() error {
 		SET current_usage = 0, updated_at = CURRENT_TIMESTAMP 
 		WHERE reset_time IS NOT NULL AND reset_time <= CURRENT_TIMESTAMP
 	`
-	
+
 	_, err := d.conn.Exec(query)
 	if err != nil {
 		return fmt.Errorf("failed to reset limit usage: %w", err)
 	}
-	
+
+	return nil
+}
+
+// UpdateLimit updates an existing limit record
+func (d *Database) UpdateLimit(limit *Limit) error {
+	query := `
+		UPDATE limits SET
+			model_id = ?, limit_type = ?, limit_value = ?, current_usage = ?,
+			reset_period = ?, reset_time = ?, is_hard_limit = ?
+		WHERE id = ?
+	`
+
+	var resetTime sql.NullTime
+	if limit.ResetTime != nil {
+		resetTime.Valid = true
+		resetTime.Time = *limit.ResetTime
+	}
+
+	_, err := d.conn.Exec(query,
+		limit.ModelID,
+		limit.LimitType,
+		limit.LimitValue,
+		limit.CurrentUsage,
+		limit.ResetPeriod,
+		resetTime,
+		limit.IsHardLimit,
+		limit.ID,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to update limit: %w", err)
+	}
+
 	return nil
 }
 
 // DeleteLimit deletes a limit by ID
 func (d *Database) DeleteLimit(id int64) error {
 	query := `DELETE FROM limits WHERE id = ?`
-	
+
 	_, err := d.conn.Exec(query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete limit: %w", err)
 	}
-	
+
 	return nil
 }

@@ -210,6 +210,11 @@ func (s *Server) Stop() error {
 	return nil
 }
 
+// Router returns the Gin router for testing
+func (s *Server) Router() *gin.Engine {
+	return s.router
+}
+
 // corsMiddleware handles CORS headers
 func corsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
