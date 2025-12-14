@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"llm-verifier/config"
-	"llm-verifier/database"
 	"llm-verifier/llmverifier"
 )
 

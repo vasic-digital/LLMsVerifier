@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"encoding/json"
 	"testing"
 	"time"
 
