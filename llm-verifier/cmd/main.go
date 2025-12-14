@@ -89,8 +89,11 @@ func runServer() error {
 		return fmt.Errorf("failed to create server: %w", err)
 	}
 
-	// For now, use default port - TODO: get from flag
-	port := "8080"
+	// Use port from config or flag
+	port := cfg.API.Port
+	if port == "" {
+		port = "8080"
+	}
 
 	return server.Start(port)
 }

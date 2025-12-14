@@ -400,3 +400,176 @@ func (d *Database) UpdateScheduleRunInfo(scheduleID int64, lastRun time.Time, ne
 
 	return nil
 }
+
+// ==================== ScheduleRun CRUD Operations ====================
+
+// CreateScheduleRun creates a new schedule run
+func (d *Database) CreateScheduleRun(run *ScheduleRun) error {
+	query := `
+		INSERT INTO schedule_runs (
+			schedule_id, started_at, completed_at, status, results_count, errors_count, error_message
+		) VALUES (?, ?, ?, ?, ?, ?, ?)
+	`
+
+	var completedAt sql.NullTime
+	if run.CompletedAt != nil {
+		completedAt.Valid = true
+		completedAt.Time = *run.CompletedAt
+	}
+
+	result, err := d.conn.Exec(query,
+		run.ScheduleID,
+		run.StartedAt,
+		completedAt,
+		run.Status,
+		run.ResultsCount,
+		run.ErrorsCount,
+		run.ErrorMessage,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to create schedule run: %w", err)
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("failed to get last insert ID: %w", err)
+	}
+
+	run.ID = id
+	return nil
+}
+
+// GetScheduleRun retrieves a schedule run by ID
+func (d *Database) GetScheduleRun(id int64) (*ScheduleRun, error) {
+	query := `
+		SELECT id, schedule_id, started_at, completed_at, status, results_count, errors_count, error_message, created_at
+		FROM schedule_runs
+		WHERE id = ?
+	`
+
+	row := d.conn.QueryRow(query, id)
+
+	var run ScheduleRun
+	var completedAt sql.NullTime
+
+	err := row.Scan(
+		&run.ID,
+		&run.ScheduleID,
+		&run.StartedAt,
+		&completedAt,
+		&run.Status,
+		&run.ResultsCount,
+		&run.ErrorsCount,
+		&run.ErrorMessage,
+		&run.CreatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to scan schedule run: %w", err)
+	}
+
+	if completedAt.Valid {
+		run.CompletedAt = &completedAt.Time
+	}
+
+	return &run, nil
+}
+
+// UpdateScheduleRun updates a schedule run
+func (d *Database) UpdateScheduleRun(run *ScheduleRun) error {
+	query := `
+		UPDATE schedule_runs
+		SET schedule_id = ?, started_at = ?, completed_at = ?, status = ?, 
+			results_count = ?, errors_count = ?, error_message = ?
+		WHERE id = ?
+	`
+
+	var completedAt sql.NullTime
+	if run.CompletedAt != nil {
+		completedAt.Valid = true
+		completedAt.Time = *run.CompletedAt
+	}
+
+	_, err := d.conn.Exec(query,
+		run.ScheduleID,
+		run.StartedAt,
+		completedAt,
+		run.Status,
+		run.ResultsCount,
+		run.ErrorsCount,
+		run.ErrorMessage,
+		run.ID,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to update schedule run: %w", err)
+	}
+
+	return nil
+}
+
+// DeleteScheduleRun deletes a schedule run by ID
+func (d *Database) DeleteScheduleRun(id int64) error {
+	query := `DELETE FROM schedule_runs WHERE id = ?`
+
+	_, err := d.conn.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete schedule run: %w", err)
+	}
+
+	return nil
+}
+
+// GetScheduleRuns retrieves all runs for a schedule
+func (d *Database) GetScheduleRuns(scheduleID int64) ([]ScheduleRun, error) {
+	query := `
+		SELECT id, schedule_id, started_at, completed_at, status, results_count, errors_count, error_message, created_at
+		FROM schedule_runs
+		WHERE schedule_id = ?
+		ORDER BY started_at DESC
+	`
+
+	rows, err := d.conn.Query(query, scheduleID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query schedule runs: %w", err)
+	}
+	defer rows.Close()
+
+	var runs []ScheduleRun
+	for rows.Next() {
+		var run ScheduleRun
+		var completedAt sql.NullTime
+
+		err := rows.Scan(
+			&run.ID,
+			&run.ScheduleID,
+			&run.StartedAt,
+			&completedAt,
+			&run.Status,
+			&run.ResultsCount,
+			&run.ErrorsCount,
+			&run.ErrorMessage,
+			&run.CreatedAt,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan schedule run: %w", err)
+		}
+
+		if completedAt.Valid {
+			run.CompletedAt = &completedAt.Time
+		}
+
+		runs = append(runs, run)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating schedule runs: %w", err)
+	}
+
+	return runs, nil
+}

@@ -596,6 +596,19 @@ type Schedule struct {
 	CreatedBy       *string    `json:"created_by"` // For future multi-user support
 }
 
+// ScheduleRun represents a schedule execution run
+type ScheduleRun struct {
+	ID           int64      `json:"id"`
+	ScheduleID   int64      `json:"schedule_id"`
+	StartedAt    time.Time  `json:"started_at"`
+	CompletedAt  *time.Time `json:"completed_at"`
+	Status       string     `json:"status"` // running, completed, failed, cancelled
+	ResultsCount int        `json:"results_count"`
+	ErrorsCount  int        `json:"errors_count"`
+	ErrorMessage *string    `json:"error_message"`
+	CreatedAt    time.Time  `json:"created_at"`
+}
+
 // ConfigExport represents a configuration export
 type ConfigExport struct {
 	ID                int64     `json:"id"`
