@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -26,7 +27,7 @@ func New(cfg *config.Config) *Verifier {
 // Verify performs the verification of LLMs based on the configuration
 func (v *Verifier) Verify() ([]VerificationResult, error) {
 	var allResults []VerificationResult
-	
+
 	// If no LLMs are specified in config, discover all available models
 	if len(v.cfg.LLMs) == 0 {
 		discoveredResults, err := v.discoverAndVerifyAllModels()
@@ -38,7 +39,7 @@ func (v *Verifier) Verify() ([]VerificationResult, error) {
 		// Verify only the specified LLMs
 		for _, llmCfg := range v.cfg.LLMs {
 			client := NewLLMClient(llmCfg.Endpoint, llmCfg.APIKey, llmCfg.Headers)
-			
+
 			// If model name is not specified, discover all models for this endpoint
 			if llmCfg.Model == "" {
 				models, err := client.ListModels(context.Background())
@@ -51,7 +52,7 @@ func (v *Verifier) Verify() ([]VerificationResult, error) {
 					allResults = append(allResults, result)
 					continue
 				}
-				
+
 				for _, model := range models {
 					result, err := v.verifySingleModel(client, model.ID, llmCfg.Endpoint)
 					if err != nil {
@@ -76,43 +77,43 @@ func (v *Verifier) Verify() ([]VerificationResult, error) {
 			}
 		}
 	}
-	
+
 	return allResults, nil
 }
 
 // discoverAndVerifyAllModels discovers all models from configured endpoints and verifies each one
 func (v *Verifier) discoverAndVerifyAllModels() ([]VerificationResult, error) {
 	var allResults []VerificationResult
-	
+
 	// We'll need to determine endpoints somehow - for now, let's assume global config has the base URL
 	if v.cfg.Global.BaseURL != "" {
 		client := NewLLMClient(v.cfg.Global.BaseURL, v.cfg.Global.APIKey, nil)
-		
+
 		models, err := client.ListModels(context.Background())
 		if err != nil {
 			return nil, fmt.Errorf("failed to discover models from %s: %w", v.cfg.Global.BaseURL, err)
 		}
-		
+
 		// Process each model with concurrency control
 		concurrency := v.cfg.Concurrency
 		if concurrency <= 0 {
 			concurrency = 1
 		}
-		
+
 		semaphore := make(chan struct{}, concurrency)
 		var wg sync.WaitGroup
 		var mu sync.Mutex
-		
+
 		resultsChan := make(chan VerificationResult, len(models))
-		
+
 		for _, model := range models {
 			wg.Add(1)
 			go func(model ModelInfo) {
 				defer wg.Done()
-				
-				semaphore <- struct{}{} // Acquire semaphore
+
+				semaphore <- struct{}{}        // Acquire semaphore
 				defer func() { <-semaphore }() // Release semaphore
-				
+
 				result, err := v.verifySingleModel(client, model.ID, v.cfg.Global.BaseURL)
 				if err != nil {
 					result = VerificationResult{
@@ -124,13 +125,13 @@ func (v *Verifier) discoverAndVerifyAllModels() ([]VerificationResult, error) {
 				resultsChan <- result
 			}(model)
 		}
-		
+
 		// Close results channel after all goroutines finish
 		go func() {
 			wg.Wait()
 			close(resultsChan)
 		}()
-		
+
 		// Collect results
 		for result := range resultsChan {
 			mu.Lock()
@@ -138,7 +139,7 @@ func (v *Verifier) discoverAndVerifyAllModels() ([]VerificationResult, error) {
 			mu.Unlock()
 		}
 	}
-	
+
 	return allResults, nil
 }
 
@@ -597,7 +598,7 @@ func (v *Verifier) testCodeReview(client *LLMClient, modelName string, ctx conte
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "Review this Python code and suggest improvements:\n\n```python\narr = [3, 1, 4, 1, 5, 9, 2, 6]\nsorted_arr = []\nfor i in range(len(arr)):\n    smallest = arr[0]\n    for j in arr:\n        if j < smallest:\n            smallest = j\n    sorted_arr.append(smallest)\n    arr.remove(smallest)\nprint(sorted_arr)\n```",
 			},
 		},
@@ -610,9 +611,9 @@ func (v *Verifier) testCodeReview(client *LLMClient, modelName string, ctx conte
 
 	responseText := resp.Choices[0].Message.Content
 	return strings.Contains(strings.ToLower(responseText), "improv") ||
-		   strings.Contains(strings.ToLower(responseText), "suggest") ||
-		   strings.Contains(strings.ToLower(responseText), "issue") ||
-		   strings.Contains(strings.ToLower(responseText), "better")
+		strings.Contains(strings.ToLower(responseText), "suggest") ||
+		strings.Contains(strings.ToLower(responseText), "issue") ||
+		strings.Contains(strings.ToLower(responseText), "better")
 }
 
 // testEmbeddings checks if the model supports embeddings
@@ -651,9 +652,9 @@ func (v *Verifier) testMultimodal(client *LLMClient, modelName string, ctx conte
 	responseText := strings.ToLower(resp.Choices[0].Message.Content)
 	// Check if the response indicates multimodal capability
 	return strings.Contains(responseText, "image") ||
-		   strings.Contains(responseText, "visual") ||
-		   strings.Contains(responseText, "analyze") ||
-		   strings.Contains(responseText, "describe")
+		strings.Contains(responseText, "visual") ||
+		strings.Contains(responseText, "analyze") ||
+		strings.Contains(responseText, "describe")
 }
 
 // testStreaming checks if the model supports streaming responses
@@ -740,7 +741,7 @@ func (v *Verifier) testReasoning(client *LLMClient, modelName string, ctx contex
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "There are 5 houses in a row, each painted a different color. In each house lives a person of a different nationality. The 5 owners drink a certain type of beverage, smoke a certain brand of cigar, and keep a certain pet. Using these clues, who owns the fish?\n\n1. The British man lives in the red house.\n2. The Swedish man has a dog.\n3. The Danish man drinks tea.\n4. The green house is immediately to the left of the white house.\n5. The green house owner drinks coffee.\n6. The person who smokes Pall Mall rears birds.\n7. The owner of the yellow house smokes Dunhill.\n8. The man living in the house right in the center drinks milk.\n9. The Norwegian lives in the first house.\n10. The man who smokes Blend lives next to the one who keeps cats.\n11. The man who keeps horses lives next to the man who smokes Dunhill.\n12. The owner who smokes Blue Master drinks chocolate.\n13. The German smokes Prince.\n14. The Norwegian lives next to the blue house.\n15. The man who smokes Blend has a neighbor who drinks water.\n\nQ: Who owns the fish?",
 			},
 		},
@@ -754,8 +755,8 @@ func (v *Verifier) testReasoning(client *LLMClient, modelName string, ctx contex
 	responseText := resp.Choices[0].Message.Content
 	// Check if the model attempted to solve the reasoning problem
 	return strings.Contains(strings.ToLower(responseText), "fish") &&
-		   (strings.Contains(strings.ToLower(responseText), "german") ||
-		    strings.Contains(strings.ToLower(responseText), "answer"))
+		(strings.Contains(strings.ToLower(responseText), "german") ||
+			strings.Contains(strings.ToLower(responseText), "answer"))
 }
 
 // testParallelToolUse checks for parallel tool use capability
@@ -830,10 +831,10 @@ func (v *Verifier) testParallelToolUse(client *LLMClient, modelName string, ctx 
 func (v *Verifier) testBatchProcessing(client *LLMClient, modelName string) bool {
 	// Test batch processing by sending multiple requests in a single API call
 	// Many providers support batch processing through specific endpoints or parameters
-	
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	
+
 	// Test 1: Check if the API accepts batch requests
 	batchReq := map[string]interface{}{
 		"model": modelName,
@@ -846,23 +847,23 @@ func (v *Verifier) testBatchProcessing(client *LLMClient, modelName string) bool
 			},
 		},
 	}
-	
+
 	// Try different batch processing approaches
-	
+
 	// Approach 1: Standard batch endpoint
 	endpoint := "/v1/chat/completions/batch"
 	_, err := client.makeRequest(ctx, http.MethodPost, endpoint, batchReq)
 	if err == nil {
 		return true
 	}
-	
+
 	// Approach 2: Array of requests in standard endpoint
 	endpoint = "/v1/chat/completions"
 	_, err = client.makeRequest(ctx, http.MethodPost, endpoint, batchReq)
 	if err == nil {
 		return true
 	}
-	
+
 	// Approach 3: Check for batch processing headers or parameters
 	// Some APIs support batch processing through specific headers
 	req := ChatCompletionRequest{
@@ -871,25 +872,25 @@ func (v *Verifier) testBatchProcessing(client *LLMClient, modelName string) bool
 			{Role: "user", Content: "Test batch processing support"},
 		},
 	}
-	
+
 	// Add batch processing headers
 	customHeaders := map[string]string{
 		"X-Batch-Processing": "enabled",
 		"X-Batch-Size":       "10",
 	}
-	
+
 	// Try with custom headers
 	_, err = client.makeRequestWithHeaders(ctx, http.MethodPost, endpoint, req, customHeaders)
 	if err == nil {
 		return true
 	}
-	
+
 	// Check error message for batch processing support indication
 	if err != nil && (strings.Contains(err.Error(), "batch") || strings.Contains(err.Error(), "multiple")) {
 		// Error message suggests batch processing might be supported but with different parameters
 		return true
 	}
-	
+
 	return false
 }
 
@@ -977,9 +978,9 @@ result = calculate_sum(1, 2, 3)  # This has an error - too many arguments`,
 
 	responseText1 := strings.ToLower(resp1.Choices[0].Message.Content)
 	errorDetection := strings.Contains(responseText1, "error") ||
-					 strings.Contains(responseText1, "too many") ||
-					 strings.Contains(responseText1, "arguments") ||
-					 strings.Contains(responseText1, "mismatch")
+		strings.Contains(responseText1, "too many") ||
+		strings.Contains(responseText1, "arguments") ||
+		strings.Contains(responseText1, "mismatch")
 
 	// Test 2: Code completion suggestion (IDE-like)
 	req2 := ChatCompletionRequest{
@@ -998,14 +999,14 @@ def bubble_sort(arr):
 
 	resp2, err2 := client.ChatCompletion(ctx, req2)
 	completionSuggestion := err2 == nil && len(resp2.Choices) > 0 &&
-							len(resp2.Choices[0].Message.Content) > 10 // Provided substantial completion
+		len(resp2.Choices[0].Message.Content) > 10 // Provided substantial completion
 
 	// Test 3: Symbol/definition navigation (theoretical test)
 	req3 := ChatCompletionRequest{
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: `As a language server, explain what the "len()" function does in Python and where it's defined.`,
 			},
 		},
@@ -1016,7 +1017,7 @@ def bubble_sort(arr):
 	if err3 == nil && len(resp3.Choices) > 0 {
 		content := strings.ToLower(resp3.Choices[0].Message.Content)
 		symbolNavigation = strings.Contains(content, "length") ||
-						  strings.Contains(content, "builtin")
+			strings.Contains(content, "builtin")
 	}
 
 	// Return true if the model demonstrates any LSP-like capabilities
@@ -1031,7 +1032,7 @@ func (v *Verifier) testImageGeneration(client *LLMClient, modelName string, ctx 
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "Describe how you would generate an image of a beautiful sunset over mountains with a lake in the foreground. What parameters would you use?",
 			},
 		},
@@ -1045,11 +1046,11 @@ func (v *Verifier) testImageGeneration(client *LLMClient, modelName string, ctx 
 	responseText := strings.ToLower(resp.Choices[0].Message.Content)
 	// Check if the model provides details about image generation parameters
 	return strings.Contains(responseText, "image") &&
-		   (strings.Contains(responseText, "generate") ||
-		    strings.Contains(responseText, "prompt") ||
-		    strings.Contains(responseText, "parameters") ||
-		    strings.Contains(responseText, "resolution") ||
-		    strings.Contains(responseText, "style"))
+		(strings.Contains(responseText, "generate") ||
+			strings.Contains(responseText, "prompt") ||
+			strings.Contains(responseText, "parameters") ||
+			strings.Contains(responseText, "resolution") ||
+			strings.Contains(responseText, "style"))
 }
 
 // testAudioGeneration checks for audio generation capabilities
@@ -1060,7 +1061,7 @@ func (v *Verifier) testAudioGeneration(client *LLMClient, modelName string, ctx 
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "Explain how you would generate an audio clip of birds chirping in a forest. What would be the key parameters?",
 			},
 		},
@@ -1074,11 +1075,11 @@ func (v *Verifier) testAudioGeneration(client *LLMClient, modelName string, ctx 
 	responseText := strings.ToLower(resp.Choices[0].Message.Content)
 	// Check if the model provides details about audio generation
 	return strings.Contains(responseText, "audio") &&
-		   (strings.Contains(responseText, "generate") ||
-		    strings.Contains(responseText, "parameters") ||
-		    strings.Contains(responseText, "frequency") ||
-		    strings.Contains(responseText, "wave") ||
-		    strings.Contains(responseText, "sound"))
+		(strings.Contains(responseText, "generate") ||
+			strings.Contains(responseText, "parameters") ||
+			strings.Contains(responseText, "frequency") ||
+			strings.Contains(responseText, "wave") ||
+			strings.Contains(responseText, "sound"))
 }
 
 // testVideoGeneration checks for video generation capabilities
@@ -1089,7 +1090,7 @@ func (v *Verifier) testVideoGeneration(client *LLMClient, modelName string, ctx 
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "Describe the process of generating a short video clip showing a flower blooming. What technical aspects would be involved?",
 			},
 		},
@@ -1103,11 +1104,11 @@ func (v *Verifier) testVideoGeneration(client *LLMClient, modelName string, ctx 
 	responseText := strings.ToLower(resp.Choices[0].Message.Content)
 	// Check if the model provides details about video generation
 	return strings.Contains(responseText, "video") &&
-		   (strings.Contains(responseText, "generate") ||
-		    strings.Contains(responseText, "frame") ||
-		    strings.Contains(responseText, "sequence") ||
-		    strings.Contains(responseText, "motion") ||
-		    strings.Contains(responseText, "animation"))
+		(strings.Contains(responseText, "generate") ||
+			strings.Contains(responseText, "frame") ||
+			strings.Contains(responseText, "sequence") ||
+			strings.Contains(responseText, "motion") ||
+			strings.Contains(responseText, "animation"))
 }
 
 // testRerank checks for reranking capability (typically not part of standard chat completion API)
@@ -1139,7 +1140,7 @@ Please provide the ranked order from most to least relevant.`,
 	responseText1 := strings.ToLower(resp1.Choices[0].Message.Content)
 	// Check if response contains ranked results (should prioritize B and D over others)
 	hasRanking := strings.Contains(responseText1, "rank") || strings.Contains(responseText1, "order") ||
-				  strings.Contains(responseText1, "1") || strings.Contains(responseText1, "first")
+		strings.Contains(responseText1, "1") || strings.Contains(responseText1, "first")
 
 	// Test 2: Ordering improvement task
 	req2 := ChatCompletionRequest{
@@ -1161,8 +1162,8 @@ Return only the reordered list with new numbers.`,
 
 	resp2, err2 := client.ChatCompletion(ctx, req2)
 	orderingImprovement := err2 == nil && len(resp2.Choices) > 0 &&
-						  strings.Contains(strings.ToLower(resp2.Choices[0].Message.Content), "2") &&
-						  strings.Contains(strings.ToLower(resp2.Choices[0].Message.Content), "4") // Prioritized results
+		strings.Contains(strings.ToLower(resp2.Choices[0].Message.Content), "2") &&
+		strings.Contains(strings.ToLower(resp2.Choices[0].Message.Content), "4") // Prioritized results
 
 	// Test 3: Relevance scoring test
 	req3 := ChatCompletionRequest{
@@ -1272,7 +1273,7 @@ func (v *Verifier) testCreativeWriting(client *LLMClient, modelName string, ctx 
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "Write a short, original poem about the changing seasons that uses vivid imagery and metaphor.",
 			},
 		},
@@ -1286,11 +1287,11 @@ func (v *Verifier) testCreativeWriting(client *LLMClient, modelName string, ctx 
 	responseText := resp.Choices[0].Message.Content
 	// Check for creative elements in the response
 	return len(responseText) > 50 && // Contains substantial content
-		   (strings.Contains(responseText, "spring") || strings.Contains(responseText, "summer") ||
-		    strings.Contains(responseText, "fall") || strings.Contains(responseText, "winter")) &&
-		   (strings.Contains(responseText, "like") || strings.Contains(responseText, "as") || // metaphors
-		    strings.Contains(responseText, "bright") || strings.Contains(responseText, "golden") || // imagery
-		    strings.Contains(responseText, "\n")) // structured like a poem
+		(strings.Contains(responseText, "spring") || strings.Contains(responseText, "summer") ||
+			strings.Contains(responseText, "fall") || strings.Contains(responseText, "winter")) &&
+		(strings.Contains(responseText, "like") || strings.Contains(responseText, "as") || // metaphors
+			strings.Contains(responseText, "bright") || strings.Contains(responseText, "golden") || // imagery
+			strings.Contains(responseText, "\n")) // structured like a poem
 }
 
 // testStorytelling checks if the model can create narratives
@@ -1299,7 +1300,7 @@ func (v *Verifier) testStorytelling(client *LLMClient, modelName string, ctx con
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "Create a short story (5-8 sentences) about a detective solving a mystery in a lighthouse during a storm.",
 			},
 		},
@@ -1313,10 +1314,10 @@ func (v *Verifier) testStorytelling(client *LLMClient, modelName string, ctx con
 	responseText := resp.Choices[0].Message.Content
 	// Check for narrative elements
 	return len(responseText) > 100 &&
-		   (strings.Contains(strings.ToLower(responseText), "detective") ||
-		    strings.Contains(strings.ToLower(responseText), "mystery") ||
-		    strings.Contains(strings.ToLower(responseText), "lighthouse") ||
-		    strings.Contains(strings.ToLower(responseText), "storm"))
+		(strings.Contains(strings.ToLower(responseText), "detective") ||
+			strings.Contains(strings.ToLower(responseText), "mystery") ||
+			strings.Contains(strings.ToLower(responseText), "lighthouse") ||
+			strings.Contains(strings.ToLower(responseText), "storm"))
 }
 
 // testContentGeneration checks if the model can generate various types of content
@@ -1325,7 +1326,7 @@ func (v *Verifier) testContentGeneration(client *LLMClient, modelName string, ct
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "Generate a product description for a new smart water bottle that tracks hydration, syncs with phones, and glows when you need to drink more water.",
 			},
 		},
@@ -1339,11 +1340,11 @@ func (v *Verifier) testContentGeneration(client *LLMClient, modelName string, ct
 	responseText := resp.Choices[0].Message.Content
 	// Check if it provides a reasonable product description
 	return len(responseText) > 50 &&
-		   (strings.Contains(strings.ToLower(responseText), "water") ||
-		    strings.Contains(strings.ToLower(responseText), "bottle") ||
-		    strings.Contains(strings.ToLower(responseText), "smart") ||
-		    strings.Contains(strings.ToLower(responseText), "track") ||
-		    strings.Contains(strings.ToLower(responseText), "hydrat"))
+		(strings.Contains(strings.ToLower(responseText), "water") ||
+			strings.Contains(strings.ToLower(responseText), "bottle") ||
+			strings.Contains(strings.ToLower(responseText), "smart") ||
+			strings.Contains(strings.ToLower(responseText), "track") ||
+			strings.Contains(strings.ToLower(responseText), "hydrat"))
 }
 
 // testArtisticCreativity checks if the model can think artistically
@@ -1352,7 +1353,7 @@ func (v *Verifier) testArtisticCreativity(client *LLMClient, modelName string, c
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "Design a new art movement that combines elements of surrealism and digital glitch aesthetics. Describe its philosophy, techniques, and visual characteristics.",
 			},
 		},
@@ -1366,11 +1367,11 @@ func (v *Verifier) testArtisticCreativity(client *LLMClient, modelName string, c
 	responseText := resp.Choices[0].Message.Content
 	// Check for artistic and creative thinking
 	return len(responseText) > 100 &&
-		   (strings.Contains(strings.ToLower(responseText), "art") ||
-		    strings.Contains(strings.ToLower(responseText), "movement") ||
-		    strings.Contains(strings.ToLower(responseText), "visual") ||
-		    strings.Contains(strings.ToLower(responseText), "philosophy") ||
-		    strings.Contains(strings.ToLower(responseText), "technique"))
+		(strings.Contains(strings.ToLower(responseText), "art") ||
+			strings.Contains(strings.ToLower(responseText), "movement") ||
+			strings.Contains(strings.ToLower(responseText), "visual") ||
+			strings.Contains(strings.ToLower(responseText), "philosophy") ||
+			strings.Contains(strings.ToLower(responseText), "technique"))
 }
 
 // testProblemSolving checks if the model can approach problems creatively
@@ -1379,7 +1380,7 @@ func (v *Verifier) testProblemSolving(client *LLMClient, modelName string, ctx c
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "How would you solve the problem of reducing plastic waste in oceans? Think of an innovative solution involving technology and nature.",
 			},
 		},
@@ -1393,12 +1394,12 @@ func (v *Verifier) testProblemSolving(client *LLMClient, modelName string, ctx c
 	responseText := resp.Choices[0].Message.Content
 	// Check for creative problem-solving approach
 	return len(responseText) > 50 &&
-		   (strings.Contains(strings.ToLower(responseText), "plastic") ||
-		    strings.Contains(strings.ToLower(responseText), "ocean") ||
-		    strings.Contains(strings.ToLower(responseText), "solution") ||
-		    strings.Contains(strings.ToLower(responseText), "technology") ||
-		    strings.Contains(strings.ToLower(responseText), "nature") ||
-		    strings.Contains(strings.ToLower(responseText), "innovative"))
+		(strings.Contains(strings.ToLower(responseText), "plastic") ||
+			strings.Contains(strings.ToLower(responseText), "ocean") ||
+			strings.Contains(strings.ToLower(responseText), "solution") ||
+			strings.Contains(strings.ToLower(responseText), "technology") ||
+			strings.Contains(strings.ToLower(responseText), "nature") ||
+			strings.Contains(strings.ToLower(responseText), "innovative"))
 }
 
 // testMultimodalContentGen checks if the model can work with multimodal concepts generatively
@@ -1407,7 +1408,7 @@ func (v *Verifier) testMultimodalContentGen(client *LLMClient, modelName string,
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "Describe how you would create a multimedia presentation that combines visual, audio, and textual elements to explain the concept of photosynthesis to children.",
 			},
 		},
@@ -1421,11 +1422,11 @@ func (v *Verifier) testMultimodalContentGen(client *LLMClient, modelName string,
 	responseText := resp.Choices[0].Message.Content
 	// Check for multimodal thinking
 	return len(responseText) > 50 &&
-		   (strings.Contains(strings.ToLower(responseText), "visual") ||
-		    strings.Contains(strings.ToLower(responseText), "audio") ||
-		    strings.Contains(strings.ToLower(responseText), "text") ||
-		    strings.Contains(strings.ToLower(responseText), "multimedia") ||
-		    strings.Contains(strings.ToLower(responseText), "presentation"))
+		(strings.Contains(strings.ToLower(responseText), "visual") ||
+			strings.Contains(strings.ToLower(responseText), "audio") ||
+			strings.Contains(strings.ToLower(responseText), "text") ||
+			strings.Contains(strings.ToLower(responseText), "multimedia") ||
+			strings.Contains(strings.ToLower(responseText), "presentation"))
 }
 
 // getCommonProgrammingLanguages returns a list of common programming languages
@@ -1443,7 +1444,7 @@ func (v *Verifier) testCodeDebugging(client *LLMClient, modelName string, ctx co
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "Find and fix the bug in this Python code:\n\n```python\ndef calculate_average(numbers):\n    total = 0\n    for num in numbers:\n        total += num\n    return total / len(numbers)  # Potential bug here\n\n# Test the function\nnumbers = []\nprint(calculate_average(numbers))\n```",
 			},
 		},
@@ -1456,10 +1457,10 @@ func (v *Verifier) testCodeDebugging(client *LLMClient, modelName string, ctx co
 
 	responseText := resp.Choices[0].Message.Content
 	return strings.Contains(strings.ToLower(responseText), "error") ||
-		   strings.Contains(strings.ToLower(responseText), "bug") ||
-		   strings.Contains(strings.ToLower(responseText), "exception") ||
-		   strings.Contains(strings.ToLower(responseText), "empty") ||
-		   strings.Contains(strings.ToLower(responseText), "divide by zero")
+		strings.Contains(strings.ToLower(responseText), "bug") ||
+		strings.Contains(strings.ToLower(responseText), "exception") ||
+		strings.Contains(strings.ToLower(responseText), "empty") ||
+		strings.Contains(strings.ToLower(responseText), "divide by zero")
 }
 
 // testCodeOptimization checks if the model can optimize code
@@ -1468,7 +1469,7 @@ func (v *Verifier) testCodeOptimization(client *LLMClient, modelName string, ctx
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "Optimize this Python function for better performance:\n\n```python\ndef find_duplicates(arr):\n    duplicates = []\n    for i in range(len(arr)):\n        for j in range(i+1, len(arr)):\n            if arr[i] == arr[j] and arr[i] not in duplicates:\n                duplicates.append(arr[i])\n    return duplicates\n```",
 			},
 		},
@@ -1481,10 +1482,10 @@ func (v *Verifier) testCodeOptimization(client *LLMClient, modelName string, ctx
 
 	responseText := resp.Choices[0].Message.Content
 	return strings.Contains(strings.ToLower(responseText), "time complexity") ||
-		   strings.Contains(strings.ToLower(responseText), "o(n") ||
-		   strings.Contains(strings.ToLower(responseText), "hash") ||
-		   strings.Contains(strings.ToLower(responseText), "set") ||
-		   strings.Contains(strings.ToLower(responseText), "optimized")
+		strings.Contains(strings.ToLower(responseText), "o(n") ||
+		strings.Contains(strings.ToLower(responseText), "hash") ||
+		strings.Contains(strings.ToLower(responseText), "set") ||
+		strings.Contains(strings.ToLower(responseText), "optimized")
 }
 
 // testTestGeneration checks if the model can generate tests
@@ -1493,7 +1494,7 @@ func (v *Verifier) testTestGeneration(client *LLMClient, modelName string, ctx c
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "Write unit tests for this Python function:\n\n```python\ndef is_prime(n):\n    if n < 2:\n        return False\n    for i in range(2, int(n ** 0.5) + 1):\n        if n % i == 0:\n            return False\n    return True\n```",
 			},
 		},
@@ -1506,9 +1507,9 @@ func (v *Verifier) testTestGeneration(client *LLMClient, modelName string, ctx c
 
 	responseText := resp.Choices[0].Message.Content
 	return strings.Contains(strings.ToLower(responseText), "test") ||
-		   strings.Contains(strings.ToLower(responseText), "assert") ||
-		   strings.Contains(strings.ToLower(responseText), "unittest") ||
-		   strings.Contains(strings.ToLower(responseText), "pytest")
+		strings.Contains(strings.ToLower(responseText), "assert") ||
+		strings.Contains(strings.ToLower(responseText), "unittest") ||
+		strings.Contains(strings.ToLower(responseText), "pytest")
 }
 
 // testDocumentationGeneration checks if the model can generate documentation
@@ -1517,7 +1518,7 @@ func (v *Verifier) testDocumentationGeneration(client *LLMClient, modelName stri
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "Generate documentation for this Python function:\n\n```python\ndef binary_search(arr, target):\n    left, right = 0, len(arr) - 1\n    while left <= right:\n        mid = (left + right) // 2\n        if arr[mid] == target:\n            return mid\n        elif arr[mid] < target:\n            left = mid + 1\n        else:\n            right = mid - 1\n    return -1\n```",
 			},
 		},
@@ -1530,10 +1531,10 @@ func (v *Verifier) testDocumentationGeneration(client *LLMClient, modelName stri
 
 	responseText := resp.Choices[0].Message.Content
 	return strings.Contains(strings.ToLower(responseText), "parameters") ||
-		   strings.Contains(strings.ToLower(responseText), "returns") ||
-		   strings.Contains(strings.ToLower(responseText), "example") ||
-		   strings.Contains(strings.ToLower(responseText), "complexity") ||
-		   strings.Contains(strings.ToLower(responseText), "description")
+		strings.Contains(strings.ToLower(responseText), "returns") ||
+		strings.Contains(strings.ToLower(responseText), "example") ||
+		strings.Contains(strings.ToLower(responseText), "complexity") ||
+		strings.Contains(strings.ToLower(responseText), "description")
 }
 
 // testCodeRefactoring checks if the model can refactor code
@@ -1542,7 +1543,7 @@ func (v *Verifier) testCodeRefactoring(client *LLMClient, modelName string, ctx 
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "Refactor this Python code to improve readability and maintainability:\n\n```python\nusers = [{'name': 'Alice', 'age': 30, 'active': True}, {'name': 'Bob', 'age': 25, 'active': False}]\n\nresult = []\nfor user in users:\n    if user['active'] and user['age'] > 20:\n        result.append({'name': user['name'], 'age_group': 'adult' if user['age'] >= 30 else 'young_adult'})\n\nprint(result)\n```",
 			},
 		},
@@ -1554,10 +1555,10 @@ func (v *Verifier) testCodeRefactoring(client *LLMClient, modelName string, ctx 
 	}
 
 	responseText := resp.Choices[0].Message.Content
-	return strings.Contains(strings.ToLower(responseText), "def ") ||  // Function definition indicates refactoring
-		   strings.Contains(strings.ToLower(responseText), "class") || // Class definition indicates refactoring
-		   strings.Contains(strings.ToLower(responseText), "extract") ||
-		   strings.Contains(strings.ToLower(responseText), "function")
+	return strings.Contains(strings.ToLower(responseText), "def ") || // Function definition indicates refactoring
+		strings.Contains(strings.ToLower(responseText), "class") || // Class definition indicates refactoring
+		strings.Contains(strings.ToLower(responseText), "extract") ||
+		strings.Contains(strings.ToLower(responseText), "function")
 }
 
 // testErrorResolution checks if the model can resolve common errors
@@ -1566,7 +1567,7 @@ func (v *Verifier) testErrorResolution(client *LLMClient, modelName string, ctx 
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "Resolve this error: NameError: name 'requests' is not defined\n\nCode: import requests\nresponse = requests.get('https://api.example.com/data')\nprint(response.json())",
 			},
 		},
@@ -1579,9 +1580,9 @@ func (v *Verifier) testErrorResolution(client *LLMClient, modelName string, ctx 
 
 	responseText := resp.Choices[0].Message.Content
 	return strings.Contains(strings.ToLower(responseText), "import") ||
-		   strings.Contains(strings.ToLower(responseText), "install") ||
-		   strings.Contains(strings.ToLower(responseText), "pip") ||
-		   strings.Contains(strings.ToLower(responseText), "module")
+		strings.Contains(strings.ToLower(responseText), "install") ||
+		strings.Contains(strings.ToLower(responseText), "pip") ||
+		strings.Contains(strings.ToLower(responseText), "module")
 }
 
 // testArchitectureUnderstanding checks if the model understands software architecture
@@ -1590,7 +1591,7 @@ func (v *Verifier) testArchitectureUnderstanding(client *LLMClient, modelName st
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "Design a simple architecture for a blog application. Include components like user management, post management, and comment system. Explain the relationships between components.",
 			},
 		},
@@ -1603,10 +1604,10 @@ func (v *Verifier) testArchitectureUnderstanding(client *LLMClient, modelName st
 
 	responseText := resp.Choices[0].Message.Content
 	return strings.Contains(strings.ToLower(responseText), "component") ||
-		   strings.Contains(strings.ToLower(responseText), "layer") ||
-		   strings.Contains(strings.ToLower(responseText), "database") ||
-		   strings.Contains(strings.ToLower(responseText), "api") ||
-		   strings.Contains(strings.ToLower(responseText), "service")
+		strings.Contains(strings.ToLower(responseText), "layer") ||
+		strings.Contains(strings.ToLower(responseText), "database") ||
+		strings.Contains(strings.ToLower(responseText), "api") ||
+		strings.Contains(strings.ToLower(responseText), "service")
 }
 
 // testSecurityAssessment checks if the model can identify security issues
@@ -1615,7 +1616,7 @@ func (v *Verifier) testSecurityAssessment(client *LLMClient, modelName string, c
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "Identify security vulnerabilities in this Python code:\n\n```python\nimport sqlite3\n\nusername = input('Enter username: ')\npassword = input('Enter password: ')\n\nconn = sqlite3.connect('users.db')\nc = conn.cursor()\n\nquery = f\"SELECT * FROM users WHERE username='{username}' AND password='{password}'\"\nc.execute(query)\n\nresult = c.fetchone()\nif result:\n    print('Login successful')\nelse:\n    print('Login failed')\n\nconn.close()\n```",
 			},
 		},
@@ -1628,10 +1629,10 @@ func (v *Verifier) testSecurityAssessment(client *LLMClient, modelName string, c
 
 	responseText := resp.Choices[0].Message.Content
 	return strings.Contains(strings.ToLower(responseText), "sql injection") ||
-		   strings.Contains(strings.ToLower(responseText), "sql") ||
-		   strings.Contains(strings.ToLower(responseText), "security") ||
-		   strings.Contains(strings.ToLower(responseText), "vulnerability") ||
-		   strings.Contains(strings.ToLower(responseText), "sanit")
+		strings.Contains(strings.ToLower(responseText), "sql") ||
+		strings.Contains(strings.ToLower(responseText), "security") ||
+		strings.Contains(strings.ToLower(responseText), "vulnerability") ||
+		strings.Contains(strings.ToLower(responseText), "sanit")
 }
 
 // testPatternRecognition checks if the model can recognize and implement patterns
@@ -1640,7 +1641,7 @@ func (v *Verifier) testPatternRecognition(client *LLMClient, modelName string, c
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "Implement the Observer pattern in Python with a simple example.",
 			},
 		},
@@ -1653,10 +1654,10 @@ func (v *Verifier) testPatternRecognition(client *LLMClient, modelName string, c
 
 	responseText := resp.Choices[0].Message.Content
 	return strings.Contains(strings.ToLower(responseText), "class") &&
-		   (strings.Contains(strings.ToLower(responseText), "observer") ||
-		    strings.Contains(strings.ToLower(responseText), "subscribe") ||
-		    strings.Contains(strings.ToLower(responseText), "notify") ||
-		    strings.Contains(strings.ToLower(responseText), "publisher"))
+		(strings.Contains(strings.ToLower(responseText), "observer") ||
+			strings.Contains(strings.ToLower(responseText), "subscribe") ||
+			strings.Contains(strings.ToLower(responseText), "notify") ||
+			strings.Contains(strings.ToLower(responseText), "publisher"))
 }
 
 // runLanguageSpecificTests runs tests for multiple programming languages
@@ -1664,7 +1665,7 @@ func (v *Verifier) runLanguageSpecificTests(client *LLMClient, modelName string)
 	testResults := PromptResponseTest{}
 
 	// Test Python
-	pythonTests := []struct{
+	pythonTests := []struct {
 		name string
 		task string
 	}{
@@ -1682,7 +1683,7 @@ func (v *Verifier) runLanguageSpecificTests(client *LLMClient, modelName string)
 	testResults.PythonSuccessRate = float64(pythonSuccessCount) / float64(len(pythonTests)) * 100
 
 	// Test JavaScript
-	jsTests := []struct{
+	jsTests := []struct {
 		name string
 		task string
 	}{
@@ -1700,7 +1701,7 @@ func (v *Verifier) runLanguageSpecificTests(client *LLMClient, modelName string)
 	testResults.JavascriptSuccessRate = float64(jsSuccessCount) / float64(len(jsTests)) * 100
 
 	// Test Go
-	goTests := []struct{
+	goTests := []struct {
 		name string
 		task string
 	}{
@@ -1718,7 +1719,7 @@ func (v *Verifier) runLanguageSpecificTests(client *LLMClient, modelName string)
 	testResults.GoSuccessRate = float64(goSuccessCount) / float64(len(goTests)) * 100
 
 	// Test Java
-	javaTests := []struct{
+	javaTests := []struct {
 		name string
 		task string
 	}{
@@ -1736,7 +1737,7 @@ func (v *Verifier) runLanguageSpecificTests(client *LLMClient, modelName string)
 	testResults.JavaSuccessRate = float64(javaSuccessCount) / float64(len(javaTests)) * 100
 
 	// Test C++
-	cppTests := []struct{
+	cppTests := []struct {
 		name string
 		task string
 	}{
@@ -1754,7 +1755,7 @@ func (v *Verifier) runLanguageSpecificTests(client *LLMClient, modelName string)
 	testResults.CppSuccessRate = float64(cppSuccessCount) / float64(len(cppTests)) * 100
 
 	// Test TypeScript
-	tsTests := []struct{
+	tsTests := []struct {
 		name string
 		task string
 	}{
@@ -1813,7 +1814,7 @@ func (v *Verifier) assessComplexityHandling(client *LLMClient, modelName string,
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "Implement a simple task management system with the following requirements:\n1. Create a Task class with id, title, description, status (pending, in-progress, completed), and due_date\n2. Create a TaskManager class that can add, remove, update, and list tasks\n3. Implement a method to filter tasks by status\n4. Implement a method to mark a task as completed\n5. Include proper error handling for invalid operations",
 			},
 		},
@@ -1985,10 +1986,10 @@ func (v *Verifier) CalculateScores(result VerificationResult) (PerformanceScore,
 
 	// Calculate overall score (adjusting weights to account for generative score)
 	scores.OverallScore = (codeScore * 0.40) +
-	                      (responsivenessScore * 0.15) +
-	                      (reliabilityScore * 0.15) +
-	                      (featureRichnessScore * 0.20) + // Increased to include generative aspects
-	                      (scores.ValueProposition * 0.10) // Increased weight
+		(responsivenessScore * 0.15) +
+		(reliabilityScore * 0.15) +
+		(featureRichnessScore * 0.20) + // Increased to include generative aspects
+		(scores.ValueProposition * 0.10) // Increased weight
 
 	return scores, details
 }
@@ -1996,7 +1997,7 @@ func (v *Verifier) CalculateScores(result VerificationResult) (PerformanceScore,
 // calculateGenerativeScore calculates the score for generative capabilities
 func (v *Verifier) calculateGenerativeScore(generativeCaps GenerativeCapabilityResult) float64 {
 	if generativeCaps.CreativeWriting && generativeCaps.Storytelling &&
-	   generativeCaps.ContentGeneration && generativeCaps.ArtisticCreativity {
+		generativeCaps.ContentGeneration && generativeCaps.ArtisticCreativity {
 		return 100 // All major generative capabilities present
 	}
 
@@ -2142,7 +2143,7 @@ func (v *Verifier) CalculateResponsivenessScore(availability AvailabilityResult,
 	}
 
 	// Weighted average
-	breakdown.WeightedAverage = (breakdown.LatencyScore*0.5) + (breakdown.ThroughputScore*0.3) + (breakdown.ConsistencyScore*0.2)
+	breakdown.WeightedAverage = (breakdown.LatencyScore * 0.5) + (breakdown.ThroughputScore * 0.3) + (breakdown.ConsistencyScore * 0.2)
 
 	return breakdown.WeightedAverage, breakdown
 }
@@ -2178,10 +2179,10 @@ func (v *Verifier) CalculateReliabilityScore(availability AvailabilityResult) (f
 	}
 
 	// Weighted average
-	breakdown.WeightedAverage = (breakdown.AvailabilityScore*0.3) +
-	                           (breakdown.ConsistencyScore*0.3) +
-	                           (breakdown.ErrorRateScore*0.2) +
-	                           (breakdown.StabilityScore*0.2)
+	breakdown.WeightedAverage = (breakdown.AvailabilityScore * 0.3) +
+		(breakdown.ConsistencyScore * 0.3) +
+		(breakdown.ErrorRateScore * 0.2) +
+		(breakdown.StabilityScore * 0.2)
 
 	return breakdown.WeightedAverage, breakdown
 }
@@ -2264,9 +2265,9 @@ func (v *Verifier) CalculateFeatureRichnessScore(features FeatureDetectionResult
 	breakdown.ExperimentalFeaturesScore = float64(experimentalFeatures) / float64(totalExperimentalFeatures) * 100
 
 	// Weighted average
-	breakdown.WeightedAverage = (breakdown.CoreFeaturesScore*0.4) +
-	                            (breakdown.AdvancedFeaturesScore*0.4) +
-	                            (breakdown.ExperimentalFeaturesScore*0.2)
+	breakdown.WeightedAverage = (breakdown.CoreFeaturesScore * 0.4) +
+		(breakdown.AdvancedFeaturesScore * 0.4) +
+		(breakdown.ExperimentalFeaturesScore * 0.2)
 
 	return breakdown.WeightedAverage, breakdown
 }
@@ -2352,9 +2353,9 @@ func (v *Verifier) calculateFeatureRichnessScoreFromResult(result VerificationRe
 	breakdown.ExperimentalFeaturesScore = float64(experimentalFeatures) / float64(totalExperimentalFeatures) * 100
 
 	// Weighted average
-	breakdown.WeightedAverage = (breakdown.CoreFeaturesScore*0.4) +
-	                            (breakdown.AdvancedFeaturesScore*0.4) +
-	                            (breakdown.ExperimentalFeaturesScore*0.2)
+	breakdown.WeightedAverage = (breakdown.CoreFeaturesScore * 0.4) +
+		(breakdown.AdvancedFeaturesScore * 0.4) +
+		(breakdown.ExperimentalFeaturesScore * 0.2)
 
 	return breakdown.WeightedAverage, breakdown
 }
@@ -2364,9 +2365,9 @@ func (v *Verifier) calculateValuePropositionScore(performance PerformanceScore) 
 	// Value is a combination of capability, responsiveness, and reliability
 	// Models with high capability but poor reliability/responsiveness have lower value
 	// Models with balanced scores have higher value
-	score := (performance.CodeCapability*0.5) +
-	         (performance.Responsiveness*0.3) +
-	         (performance.Reliability*0.2)
+	score := (performance.CodeCapability * 0.5) +
+		(performance.Responsiveness * 0.3) +
+		(performance.Reliability * 0.2)
 
 	// Normalize to 0-100 scale
 	return score / 10
@@ -2376,11 +2377,11 @@ func (v *Verifier) calculateValuePropositionScore(performance PerformanceScore) 
 func containsCode(text, language string) bool {
 	text = strings.ToLower(text)
 	return strings.Contains(text, "def ") ||
-		   strings.Contains(text, "function") ||
-		   strings.Contains(text, "class ") ||
-		   strings.Contains(text, "import ") ||
-		   strings.Contains(text, "console.log") ||
-		   strings.Contains(text, "func ") // Go function
+		strings.Contains(text, "function") ||
+		strings.Contains(text, "class ") ||
+		strings.Contains(text, "import ") ||
+		strings.Contains(text, "console.log") ||
+		strings.Contains(text, "func ") // Go function
 }
 
 // Helper function to create a pointer to an int

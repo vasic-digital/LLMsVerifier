@@ -6,6 +6,16 @@ global:
   request_delay: 1s
   timeout: 30s
 
+database:
+  path: "./llm-verifier.db"
+  encryption_key: ""  # Leave empty for no encryption
+
+api:
+  port: "8080"
+  jwt_secret: "your-secret-key-change-in-production"
+  rate_limit: 100  # requests per minute
+  enable_cors: true
+
 # If no LLMs are specified, the tool will automatically discover all available models
 # llms: # Uncomment this section to specify specific LLMs to test
 #   - name: "OpenAI GPT-4"
