@@ -1,0 +1,18 @@
+We need simple program written in go lang. It will verify LLM. It must support OpenAI API fully. Based on configuration file it will check if: model exist, if is responsive, is it overloaded, what features does it support and five the final score of its real usability for the coding purposes. How much realistically it can pull. If configuration does not specify any particular model, just the enpoint(s), and api key, it will use api calls to obtain the list of all available models and check and bencark every single one of them! Working result will be written as human readable markdown report with full explanation of features and the possibilities. Sexond file will be json report which we can then use by other systems to use discovered models (by priority and quality). There should be lists of various criterias sortings of models - strength, speed, reliability etc. Make sure that we can provide one or more LLMs for checks or none (obtaining all models lists via api) All power features must be checked MCPs, LSPs, rerankings, beddings and all possible types organized into fully coding capable, just chat, with and without tooling or reasoning, generative (audio, video, imaging and others). Everything must be covered with the tests of the following types: unit, integration, e2e, full automation, security, performance and benchmark tests.
+
+We need Scoring System, which means each LLM will be tested and benchmarked. Besides being classified to a proper category (which we have mentioned alrady) it will have score value of realistic usability / quality in percents 0-100%. The reports created will have the propery of integer for this value.
+
+We must be able to determine limits of the LLMs. For example if there are imposed restrictions of some kind, like maximal number of requests per day, week, month. Then, how much requests we have left? And other types of limits which we must determine. All this must go into the report and be a part of sorting / filtering lists. 
+
+We must obtain all available pricings and prices as well and make them one of criterias for sorting / filtering.
+
+System has to create SQLite database with SQL Cipher where it will stor the information about processed providers and all its LLMs. Every next time we process them, data will be updated.
+
+In top of this we must have several clients which will expose all supported commands and ways to access the database. Requests, commands and browsing of the database (quering) must be done via one of the clients: CLI (main implementation), TUI (all CLI offers but with possibility to filter and quiery database easily), REST API (goes on top of everything) - written using the GinGonic Go lang framework, Web (Angular), Desktops and all supported Mobile platforms + Harmony and Aurora OS-es.
+
+All detected faulty LLMs will be documented about discovered issues, severity, ways to workaround and other relevant information.
+
+All logs will be stored in proper log files and in separate database just for the pfs so it is easy to query them by various dimensions. Both databases will have proper indexes set so we can query the data by many dimensions.
+
+Databases data about LLMs will be possible to export into the configuration files for OpenCode, Crush, Claude Code and other major AI CLI Coding Agents! We can export all providers with all its LLMs or just chosen providers with chosen LLMs. All this exposed with all of mentioned supported clients / flavors / platforms. All configurations generated will be verified.
+

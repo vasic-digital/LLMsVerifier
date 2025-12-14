@@ -1,0 +1,88 @@
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+*.out
+llm-verifier
+
+# Go build artifacts
+*.a
+*.o
+*.obj
+*.test
+*.prof
+*.go~
+
+# Go environment
+.env
+.envrc
+.gofmt
+
+# Go dependencies (except mod/sum files which should be committed)
+vendor/
+
+# Build and test artifacts
+coverage.out
+coverage.html
+*.coverprofile
+test_*.db
+test_*.db-journal
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.vs/
+.atom/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Output directories
+reports/
+test_output/
+
+# Configuration files with sensitive data (if any config files contain sensitive info)
+config.local.yaml
+*.local.yaml
+
+# Logs
+*.log
+logs/
+
+# Environment specific files
+local/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Process files
+*.pid
+*.seed
+
+# Coverage reports
+coverage/
+cover/
+
+# IDE specific
+.vscode/settings.json
+.idea/*
+!.idea/vcs.xml
+!.idea/misc.xml
