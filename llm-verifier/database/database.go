@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -451,4 +452,163 @@ type LogEntry struct {
 	ModelID              *int64     `json:"model_id"`
 	ProviderID           *int64     `json:"provider_id"`
 	VerificationResultID *int64     `json:"verification_result_id"`
+}
+
+// Helper function to scan nullable time
+func scanNullableTime(nullTime sql.NullTime) *time.Time {
+	if nullTime.Valid {
+		return &nullTime.Time
+	}
+	return nil
+}
+
+// Helper function to scan nullable string
+func scanNullableString(nullString sql.NullString) *string {
+	if nullString.Valid {
+		return &nullString.String
+	}
+	return nil
+}
+
+// Helper function to scan nullable int64
+func scanNullableInt64(nullInt64 sql.NullInt64) *int64 {
+	if nullInt64.Valid {
+		return &nullInt64.Int64
+	}
+	return nil
+}
+
+// Helper function to scan nullable int
+func scanNullableInt(nullInt sql.NullInt32) *int {
+	if nullInt.Valid {
+		val := int(nullInt.Int32)
+		return &val
+	}
+	return nil
+}
+
+// Helper function to scan nullable float64
+func scanNullableFloat64(nullFloat sql.NullFloat64) *float64 {
+	if nullFloat.Valid {
+		return &nullFloat.Float64
+	}
+	return nil
+}
+
+// Helper function to scan nullable bool
+func scanNullableBool(nullBool sql.NullBool) *bool {
+	if nullBool.Valid {
+		return &nullBool.Bool
+	}
+	return nil
+}
+
+// Helper function to scan nullable bool from string
+func scanNullableBoolFromString(nullString sql.NullString) *bool {
+	if !nullString.Valid || nullString.String == "" {
+		return nil
+	}
+	
+	if nullString.String == "true" || nullString.String == "1" {
+		return boolPtr(true)
+	} else if nullString.String == "false" || nullString.String == "0" {
+		return boolPtr(false)
+	}
+	
+	return nil
+}
+
+// Helper function to scan nullable time from string
+func scanNullableTimeFromString(nullString sql.NullString) *time.Time {
+	if !nullString.Valid || nullString.String == "" {
+		return nil
+	}
+	
+	// Try to parse as RFC3339 timestamp
+	if t, err := time.Parse(time.RFC3339, nullString.String); err == nil {
+		return &t
+	}
+	
+	// Try to parse as Unix timestamp
+	if timestamp, err := strconv.ParseInt(nullString.String, 10, 64); err == nil {
+		t := time.Unix(timestamp, 0)
+		return &t
+	}
+	
+	return nil
+}
+
+
+
+// Helper function to scan nullable int from int64
+func scanNullableIntFromInt64(nullInt64 sql.NullInt64) *int {
+	if nullInt64.Valid {
+		val := int(nullInt64.Int64)
+		return &val
+	}
+	return nil
+}
+
+// Helper function to scan JSON string
+func scanJSONString(nullString sql.NullString) []string {
+	if !nullString.Valid || nullString.String == "" {
+		return []string{}
+	}
+	
+	var result []string
+	if err := json.Unmarshal([]byte(nullString.String), &result); err != nil {
+		return []string{}
+	}
+	return result
+}
+
+// Pricing represents model pricing information
+type Pricing struct {
+	ID                   int64      `json:"id"`
+	ModelID              int64      `json:"model_id"`
+	InputTokenCost       float64    `json:"input_token_cost"`
+	OutputTokenCost      float64    `json:"output_token_cost"`
+	CachedInputTokenCost float64    `json:"cached_input_token_cost"`
+	StorageCost          float64    `json:"storage_cost"`
+	RequestCost          float64    `json:"request_cost"`
+	Currency             string     `json:"currency"`
+	PricingModel         string     `json:"pricing_model"`
+	EffectiveFrom        *time.Time `json:"effective_from"`
+	EffectiveTo          *time.Time `json:"effective_to"`
+	CreatedAt            time.Time  `json:"created_at"`
+	UpdatedAt            time.Time  `json:"updated_at"`
+}
+
+// Limit represents rate limits and quotas
+type Limit struct {
+	ID           int64      `json:"id"`
+	ModelID      int64      `json:"model_id"`
+	LimitType    string     `json:"limit_type"`
+	LimitValue   int        `json:"limit_value"`
+	CurrentUsage int        `json:"current_usage"`
+	ResetPeriod  string     `json:"reset_period"`
+	ResetTime    *time.Time `json:"reset_time"`
+	IsHardLimit  bool       `json:"is_hard_limit"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+}
+
+// Issue represents documented problems with models
+type Issue struct {
+	ID                   int64      `json:"id"`
+	ModelID              int64      `json:"model_id"`
+	IssueType            string     `json:"issue_type"`
+	Severity             string     `json:"severity"`
+	Title                string     `json:"title"`
+	Description          string     `json:"description"`
+	Symptoms             *string    `json:"symptoms"`
+	Workarounds          *string    `json:"workarounds"`
+	AffectedFeatures     []string   `json:"affected_features"`
+	FirstDetected        time.Time  `json:"first_detected"`
+	LastOccurred         *time.Time `json:"last_occurred"`
+	ResolvedAt           *time.Time `json:"resolved_at"`
+	ResolutionNotes      *string    `json:"resolution_notes"`
+	VerificationResultID *int64     `json:"verification_result_id"`
+	CreatedAt            time.Time  `json:"created_at"`
+	UpdatedAt            time.Time  `json:"updated_at"`
 }

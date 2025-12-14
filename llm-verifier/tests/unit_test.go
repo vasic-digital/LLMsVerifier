@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -43,6 +44,13 @@ func TestCalculateCodeCapabilityScore(t *testing.T) {
 	if breakdown.CompletionScore != 100 {
 		t.Errorf("Expected completion score of 100, got %f", breakdown.CompletionScore)
 	}
+	
+	// Test with no capabilities
+	emptyCaps := llmverifier.CodeCapabilityResult{}
+	emptyScore, _ := verifier.CalculateCodeCapabilityScore(emptyCaps)
+	if emptyScore != 0 {
+		t.Errorf("Expected score of 0 for no capabilities, got %f", emptyScore)
+	}
 }
 
 func TestCalculateResponsivenessScore(t *testing.T) {
@@ -53,10 +61,10 @@ func TestCalculateResponsivenessScore(t *testing.T) {
 	}
 
 	responseTime := llmverifier.ResponseTimeResult{
-		AverageLatency: 500 * time.Millisecond,
-		MinLatency:     200 * time.Millisecond,
-		MaxLatency:     800 * time.Millisecond,
-		Throughput:     10,
+		AverageLatency:   500 * time.Millisecond,
+		MinLatency:       200 * time.Millisecond,
+		MaxLatency:       800 * time.Millisecond,
+		Throughput:       10,
 		MeasurementCount: 5,
 	}
 
@@ -69,16 +77,30 @@ func TestCalculateResponsivenessScore(t *testing.T) {
 	if breakdown.LatencyScore <= 0 {
 		t.Errorf("Expected positive latency score, got %f", breakdown.LatencyScore)
 	}
+	
+	// Test with poor responsiveness
+	poorResponseTime := llmverifier.ResponseTimeResult{
+		AverageLatency:   5000 * time.Millisecond,
+		MinLatency:       4000 * time.Millisecond,
+		MaxLatency:       6000 * time.Millisecond,
+		Throughput:       1,
+		MeasurementCount: 5,
+	}
+	
+	poorScore, _ := verifier.CalculateResponsivenessScore(availability, poorResponseTime)
+	if poorScore >= score {
+		t.Errorf("Poor responsiveness should have lower score than good responsiveness")
+	}
 }
 
 func TestCalculateReliabilityScore(t *testing.T) {
 	verifier := &llmverifier.Verifier{}
 
 	availability := llmverifier.AvailabilityResult{
-		Exists:      true,
-		Responsive:  true,
-		Overloaded:  false,
-		Error:       "",
+		Exists:     true,
+		Responsive: true,
+		Overloaded: false,
+		Error:      "",
 	}
 
 	score, breakdown := verifier.CalculateReliabilityScore(availability)
@@ -89,6 +111,19 @@ func TestCalculateReliabilityScore(t *testing.T) {
 
 	if breakdown.AvailabilityScore != 100 {
 		t.Errorf("Expected availability score of 100, got %f", breakdown.AvailabilityScore)
+	}
+	
+	// Test with reliability issues
+	unreliable := llmverifier.AvailabilityResult{
+		Exists:     false,
+		Responsive: false,
+		Overloaded: true,
+		Error:      "Connection timeout",
+	}
+	
+	unreliableScore, _ := verifier.CalculateReliabilityScore(unreliable)
+	if unreliableScore >= score {
+		t.Errorf("Unreliable model should have lower score than reliable model")
 	}
 }
 
@@ -113,7 +148,7 @@ func TestCalculateFeatureRichnessScore(t *testing.T) {
 		MCPs:               false,
 		LSPs:               false,
 		Reranking:          false,
-		}
+	}
 
 	score, breakdown := verifier.CalculateFeatureRichnessScore(features)
 
@@ -123,6 +158,17 @@ func TestCalculateFeatureRichnessScore(t *testing.T) {
 
 	if breakdown.CoreFeaturesScore <= 0 {
 		t.Errorf("Expected positive core features score, got %f", breakdown.CoreFeaturesScore)
+	}
+	
+	// Test with minimal features
+	minimalFeatures := llmverifier.FeatureDetectionResult{
+		ToolUse:        true,
+		CodeGeneration: true,
+	}
+	
+	minimalScore, _ := verifier.CalculateFeatureRichnessScore(minimalFeatures)
+	if minimalScore >= score {
+		t.Errorf("Minimal features should have lower score than rich features")
 	}
 }
 

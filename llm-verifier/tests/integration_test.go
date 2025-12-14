@@ -3,9 +3,12 @@ package tests
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"llm-verifier/config"
+	"llm-verifier/database"
 	"llm-verifier/llmverifier"
 )
 
@@ -14,6 +17,7 @@ import (
 
 func TestConfigLoading(t *testing.T) {
 	// Create a temporary config file for testing
+	tempDir := t.TempDir()
 	tempConfig := `global:
   base_url: "https://api.openai.com/v1"
   api_key: "test-key"
@@ -31,18 +35,13 @@ concurrency: 2
 timeout: 60s
 `
 
-	tempFile, err := os.CreateTemp("", "config_test_*.yaml")
+	configPath := filepath.Join(tempDir, "test-config.yaml")
+	err := os.WriteFile(configPath, []byte(tempConfig), 0644)
 	if err != nil {
 		t.Fatalf("Failed to create temp config file: %v", err)
 	}
-	defer os.Remove(tempFile.Name())
 
-	if _, err := tempFile.Write([]byte(tempConfig)); err != nil {
-		t.Fatalf("Failed to write to temp config file: %v", err)
-	}
-	tempFile.Close()
-
-	cfg, err := llmverifier.LoadConfig(tempFile.Name())
+	cfg, err := llmverifier.LoadConfig(configPath)
 	if err != nil {
 		t.Fatalf("Failed to load config: %v", err)
 	}
@@ -65,10 +64,13 @@ timeout: 60s
 }
 
 func TestVerifierInitialization(t *testing.T) {
+	helper, cleanup := SetupTestEnvironment(t)
+	defer cleanup()
+	
 	// Create a basic config
 	cfg := &config.Config{
 		Global: config.GlobalConfig{
-			BaseURL:    "https://api.openai.com/v1",
+			BaseURL:    helper.MockServer.URL + "/v1",
 			APIKey:     "test-key",
 			MaxRetries: 3,
 			Timeout:    30,
@@ -76,7 +78,7 @@ func TestVerifierInitialization(t *testing.T) {
 		LLMs: []config.LLMConfig{
 			{
 				Name:     "Test Model",
-				Endpoint: "https://api.openai.com/v1",
+				Endpoint: helper.MockServer.URL + "/v1",
 				APIKey:   "test-key",
 				Model:    "gpt-3.5-turbo",
 			},
@@ -94,15 +96,17 @@ func TestVerifierInitialization(t *testing.T) {
 
 // Test that the data structures properly marshal to JSON
 func TestJSONMarshaling(t *testing.T) {
+	now := time.Now()
 	result := llmverifier.VerificationResult{
 		ModelInfo: llmverifier.ModelInfo{
-			ID:   "gpt-4-test",
-			Object: "model",
+			ID:      "gpt-4-test",
+			Object:  "model",
+			Created: now.Unix(),
 		},
 		FeatureDetection: llmverifier.FeatureDetectionResult{
-			MCPs: true,
-			LSPs: false,
-			Reranking: true,
+			MCPs:            true,
+			LSPs:            false,
+			Reranking:       true,
 			ImageGeneration: true,
 			AudioGeneration: true,
 			VideoGeneration: false,
@@ -113,8 +117,10 @@ func TestJSONMarshaling(t *testing.T) {
 		},
 		GenerativeCapabilities: llmverifier.GenerativeCapabilityResult{
 			CreativeWriting: true,
-			Storytelling: true,
+			Storytelling:    true,
 		},
+		Timestamp: now,
+		OverallScore: 85.5,
 	}
 
 	// Test JSON marshaling
@@ -139,9 +145,23 @@ func TestJSONMarshaling(t *testing.T) {
 	}
 }
 
-// Note: The actual verification tests that make real API calls are skipped by default
-// to avoid requiring real API keys and making actual API calls during testing.
-// They can be enabled by setting an environment variable.
 func TestVerifierWithMockedAPI(t *testing.T) {
-	t.Skip("This test requires mocking the API client, which is not implemented yet.")
+	helper, cleanup := SetupTestEnvironment(t)
+	defer cleanup()
+	
+	// Create test verifier with mocked API
+	verifier := CreateTestVerifier(helper.Config)
+	
+	// Test verification workflow with mocked API
+	results, err := verifier.Verify()
+	AssertNoError(t, err)
+	AssertTrue(t, results != nil, "Results should not be nil")
+	AssertTrue(t, len(results) > 0, "Should have verification results")
+	
+	// Verify that results contain expected data
+	for _, result := range results {
+		AssertTrue(t, result.ModelInfo.ID != "", "Model should have ID")
+		AssertTrue(t, result.OverallScore >= 0, "Score should be non-negative")
+		AssertTrue(t, result.OverallScore <= 100, "Score should not exceed 100")
+	}
 }
