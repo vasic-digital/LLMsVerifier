@@ -23,8 +23,8 @@ func (s *Server) healthCheck(c *gin.Context) {
 // login handles user authentication
 func (s *Server) login(c *gin.Context) {
 	var credentials struct {
-		Username string `json:"username" binding:"required"`
-		Password string `json:"password" binding:"required"`
+		Username string `json:"username"`
+		Password string `json:"password"`
 	}
 
 	if err := c.ShouldBindJSON(&credentials); err != nil {
