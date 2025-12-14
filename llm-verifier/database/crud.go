@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 )
 
 // ==================== Provider CRUD Operations ====================
@@ -20,7 +19,7 @@ func (d *Database) CreateProvider(provider *Provider) error {
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	
-	result, err := d.conn.Exec(query,
+	_, err := d.conn.Exec(query,
 		provider.Name,
 		provider.Endpoint,
 		provider.APIKeyEncrypted,
@@ -418,7 +417,7 @@ func (d *Database) UpdateModel(model *Model) error {
 		WHERE id = ?
 	`
 	
-	result, err = d.conn.Exec(query,
+	result, err := d.conn.Exec(query,
 		model.ProviderID,
 		model.ModelID,
 		model.Name,
@@ -626,7 +625,7 @@ func (d *Database) CreateVerificationResult(verificationResult *VerificationResu
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	
-	_, err = d.conn.Exec(query,
+	result, err := d.conn.Exec(query,
 		verificationResult.ModelID,
 		verificationResult.VerificationType,
 		verificationResult.StartedAt,
@@ -957,15 +956,15 @@ func (d *Database) ListVerificationResults(filters map[string]interface{}) ([]*V
 			return nil, fmt.Errorf("failed to scan verification result: %w", err)
 		}
 		
-		verificationResult.CompletedAt = scanNullableTime(completedAt)
-		verificationResult.ErrorMessage = scanNullableString(errorMessage)
-		verificationResult.Exists = scanNullableBool(exists)
-		verificationResult.Responsive = scanNullableBool(responsive)
-		verificationResult.Overloaded = scanNullableBool(overloaded)
-		verificationResult.LatencyMs = scanNullableIntFromString(latencyMs)
-		verificationResult.CodeLanguageSupport = scanJSONString(langSupportJSON)
-		verificationResult.RawRequest = scanNullableString(rawRequest)
-		verificationResult.RawResponse = scanNullableString(rawResponse)
+		result.CompletedAt = scanNullableTimeFromString(completedAt)
+		result.ErrorMessage = scanNullableString(errorMessage)
+		result.Exists = scanNullableBoolFromString(exists)
+		result.Responsive = scanNullableBoolFromString(responsive)
+		result.Overloaded = scanNullableBoolFromString(overloaded)
+		result.LatencyMs = scanNullableIntFromString(latencyMs)
+		result.CodeLanguageSupport = scanJSONString(langSupportJSON)
+		result.RawRequest = scanNullableString(rawRequest)
+		result.RawResponse = scanNullableString(rawResponse)
 		
 		results = append(results, &result)
 	}
@@ -1082,15 +1081,15 @@ func (d *Database) GetLatestVerificationResults(modelIDs []int64) ([]*Verificati
 			return nil, fmt.Errorf("failed to scan latest verification result: %w", err)
 		}
 		
-		verificationResult.CompletedAt = scanNullableTime(completedAt)
-		verificationResult.ErrorMessage = scanNullableString(errorMessage)
-		verificationResult.Exists = scanNullableBool(exists)
-		verificationResult.Responsive = scanNullableBool(responsive)
-		verificationResult.Overloaded = scanNullableBool(overloaded)
-		verificationResult.LatencyMs = scanNullableIntFromString(latencyMs)
-		verificationResult.CodeLanguageSupport = scanJSONString(langSupportJSON)
-		verificationResult.RawRequest = scanNullableString(rawRequest)
-		verificationResult.RawResponse = scanNullableString(rawResponse)
+		result.CompletedAt = scanNullableTimeFromString(completedAt)
+		result.ErrorMessage = scanNullableString(errorMessage)
+		result.Exists = scanNullableBoolFromString(exists)
+		result.Responsive = scanNullableBoolFromString(responsive)
+		result.Overloaded = scanNullableBoolFromString(overloaded)
+		result.LatencyMs = scanNullableIntFromString(latencyMs)
+		result.CodeLanguageSupport = scanJSONString(langSupportJSON)
+		result.RawRequest = scanNullableString(rawRequest)
+		result.RawResponse = scanNullableString(rawResponse)
 		
 		results = append(results, &result)
 	}

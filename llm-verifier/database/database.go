@@ -8,7 +8,6 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/mutecomm/go-sqlcipher/v4"
 )
 
 // Database represents the main database interface
@@ -16,14 +15,10 @@ type Database struct {
 	conn *sql.DB
 }
 
-// New creates a new database connection with SQL Cipher encryption
-func New(dbPath string, encryptionKey string) (*Database, error) {
-	// Register SQL Cipher driver
-	sqlcipher.Register("sqlite3_encrypted")
-
-	// Open encrypted database
-	connStr := fmt.Sprintf("%s?_pragma_key=%s&_pragma_cipher_page_size=4096", dbPath, encryptionKey)
-	db, err := sql.Open("sqlite3_encrypted", connStr)
+// New creates a new database connection
+func New(dbPath string) (*Database, error) {
+	// Open database
+	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
@@ -510,9 +505,11 @@ func scanNullableBoolFromString(nullString sql.NullString) *bool {
 	}
 	
 	if nullString.String == "true" || nullString.String == "1" {
-		return boolPtr(true)
+		val := true
+		return &val
 	} else if nullString.String == "false" || nullString.String == "0" {
-		return boolPtr(false)
+		val := false
+		return &val
 	}
 	
 	return nil
