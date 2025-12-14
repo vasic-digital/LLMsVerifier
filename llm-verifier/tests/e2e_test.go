@@ -62,7 +62,9 @@ func TestReportGeneration(t *testing.T) {
 				Overloaded: false,
 			},
 			PerformanceScores: llmverifier.PerformanceScore{
+				PerformanceScores: llmverifier.PerformanceScore{
 				OverallScore:   85.5,
+			},
 				CodeCapability: 90.0,
 				Responsiveness: 80.0,
 				Reliability:    85.0,

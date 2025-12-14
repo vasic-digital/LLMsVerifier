@@ -417,7 +417,7 @@ func (d *Database) UpdateModel(model *Model) error {
 		WHERE id = ?
 	`
 	
-	_, err := d.conn.Exec(query,
+	_, err = d.conn.Exec(query,
 		model.ProviderID,
 		model.ModelID,
 		model.Name,

@@ -2,6 +2,7 @@ package tests
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -192,19 +193,25 @@ func handleGPT4Response(w http.ResponseWriter, r *http.Request, request map[stri
 	}
 	
 	// Simulate tool use if requested
-	if tools, ok := request["tools"].([]interface{}); ok && len(tools) > 0 {
-		response["choices"].([]map[string]interface{})[0]["message"]["tool_calls"] = []map[string]interface{}{
-			{
-				"id":       "call_test",
-				"type":     "function",
-				"function": map[string]interface{}{
-					"name":      "get_current_weather",
-					"arguments": `{"location": "New York, NY"}`,
-				},
-			},
+		// Simulate tool use if requested
+		if tools, ok := request["tools"].([]interface{}); ok && len(tools) > 0 {
+			if choices, ok := response["choices"].([]interface{}); ok && len(choices) > 0 {
+				if choice, ok := choices[0].(map[string]interface{}); ok {
+					if message, ok := choice["message"].(map[string]interface{}); ok {
+						message["tool_calls"] = []map[string]interface{}{
+							{
+								"id":       "call_test",
+								"type":     "function",
+								"function": map[string]interface{}{
+									"name":      "get_current_weather",
+									"arguments": `{"location": "New York, NY"}`,
+								},
+							},
+						}
+					}
+				}
+			}
 		}
-	}
-	
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
@@ -440,7 +447,9 @@ func GenerateTestVerificationResults(count int) []*llmverifier.VerificationResul
 				LastChecked: now,
 			},
 			Timestamp: now,
-			OverallScore: 80.0 + float64(i%20),
+			PerformanceScores: llmverifier.PerformanceScore{
+				OverallScore: 80.0 + float64(i%20),
+			},
 		}
 	}
 	return results

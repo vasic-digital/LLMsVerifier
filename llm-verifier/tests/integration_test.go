@@ -120,7 +120,9 @@ func TestJSONMarshaling(t *testing.T) {
 			Storytelling:    true,
 		},
 		Timestamp: now,
-		OverallScore: 85.5,
+		PerformanceScores: llmverifier.PerformanceScore{
+				OverallScore: 85.5,
+			},
 	}
 
 	// Test JSON marshaling
@@ -161,7 +163,7 @@ func TestVerifierWithMockedAPI(t *testing.T) {
 	// Verify that results contain expected data
 	for _, result := range results {
 		AssertTrue(t, result.ModelInfo.ID != "", "Model should have ID")
-		AssertTrue(t, result.OverallScore >= 0, "Score should be non-negative")
-		AssertTrue(t, result.OverallScore <= 100, "Score should not exceed 100")
+		AssertTrue(t, result.PerformanceScores.OverallScore >= 0, "Score should be non-negative")
+		AssertTrue(t, result.PerformanceScores.OverallScore <= 100, "Score should not exceed 100")
 	}
 }
