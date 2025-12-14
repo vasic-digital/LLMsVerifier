@@ -274,10 +274,28 @@ func TestInvalidJSON(t *testing.T) {
 func TestInvalidParameters(t *testing.T) {
 	router := setupTestServer(t)
 
-	// Test invalid limit parameter
+	// First login to get a valid token
+	loginData := map[string]string{
+		"username": "admin",
+		"password": "password",
+	}
+	jsonData, _ := json.Marshal(loginData)
+
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/api/v1/models?limit=invalid", nil)
-	req.Header.Set("Authorization", "Bearer test-token")
+	req, _ := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonData))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var loginResponse map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &loginResponse)
+	token := loginResponse["token"].(string)
+
+	// Test invalid limit parameter with valid token
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/api/v1/models?limit=invalid", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
