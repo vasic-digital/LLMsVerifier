@@ -316,6 +316,32 @@ CREATE INDEX idx_logs_level ON logs(level);
 CREATE INDEX idx_logs_logger ON logs(logger);
 CREATE INDEX idx_logs_request_id ON logs(request_id);
 
+-- Additional performance indexes for common query patterns
+CREATE INDEX idx_models_name ON models(name);
+CREATE INDEX idx_models_created_at ON models(created_at);
+CREATE INDEX idx_models_updated_at ON models(updated_at);
+CREATE INDEX idx_providers_name ON providers(name);
+CREATE INDEX idx_providers_created_at ON providers(created_at);
+CREATE INDEX idx_verification_results_created_at_status ON verification_results(created_at, status);
+CREATE INDEX idx_verification_results_overall_score ON verification_results(overall_score);
+CREATE INDEX idx_issues_created_at ON issues(created_at);
+CREATE INDEX idx_issues_type ON issues(issue_type);
+CREATE INDEX idx_events_severity ON events(severity);
+CREATE INDEX idx_events_provider ON events(provider_id);
+CREATE INDEX idx_pricing_created_at ON pricing(created_at);
+CREATE INDEX idx_limits_reset_time ON limits(reset_time);
+CREATE INDEX idx_schedules_created_at ON schedules(created_at);
+CREATE INDEX idx_config_exports_created_at ON config_exports(created_at);
+CREATE INDEX idx_config_exports_verified ON config_exports(is_verified);
+
+-- Composite indexes for complex queries
+CREATE INDEX idx_models_provider_status ON models(provider_id, verification_status);
+CREATE INDEX idx_models_provider_score ON models(provider_id, overall_score DESC);
+CREATE INDEX idx_verification_results_model_status ON verification_results(model_id, status);
+CREATE INDEX idx_verification_results_model_score ON verification_results(model_id, overall_score DESC);
+CREATE INDEX idx_logs_model_timestamp ON logs(model_id, timestamp DESC);
+CREATE INDEX idx_logs_provider_timestamp ON logs(provider_id, timestamp DESC);
+
 -- Views for common queries
 CREATE VIEW model_summary AS
 SELECT 
