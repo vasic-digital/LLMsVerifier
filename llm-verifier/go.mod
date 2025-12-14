@@ -3,7 +3,6 @@ module llm-verifier
 go 1.25.2
 
 require (
-	github.com/samber/lo v1.52.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 )
