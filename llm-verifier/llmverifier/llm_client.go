@@ -255,3 +255,64 @@ func (c *LLMClient) CheckModelExists(ctx context.Context, modelName string) (boo
 
 	return false, nil
 }
+
+// makeRequest performs a generic HTTP request to the LLM API
+func (c *LLMClient) makeRequest(ctx context.Context, method, endpoint string, body interface{}) (*http.Response, error) {
+	url := fmt.Sprintf("%s%s", c.endpoint, endpoint)
+	
+	var bodyReader io.Reader
+	if body != nil {
+		jsonBody, err := json.Marshal(body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal request body: %w", err)
+		}
+		bodyReader = bytes.NewReader(jsonBody)
+	}
+	
+	req, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	
+	c.setAuthHeaders(req)
+	c.setAdditionalHeaders(req)
+	
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	
+	return c.httpClient.Do(req)
+}
+
+// makeRequestWithHeaders performs a generic HTTP request with custom headers
+func (c *LLMClient) makeRequestWithHeaders(ctx context.Context, method, endpoint string, body interface{}, customHeaders map[string]string) (*http.Response, error) {
+	url := fmt.Sprintf("%s%s", c.endpoint, endpoint)
+	
+	var bodyReader io.Reader
+	if body != nil {
+		jsonBody, err := json.Marshal(body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal request body: %w", err)
+		}
+		bodyReader = bytes.NewReader(jsonBody)
+	}
+	
+	req, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	
+	c.setAuthHeaders(req)
+	c.setAdditionalHeaders(req)
+	
+	// Add custom headers
+	for key, value := range customHeaders {
+		req.Header.Set(key, value)
+	}
+	
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	
+	return c.httpClient.Do(req)
+}

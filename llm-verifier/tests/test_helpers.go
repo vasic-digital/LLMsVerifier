@@ -39,7 +39,7 @@ func NewTestHelper(t *testing.T) *TestHelper {
 	testConfig := &config.Config{
 		Global: config.GlobalConfig{
 			BaseURL:      mockServer.URL + "/v1",
-			APIKey:       "test-api-key",
+			APIKey:       MockAPIKey,
 			MaxRetries:   3,
 			RequestDelay: 100 * time.Millisecond,
 			Timeout:      10 * time.Second,
@@ -91,7 +91,7 @@ func handleModelsRequest(w http.ResponseWriter, r *http.Request) {
 	
 	// Check API key
 	auth := r.Header.Get("Authorization")
-	if auth != "Bearer test-api-key" {
+	if auth != "Bearer " + MockAPIKey {
 		http.Error(w, `{"error":{"code":"invalid_api_key","message":"Invalid API key"}}`, http.StatusUnauthorized)
 		return
 	}
@@ -333,13 +333,13 @@ func CreateTestConfig() *config.Config {
 			{
 				Name:     "Test GPT-4",
 				Endpoint: "https://api.openai.com/v1",
-				APIKey:   "test-api-key",
+				APIKey:   MockAPIKey,
 				Model:    "gpt-4-turbo",
 			},
 			{
 				Name:     "Test GPT-3.5",
 				Endpoint: "https://api.openai.com/v1",
-				APIKey:   "test-api-key",
+				APIKey:   MockAPIKey,
 				Model:    "gpt-3.5-turbo",
 			},
 		},

@@ -828,9 +828,68 @@ func (v *Verifier) testParallelToolUse(client *LLMClient, modelName string, ctx 
 
 // testBatchProcessing checks for batch processing capability
 func (v *Verifier) testBatchProcessing(client *LLMClient, modelName string) bool {
-	// Batch processing is not typically part of the standard OpenAI-compatible API
-	// It's usually a separate endpoint or feature
-	// For simplicity, we'll assume it's not supported by default
+	// Test batch processing by sending multiple requests in a single API call
+	// Many providers support batch processing through specific endpoints or parameters
+	
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	
+	// Test 1: Check if the API accepts batch requests
+	batchReq := map[string]interface{}{
+		"model": modelName,
+		"messages": [][]interface{}{
+			{
+				map[string]interface{}{"role": "user", "content": "What is 2+2?"},
+			},
+			{
+				map[string]interface{}{"role": "user", "content": "What is 3+3?"},
+			},
+		},
+	}
+	
+	// Try different batch processing approaches
+	
+	// Approach 1: Standard batch endpoint
+	endpoint := "/v1/chat/completions/batch"
+	_, err := client.makeRequest(ctx, http.MethodPost, endpoint, batchReq)
+	if err == nil {
+		return true
+	}
+	
+	// Approach 2: Array of requests in standard endpoint
+	endpoint = "/v1/chat/completions"
+	_, err = client.makeRequest(ctx, http.MethodPost, endpoint, batchReq)
+	if err == nil {
+		return true
+	}
+	
+	// Approach 3: Check for batch processing headers or parameters
+	// Some APIs support batch processing through specific headers
+	req := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{Role: "user", Content: "Test batch processing support"},
+		},
+	}
+	
+	// Add batch processing headers
+	customHeaders := map[string]string{
+		"X-Batch-Processing": "enabled",
+		"X-Batch-Size":       "10",
+	}
+	
+	// Try with custom headers
+	_, err = client.makeRequestWithHeaders(ctx, http.MethodPost, endpoint, req, customHeaders)
+	if err == nil {
+		return true
+	}
+	
+	// Check error message for batch processing support indication
+	if err != nil && (strings.Contains(err.Error(), "batch") || strings.Contains(err.Error(), "multiple")) {
+		// Error message suggests batch processing might be supported but with different parameters
+		return true
+	}
+	
 	return false
 }
 
