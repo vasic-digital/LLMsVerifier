@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"encoding/json"
 	"os"
 	"testing"
 
@@ -88,6 +89,53 @@ func TestVerifierInitialization(t *testing.T) {
 
 	if verifier == nil {
 		t.Error("Expected verifier to be initialized, got nil")
+	}
+}
+
+// Test that the data structures properly marshal to JSON
+func TestJSONMarshaling(t *testing.T) {
+	result := llmverifier.VerificationResult{
+		ModelInfo: llmverifier.ModelInfo{
+			ID:   "gpt-4-test",
+			Object: "model",
+		},
+		FeatureDetection: llmverifier.FeatureDetectionResult{
+			MCPs: true,
+			LSPs: false,
+			Reranking: true,
+			ImageGeneration: true,
+			AudioGeneration: true,
+			VideoGeneration: false,
+		},
+		CodeCapabilities: llmverifier.CodeCapabilityResult{
+			CodeGeneration: true,
+			CodeCompletion: true,
+		},
+		GenerativeCapabilities: llmverifier.GenerativeCapabilityResult{
+			CreativeWriting: true,
+			Storytelling: true,
+		},
+	}
+
+	// Test JSON marshaling
+	data, err := json.Marshal(result)
+	if err != nil {
+		t.Fatalf("Failed to marshal VerificationResult to JSON: %v", err)
+	}
+
+	if len(data) == 0 {
+		t.Error("Marshaled JSON should not be empty")
+	}
+
+	// Test JSON unmarshaling
+	var unmarshaledResult llmverifier.VerificationResult
+	err = json.Unmarshal(data, &unmarshaledResult)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal VerificationResult from JSON: %v", err)
+	}
+
+	if unmarshaledResult.ModelInfo.ID != "gpt-4-test" {
+		t.Errorf("Expected model ID 'gpt-4-test', got '%s'", unmarshaledResult.ModelInfo.ID)
 	}
 }
 

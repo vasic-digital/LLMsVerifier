@@ -218,8 +218,17 @@ func (v *Verifier) verifySingleModel(client *LLMClient, modelName, endpoint stri
 		result.CodeCapabilities = *codeCaps
 	}
 
+	// Assess generative capabilities
+	generativeCaps, err := v.assessGenerativeCapabilities(client, modelName)
+	if err != nil {
+		// We'll continue even if generative assessment fails
+		result.GenerativeCapabilities = GenerativeCapabilityResult{}
+	} else {
+		result.GenerativeCapabilities = *generativeCaps
+	}
+
 	// Calculate performance scores
-	scores, details := v.calculateScores(result)
+	scores, details := v.CalculateScores(result)
 	result.PerformanceScores = scores
 	result.ScoreDetails = details
 
@@ -1064,6 +1073,196 @@ func (v *Verifier) assessCodeCapabilities(client *LLMClient, modelName string) (
 	return result, nil
 }
 
+// assessGenerativeCapabilities evaluates the creative/generative abilities of the model
+func (v *Verifier) assessGenerativeCapabilities(client *LLMClient, modelName string) (*GenerativeCapabilityResult, error) {
+	result := &GenerativeCapabilityResult{}
+
+	ctx, cancel := context.WithTimeout(context.Background(), v.cfg.Timeout)
+	defer cancel()
+
+	// Test creative writing abilities
+	result.CreativeWriting = v.testCreativeWriting(client, modelName, ctx)
+
+	// Test storytelling abilities
+	result.Storytelling = v.testStorytelling(client, modelName, ctx)
+
+	// Test content generation
+	result.ContentGeneration = v.testContentGeneration(client, modelName, ctx)
+
+	// Test artistic creativity
+	result.ArtisticCreativity = v.testArtisticCreativity(client, modelName, ctx)
+
+	// Test problem-solving creativity
+	result.ProblemSolving = v.testProblemSolving(client, modelName, ctx)
+
+	// Test multimodal content understanding (when used generatively)
+	result.MultimodalGenerative = v.testMultimodalContentGen(client, modelName, ctx)
+
+	return result, nil
+}
+
+// testCreativeWriting checks if the model can write creatively
+func (v *Verifier) testCreativeWriting(client *LLMClient, modelName string, ctx context.Context) bool {
+	req := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role: "user",
+				Content: "Write a short, original poem about the changing seasons that uses vivid imagery and metaphor.",
+			},
+		},
+	}
+
+	resp, err := client.ChatCompletion(ctx, req)
+	if err != nil || len(resp.Choices) == 0 {
+		return false
+	}
+
+	responseText := resp.Choices[0].Message.Content
+	// Check for creative elements in the response
+	return len(responseText) > 50 && // Contains substantial content
+		   (strings.Contains(responseText, "spring") || strings.Contains(responseText, "summer") ||
+		    strings.Contains(responseText, "fall") || strings.Contains(responseText, "winter")) &&
+		   (strings.Contains(responseText, "like") || strings.Contains(responseText, "as") || // metaphors
+		    strings.Contains(responseText, "bright") || strings.Contains(responseText, "golden") || // imagery
+		    strings.Contains(responseText, "\n")) // structured like a poem
+}
+
+// testStorytelling checks if the model can create narratives
+func (v *Verifier) testStorytelling(client *LLMClient, modelName string, ctx context.Context) bool {
+	req := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role: "user",
+				Content: "Create a short story (5-8 sentences) about a detective solving a mystery in a lighthouse during a storm.",
+			},
+		},
+	}
+
+	resp, err := client.ChatCompletion(ctx, req)
+	if err != nil || len(resp.Choices) == 0 {
+		return false
+	}
+
+	responseText := resp.Choices[0].Message.Content
+	// Check for narrative elements
+	return len(responseText) > 100 &&
+		   (strings.Contains(strings.ToLower(responseText), "detective") ||
+		    strings.Contains(strings.ToLower(responseText), "mystery") ||
+		    strings.Contains(strings.ToLower(responseText), "lighthouse") ||
+		    strings.Contains(strings.ToLower(responseText), "storm"))
+}
+
+// testContentGeneration checks if the model can generate various types of content
+func (v *Verifier) testContentGeneration(client *LLMClient, modelName string, ctx context.Context) bool {
+	req := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role: "user",
+				Content: "Generate a product description for a new smart water bottle that tracks hydration, syncs with phones, and glows when you need to drink more water.",
+			},
+		},
+	}
+
+	resp, err := client.ChatCompletion(ctx, req)
+	if err != nil || len(resp.Choices) == 0 {
+		return false
+	}
+
+	responseText := resp.Choices[0].Message.Content
+	// Check if it provides a reasonable product description
+	return len(responseText) > 50 &&
+		   (strings.Contains(strings.ToLower(responseText), "water") ||
+		    strings.Contains(strings.ToLower(responseText), "bottle") ||
+		    strings.Contains(strings.ToLower(responseText), "smart") ||
+		    strings.Contains(strings.ToLower(responseText), "track") ||
+		    strings.Contains(strings.ToLower(responseText), "hydrat"))
+}
+
+// testArtisticCreativity checks if the model can think artistically
+func (v *Verifier) testArtisticCreativity(client *LLMClient, modelName string, ctx context.Context) bool {
+	req := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role: "user",
+				Content: "Design a new art movement that combines elements of surrealism and digital glitch aesthetics. Describe its philosophy, techniques, and visual characteristics.",
+			},
+		},
+	}
+
+	resp, err := client.ChatCompletion(ctx, req)
+	if err != nil || len(resp.Choices) == 0 {
+		return false
+	}
+
+	responseText := resp.Choices[0].Message.Content
+	// Check for artistic and creative thinking
+	return len(responseText) > 100 &&
+		   (strings.Contains(strings.ToLower(responseText), "art") ||
+		    strings.Contains(strings.ToLower(responseText), "movement") ||
+		    strings.Contains(strings.ToLower(responseText), "visual") ||
+		    strings.Contains(strings.ToLower(responseText), "philosophy") ||
+		    strings.Contains(strings.ToLower(responseText), "technique"))
+}
+
+// testProblemSolving checks if the model can approach problems creatively
+func (v *Verifier) testProblemSolving(client *LLMClient, modelName string, ctx context.Context) bool {
+	req := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role: "user",
+				Content: "How would you solve the problem of reducing plastic waste in oceans? Think of an innovative solution involving technology and nature.",
+			},
+		},
+	}
+
+	resp, err := client.ChatCompletion(ctx, req)
+	if err != nil || len(resp.Choices) == 0 {
+		return false
+	}
+
+	responseText := resp.Choices[0].Message.Content
+	// Check for creative problem-solving approach
+	return len(responseText) > 50 &&
+		   (strings.Contains(strings.ToLower(responseText), "plastic") ||
+		    strings.Contains(strings.ToLower(responseText), "ocean") ||
+		    strings.Contains(strings.ToLower(responseText), "solution") ||
+		    strings.Contains(strings.ToLower(responseText), "technology") ||
+		    strings.Contains(strings.ToLower(responseText), "nature") ||
+		    strings.Contains(strings.ToLower(responseText), "innovative"))
+}
+
+// testMultimodalContentGen checks if the model can work with multimodal concepts generatively
+func (v *Verifier) testMultimodalContentGen(client *LLMClient, modelName string, ctx context.Context) bool {
+	req := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role: "user",
+				Content: "Describe how you would create a multimedia presentation that combines visual, audio, and textual elements to explain the concept of photosynthesis to children.",
+			},
+		},
+	}
+
+	resp, err := client.ChatCompletion(ctx, req)
+	if err != nil || len(resp.Choices) == 0 {
+		return false
+	}
+
+	responseText := resp.Choices[0].Message.Content
+	// Check for multimodal thinking
+	return len(responseText) > 50 &&
+		   (strings.Contains(strings.ToLower(responseText), "visual") ||
+		    strings.Contains(strings.ToLower(responseText), "audio") ||
+		    strings.Contains(strings.ToLower(responseText), "text") ||
+		    strings.Contains(strings.ToLower(responseText), "multimedia") ||
+		    strings.Contains(strings.ToLower(responseText), "presentation"))
+}
+
 // getCommonProgrammingLanguages returns a list of common programming languages
 func getCommonProgrammingLanguages() []string {
 	return []string{
@@ -1587,8 +1786,8 @@ func determineComplexityLevel(code string) int {
 	return complexity
 }
 
-// calculateScores calculates performance scores for the model
-func (v *Verifier) calculateScores(result VerificationResult) (PerformanceScore, ScoreDetails) {
+// CalculateScores calculates performance scores for the model
+func (v *Verifier) CalculateScores(result VerificationResult) (PerformanceScore, ScoreDetails) {
 	scores := PerformanceScore{}
 	details := ScoreDetails{}
 
@@ -1597,12 +1796,12 @@ func (v *Verifier) calculateScores(result VerificationResult) (PerformanceScore,
 	scores.CodeCapability = codeScore
 	details.CodeCapabilityBreakdown = codeDetails
 
-	// Calculate responsiveness score (20% weight)
+	// Calculate responsiveness score (15% weight)
 	responsivenessScore, responseDetails := v.CalculateResponsivenessScore(result.Availability, result.ResponseTime)
 	scores.Responsiveness = responsivenessScore
 	details.ResponseTimeBreakdown = responseDetails
 
-	// Calculate reliability score (20% weight)
+	// Calculate reliability score (15% weight)
 	reliabilityScore, reliabilityDetails := v.CalculateReliabilityScore(result.Availability)
 	scores.Reliability = reliabilityScore
 	details.ReliabilityBreakdown = reliabilityDetails
@@ -1612,17 +1811,53 @@ func (v *Verifier) calculateScores(result VerificationResult) (PerformanceScore,
 	scores.FeatureRichness = featureRichnessScore
 	details.FeatureSupportBreakdown = featureDetails
 
+	// Calculate generative capability score (10% weight)
+	generativeScore := v.calculateGenerativeScore(result.GenerativeCapabilities)
+	scores.FeatureRichness += generativeScore * 0.10 // Add to feature richness as a bonus
+
 	// Calculate value proposition score (5% weight)
 	scores.ValueProposition = v.calculateValuePropositionScore(scores)
 
-	// Calculate overall score
+	// Calculate overall score (adjusting weights to account for generative score)
 	scores.OverallScore = (codeScore * 0.40) +
-	                      (responsivenessScore * 0.20) +
-	                      (reliabilityScore * 0.20) +
-	                      (featureRichnessScore * 0.15) +
-	                      (scores.ValueProposition * 0.05)
+	                      (responsivenessScore * 0.15) +
+	                      (reliabilityScore * 0.15) +
+	                      (featureRichnessScore * 0.20) + // Increased to include generative aspects
+	                      (scores.ValueProposition * 0.10) // Increased weight
 
 	return scores, details
+}
+
+// calculateGenerativeScore calculates the score for generative capabilities
+func (v *Verifier) calculateGenerativeScore(generativeCaps GenerativeCapabilityResult) float64 {
+	if generativeCaps.CreativeWriting && generativeCaps.Storytelling &&
+	   generativeCaps.ContentGeneration && generativeCaps.ArtisticCreativity {
+		return 100 // All major generative capabilities present
+	}
+
+	score := 0.0
+	totalCaps := 6.0 // Total number of generative capabilities
+
+	if generativeCaps.CreativeWriting {
+		score += 100 / totalCaps
+	}
+	if generativeCaps.Storytelling {
+		score += 100 / totalCaps
+	}
+	if generativeCaps.ContentGeneration {
+		score += 100 / totalCaps
+	}
+	if generativeCaps.ArtisticCreativity {
+		score += 100 / totalCaps
+	}
+	if generativeCaps.ProblemSolving {
+		score += 100 / totalCaps
+	}
+	if generativeCaps.MultimodalGenerative {
+		score += 100 / totalCaps
+	}
+
+	return score
 }
 
 // CalculateCodeCapabilityScore calculates the code capability score

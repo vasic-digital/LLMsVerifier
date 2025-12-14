@@ -16,3 +16,11 @@ All logs will be stored in proper log files and in separate database just for th
 
 Databases data about LLMs will be possible to export into the configuration files for OpenCode, Crush, Claude Code and other major AI CLI Coding Agents! We can export all providers with all its LLMs or just chosen providers with chosen LLMs. All this exposed with all of mentioned supported clients / flavors / platforms. All configurations generated will be verified.
 
+Make sure we can rerun benchmarking and checks without configuratio  provides, which will recheck and rebenchmark database providers and its LLMs. It should be possible to do all existing, inly chosen providers or only chosen LLMs. If score or usability of some of LLMs changes compared to existing information about it in the datase proper events will be triggered. Registered parties will be notified via websockers, gRPS or notifcarion challes about these events. Notification channels that we support are Slack, Email, Telegram, Max and other popular messaging systems (WhatsApp and others). System events will be created and emotted for all other important situations in the system, for example - new testing started, stopped, compledted, on error, and so on. If no registered subscribers via websockets or gRPC or no notification mechanism is registered no events will be emitted. All events must be logged as well into our log files and log database. 
+
+All client types and flavor on all platforms will support registration of event subscribers (and unregistratiln as well).
+
+Configuration files and system will support turning on of the periodical re-tests (repeting benchmarks and verifications). It could be scheduled to repeat per hours, days, weeks, months. Unscheduling and rescheduling must be supported. Scheduling mexhanism mustbsupport multiple scheduling configurations. For example daily for all providers and all LLMs, and per hour for certain procider and chosen LLMs. There must be maximal flexibility and efficiency!
+
+With proper flag set on (regenerate_configurations_on_score_changes) if score of provider or llm changes the configuration for (all cli agents or just chosen ones - for example: OpenCode, Crush) will be recreated. There is default path for generated cli agents configuration files, but it can be changed with configuration (global, per procider or llm).
+

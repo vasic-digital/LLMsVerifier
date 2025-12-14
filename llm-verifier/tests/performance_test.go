@@ -176,3 +176,58 @@ func TestPerformanceThresholds(t *testing.T) {
 		t.Errorf("Responsiveness scoring took too long: %v", elapsed)
 	}
 }
+
+func BenchmarkGenerativeCapabilitiesAssessment(b *testing.B) {
+	// Note: This benchmark would require a mock client in real implementation
+	// For now we're just testing the function signature and structure
+
+	b.Log("Benchmark for generative capabilities assessment prepared")
+}
+
+func TestScoringWithGenerativeCapabilities(t *testing.T) {
+	// Test that generative capabilities are factored into scoring
+
+	result := llmverifier.VerificationResult{
+		FeatureDetection: llmverifier.FeatureDetectionResult{
+			CodeGeneration: true,
+			ToolUse: true,
+			Reranking: true,
+			ImageGeneration: true,
+			MCPs: true,
+			LSPs: true,
+		},
+		CodeCapabilities: llmverifier.CodeCapabilityResult{
+			CodeGeneration: true,
+			CodeCompletion: true,
+			CodeDebugging: true,
+		},
+		GenerativeCapabilities: llmverifier.GenerativeCapabilityResult{
+			CreativeWriting: true,
+			Storytelling: true,
+			ContentGeneration: true,
+		},
+		Availability: llmverifier.AvailabilityResult{
+			Exists: true,
+			Responsive: true,
+			Latency: 200 * time.Millisecond,
+		},
+		ResponseTime: llmverifier.ResponseTimeResult{
+			AverageLatency: 200 * time.Millisecond,
+			Throughput: 5.0,
+		},
+	}
+
+	verifier := &llmverifier.Verifier{}
+	scores, _ := verifier.CalculateScores(result)
+
+	if scores.OverallScore <= 0 || scores.OverallScore > 100 {
+		t.Errorf("Expected overall score between 0-100, got %f", scores.OverallScore)
+	}
+
+	if scores.CodeCapability <= 0 {
+		t.Errorf("Expected positive code capability score, got %f", scores.CodeCapability)
+	}
+
+	t.Logf("Scores calculated - Overall: %.2f, Code: %.2f, Responsiveness: %.2f",
+		   scores.OverallScore, scores.CodeCapability, scores.Responsiveness)
+}

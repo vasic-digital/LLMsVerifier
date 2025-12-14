@@ -9,6 +9,7 @@ type VerificationResult struct {
 	ResponseTime      ResponseTimeResult           `json:"response_time"`
 	FeatureDetection  FeatureDetectionResult       `json:"feature_detection"`
 	CodeCapabilities  CodeCapabilityResult         `json:"code_capabilities"`
+	GenerativeCapabilities GenerativeCapabilityResult `json:"generative_capabilities,omitempty"`
 	PerformanceScores PerformanceScore             `json:"performance_scores"`
 	Timestamp         time.Time                    `json:"timestamp"`
 	Error             string                       `json:"error,omitempty"`
@@ -161,6 +162,18 @@ type FunctionDefinition struct {
 	Name        string                 `json:"name"`
 	Description string                 `json:"description"`
 	Parameters  map[string]interface{} `json:"parameters"`
+}
+
+// GenerativeCapabilityResult captures the creative/generative abilities of the model
+type GenerativeCapabilityResult struct {
+	CreativeWriting      bool    `json:"creative_writing"`
+	Storytelling         bool    `json:"storytelling"`
+	ContentGeneration    bool    `json:"content_generation"`
+	ArtisticCreativity   bool    `json:"artistic_creativity"`
+	ProblemSolving       bool    `json:"problem_solving"`
+	MultimodalGenerative bool    `json:"multimodal_generative"`
+	OriginalityScore     float64 `json:"originality_score"`
+	CreativityScore      float64 `json:"creativity_score"`
 }
 
 // CodeCapabilityResult captures the coding abilities of the model
