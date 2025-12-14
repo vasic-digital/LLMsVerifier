@@ -183,6 +183,7 @@ func (d *Database) GetModelsWithStats(limit int) ([]*ModelWithStats, error) {
 		var tagsJSON, langSupportJSON sql.NullString
 		var trainingDataCutoff, releaseDate, lastVerified sql.NullTime
 		var parameterCount, contextWindowTokens, maxOutputTokens sql.NullInt64
+		var latestScore, avgLatency sql.NullFloat64
 
 		err := rows.Scan(
 			&model.ID,
@@ -219,8 +220,8 @@ func (d *Database) GetModelsWithStats(limit int) ([]*ModelWithStats, error) {
 			&model.ValuePropositionScore,
 			&model.ProviderName,
 			&model.VerificationCount,
-			&model.LatestScore,
-			&model.AvgLatency,
+			&latestScore,
+			&avgLatency,
 			&model.CompletedVerifications,
 			&model.OpenIssues,
 		)
@@ -237,6 +238,8 @@ func (d *Database) GetModelsWithStats(limit int) ([]*ModelWithStats, error) {
 		model.Tags = scanJSONString(tagsJSON)
 		model.LanguageSupport = scanJSONString(langSupportJSON)
 		model.LastVerified = scanNullableTime(lastVerified)
+		model.LatestScore = latestScore
+		model.AvgLatency = avgLatency
 
 		models = append(models, &model)
 	}
@@ -247,12 +250,12 @@ func (d *Database) GetModelsWithStats(limit int) ([]*ModelWithStats, error) {
 // ModelWithStats represents a model with aggregated statistics
 type ModelWithStats struct {
 	Model
-	ProviderName           string  `json:"provider_name"`
-	VerificationCount      int     `json:"verification_count"`
-	LatestScore            float64 `json:"latest_score"`
-	AvgLatency             float64 `json:"avg_latency"`
-	CompletedVerifications int     `json:"completed_verifications"`
-	OpenIssues             int     `json:"open_issues"`
+	ProviderName           string          `json:"provider_name"`
+	VerificationCount      int             `json:"verification_count"`
+	LatestScore            sql.NullFloat64 `json:"latest_score"`
+	AvgLatency             sql.NullFloat64 `json:"avg_latency"`
+	CompletedVerifications int             `json:"completed_verifications"`
+	OpenIssues             int             `json:"open_issues"`
 }
 
 // VacuumDatabase performs database maintenance and optimization
