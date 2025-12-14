@@ -19,7 +19,7 @@ func (d *Database) CreateProvider(provider *Provider) error {
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	
-	_, err := d.conn.Exec(query,
+	result, err := d.conn.Exec(query,
 		provider.Name,
 		provider.Endpoint,
 		provider.APIKeyEncrypted,
@@ -417,7 +417,7 @@ func (d *Database) UpdateModel(model *Model) error {
 		WHERE id = ?
 	`
 	
-	result, err := d.conn.Exec(query,
+	_, err := d.conn.Exec(query,
 		model.ProviderID,
 		model.ModelID,
 		model.Name,
