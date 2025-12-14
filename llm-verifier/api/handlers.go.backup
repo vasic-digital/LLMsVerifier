@@ -9,7 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 
-	"llm-verifier/config"
 	"llm-verifier/database"
 	"llm-verifier/llmverifier"
 )
@@ -160,23 +159,9 @@ func (s *Server) verifyModel(c *gin.Context) {
 			return
 		}
 
-		// Create temporary config for single model verification
-		tempConfig := &config.Config{
-			LLMs: []config.LLMConfig{
-				{
-					Name:     model.Name,
-					Endpoint: provider.Endpoint,
-					APIKey:   provider.APIKeyEncrypted,
-					Model:    model.ModelID,
-				},
-			},
-			Concurrency: 1,
-			Timeout:     30 * time.Second,
-		}
-
-		// Create temporary verifier for this model
-		tempVerifier := llmverifier.New(tempConfig)
-		results, err := tempVerifier.Verify()
+		// Create LLM client and verify model
+		client := llmverifier.NewLLMClient(provider.Endpoint, provider.APIKeyEncrypted, nil)
+		result, err := s.verifier.verifySingleModel(client, model.ModelID, provider.Endpoint)
 		if err != nil {
 			// Log error and create event
 			_ = s.database.CreateEvent(&database.Event{
@@ -190,87 +175,30 @@ func (s *Server) verifyModel(c *gin.Context) {
 			return
 		}
 
-		// Convert first result to database format
-		if len(results) > 0 {
-			result := results[0] // Take first result
-
-			// Save verification result to database
-			err = s.database.CreateVerificationResult(&database.VerificationResult{
-				ModelID:                  id,
-				VerificationType:         "comprehensive",
-				StartedAt:                result.Timestamp,
-				CompletedAt:              &result.Timestamp,
-				Status:                   "completed",
-				ModelExists:              &result.Availability.Exists,
-				Responsive:               &result.Availability.Responsive,
-				Overloaded:               &result.Availability.Overloaded,
-				LatencyMs:                func() *int { v := int(result.Availability.Latency.Milliseconds()); return &v }(),
-				SupportsToolUse:          result.FeatureDetection.ToolUse,
-				SupportsFunctionCalling:  result.FeatureDetection.FunctionCalling,
-				SupportsCodeGeneration:   result.FeatureDetection.CodeGeneration,
-				SupportsCodeCompletion:   result.FeatureDetection.CodeCompletion,
-				SupportsCodeReview:       result.FeatureDetection.CodeReview,
-				SupportsCodeExplanation:  result.FeatureDetection.CodeExplanation,
-				SupportsEmbeddings:       result.FeatureDetection.Embeddings,
-				SupportsReranking:        result.FeatureDetection.Reranking,
-				SupportsImageGeneration:  result.FeatureDetection.ImageGeneration,
-				SupportsAudioGeneration:  result.FeatureDetection.AudioGeneration,
-				SupportsVideoGeneration:  result.FeatureDetection.VideoGeneration,
-				SupportsMCPs:             result.FeatureDetection.MCPs,
-				SupportsLSPs:             result.FeatureDetection.LSPs,
-				SupportsMultimodal:       result.FeatureDetection.Multimodal,
-				SupportsStreaming:        result.FeatureDetection.Streaming,
-				SupportsJSONMode:         result.FeatureDetection.JSONMode,
-				SupportsStructuredOutput: result.FeatureDetection.StructuredOutput,
-				SupportsReasoning:        result.FeatureDetection.Reasoning,
-				SupportsParallelToolUse:  result.FeatureDetection.ParallelToolUse,
-				MaxParallelCalls:         result.FeatureDetection.MaxParallelCalls,
-				SupportsBatchProcessing:  result.FeatureDetection.BatchProcessing,
-				CodeLanguageSupport:      result.CodeCapabilities.LanguageSupport,
-				CodeDebugging:            result.CodeCapabilities.CodeDebugging,
-				CodeOptimization:         result.CodeCapabilities.CodeOptimization,
-				TestGeneration:           result.CodeCapabilities.TestGeneration,
-				DocumentationGeneration:  result.CodeCapabilities.Documentation,
-				Refactoring:              result.CodeCapabilities.Refactoring,
-				ErrorResolution:          result.CodeCapabilities.ErrorResolution,
-				ArchitectureDesign:       result.CodeCapabilities.Architecture,
-				SecurityAssessment:       result.CodeCapabilities.SecurityAssessment,
-				PatternRecognition:       result.CodeCapabilities.PatternRecognition,
-				DebuggingAccuracy:        result.CodeCapabilities.ComplexityHandling.CodeQuality,
-				MaxHandledDepth:          result.CodeCapabilities.ComplexityHandling.MaxHandledDepth,
-				CodeQualityScore:         result.CodeCapabilities.ComplexityHandling.CodeQuality,
-				LogicCorrectnessScore:    result.CodeCapabilities.ComplexityHandling.LogicCorrectness,
-				RuntimeEfficiencyScore:   result.CodeCapabilities.ComplexityHandling.RuntimeEfficiency,
-				OverallScore:             result.PerformanceScores.OverallScore,
-				CodeCapabilityScore:      result.PerformanceScores.CodeCapability,
-				ResponsivenessScore:      result.PerformanceScores.Responsiveness,
-				ReliabilityScore:         result.PerformanceScores.Reliability,
-				FeatureRichnessScore:     result.PerformanceScores.FeatureRichness,
-				ValuePropositionScore:    result.PerformanceScores.ValueProposition,
-			})
-			if err != nil {
-				// Log error
-				_ = s.database.CreateEvent(&database.Event{
-					EventType: "verification_failed",
-					Severity:  "error",
-					Title:     "Database Error",
-					Message:   fmt.Sprintf("Failed to save verification result for model %s: %v", model.Name, err),
-					ModelID:   &id,
-					CreatedAt: time.Now(),
-				})
-				return
-			}
-
-			// Create success event
+		// Save verification result to database
+		err = s.database.CreateVerificationResult(result)
+		if err != nil {
+			// Log error
 			_ = s.database.CreateEvent(&database.Event{
-				EventType: "verification_completed",
-				Severity:  "info",
-				Title:     "Verification Completed",
-				Message:   fmt.Sprintf("Verification completed for model %s with score %.2f", model.Name, result.PerformanceScores.OverallScore),
+				EventType: "verification_failed",
+				Severity:  "error",
+				Title:     "Database Error",
+				Message:   fmt.Sprintf("Failed to save verification result for model %s: %v", model.Name, err),
 				ModelID:   &id,
 				CreatedAt: time.Now(),
 			})
+			return
 		}
+
+		// Create success event
+		_ = s.database.CreateEvent(&database.Event{
+			EventType: "verification_completed",
+			Severity:  "info",
+			Title:     "Verification Completed",
+			Message:   fmt.Sprintf("Verification completed for model %s with score %.2f", model.Name, result.OverallScore),
+			ModelID:   &id,
+			CreatedAt: time.Now(),
+		})
 	}()
 
 	c.JSON(http.StatusAccepted, gin.H{
@@ -278,6 +206,7 @@ func (s *Server) verifyModel(c *gin.Context) {
 		"model_id": id,
 		"model":    model.Name,
 	})
+	}
 }
 
 // deleteModel deletes a specific model
