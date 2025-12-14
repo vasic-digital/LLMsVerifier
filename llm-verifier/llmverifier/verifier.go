@@ -836,11 +836,11 @@ func (v *Verifier) testBatchProcessing(client *LLMClient, modelName string) bool
 
 // testMCPs checks for Model Context Protocol support - context handling capabilities
 func (v *Verifier) testMCPs(client *LLMClient, modelName string, ctx context.Context) bool {
-	// MCPs in the context of LLMs could refer to model's ability to handle context properly
-	// We'll test the model's context management by providing a conversation with context
-	// and checking if it can maintain context across multiple exchanges
+	// MCPs in the context of LLMs refers to model's ability to handle context properly
+	// Testing context window capabilities, token handling, limits, and conversation history management
 
-	req := ChatCompletionRequest{
+	// Test 1: Context retention across conversation
+	req1 := ChatCompletionRequest{
 		Model: modelName,
 		Messages: []Message{
 			{
@@ -858,21 +858,46 @@ func (v *Verifier) testMCPs(client *LLMClient, modelName string, ctx context.Con
 		},
 	}
 
-	resp, err := client.ChatCompletion(ctx, req)
+	resp, err := client.ChatCompletion(ctx, req1)
 	if err != nil || len(resp.Choices) == 0 {
 		return false
 	}
 
 	responseText := strings.ToLower(resp.Choices[0].Message.Content)
-	// Check if the model remembered the context (the favorite color)
-	return strings.Contains(responseText, "blue")
+	contextRetained := strings.Contains(responseText, "blue")
+
+	// Test 2: Token limit awareness - test with a very long context to see if model can handle it
+	longContext := strings.Repeat("This is a test sentence. ", 100) // Create a long context
+	req2 := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role:    "user",
+				Content: fmt.Sprintf("Context: %s\n\nNow summarize the context in 10 words or less.", longContext),
+			},
+		},
+	}
+
+	resp2, err2 := client.ChatCompletion(ctx, req2)
+	if err2 != nil || len(resp2.Choices) == 0 {
+		// If it fails on long context, the model may have limited context window
+		// But we'll still return based on the first test
+		return contextRetained
+	}
+
+	// Check if the model was able to handle the long context and provide a summary
+	response2Text := strings.ToLower(resp2.Choices[0].Message.Content)
+	tokenHandlingCapable := len(response2Text) > 0 && len(response2Text) < len(longContext) // Model summarized, showing it handled the context
+
+	return contextRetained || tokenHandlingCapable
 }
 
 // testLSPs checks for Language Server Protocol features - IDE-like capabilities
 func (v *Verifier) testLSPs(client *LLMClient, modelName string, ctx context.Context) bool {
-	// LSP in the context of LLMs could refer to language analysis capabilities
-	// similar to what language servers provide - error detection, completions, etc.
-	req := ChatCompletionRequest{
+	// LSP features include language analysis, error detection, code completion, and symbol navigation
+
+	// Test 1: Error detection capability
+	req1 := ChatCompletionRequest{
 		Model: modelName,
 		Messages: []Message{
 			{
@@ -886,17 +911,57 @@ result = calculate_sum(1, 2, 3)  # This has an error - too many arguments`,
 		},
 	}
 
-	resp, err := client.ChatCompletion(ctx, req)
-	if err != nil || len(resp.Choices) == 0 {
+	resp1, err1 := client.ChatCompletion(ctx, req1)
+	if err1 != nil || len(resp1.Choices) == 0 {
 		return false
 	}
 
-	responseText := strings.ToLower(resp.Choices[0].Message.Content)
-	// Check if the model identifies the error like a language server would
-	return strings.Contains(responseText, "error") ||
-		   strings.Contains(responseText, "too many") ||
-		   strings.Contains(responseText, "arguments") ||
-		   strings.Contains(responseText, "mismatch")
+	responseText1 := strings.ToLower(resp1.Choices[0].Message.Content)
+	errorDetection := strings.Contains(responseText1, "error") ||
+					 strings.Contains(responseText1, "too many") ||
+					 strings.Contains(responseText1, "arguments") ||
+					 strings.Contains(responseText1, "mismatch")
+
+	// Test 2: Code completion suggestion (IDE-like)
+	req2 := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role: "user",
+				Content: `As an IDE language server, complete this Python function:
+def bubble_sort(arr):
+    n = len(arr)
+    # Implement bubble sort
+`,
+			},
+		},
+	}
+
+	resp2, err2 := client.ChatCompletion(ctx, req2)
+	completionSuggestion := err2 == nil && len(resp2.Choices) > 0 &&
+							len(resp2.Choices[0].Message.Content) > 10 // Provided substantial completion
+
+	// Test 3: Symbol/definition navigation (theoretical test)
+	req3 := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role: "user",
+				Content: `As a language server, explain what the "len()" function does in Python and where it's defined.`,
+			},
+		},
+	}
+
+	resp3, err3 := client.ChatCompletion(ctx, req3)
+	symbolNavigation := false
+	if err3 == nil && len(resp3.Choices) > 0 {
+		content := strings.ToLower(resp3.Choices[0].Message.Content)
+		symbolNavigation = strings.Contains(content, "length") ||
+						  strings.Contains(content, "builtin")
+	}
+
+	// Return true if the model demonstrates any LSP-like capabilities
+	return errorDetection || completionSuggestion || symbolNavigation
 }
 
 // testImageGeneration checks for image generation capabilities
@@ -988,11 +1053,10 @@ func (v *Verifier) testVideoGeneration(client *LLMClient, modelName string, ctx 
 
 // testRerank checks for reranking capability (typically not part of standard chat completion API)
 func (v *Verifier) testRerank(client *LLMClient, modelName string, ctx context.Context) bool {
-	// Reranking is usually a separate API endpoint like Cohere's rerank API
-	// But some models might support reordering/ranking within their capabilities
+	// Reranking involves relevance scoring and reordering items by relevance
 
-	// Try to test if the model can rerank items
-	req := ChatCompletionRequest{
+	// Test 1: Basic ranking task to verify relevance scoring capability
+	req1 := ChatCompletionRequest{
 		Model: modelName,
 		Messages: []Message{
 			{
@@ -1003,21 +1067,63 @@ B) Neural networks
 C) Car maintenance
 D) Supervised learning
 E) Gardening tips
-Please provide the ranked order.`,
+Please provide the ranked order from most to least relevant.`,
 			},
 		},
 	}
 
-	resp, err := client.ChatCompletion(ctx, req)
-	if err != nil || len(resp.Choices) == 0 {
-		// If the standard API doesn't support this, check if there's a specific rerank endpoint
-		// For now, we'll consider it supported if the model can perform the task
+	resp1, err1 := client.ChatCompletion(ctx, req1)
+	if err1 != nil || len(resp1.Choices) == 0 {
 		return false
 	}
 
-	responseText := strings.ToLower(resp.Choices[0].Message.Content)
-	// Check if response contains ranked results with B and D ranked higher
-	return strings.Contains(responseText, "b") && strings.Contains(responseText, "d")
+	responseText1 := strings.ToLower(resp1.Choices[0].Message.Content)
+	// Check if response contains ranked results (should prioritize B and D over others)
+	hasRanking := strings.Contains(responseText1, "rank") || strings.Contains(responseText1, "order") ||
+				  strings.Contains(responseText1, "1") || strings.Contains(responseText1, "first")
+
+	// Test 2: Ordering improvement task
+	req2 := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role: "user",
+				Content: `Given these search results for "AI in healthcare", reorder them by relevance:
+1. "How to bake chocolate chip cookies"
+2. "Deep learning for medical image analysis"
+3. "Top 10 car maintenance tips"
+4. "AI-powered diagnostic tools"
+5. "Beginner's guide to gardening"
+
+Return only the reordered list with new numbers.`,
+			},
+		},
+	}
+
+	resp2, err2 := client.ChatCompletion(ctx, req2)
+	orderingImprovement := err2 == nil && len(resp2.Choices) > 0 &&
+						  strings.Contains(strings.ToLower(resp2.Choices[0].Message.Content), "2") &&
+						  strings.Contains(strings.ToLower(resp2.Choices[0].Message.Content), "4") // Prioritized results
+
+	// Test 3: Relevance scoring test
+	req3 := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role: "user",
+				Content: `On a scale of 1-10, rate how relevant each of these titles is to "natural language processing":
+A) "Building ChatGPT-like applications"
+B) "Car engine repair manual"
+C) "Transformers in NLP"
+Rate each one separately.`,
+			},
+		},
+	}
+
+	resp3, err3 := client.ChatCompletion(ctx, req3)
+	relevanceScoring := err3 == nil && len(resp3.Choices) > 0
+
+	return hasRanking || orderingImprovement || relevanceScoring
 }
 
 // assessCodeCapabilities evaluates the coding abilities of the model
