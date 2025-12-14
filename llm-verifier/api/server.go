@@ -44,8 +44,8 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		jwtSecret: []byte(cfg.API.JWTSecret),
 	}
 
-	server.setupRoutes()
 	server.setupMiddleware()
+	server.setupRoutes()
 
 	return server, nil
 }
