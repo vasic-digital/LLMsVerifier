@@ -3,7 +3,6 @@ package enhanced
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"llm-verifier/database"

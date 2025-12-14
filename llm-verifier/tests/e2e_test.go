@@ -18,10 +18,14 @@ func TestEndToEndWithEmptyConfig(t *testing.T) {
 	// This test verifies the case where no specific LLMs are configured,
 	// so the tool should attempt to discover all available models
 	
+	// Create test helper to get mock server
+	helper := NewTestHelper(t)
+	defer helper.Cleanup()
+	
 	cfg := &config.Config{
 		Global: config.GlobalConfig{
-			BaseURL:    "https://api.openai.com/v1", // This will fail without a real key
-			APIKey:     "sk-test123456789", // This is a fake key for testing
+			BaseURL:    helper.Config.Global.BaseURL, // Use mock server URL
+			APIKey:     "test-api-key", // This must match what mock server expects
 			MaxRetries: 1,
 			Timeout:    5, // Short timeout for tests
 		},

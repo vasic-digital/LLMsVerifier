@@ -113,7 +113,7 @@ func (d *Database) initializeSchema() error {
 		completed_at TIMESTAMP,
 		status TEXT DEFAULT 'running',
 		error_message TEXT,
-		exists BOOLEAN,
+		"exists" BOOLEAN,
 		responsive BOOLEAN,
 		overloaded BOOLEAN,
 		latency_ms INTEGER,
