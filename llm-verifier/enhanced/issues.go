@@ -34,12 +34,12 @@ const (
 type IssueType string
 
 const (
-	IssueTypeAvailability IssueType = "availability"
-	IssueTypePerformance  IssueType = "performance"
-	IssueTypeAccuracy     IssueType = "accuracy"
-	IssueTypeSecurity     IssueType = "security"
-	IssueTypeCompliance   IssueType = "compliance"
-	IssueTypeCost         IssueType = "cost"
+	IssueTypeAvailability  IssueType = "availability"
+	IssueTypePerformance   IssueType = "performance"
+	IssueTypeAccuracy      IssueType = "accuracy"
+	IssueTypeSecurity      IssueType = "security"
+	IssueTypeCompliance    IssueType = "compliance"
+	IssueTypeCost          IssueType = "cost"
 	IssueTypeCompatibility IssueType = "compatibility"
 )
 
@@ -182,15 +182,15 @@ func (im *IssueManager) CreateIssueFromTemplate(modelID int64, templateID string
 			break
 		}
 	}
-	
+
 	if template == nil {
 		return fmt.Errorf("issue template not found: %s", templateID)
 	}
-	
+
 	// Create issue from template
 	symptomsJSON, _ := json.Marshal(template.Symptoms)
 	workaroundsJSON, _ := json.Marshal(template.Workarounds)
-	
+
 	issue := &database.Issue{
 		ModelID:              modelID,
 		IssueType:            string(template.IssueType),
@@ -202,7 +202,7 @@ func (im *IssueManager) CreateIssueFromTemplate(modelID int64, templateID string
 		AffectedFeatures:     template.Symptoms, // Use symptoms as affected features
 		VerificationResultID: verificationResultID,
 	}
-	
+
 	// Add additional details if provided
 	if len(additionalDetails) > 0 {
 		detailsJSON, _ := json.Marshal(additionalDetails)
@@ -210,7 +210,7 @@ func (im *IssueManager) CreateIssueFromTemplate(modelID int64, templateID string
 			issue.Symptoms = scanNullableStringFromBytes(detailsJSON)
 		}
 	}
-	
+
 	return im.db.CreateIssue(issue)
 }
 
@@ -218,7 +218,7 @@ func (im *IssueManager) CreateIssueFromTemplate(modelID int64, templateID string
 func (im *IssueManager) CreateCustomIssue(modelID int64, issueType IssueType, severity IssueSeverity, title, description string, symptoms, workarounds []string, affectedFeatures []string, verificationResultID *int64) error {
 	symptomsJSON, _ := json.Marshal(symptoms)
 	workaroundsJSON, _ := json.Marshal(workarounds)
-	
+
 	issue := &database.Issue{
 		ModelID:              modelID,
 		IssueType:            string(issueType),
@@ -230,42 +230,42 @@ func (im *IssueManager) CreateCustomIssue(modelID int64, issueType IssueType, se
 		AffectedFeatures:     affectedFeatures,
 		VerificationResultID: verificationResultID,
 	}
-	
+
 	return im.db.CreateIssue(issue)
 }
 
 // AutoDetectIssues automatically detects issues based on verification results
 func (im *IssueManager) AutoDetectIssues(verificationResult *database.VerificationResult) error {
 	var issuesDetected []string
-	
+
 	// Check for availability issues
-	if verificationResult.Exists != nil && !*verificationResult.Exists {
+	if verificationResult.ModelExists != nil && !*verificationResult.ModelExists {
 		issuesDetected = append(issuesDetected, "model_not_found")
 	}
-	
+
 	if verificationResult.Responsive != nil && !*verificationResult.Responsive {
 		issuesDetected = append(issuesDetected, "model_unresponsive")
 	}
-	
+
 	if verificationResult.Overloaded != nil && *verificationResult.Overloaded {
 		issuesDetected = append(issuesDetected, "model_overloaded")
 	}
-	
+
 	// Check for performance issues
 	if verificationResult.LatencyMs != nil && *verificationResult.LatencyMs > 5000 {
 		issuesDetected = append(issuesDetected, "high_latency")
 	}
-	
+
 	// Check for accuracy issues
 	if verificationResult.OverallScore < 30.0 {
 		issuesDetected = append(issuesDetected, "accuracy_degradation")
 	}
-	
+
 	// Check for specific capability issues
 	if !verificationResult.SupportsCodeGeneration && verificationResult.CodeCapabilityScore > 0 {
 		issuesDetected = append(issuesDetected, "code_capability_issue")
 	}
-	
+
 	// Create issues for detected problems
 	for _, issueID := range issuesDetected {
 		if err := im.CreateIssueFromTemplate(verificationResult.ModelID, issueID, &verificationResult.ID, nil); err != nil {
@@ -273,7 +273,7 @@ func (im *IssueManager) AutoDetectIssues(verificationResult *database.Verificati
 			fmt.Printf("Warning: Failed to create issue %s: %v\n", issueID, err)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -283,7 +283,7 @@ func (im *IssueManager) UpdateIssueStatus(issueID int64, resolved bool, resoluti
 	if err != nil {
 		return fmt.Errorf("failed to get issue: %w", err)
 	}
-	
+
 	now := time.Now()
 	if resolved {
 		issue.ResolvedAt = &now
@@ -292,7 +292,7 @@ func (im *IssueManager) UpdateIssueStatus(issueID int64, resolved bool, resoluti
 		issue.ResolvedAt = nil
 		issue.ResolutionNotes = nil
 	}
-	
+
 	return im.db.UpdateIssue(issue)
 }
 
@@ -301,11 +301,11 @@ func (im *IssueManager) GetIssuesForModel(modelID int64, includeResolved bool) (
 	filters := map[string]interface{}{
 		"model_id": modelID,
 	}
-	
+
 	if !includeResolved {
 		filters["resolved"] = false
 	}
-	
+
 	return im.db.ListIssues(filters)
 }
 
@@ -315,18 +315,18 @@ func (im *IssueManager) GetCriticalIssues() ([]*database.Issue, error) {
 		"severity": string(SeverityCritical),
 		"resolved": false,
 	}
-	
+
 	return im.db.ListIssues(filters)
 }
 
 // GetIssueStatistics gets statistics about issues
 func (im *IssueManager) GetIssueStatistics() (map[string]interface{}, error) {
 	stats := make(map[string]interface{})
-	
+
 	// Total issues by severity
 	severities := []IssueSeverity{SeverityCritical, SeverityHigh, SeverityMedium, SeverityLow}
 	severityStats := make(map[string]int)
-	
+
 	for _, severity := range severities {
 		filters := map[string]interface{}{"severity": string(severity)}
 		issues, err := im.db.ListIssues(filters)
@@ -335,16 +335,16 @@ func (im *IssueManager) GetIssueStatistics() (map[string]interface{}, error) {
 		}
 		severityStats[string(severity)] = len(issues)
 	}
-	
+
 	stats["by_severity"] = severityStats
-	
+
 	// Total issues by type
 	issueTypes := []IssueType{
 		IssueTypeAvailability, IssueTypePerformance, IssueTypeAccuracy,
 		IssueTypeSecurity, IssueTypeCompliance, IssueTypeCost, IssueTypeCompatibility,
 	}
 	typeStats := make(map[string]int)
-	
+
 	for _, issueType := range issueTypes {
 		filters := map[string]interface{}{"issue_type": string(issueType)}
 		issues, err := im.db.ListIssues(filters)
@@ -353,35 +353,35 @@ func (im *IssueManager) GetIssueStatistics() (map[string]interface{}, error) {
 		}
 		typeStats[string(issueType)] = len(issues)
 	}
-	
+
 	stats["by_type"] = typeStats
-	
+
 	// Open vs resolved issues
 	openIssues, err := im.db.ListIssues(map[string]interface{}{"resolved": false})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get open issues: %w", err)
 	}
-	
+
 	resolvedIssues, err := im.db.ListIssues(map[string]interface{}{"resolved": true})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get resolved issues: %w", err)
 	}
-	
+
 	stats["open_issues"] = len(openIssues)
 	stats["resolved_issues"] = len(resolvedIssues)
 	stats["total_issues"] = len(openIssues) + len(resolvedIssues)
-	
+
 	// Issues by model (top 10)
 	modelStats := make(map[string]int)
 	allIssues := append(openIssues, resolvedIssues...)
-	
+
 	for _, issue := range allIssues {
 		modelKey := fmt.Sprintf("model_%d", issue.ModelID)
 		modelStats[modelKey]++
 	}
-	
+
 	stats["by_model"] = modelStats
-	
+
 	return stats, nil
 }
 
@@ -391,10 +391,10 @@ func (im *IssueManager) GenerateIssueReport(filters map[string]interface{}) (str
 	if err != nil {
 		return "", fmt.Errorf("failed to get issues: %w", err)
 	}
-	
+
 	report := fmt.Sprintf("# Issue Report\n\n")
 	report += fmt.Sprintf("Generated: %s\n\n", time.Now().Format(time.RFC3339))
-	
+
 	if len(filters) > 0 {
 		report += "## Filters Applied\n\n"
 		for key, value := range filters {
@@ -402,7 +402,7 @@ func (im *IssueManager) GenerateIssueReport(filters map[string]interface{}) (str
 		}
 		report += "\n"
 	}
-	
+
 	// Summary statistics
 	stats, err := im.GetIssueStatistics()
 	if err == nil {
@@ -412,7 +412,7 @@ func (im *IssueManager) GenerateIssueReport(filters map[string]interface{}) (str
 		report += fmt.Sprintf("- Resolved Issues: %d\n", stats["resolved_issues"])
 		report += "\n"
 	}
-	
+
 	// Issues by severity
 	if bySeverity, ok := stats["by_severity"].(map[string]int); ok {
 		report += "## Issues by Severity\n\n"
@@ -421,7 +421,7 @@ func (im *IssueManager) GenerateIssueReport(filters map[string]interface{}) (str
 		}
 		report += "\n"
 	}
-	
+
 	// Issues by type
 	if byType, ok := stats["by_type"].(map[string]int); ok {
 		report += "## Issues by Type\n\n"
@@ -430,25 +430,25 @@ func (im *IssueManager) GenerateIssueReport(filters map[string]interface{}) (str
 		}
 		report += "\n"
 	}
-	
+
 	// Detailed issues
 	report += "## Detailed Issues\n\n"
-	
+
 	for _, issue := range issues {
 		report += fmt.Sprintf("### %s (ID: %d)\n\n", issue.Title, issue.ID)
 		report += fmt.Sprintf("**Model ID:** %d\n\n", issue.ModelID)
 		report += fmt.Sprintf("**Type:** %s\n\n", issue.IssueType)
 		report += fmt.Sprintf("**Severity:** %s\n\n", issue.Severity)
 		report += fmt.Sprintf("**Description:** %s\n\n", issue.Description)
-		
+
 		if issue.Symptoms != nil && *issue.Symptoms != "" {
 			report += fmt.Sprintf("**Symptoms:** %s\n\n", *issue.Symptoms)
 		}
-		
+
 		if issue.Workarounds != nil && *issue.Workarounds != "" {
 			report += fmt.Sprintf("**Workarounds:** %s\n\n", *issue.Workarounds)
 		}
-		
+
 		if len(issue.AffectedFeatures) > 0 {
 			report += "**Affected Features:**\n"
 			for _, feature := range issue.AffectedFeatures {
@@ -456,23 +456,23 @@ func (im *IssueManager) GenerateIssueReport(filters map[string]interface{}) (str
 			}
 			report += "\n"
 		}
-		
+
 		report += fmt.Sprintf("**First Detected:** %s\n", issue.FirstDetected.Format(time.RFC3339))
-		
+
 		if issue.LastOccurred != nil {
 			report += fmt.Sprintf("**Last Occurred:** %s\n", issue.LastOccurred.Format(time.RFC3339))
 		}
-		
+
 		if issue.ResolvedAt != nil {
 			report += fmt.Sprintf("**Resolved:** %s\n", issue.ResolvedAt.Format(time.RFC3339))
 			if issue.ResolutionNotes != nil {
 				report += fmt.Sprintf("**Resolution Notes:** %s\n", *issue.ResolutionNotes)
 			}
 		}
-		
+
 		report += "\n---\n\n"
 	}
-	
+
 	return report, nil
 }
 
@@ -492,11 +492,11 @@ func (im *IssueManager) AutoResolutionChecker() error {
 	if err != nil {
 		return fmt.Errorf("failed to get open issues: %w", err)
 	}
-	
+
 	for _, issue := range openIssues {
 		// Check if issue should be auto-resolved based on criteria
 		shouldResolve := im.checkAutoResolutionCriteria(issue)
-		
+
 		if shouldResolve {
 			resolutionNotes := "Automatically resolved based on system criteria"
 			if err := im.UpdateIssueStatus(issue.ID, true, resolutionNotes); err != nil {
@@ -504,7 +504,7 @@ func (im *IssueManager) AutoResolutionChecker() error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -514,7 +514,7 @@ func (im *IssueManager) checkAutoResolutionCriteria(issue *database.Issue) bool 
 	if issue.Severity == string(SeverityCritical) {
 		return false
 	}
-	
+
 	// Auto-resolve if issue hasn't occurred in the last 7 days
 	if issue.LastOccurred != nil {
 		sevenDaysAgo := time.Now().AddDate(0, 0, -7)
@@ -522,7 +522,7 @@ func (im *IssueManager) checkAutoResolutionCriteria(issue *database.Issue) bool 
 			return true
 		}
 	}
-	
+
 	// Auto-resolve low severity issues after 30 days
 	if issue.Severity == string(SeverityLow) {
 		thirtyDaysAgo := time.Now().AddDate(0, 0, -30)
@@ -530,6 +530,6 @@ func (im *IssueManager) checkAutoResolutionCriteria(issue *database.Issue) bool 
 			return true
 		}
 	}
-	
+
 	return false
 }
