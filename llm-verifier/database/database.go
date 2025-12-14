@@ -219,7 +219,7 @@ func (d *Database) initializeSchema() error {
 		completed_at TIMESTAMP,
 		status TEXT DEFAULT 'running',
 		error_message TEXT,
-		"exists" BOOLEAN,
+		model_exists BOOLEAN,
 		responsive BOOLEAN,
 		overloaded BOOLEAN,
 		latency_ms INTEGER,
@@ -504,7 +504,7 @@ type VerificationResult struct {
 	CompletedAt              *time.Time `json:"completed_at"`
 	Status                   string     `json:"status"`
 	ErrorMessage             *string    `json:"error_message"`
-	Exists                   *bool      `json:"exists"`
+	ModelExists              *bool      `json:"model_exists"`
 	Responsive               *bool      `json:"responsive"`
 	Overloaded               *bool      `json:"overloaded"`
 	LatencyMs                *int       `json:"latency_ms"`
@@ -800,7 +800,7 @@ func (d *Database) createVerificationResultTx(tx *sql.Tx, verificationResult *Ve
 	query := `
 		INSERT INTO verification_results (
 			model_id, verification_type, started_at, completed_at, status, error_message,
-			"exists", responsive, overloaded, latency_ms, supports_tool_use,
+			model_exists, responsive, overloaded, latency_ms, supports_tool_use,
 			supports_function_calling, supports_code_generation, supports_code_completion,
 			supports_code_review, supports_code_explanation, supports_embeddings,
 			supports_reranking, supports_image_generation, supports_audio_generation,
@@ -826,7 +826,7 @@ func (d *Database) createVerificationResultTx(tx *sql.Tx, verificationResult *Ve
 		verificationResult.CompletedAt,
 		verificationResult.Status,
 		verificationResult.ErrorMessage,
-		verificationResult.Exists,
+		verificationResult.ModelExists,
 		verificationResult.Responsive,
 		verificationResult.Overloaded,
 		verificationResult.LatencyMs,

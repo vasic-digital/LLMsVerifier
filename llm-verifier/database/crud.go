@@ -606,7 +606,7 @@ func (d *Database) CreateVerificationResult(verificationResult *VerificationResu
 	query := `
 		INSERT INTO verification_results (
 			model_id, verification_type, started_at, completed_at, status, error_message,
-			"exists", responsive, overloaded, latency_ms, supports_tool_use,
+			model_exists, responsive, overloaded, latency_ms, supports_tool_use,
 			supports_function_calling, supports_code_generation, supports_code_completion,
 			supports_code_review, supports_code_explanation, supports_embeddings,
 			supports_reranking, supports_image_generation, supports_audio_generation,
@@ -632,7 +632,7 @@ func (d *Database) CreateVerificationResult(verificationResult *VerificationResu
 		verificationResult.CompletedAt,
 		verificationResult.Status,
 		verificationResult.ErrorMessage,
-		verificationResult.Exists,
+		verificationResult.ModelExists,
 		verificationResult.Responsive,
 		verificationResult.Overloaded,
 		verificationResult.LatencyMs,
@@ -705,7 +705,7 @@ func (d *Database) CreateVerificationResult(verificationResult *VerificationResu
 func (d *Database) GetVerificationResult(id int64) (*VerificationResult, error) {
 	query := `
 		SELECT id, model_id, verification_type, started_at, completed_at, status, error_message,
-			"exists", responsive, overloaded, latency_ms, supports_tool_use,
+			model_exists, responsive, overloaded, latency_ms, supports_tool_use,
 			supports_function_calling, supports_code_generation, supports_code_completion,
 			supports_code_review, supports_code_explanation, supports_embeddings,
 			supports_reranking, supports_image_generation, supports_audio_generation,
@@ -802,7 +802,7 @@ func (d *Database) GetVerificationResult(id int64) (*VerificationResult, error) 
 
 	result.CompletedAt = scanNullableTimeFromString(completedAt)
 	result.ErrorMessage = scanNullableString(errorMessage)
-	result.Exists = scanNullableBoolFromString(exists)
+	result.ModelExists = scanNullableBoolFromString(exists)
 	result.Responsive = scanNullableBoolFromString(responsive)
 	result.Overloaded = scanNullableBoolFromString(overloaded)
 	result.LatencyMs = scanNullableIntFromString(latencyMs)
@@ -817,7 +817,7 @@ func (d *Database) GetVerificationResult(id int64) (*VerificationResult, error) 
 func (d *Database) ListVerificationResults(filters map[string]interface{}) ([]*VerificationResult, error) {
 	query := `
 		SELECT id, model_id, verification_type, started_at, completed_at, status, error_message,
-			"exists", responsive, overloaded, latency_ms, supports_tool_use,
+			model_exists, responsive, overloaded, latency_ms, supports_tool_use,
 			supports_function_calling, supports_code_generation, supports_code_completion,
 			supports_code_review, supports_code_explanation, supports_embeddings,
 			supports_reranking, supports_image_generation, supports_audio_generation,
@@ -958,7 +958,7 @@ func (d *Database) ListVerificationResults(filters map[string]interface{}) ([]*V
 
 		result.CompletedAt = scanNullableTimeFromString(completedAt)
 		result.ErrorMessage = scanNullableString(errorMessage)
-		result.Exists = scanNullableBoolFromString(exists)
+		result.ModelExists = scanNullableBoolFromString(exists)
 		result.Responsive = scanNullableBoolFromString(responsive)
 		result.Overloaded = scanNullableBoolFromString(overloaded)
 		result.LatencyMs = scanNullableIntFromString(latencyMs)
@@ -1083,7 +1083,7 @@ func (d *Database) GetLatestVerificationResults(modelIDs []int64) ([]*Verificati
 
 		result.CompletedAt = scanNullableTimeFromString(completedAt)
 		result.ErrorMessage = scanNullableString(errorMessage)
-		result.Exists = scanNullableBoolFromString(exists)
+		result.ModelExists = scanNullableBoolFromString(exists)
 		result.Responsive = scanNullableBoolFromString(responsive)
 		result.Overloaded = scanNullableBoolFromString(overloaded)
 		result.LatencyMs = scanNullableIntFromString(latencyMs)
