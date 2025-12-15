@@ -109,6 +109,8 @@ func (s *Server) setupRoutes() {
 		{
 			results.GET("", s.getVerificationResults)
 			results.GET("/:id", s.getVerificationResult)
+			results.POST("", s.createVerificationResult)
+			results.PUT("/:id", s.updateVerificationResult)
 			results.DELETE("/:id", s.deleteVerificationResult)
 		}
 
@@ -148,6 +150,8 @@ func (s *Server) setupRoutes() {
 			events.GET("", s.getEvents)
 			events.GET("/:id", s.getEventByID)
 			events.POST("", s.createEvent)
+			events.PUT("/:id", s.updateEvent)
+			events.DELETE("/:id", s.deleteEvent)
 		}
 
 		// Schedules
