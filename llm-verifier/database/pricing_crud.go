@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -130,18 +131,41 @@ func (d *Database) GetLatestPricing(modelID int64) (*Pricing, error) {
 	return &pricing, nil
 }
 
-// ListPricing gets all pricing records for a model
-func (d *Database) ListPricing(modelID int64) ([]*Pricing, error) {
+// ListPricing gets pricing records with optional filtering
+func (d *Database) ListPricing(filters map[string]interface{}) ([]*Pricing, error) {
 	query := `
 		SELECT id, model_id, input_token_cost, output_token_cost, cached_input_token_cost,
 			storage_cost, request_cost, currency, pricing_model, effective_from,
 			effective_to, created_at, updated_at
 		FROM pricing
-		WHERE model_id = ?
-		ORDER BY created_at DESC
 	`
 
-	rows, err := d.conn.Query(query, modelID)
+	var conditions []string
+	var args []interface{}
+
+	if modelID, ok := filters["model_id"]; ok {
+		conditions = append(conditions, "model_id = ?")
+		args = append(args, modelID)
+	}
+
+	if pricingModel, ok := filters["pricing_model"]; ok {
+		conditions = append(conditions, "pricing_model = ?")
+		args = append(args, pricingModel)
+	}
+
+	if currency, ok := filters["currency"]; ok {
+		conditions = append(conditions, "currency = ?")
+		args = append(args, currency)
+	}
+
+	// Add WHERE clause if there are conditions
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	query += " ORDER BY created_at DESC"
+
+	rows, err := d.conn.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pricing: %w", err)
 	}
@@ -321,6 +345,78 @@ func (d *Database) GetLimitsForModel(modelID int64) ([]*Limit, error) {
 	rows, err := d.conn.Query(query, modelID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get limits for model: %w", err)
+	}
+	defer rows.Close()
+
+	var limits []*Limit
+	for rows.Next() {
+		var limit Limit
+		var resetTime sql.NullTime
+
+		err := rows.Scan(
+			&limit.ID,
+			&limit.ModelID,
+			&limit.LimitType,
+			&limit.LimitValue,
+			&limit.CurrentUsage,
+			&limit.ResetPeriod,
+			&resetTime,
+			&limit.IsHardLimit,
+			&limit.CreatedAt,
+			&limit.UpdatedAt,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan limit: %w", err)
+		}
+
+		limit.ResetTime = scanNullableTime(resetTime)
+		limits = append(limits, &limit)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating limits: %w", err)
+	}
+
+	return limits, nil
+}
+
+// ListLimits retrieves all limits with optional filtering
+func (d *Database) ListLimits(filters map[string]interface{}) ([]*Limit, error) {
+	query := `
+		SELECT id, model_id, limit_type, limit_value, current_usage, reset_period,
+			reset_time, is_hard_limit, created_at, updated_at
+		FROM limits
+	`
+
+	var conditions []string
+	var args []interface{}
+
+	if modelID, ok := filters["model_id"]; ok {
+		conditions = append(conditions, "model_id = ?")
+		args = append(args, modelID)
+	}
+
+	if limitType, ok := filters["limit_type"]; ok {
+		conditions = append(conditions, "limit_type = ?")
+		args = append(args, limitType)
+	}
+
+	if isHardLimit, ok := filters["is_hard_limit"]; ok {
+		conditions = append(conditions, "is_hard_limit = ?")
+		args = append(args, isHardLimit)
+	}
+
+	// Add WHERE clause if there are conditions
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	query += " ORDER BY model_id, limit_type"
+
+	rows, err := d.conn.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list limits: %w", err)
 	}
 	defer rows.Close()
 

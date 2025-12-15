@@ -1,7 +1,9 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -9,6 +11,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/yaml.v3"
 
 	"llm-verifier/config"
 	"llm-verifier/database"
@@ -26,27 +30,64 @@ func (s *Server) healthCheck(c *gin.Context) {
 
 // login handles user authentication
 func (s *Server) login(c *gin.Context) {
-	var credentials struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
+	var credentials LoginRequest
 
 	if err := c.ShouldBindJSON(&credentials); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
+		HandleValidationError(c, err)
 		return
 	}
 
-	// TODO: Implement proper user authentication
-	if credentials.Username == "" || credentials.Password == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+	// Sanitize inputs
+	username, err := ValidateAndSanitizeString(credentials.Username, 3, 50, false)
+	if err != nil {
+		SendError(c, http.StatusBadRequest, ErrCodeValidation, err.Error(), nil)
 		return
 	}
+
+	// Validate password strength
+	if err := ValidatePassword(credentials.Password); err != nil {
+		SendError(c, http.StatusBadRequest, ErrCodeValidation, err.Error(), nil)
+		return
+	}
+
+	// Get user from database
+	user, err := s.database.GetUserByUsername(username)
+	if err != nil {
+		// User not found or database error
+		log.Printf("Login failed: user '%s' not found or database error: %v", username, err)
+		HandleUnauthorizedError(c, "Invalid credentials")
+		return
+	}
+
+	// Check if user is active
+	if !user.IsActive {
+		log.Printf("Login failed: user '%s' account is disabled", username)
+		HandleUnauthorizedError(c, "Account is disabled")
+		return
+	}
+
+	// Verify password
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(credentials.Password))
+	if err != nil {
+		log.Printf("Login failed: invalid password for user '%s'", username)
+		HandleUnauthorizedError(c, "Invalid credentials")
+		return
+	}
+
+	// Update last login time
+	currentTime := time.Now()
+	user.LastLogin = &currentTime
+	if err := s.database.UpdateUser(user); err != nil {
+		log.Printf("Failed to update last login for user '%s': %v", username, err)
+	}
+
+	log.Printf("User '%s' (ID: %d) logged in successfully", username, user.ID)
 
 	// Create JWT token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id":  1,
-		"username": credentials.Username,
-		"role":     "admin",
+		"user_id":  user.ID,
+		"username": user.Username,
+		"role":     user.Role,
 		"exp":      time.Now().Add(time.Hour * 24).Unix(),
 		"iat":      time.Now().Unix(),
 	})
@@ -112,19 +153,53 @@ func (s *Server) getModels(c *gin.Context) {
 
 // createModel creates a new model
 func (s *Server) createModel(c *gin.Context) {
-	var model database.Model
-	if err := c.ShouldBindJSON(&model); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid model data"})
+	var request CreateModelRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		HandleValidationError(c, err)
 		return
+	}
+
+	// Convert request to database model
+	model := database.Model{
+		ProviderID:            request.ProviderID,
+		ModelID:               request.ModelID,
+		Name:                  request.Name,
+		Description:           request.Description,
+		Version:               request.Version,
+		Architecture:          request.Architecture,
+		ParameterCount:        request.ParameterCount,
+		ContextWindowTokens:   request.ContextWindowTokens,
+		MaxOutputTokens:       request.MaxOutputTokens,
+		TrainingDataCutoff:    request.TrainingDataCutoff,
+		ReleaseDate:           request.ReleaseDate,
+		IsMultimodal:          request.IsMultimodal,
+		SupportsVision:        request.SupportsVision,
+		SupportsAudio:         request.SupportsAudio,
+		SupportsVideo:         request.SupportsVideo,
+		SupportsReasoning:     request.SupportsReasoning,
+		OpenSource:            request.OpenSource,
+		Deprecated:            request.Deprecated,
+		Tags:                  request.Tags,
+		LanguageSupport:       request.LanguageSupport,
+		UseCase:               request.UseCase,
+		VerificationStatus:    request.VerificationStatus,
+		OverallScore:          request.OverallScore,
+		CodeCapabilityScore:   request.CodeCapabilityScore,
+		ResponsivenessScore:   request.ResponsivenessScore,
+		ReliabilityScore:      request.ReliabilityScore,
+		FeatureRichnessScore:  request.FeatureRichnessScore,
+		ValuePropositionScore: request.ValuePropositionScore,
 	}
 
 	err := s.database.CreateModel(&model)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create model"})
+		log.Printf("Failed to create model '%s': %v", request.Name, err)
+		HandleDatabaseError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusCreated, model)
+	log.Printf("Model created: ID=%d, Name='%s', ProviderID=%d", model.ID, model.Name, model.ProviderID)
+	SendSuccess(c, http.StatusCreated, model, "Model created successfully")
 }
 
 // getModel retrieves a specific model by ID
@@ -303,24 +378,116 @@ func (s *Server) updateModel(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid model ID"})
+		SendError(c, http.StatusBadRequest, ErrCodeValidation, "Invalid model ID", nil)
 		return
 	}
 
-	var model database.Model
-	if err := c.ShouldBindJSON(&model); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid model data"})
+	var request UpdateModelRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		HandleValidationError(c, err)
 		return
 	}
 
-	model.ID = id
-	err = s.database.UpdateModel(&model)
+	// Get existing model to merge updates
+	existingModel, err := s.database.GetModel(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update model"})
+		HandleNotFoundError(c, "Model", id)
 		return
 	}
 
-	c.JSON(http.StatusOK, model)
+	// Update fields if provided in request
+	if request.ProviderID > 0 {
+		existingModel.ProviderID = request.ProviderID
+	}
+	if request.ModelID != "" {
+		existingModel.ModelID = request.ModelID
+	}
+	if request.Name != "" {
+		existingModel.Name = request.Name
+	}
+	if request.Description != "" {
+		existingModel.Description = request.Description
+	}
+	if request.Version != "" {
+		existingModel.Version = request.Version
+	}
+	if request.Architecture != "" {
+		existingModel.Architecture = request.Architecture
+	}
+	if request.ParameterCount != nil {
+		existingModel.ParameterCount = request.ParameterCount
+	}
+	if request.ContextWindowTokens != nil {
+		existingModel.ContextWindowTokens = request.ContextWindowTokens
+	}
+	if request.MaxOutputTokens != nil {
+		existingModel.MaxOutputTokens = request.MaxOutputTokens
+	}
+	if request.TrainingDataCutoff != nil {
+		existingModel.TrainingDataCutoff = request.TrainingDataCutoff
+	}
+	if request.ReleaseDate != nil {
+		existingModel.ReleaseDate = request.ReleaseDate
+	}
+	if request.IsMultimodal != nil {
+		existingModel.IsMultimodal = *request.IsMultimodal
+	}
+	if request.SupportsVision != nil {
+		existingModel.SupportsVision = *request.SupportsVision
+	}
+	if request.SupportsAudio != nil {
+		existingModel.SupportsAudio = *request.SupportsAudio
+	}
+	if request.SupportsVideo != nil {
+		existingModel.SupportsVideo = *request.SupportsVideo
+	}
+	if request.SupportsReasoning != nil {
+		existingModel.SupportsReasoning = *request.SupportsReasoning
+	}
+	if request.OpenSource != nil {
+		existingModel.OpenSource = *request.OpenSource
+	}
+	if request.Deprecated != nil {
+		existingModel.Deprecated = *request.Deprecated
+	}
+	if request.Tags != nil {
+		existingModel.Tags = request.Tags
+	}
+	if request.LanguageSupport != nil {
+		existingModel.LanguageSupport = request.LanguageSupport
+	}
+	if request.UseCase != "" {
+		existingModel.UseCase = request.UseCase
+	}
+	if request.VerificationStatus != "" {
+		existingModel.VerificationStatus = request.VerificationStatus
+	}
+	if request.OverallScore > 0 {
+		existingModel.OverallScore = request.OverallScore
+	}
+	if request.CodeCapabilityScore > 0 {
+		existingModel.CodeCapabilityScore = request.CodeCapabilityScore
+	}
+	if request.ResponsivenessScore > 0 {
+		existingModel.ResponsivenessScore = request.ResponsivenessScore
+	}
+	if request.ReliabilityScore > 0 {
+		existingModel.ReliabilityScore = request.ReliabilityScore
+	}
+	if request.FeatureRichnessScore > 0 {
+		existingModel.FeatureRichnessScore = request.FeatureRichnessScore
+	}
+	if request.ValuePropositionScore > 0 {
+		existingModel.ValuePropositionScore = request.ValuePropositionScore
+	}
+
+	err = s.database.UpdateModel(existingModel)
+	if err != nil {
+		HandleDatabaseError(c, err)
+		return
+	}
+
+	SendSuccess(c, http.StatusOK, existingModel, "Model updated successfully")
 }
 
 // deleteModel deletes a specific model
@@ -398,10 +565,25 @@ func (s *Server) getProvider(c *gin.Context) {
 
 // createProvider creates a new provider
 func (s *Server) createProvider(c *gin.Context) {
-	var provider database.Provider
-	if err := c.ShouldBindJSON(&provider); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid provider data"})
+	var req CreateProviderRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
 		return
+	}
+
+	provider := database.Provider{
+		Name:                  req.Name,
+		Endpoint:              req.Endpoint,
+		APIKeyEncrypted:       req.APIKeyEncrypted,
+		Description:           req.Description,
+		Website:               req.Website,
+		SupportEmail:          req.SupportEmail,
+		DocumentationURL:      req.DocumentationURL,
+		IsActive:              req.IsActive,
+		ReliabilityScore:      req.ReliabilityScore,
+		AverageResponseTimeMs: req.AverageResponseTimeMs,
+		CreatedAt:             time.Now(),
+		UpdatedAt:             time.Now(),
 	}
 
 	err := s.database.CreateProvider(&provider)
@@ -422,20 +604,59 @@ func (s *Server) updateProvider(c *gin.Context) {
 		return
 	}
 
-	var provider database.Provider
-	if err := c.ShouldBindJSON(&provider); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid provider data"})
+	var req UpdateProviderRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
 		return
 	}
 
-	provider.ID = id
-	err = s.database.UpdateProvider(&provider)
+	// Get existing provider to preserve fields not in request
+	existingProvider, err := s.database.GetProvider(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Provider not found"})
+		return
+	}
+
+	// Update fields from request
+	if req.Name != "" {
+		existingProvider.Name = req.Name
+	}
+	if req.Endpoint != "" {
+		existingProvider.Endpoint = req.Endpoint
+	}
+	if req.APIKeyEncrypted != "" {
+		existingProvider.APIKeyEncrypted = req.APIKeyEncrypted
+	}
+	if req.Description != "" {
+		existingProvider.Description = req.Description
+	}
+	if req.Website != "" {
+		existingProvider.Website = req.Website
+	}
+	if req.SupportEmail != "" {
+		existingProvider.SupportEmail = req.SupportEmail
+	}
+	if req.DocumentationURL != "" {
+		existingProvider.DocumentationURL = req.DocumentationURL
+	}
+	if req.IsActive != nil {
+		existingProvider.IsActive = *req.IsActive
+	}
+	if req.ReliabilityScore != 0 {
+		existingProvider.ReliabilityScore = req.ReliabilityScore
+	}
+	if req.AverageResponseTimeMs != 0 {
+		existingProvider.AverageResponseTimeMs = req.AverageResponseTimeMs
+	}
+	existingProvider.UpdatedAt = time.Now()
+
+	err = s.database.UpdateProvider(existingProvider)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update provider"})
 		return
 	}
 
-	c.JSON(http.StatusOK, provider)
+	c.JSON(http.StatusOK, existingProvider)
 }
 
 // deleteProvider deletes a specific provider
@@ -495,10 +716,73 @@ func (s *Server) getVerificationResults(c *gin.Context) {
 
 // createVerificationResult creates a new verification result
 func (s *Server) createVerificationResult(c *gin.Context) {
-	var verificationResult database.VerificationResult
-	if err := c.ShouldBindJSON(&verificationResult); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid verification result data"})
+	var req CreateVerificationResultRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
 		return
+	}
+
+	verificationResult := database.VerificationResult{
+		ModelID:                  req.ModelID,
+		VerificationType:         req.VerificationType,
+		StartedAt:                req.StartedAt,
+		CompletedAt:              req.CompletedAt,
+		Status:                   req.Status,
+		ErrorMessage:             req.ErrorMessage,
+		ModelExists:              req.ModelExists,
+		Responsive:               req.Responsive,
+		Overloaded:               req.Overloaded,
+		LatencyMs:                req.LatencyMs,
+		SupportsToolUse:          req.SupportsToolUse,
+		SupportsFunctionCalling:  req.SupportsFunctionCalling,
+		SupportsCodeGeneration:   req.SupportsCodeGeneration,
+		SupportsCodeCompletion:   req.SupportsCodeCompletion,
+		SupportsCodeReview:       req.SupportsCodeReview,
+		SupportsCodeExplanation:  req.SupportsCodeExplanation,
+		SupportsEmbeddings:       req.SupportsEmbeddings,
+		SupportsReranking:        req.SupportsReranking,
+		SupportsImageGeneration:  req.SupportsImageGeneration,
+		SupportsAudioGeneration:  req.SupportsAudioGeneration,
+		SupportsVideoGeneration:  req.SupportsVideoGeneration,
+		SupportsMCPs:             req.SupportsMCPs,
+		SupportsLSPs:             req.SupportsLSPs,
+		SupportsMultimodal:       req.SupportsMultimodal,
+		SupportsStreaming:        req.SupportsStreaming,
+		SupportsJSONMode:         req.SupportsJSONMode,
+		SupportsStructuredOutput: req.SupportsStructuredOutput,
+		SupportsReasoning:        req.SupportsReasoning,
+		SupportsParallelToolUse:  req.SupportsParallelToolUse,
+		MaxParallelCalls:         req.MaxParallelCalls,
+		SupportsBatchProcessing:  req.SupportsBatchProcessing,
+		CodeLanguageSupport:      req.CodeLanguageSupport,
+		CodeDebugging:            req.CodeDebugging,
+		CodeOptimization:         req.CodeOptimization,
+		TestGeneration:           req.TestGeneration,
+		DocumentationGeneration:  req.DocumentationGeneration,
+		Refactoring:              req.Refactoring,
+		ErrorResolution:          req.ErrorResolution,
+		ArchitectureDesign:       req.ArchitectureDesign,
+		SecurityAssessment:       req.SecurityAssessment,
+		PatternRecognition:       req.PatternRecognition,
+		DebuggingAccuracy:        req.DebuggingAccuracy,
+		MaxHandledDepth:          req.MaxHandledDepth,
+		CodeQualityScore:         req.CodeQualityScore,
+		LogicCorrectnessScore:    req.LogicCorrectnessScore,
+		RuntimeEfficiencyScore:   req.RuntimeEfficiencyScore,
+		OverallScore:             req.OverallScore,
+		CodeCapabilityScore:      req.CodeCapabilityScore,
+		ResponsivenessScore:      req.ResponsivenessScore,
+		ReliabilityScore:         req.ReliabilityScore,
+		FeatureRichnessScore:     req.FeatureRichnessScore,
+		ValuePropositionScore:    req.ValuePropositionScore,
+		ScoreDetails:             req.ScoreDetails,
+		AvgLatencyMs:             req.AvgLatencyMs,
+		P95LatencyMs:             req.P95LatencyMs,
+		MinLatencyMs:             req.MinLatencyMs,
+		MaxLatencyMs:             req.MaxLatencyMs,
+		ThroughputRPS:            req.ThroughputRPS,
+		RawRequest:               req.RawRequest,
+		RawResponse:              req.RawResponse,
 	}
 
 	err := s.database.CreateVerificationResult(&verificationResult)
@@ -537,20 +821,208 @@ func (s *Server) updateVerificationResult(c *gin.Context) {
 		return
 	}
 
-	var verificationResult database.VerificationResult
-	if err := c.ShouldBindJSON(&verificationResult); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid verification result data"})
+	var req UpdateVerificationResultRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
 		return
 	}
 
-	verificationResult.ID = id
-	err = s.database.UpdateVerificationResult(&verificationResult)
+	// Get existing verification result to preserve fields not in request
+	existingResult, err := s.database.GetVerificationResult(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Verification result not found"})
+		return
+	}
+
+	// Update fields from request
+	if req.ModelID != 0 {
+		existingResult.ModelID = req.ModelID
+	}
+	if req.VerificationType != "" {
+		existingResult.VerificationType = req.VerificationType
+	}
+	if !req.StartedAt.IsZero() {
+		existingResult.StartedAt = req.StartedAt
+	}
+	if req.CompletedAt != nil {
+		existingResult.CompletedAt = req.CompletedAt
+	}
+	if req.Status != "" {
+		existingResult.Status = req.Status
+	}
+	if req.ErrorMessage != nil {
+		existingResult.ErrorMessage = req.ErrorMessage
+	}
+	if req.ModelExists != nil {
+		existingResult.ModelExists = req.ModelExists
+	}
+	if req.Responsive != nil {
+		existingResult.Responsive = req.Responsive
+	}
+	if req.Overloaded != nil {
+		existingResult.Overloaded = req.Overloaded
+	}
+	if req.LatencyMs != nil {
+		existingResult.LatencyMs = req.LatencyMs
+	}
+	if req.SupportsToolUse != nil {
+		existingResult.SupportsToolUse = *req.SupportsToolUse
+	}
+	if req.SupportsFunctionCalling != nil {
+		existingResult.SupportsFunctionCalling = *req.SupportsFunctionCalling
+	}
+	if req.SupportsCodeGeneration != nil {
+		existingResult.SupportsCodeGeneration = *req.SupportsCodeGeneration
+	}
+	if req.SupportsCodeCompletion != nil {
+		existingResult.SupportsCodeCompletion = *req.SupportsCodeCompletion
+	}
+	if req.SupportsCodeReview != nil {
+		existingResult.SupportsCodeReview = *req.SupportsCodeReview
+	}
+	if req.SupportsCodeExplanation != nil {
+		existingResult.SupportsCodeExplanation = *req.SupportsCodeExplanation
+	}
+	if req.SupportsEmbeddings != nil {
+		existingResult.SupportsEmbeddings = *req.SupportsEmbeddings
+	}
+	if req.SupportsReranking != nil {
+		existingResult.SupportsReranking = *req.SupportsReranking
+	}
+	if req.SupportsImageGeneration != nil {
+		existingResult.SupportsImageGeneration = *req.SupportsImageGeneration
+	}
+	if req.SupportsAudioGeneration != nil {
+		existingResult.SupportsAudioGeneration = *req.SupportsAudioGeneration
+	}
+	if req.SupportsVideoGeneration != nil {
+		existingResult.SupportsVideoGeneration = *req.SupportsVideoGeneration
+	}
+	if req.SupportsMCPs != nil {
+		existingResult.SupportsMCPs = *req.SupportsMCPs
+	}
+	if req.SupportsLSPs != nil {
+		existingResult.SupportsLSPs = *req.SupportsLSPs
+	}
+	if req.SupportsMultimodal != nil {
+		existingResult.SupportsMultimodal = *req.SupportsMultimodal
+	}
+	if req.SupportsStreaming != nil {
+		existingResult.SupportsStreaming = *req.SupportsStreaming
+	}
+	if req.SupportsJSONMode != nil {
+		existingResult.SupportsJSONMode = *req.SupportsJSONMode
+	}
+	if req.SupportsStructuredOutput != nil {
+		existingResult.SupportsStructuredOutput = *req.SupportsStructuredOutput
+	}
+	if req.SupportsReasoning != nil {
+		existingResult.SupportsReasoning = *req.SupportsReasoning
+	}
+	if req.SupportsParallelToolUse != nil {
+		existingResult.SupportsParallelToolUse = *req.SupportsParallelToolUse
+	}
+	if req.MaxParallelCalls != 0 {
+		existingResult.MaxParallelCalls = req.MaxParallelCalls
+	}
+	if req.SupportsBatchProcessing != nil {
+		existingResult.SupportsBatchProcessing = *req.SupportsBatchProcessing
+	}
+	if req.CodeLanguageSupport != nil {
+		existingResult.CodeLanguageSupport = req.CodeLanguageSupport
+	}
+	if req.CodeDebugging != nil {
+		existingResult.CodeDebugging = *req.CodeDebugging
+	}
+	if req.CodeOptimization != nil {
+		existingResult.CodeOptimization = *req.CodeOptimization
+	}
+	if req.TestGeneration != nil {
+		existingResult.TestGeneration = *req.TestGeneration
+	}
+	if req.DocumentationGeneration != nil {
+		existingResult.DocumentationGeneration = *req.DocumentationGeneration
+	}
+	if req.Refactoring != nil {
+		existingResult.Refactoring = *req.Refactoring
+	}
+	if req.ErrorResolution != nil {
+		existingResult.ErrorResolution = *req.ErrorResolution
+	}
+	if req.ArchitectureDesign != nil {
+		existingResult.ArchitectureDesign = *req.ArchitectureDesign
+	}
+	if req.SecurityAssessment != nil {
+		existingResult.SecurityAssessment = *req.SecurityAssessment
+	}
+	if req.PatternRecognition != nil {
+		existingResult.PatternRecognition = *req.PatternRecognition
+	}
+	if req.DebuggingAccuracy != 0 {
+		existingResult.DebuggingAccuracy = req.DebuggingAccuracy
+	}
+	if req.MaxHandledDepth != 0 {
+		existingResult.MaxHandledDepth = req.MaxHandledDepth
+	}
+	if req.CodeQualityScore != 0 {
+		existingResult.CodeQualityScore = req.CodeQualityScore
+	}
+	if req.LogicCorrectnessScore != 0 {
+		existingResult.LogicCorrectnessScore = req.LogicCorrectnessScore
+	}
+	if req.RuntimeEfficiencyScore != 0 {
+		existingResult.RuntimeEfficiencyScore = req.RuntimeEfficiencyScore
+	}
+	if req.OverallScore != 0 {
+		existingResult.OverallScore = req.OverallScore
+	}
+	if req.CodeCapabilityScore != 0 {
+		existingResult.CodeCapabilityScore = req.CodeCapabilityScore
+	}
+	if req.ResponsivenessScore != 0 {
+		existingResult.ResponsivenessScore = req.ResponsivenessScore
+	}
+	if req.ReliabilityScore != 0 {
+		existingResult.ReliabilityScore = req.ReliabilityScore
+	}
+	if req.FeatureRichnessScore != 0 {
+		existingResult.FeatureRichnessScore = req.FeatureRichnessScore
+	}
+	if req.ValuePropositionScore != 0 {
+		existingResult.ValuePropositionScore = req.ValuePropositionScore
+	}
+	if req.ScoreDetails != "" {
+		existingResult.ScoreDetails = req.ScoreDetails
+	}
+	if req.AvgLatencyMs != 0 {
+		existingResult.AvgLatencyMs = req.AvgLatencyMs
+	}
+	if req.P95LatencyMs != 0 {
+		existingResult.P95LatencyMs = req.P95LatencyMs
+	}
+	if req.MinLatencyMs != 0 {
+		existingResult.MinLatencyMs = req.MinLatencyMs
+	}
+	if req.MaxLatencyMs != 0 {
+		existingResult.MaxLatencyMs = req.MaxLatencyMs
+	}
+	if req.ThroughputRPS != 0 {
+		existingResult.ThroughputRPS = req.ThroughputRPS
+	}
+	if req.RawRequest != nil {
+		existingResult.RawRequest = req.RawRequest
+	}
+	if req.RawResponse != nil {
+		existingResult.RawResponse = req.RawResponse
+	}
+
+	err = s.database.UpdateVerificationResult(existingResult)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update verification result"})
 		return
 	}
 
-	c.JSON(http.StatusOK, verificationResult)
+	c.JSON(http.StatusOK, existingResult)
 }
 
 // deleteVerificationResult deletes a verification result
@@ -573,16 +1045,10 @@ func (s *Server) deleteVerificationResult(c *gin.Context) {
 
 // generateReport generates a new report
 func (s *Server) generateReport(c *gin.Context) {
-	var request struct {
-		ReportType string  `json:"report_type" binding:"required,oneof=summary detailed comparison"`
-		ModelIDs   []int64 `json:"model_ids,omitempty"`
-		StartDate  string  `json:"start_date,omitempty"`
-		EndDate    string  `json:"end_date,omitempty"`
-		Format     string  `json:"format" binding:"required,oneof=json html pdf"`
-	}
+	var request GenerateReportRequest
 
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request: " + err.Error()})
+		HandleValidationError(c, err)
 		return
 	}
 
@@ -992,53 +1458,33 @@ func (s *Server) getConfig(c *gin.Context) {
 
 // updateConfig updates system configuration
 func (s *Server) updateConfig(c *gin.Context) {
-	var updateData struct {
-		Concurrency *int           `json:"concurrency,omitempty"`
-		Timeout     *time.Duration `json:"timeout,omitempty"`
-		API         *struct {
-			Port       *string `json:"port,omitempty"`
-			RateLimit  *int    `json:"rate_limit,omitempty"`
-			EnableCORS *bool   `json:"enable_cors,omitempty"`
-		} `json:"api,omitempty"`
-	}
+	var request UpdateSystemConfigRequest
 
-	if err := c.ShouldBindJSON(&updateData); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body: " + err.Error()})
+	if err := c.ShouldBindJSON(&request); err != nil {
+		HandleValidationError(c, err)
 		return
 	}
 
 	// Update concurrency if provided
-	if updateData.Concurrency != nil {
-		if *updateData.Concurrency < 1 || *updateData.Concurrency > 100 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Concurrency must be between 1 and 100"})
-			return
-		}
-		s.config.Concurrency = *updateData.Concurrency
+	if request.Concurrency != nil {
+		s.config.Concurrency = *request.Concurrency
 	}
 
 	// Update timeout if provided
-	if updateData.Timeout != nil {
-		if *updateData.Timeout < time.Second || *updateData.Timeout > 10*time.Minute {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Timeout must be between 1 second and 10 minutes"})
-			return
-		}
-		s.config.Timeout = *updateData.Timeout
+	if request.Timeout != nil {
+		s.config.Timeout = *request.Timeout
 	}
 
 	// Update API settings if provided
-	if updateData.API != nil {
-		if updateData.API.Port != nil {
-			s.config.API.Port = *updateData.API.Port
+	if request.API != nil {
+		if request.API.Port != nil {
+			s.config.API.Port = *request.API.Port
 		}
-		if updateData.API.RateLimit != nil {
-			if *updateData.API.RateLimit < 1 || *updateData.API.RateLimit > 1000 {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Rate limit must be between 1 and 1000 requests per minute"})
-				return
-			}
-			s.config.API.RateLimit = *updateData.API.RateLimit
+		if request.API.RateLimit != nil {
+			s.config.API.RateLimit = *request.API.RateLimit
 		}
-		if updateData.API.EnableCORS != nil {
-			s.config.API.EnableCORS = *updateData.API.EnableCORS
+		if request.API.EnableCORS != nil {
+			s.config.API.EnableCORS = *request.API.EnableCORS
 		}
 	}
 
@@ -1060,42 +1506,93 @@ func (s *Server) updateConfig(c *gin.Context) {
 func (s *Server) exportConfig(c *gin.Context) {
 	format := c.Query("format")
 	if format == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Format parameter required"})
+		log.Printf("Export config failed: format parameter required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Format parameter required. Supported formats: opencode, claude, vscode, json, yaml"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Configuration exported in " + format + " format",
-		"format":  format,
-	})
+	// Export configuration based on format
+	exported, err := s.exportConfiguration(format)
+	if err != nil {
+		log.Printf("Export config failed for format '%s': %v", format, err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to export configuration: " + err.Error()})
+		return
+	}
+
+	log.Printf("Configuration exported successfully in '%s' format", format)
+
+	// Set appropriate content type based on format
+	contentType := "application/json"
+	filename := "config.json"
+
+	switch format {
+	case "opencode":
+		contentType = "application/json"
+		filename = "opencode-config.json"
+	case "claude":
+		contentType = "application/json"
+		filename = "claude-config.json"
+	case "vscode":
+		contentType = "application/json"
+		filename = "vscode-settings.json"
+	case "yaml":
+		contentType = "application/x-yaml"
+		filename = "config.yaml"
+	default: // json
+		contentType = "application/json"
+		filename = "config.json"
+	}
+
+	// Set headers for file download
+	c.Header("Content-Type", contentType)
+	c.Header("Content-Disposition", "attachment; filename="+filename)
+	c.String(http.StatusOK, exported)
 }
 
 // getPricing retrieves pricing information with optional filtering
 func (s *Server) getPricing(c *gin.Context) {
-	modelIDStr := c.Query("model_id")
+	// Build filters from query parameters
+	filters := make(map[string]interface{})
 
-	if modelIDStr != "" {
-		// If model_id is provided, get pricing for that specific model
+	// Model ID filter
+	if modelIDStr := c.Query("model_id"); modelIDStr != "" {
 		modelID, err := strconv.ParseInt(modelIDStr, 10, 64)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid model_id parameter"})
 			return
 		}
-
-		pricing, err := s.database.ListPricing(modelID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve pricing"})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"pricing":  pricing,
-			"model_id": modelID,
-		})
-	} else {
-		// TODO: Implement general pricing listing without model filter
-		c.JSON(http.StatusNotImplemented, gin.H{"error": "General pricing listing not implemented"})
+		filters["model_id"] = modelID
 	}
+
+	// Pricing model filter
+	if pricingModel := c.Query("pricing_model"); pricingModel != "" {
+		filters["pricing_model"] = pricingModel
+	}
+
+	// Currency filter
+	if currency := c.Query("currency"); currency != "" {
+		filters["currency"] = currency
+	}
+
+	// Get pricing with filters
+	pricing, err := s.database.ListPricing(filters)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve pricing"})
+		return
+	}
+
+	// Prepare response
+	response := gin.H{
+		"pricing": pricing,
+		"filters": filters,
+	}
+
+	// Add model_id to response if it was filtered
+	if modelID, ok := filters["model_id"]; ok {
+		response["model_id"] = modelID
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // getPricingByID retrieves a specific pricing record by ID
@@ -1118,10 +1615,25 @@ func (s *Server) getPricingByID(c *gin.Context) {
 
 // createPricing creates a new pricing record
 func (s *Server) createPricing(c *gin.Context) {
-	var pricing database.Pricing
-	if err := c.ShouldBindJSON(&pricing); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid pricing data"})
+	var req CreatePricingRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
 		return
+	}
+
+	pricing := database.Pricing{
+		ModelID:              req.ModelID,
+		InputTokenCost:       req.InputTokenCost,
+		OutputTokenCost:      req.OutputTokenCost,
+		CachedInputTokenCost: req.CachedInputTokenCost,
+		StorageCost:          req.StorageCost,
+		RequestCost:          req.RequestCost,
+		Currency:             req.Currency,
+		PricingModel:         req.PricingModel,
+		EffectiveFrom:        req.EffectiveFrom,
+		EffectiveTo:          req.EffectiveTo,
+		CreatedAt:            time.Now(),
+		UpdatedAt:            time.Now(),
 	}
 
 	err := s.database.CreatePricing(&pricing)
@@ -1142,20 +1654,59 @@ func (s *Server) updatePricing(c *gin.Context) {
 		return
 	}
 
-	var pricing database.Pricing
-	if err := c.ShouldBindJSON(&pricing); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid pricing data"})
+	var req UpdatePricingRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
 		return
 	}
 
-	pricing.ID = id
-	err = s.database.UpdatePricing(&pricing)
+	// Get existing pricing to preserve fields not in request
+	existingPricing, err := s.database.GetPricing(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Pricing not found"})
+		return
+	}
+
+	// Update fields from request
+	if req.ModelID != 0 {
+		existingPricing.ModelID = req.ModelID
+	}
+	if req.InputTokenCost != 0 {
+		existingPricing.InputTokenCost = req.InputTokenCost
+	}
+	if req.OutputTokenCost != 0 {
+		existingPricing.OutputTokenCost = req.OutputTokenCost
+	}
+	if req.CachedInputTokenCost != 0 {
+		existingPricing.CachedInputTokenCost = req.CachedInputTokenCost
+	}
+	if req.StorageCost != 0 {
+		existingPricing.StorageCost = req.StorageCost
+	}
+	if req.RequestCost != 0 {
+		existingPricing.RequestCost = req.RequestCost
+	}
+	if req.Currency != "" {
+		existingPricing.Currency = req.Currency
+	}
+	if req.PricingModel != "" {
+		existingPricing.PricingModel = req.PricingModel
+	}
+	if req.EffectiveFrom != nil {
+		existingPricing.EffectiveFrom = req.EffectiveFrom
+	}
+	if req.EffectiveTo != nil {
+		existingPricing.EffectiveTo = req.EffectiveTo
+	}
+	existingPricing.UpdatedAt = time.Now()
+
+	err = s.database.UpdatePricing(existingPricing)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update pricing"})
 		return
 	}
 
-	c.JSON(http.StatusOK, pricing)
+	c.JSON(http.StatusOK, existingPricing)
 }
 
 // deletePricing deletes a pricing record
@@ -1178,30 +1729,53 @@ func (s *Server) deletePricing(c *gin.Context) {
 
 // getLimits retrieves limits with optional filtering
 func (s *Server) getLimits(c *gin.Context) {
-	modelIDStr := c.Query("model_id")
+	// Build filters from query parameters
+	filters := make(map[string]interface{})
 
-	if modelIDStr != "" {
-		// If model_id is provided, get limits for that specific model
+	// Model ID filter
+	if modelIDStr := c.Query("model_id"); modelIDStr != "" {
 		modelID, err := strconv.ParseInt(modelIDStr, 10, 64)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid model_id parameter"})
 			return
 		}
+		filters["model_id"] = modelID
+	}
 
-		limits, err := s.database.GetLimitsForModel(modelID)
+	// Limit type filter
+	if limitType := c.Query("limit_type"); limitType != "" {
+		filters["limit_type"] = limitType
+	}
+
+	// Hard limit filter
+	if isHardLimitStr := c.Query("is_hard_limit"); isHardLimitStr != "" {
+		isHardLimit, err := strconv.ParseBool(isHardLimitStr)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve limits"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid is_hard_limit parameter"})
 			return
 		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"limits":   limits,
-			"model_id": modelID,
-		})
-	} else {
-		// TODO: Implement general limits listing without model filter
-		c.JSON(http.StatusNotImplemented, gin.H{"error": "General limits listing not implemented"})
+		filters["is_hard_limit"] = isHardLimit
 	}
+
+	// Get limits with filters
+	limits, err := s.database.ListLimits(filters)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve limits"})
+		return
+	}
+
+	// Prepare response
+	response := gin.H{
+		"limits":  limits,
+		"filters": filters,
+	}
+
+	// Add model_id to response if it was filtered
+	if modelID, ok := filters["model_id"]; ok {
+		response["model_id"] = modelID
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // getLimitByID retrieves a specific limit by ID
@@ -1224,10 +1798,22 @@ func (s *Server) getLimitByID(c *gin.Context) {
 
 // createLimit creates a new limit record
 func (s *Server) createLimit(c *gin.Context) {
-	var limit database.Limit
-	if err := c.ShouldBindJSON(&limit); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit data"})
+	var req CreateLimitRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
 		return
+	}
+
+	limit := database.Limit{
+		ModelID:      req.ModelID,
+		LimitType:    req.LimitType,
+		LimitValue:   req.LimitValue,
+		CurrentUsage: req.CurrentUsage,
+		ResetPeriod:  req.ResetPeriod,
+		ResetTime:    req.ResetTime,
+		IsHardLimit:  req.IsHardLimit,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
 	}
 
 	err := s.database.CreateLimit(&limit)
@@ -1248,20 +1834,50 @@ func (s *Server) updateLimit(c *gin.Context) {
 		return
 	}
 
-	var limit database.Limit
-	if err := c.ShouldBindJSON(&limit); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit data"})
+	var req UpdateLimitRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
 		return
 	}
 
-	limit.ID = id
-	err = s.database.UpdateLimit(&limit)
+	// Get existing limit to preserve fields not in request
+	existingLimit, err := s.database.GetLimit(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Limit not found"})
+		return
+	}
+
+	// Update fields from request
+	if req.ModelID != 0 {
+		existingLimit.ModelID = req.ModelID
+	}
+	if req.LimitType != "" {
+		existingLimit.LimitType = req.LimitType
+	}
+	if req.LimitValue != 0 {
+		existingLimit.LimitValue = req.LimitValue
+	}
+	if req.CurrentUsage != 0 {
+		existingLimit.CurrentUsage = req.CurrentUsage
+	}
+	if req.ResetPeriod != "" {
+		existingLimit.ResetPeriod = req.ResetPeriod
+	}
+	if req.ResetTime != nil {
+		existingLimit.ResetTime = req.ResetTime
+	}
+	if req.IsHardLimit != nil {
+		existingLimit.IsHardLimit = *req.IsHardLimit
+	}
+	existingLimit.UpdatedAt = time.Now()
+
+	err = s.database.UpdateLimit(existingLimit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update limit"})
 		return
 	}
 
-	c.JSON(http.StatusOK, limit)
+	c.JSON(http.StatusOK, existingLimit)
 }
 
 // deleteLimit deletes a limit record
@@ -1369,10 +1985,28 @@ func (s *Server) getIssueByID(c *gin.Context) {
 
 // createIssue creates a new issue
 func (s *Server) createIssue(c *gin.Context) {
-	var issue database.Issue
-	if err := c.ShouldBindJSON(&issue); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid issue data"})
+	var req CreateIssueRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
 		return
+	}
+
+	issue := database.Issue{
+		ModelID:              req.ModelID,
+		IssueType:            req.IssueType,
+		Severity:             req.Severity,
+		Title:                req.Title,
+		Description:          req.Description,
+		Symptoms:             req.Symptoms,
+		Workarounds:          req.Workarounds,
+		AffectedFeatures:     req.AffectedFeatures,
+		FirstDetected:        req.FirstDetected,
+		LastOccurred:         req.LastOccurred,
+		ResolvedAt:           req.ResolvedAt,
+		ResolutionNotes:      req.ResolutionNotes,
+		VerificationResultID: req.VerificationResultID,
+		CreatedAt:            time.Now(),
+		UpdatedAt:            time.Now(),
 	}
 
 	err := s.database.CreateIssue(&issue)
@@ -1393,20 +2027,68 @@ func (s *Server) updateIssue(c *gin.Context) {
 		return
 	}
 
-	var issue database.Issue
-	if err := c.ShouldBindJSON(&issue); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid issue data"})
+	var req UpdateIssueRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
 		return
 	}
 
-	issue.ID = id
-	err = s.database.UpdateIssue(&issue)
+	// Get existing issue to preserve fields not in request
+	existingIssue, err := s.database.GetIssue(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Issue not found"})
+		return
+	}
+
+	// Update fields from request
+	if req.ModelID != 0 {
+		existingIssue.ModelID = req.ModelID
+	}
+	if req.IssueType != "" {
+		existingIssue.IssueType = req.IssueType
+	}
+	if req.Severity != "" {
+		existingIssue.Severity = req.Severity
+	}
+	if req.Title != "" {
+		existingIssue.Title = req.Title
+	}
+	if req.Description != "" {
+		existingIssue.Description = req.Description
+	}
+	if req.Symptoms != nil {
+		existingIssue.Symptoms = req.Symptoms
+	}
+	if req.Workarounds != nil {
+		existingIssue.Workarounds = req.Workarounds
+	}
+	if req.AffectedFeatures != nil {
+		existingIssue.AffectedFeatures = req.AffectedFeatures
+	}
+	if !req.FirstDetected.IsZero() {
+		existingIssue.FirstDetected = req.FirstDetected
+	}
+	if req.LastOccurred != nil {
+		existingIssue.LastOccurred = req.LastOccurred
+	}
+	if req.ResolvedAt != nil {
+		existingIssue.ResolvedAt = req.ResolvedAt
+	}
+	if req.ResolutionNotes != nil {
+		existingIssue.ResolutionNotes = req.ResolutionNotes
+	}
+	if req.VerificationResultID != nil {
+		existingIssue.VerificationResultID = req.VerificationResultID
+	}
+	existingIssue.UpdatedAt = time.Now()
+
+	err = s.database.UpdateIssue(existingIssue)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update issue"})
 		return
 	}
 
-	c.JSON(http.StatusOK, issue)
+	c.JSON(http.StatusOK, existingIssue)
 }
 
 // deleteIssue deletes an issue
@@ -1524,10 +2206,23 @@ func (s *Server) getEventByID(c *gin.Context) {
 
 // createEvent creates a new event
 func (s *Server) createEvent(c *gin.Context) {
-	var event database.Event
-	if err := c.ShouldBindJSON(&event); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid event data"})
+	var req CreateEventRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
 		return
+	}
+
+	event := database.Event{
+		EventType:            req.EventType,
+		Severity:             req.Severity,
+		Title:                req.Title,
+		Message:              req.Message,
+		Details:              req.Details,
+		ModelID:              req.ModelID,
+		ProviderID:           req.ProviderID,
+		VerificationResultID: req.VerificationResultID,
+		IssueID:              req.IssueID,
+		CreatedAt:            time.Now(),
 	}
 
 	err := s.database.CreateEvent(&event)
@@ -1548,20 +2243,55 @@ func (s *Server) updateEvent(c *gin.Context) {
 		return
 	}
 
-	var event database.Event
-	if err := c.ShouldBindJSON(&event); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid event data"})
+	var req UpdateEventRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
 		return
 	}
 
-	event.ID = id
-	err = s.database.UpdateEvent(&event)
+	// Get existing event to preserve fields not in request
+	existingEvent, err := s.database.GetEvent(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Event not found"})
+		return
+	}
+
+	// Update fields from request
+	if req.EventType != "" {
+		existingEvent.EventType = req.EventType
+	}
+	if req.Severity != "" {
+		existingEvent.Severity = req.Severity
+	}
+	if req.Title != "" {
+		existingEvent.Title = req.Title
+	}
+	if req.Message != "" {
+		existingEvent.Message = req.Message
+	}
+	if req.Details != nil {
+		existingEvent.Details = req.Details
+	}
+	if req.ModelID != nil {
+		existingEvent.ModelID = req.ModelID
+	}
+	if req.ProviderID != nil {
+		existingEvent.ProviderID = req.ProviderID
+	}
+	if req.VerificationResultID != nil {
+		existingEvent.VerificationResultID = req.VerificationResultID
+	}
+	if req.IssueID != nil {
+		existingEvent.IssueID = req.IssueID
+	}
+
+	err = s.database.UpdateEvent(existingEvent)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update event"})
 		return
 	}
 
-	c.JSON(http.StatusOK, event)
+	c.JSON(http.StatusOK, existingEvent)
 }
 
 // deleteEvent deletes an event
@@ -1669,10 +2399,24 @@ func (s *Server) getScheduleByID(c *gin.Context) {
 
 // createSchedule creates a new schedule
 func (s *Server) createSchedule(c *gin.Context) {
-	var schedule database.Schedule
-	if err := c.ShouldBindJSON(&schedule); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid schedule data"})
+	var req CreateScheduleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
 		return
+	}
+
+	schedule := database.Schedule{
+		Name:            req.Name,
+		Description:     req.Description,
+		ScheduleType:    req.ScheduleType,
+		CronExpression:  req.CronExpression,
+		IntervalSeconds: req.IntervalSeconds,
+		TargetType:      req.TargetType,
+		TargetID:        req.TargetID,
+		IsActive:        req.IsActive,
+		MaxRuns:         req.MaxRuns,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 	}
 
 	err := s.database.CreateSchedule(&schedule)
@@ -1693,20 +2437,56 @@ func (s *Server) updateSchedule(c *gin.Context) {
 		return
 	}
 
-	var schedule database.Schedule
-	if err := c.ShouldBindJSON(&schedule); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid schedule data"})
+	var req UpdateScheduleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
 		return
 	}
 
-	schedule.ID = id
-	err = s.database.UpdateSchedule(&schedule)
+	// Get existing schedule to preserve fields not in request
+	existingSchedule, err := s.database.GetSchedule(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Schedule not found"})
+		return
+	}
+
+	// Update fields from request
+	if req.Name != "" {
+		existingSchedule.Name = req.Name
+	}
+	if req.Description != nil {
+		existingSchedule.Description = req.Description
+	}
+	if req.ScheduleType != "" {
+		existingSchedule.ScheduleType = req.ScheduleType
+	}
+	if req.CronExpression != nil {
+		existingSchedule.CronExpression = req.CronExpression
+	}
+	if req.IntervalSeconds != nil {
+		existingSchedule.IntervalSeconds = req.IntervalSeconds
+	}
+	if req.TargetType != "" {
+		existingSchedule.TargetType = req.TargetType
+	}
+	if req.TargetID != nil {
+		existingSchedule.TargetID = req.TargetID
+	}
+	if req.IsActive != nil {
+		existingSchedule.IsActive = *req.IsActive
+	}
+	if req.MaxRuns != nil {
+		existingSchedule.MaxRuns = req.MaxRuns
+	}
+	existingSchedule.UpdatedAt = time.Now()
+
+	err = s.database.UpdateSchedule(existingSchedule)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update schedule"})
 		return
 	}
 
-	c.JSON(http.StatusOK, schedule)
+	c.JSON(http.StatusOK, existingSchedule)
 }
 
 // deleteSchedule deletes a schedule
@@ -1809,10 +2589,25 @@ func (s *Server) getConfigExportByID(c *gin.Context) {
 
 // createConfigExport creates a new config export
 func (s *Server) createConfigExport(c *gin.Context) {
-	var configExport database.ConfigExport
-	if err := c.ShouldBindJSON(&configExport); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid config export data"})
+	var req CreateConfigExportRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
 		return
+	}
+
+	configExport := database.ConfigExport{
+		ExportType:        req.ExportType,
+		Name:              req.Name,
+		Description:       req.Description,
+		ConfigData:        req.ConfigData,
+		TargetModels:      req.TargetModels,
+		TargetProviders:   req.TargetProviders,
+		Filters:           req.Filters,
+		IsVerified:        req.IsVerified,
+		VerificationNotes: req.VerificationNotes,
+		CreatedBy:         req.CreatedBy,
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
 	}
 
 	err := s.database.CreateConfigExport(&configExport)
@@ -1833,20 +2628,59 @@ func (s *Server) updateConfigExport(c *gin.Context) {
 		return
 	}
 
-	var configExport database.ConfigExport
-	if err := c.ShouldBindJSON(&configExport); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid config export data"})
+	var req UpdateConfigExportRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
 		return
 	}
 
-	configExport.ID = id
-	err = s.database.UpdateConfigExport(&configExport)
+	// Get existing config export to preserve fields not in request
+	existingExport, err := s.database.GetConfigExport(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Config export not found"})
+		return
+	}
+
+	// Update fields from request
+	if req.ExportType != "" {
+		existingExport.ExportType = req.ExportType
+	}
+	if req.Name != "" {
+		existingExport.Name = req.Name
+	}
+	if req.Description != "" {
+		existingExport.Description = req.Description
+	}
+	if req.ConfigData != "" {
+		existingExport.ConfigData = req.ConfigData
+	}
+	if req.TargetModels != nil {
+		existingExport.TargetModels = req.TargetModels
+	}
+	if req.TargetProviders != nil {
+		existingExport.TargetProviders = req.TargetProviders
+	}
+	if req.Filters != nil {
+		existingExport.Filters = req.Filters
+	}
+	if req.IsVerified != nil {
+		existingExport.IsVerified = *req.IsVerified
+	}
+	if req.VerificationNotes != nil {
+		existingExport.VerificationNotes = req.VerificationNotes
+	}
+	if req.CreatedBy != nil {
+		existingExport.CreatedBy = req.CreatedBy
+	}
+	existingExport.UpdatedAt = time.Now()
+
+	err = s.database.UpdateConfigExport(existingExport)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update config export"})
 		return
 	}
 
-	c.JSON(http.StatusOK, configExport)
+	c.JSON(http.StatusOK, existingExport)
 }
 
 // deleteConfigExport deletes a config export
@@ -2008,4 +2842,133 @@ func (s *Server) getLogByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, logEntry)
+}
+
+// exportConfiguration exports the current configuration in the specified format
+func (s *Server) exportConfiguration(format string) (string, error) {
+	switch format {
+	case "json":
+		return s.exportAsJSON()
+	case "yaml":
+		return s.exportAsYAML()
+	case "opencode":
+		return s.exportAsOpenCode()
+	case "claude":
+		return s.exportAsClaude()
+	case "vscode":
+		return s.exportAsVSCode()
+	default:
+		return "", fmt.Errorf("unsupported export format: %s", format)
+	}
+}
+
+// exportAsJSON exports configuration as JSON
+func (s *Server) exportAsJSON() (string, error) {
+	// Convert config to JSON
+	jsonBytes, err := json.MarshalIndent(s.config, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal config to JSON: %w", err)
+	}
+	return string(jsonBytes), nil
+}
+
+// exportAsYAML exports configuration as YAML
+func (s *Server) exportAsYAML() (string, error) {
+	// Convert config to YAML
+	yamlBytes, err := yaml.Marshal(s.config)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal config to YAML: %w", err)
+	}
+	return string(yamlBytes), nil
+}
+
+// exportAsOpenCode exports configuration in OpenCode format
+func (s *Server) exportAsOpenCode() (string, error) {
+	// OpenCode format: JSON with specific structure for OpenCode AI assistant
+	opencodeConfig := map[string]interface{}{
+		"name":    "LLM Verifier Configuration",
+		"version": "1.0",
+		"config": map[string]interface{}{
+			"llms": s.config.LLMs,
+			"global": map[string]interface{}{
+				"base_url":      s.config.Global.BaseURL,
+				"default_model": s.config.Global.DefaultModel,
+				"max_retries":   s.config.Global.MaxRetries,
+				"request_delay": s.config.Global.RequestDelay.String(),
+				"timeout":       s.config.Global.Timeout.String(),
+			},
+			"api": map[string]interface{}{
+				"port":        s.config.API.Port,
+				"rate_limit":  s.config.API.RateLimit,
+				"enable_cors": s.config.API.EnableCORS,
+			},
+			"concurrency": s.config.Concurrency,
+			"timeout":     s.config.Timeout.String(),
+		},
+		"instructions": "This configuration file is for the LLM Verifier tool. It defines LLM endpoints, API settings, and global configuration.",
+	}
+
+	jsonBytes, err := json.MarshalIndent(opencodeConfig, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal OpenCode config: %w", err)
+	}
+	return string(jsonBytes), nil
+}
+
+// exportAsClaude exports configuration in Claude Code format
+func (s *Server) exportAsClaude() (string, error) {
+	// Claude Code format: Simplified JSON structure for Claude AI assistant
+	claudeConfig := map[string]interface{}{
+		"llm_verifier_config": map[string]interface{}{
+			"llm_endpoints": s.config.LLMs,
+			"settings": map[string]interface{}{
+				"concurrency":           s.config.Concurrency,
+				"timeout_seconds":       int(s.config.Timeout.Seconds()),
+				"api_port":              s.config.API.Port,
+				"rate_limit_per_minute": s.config.API.RateLimit,
+			},
+			"global": map[string]interface{}{
+				"default_model": s.config.Global.DefaultModel,
+				"max_retries":   s.config.Global.MaxRetries,
+			},
+		},
+		"description": "LLM Verifier configuration for Claude Code assistant integration",
+	}
+
+	jsonBytes, err := json.MarshalIndent(claudeConfig, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal Claude config: %w", err)
+	}
+	return string(jsonBytes), nil
+}
+
+// exportAsVSCode exports configuration in VS Code settings format
+func (s *Server) exportAsVSCode() (string, error) {
+	// VS Code format: JSON with VS Code settings structure
+	vscodeConfig := map[string]interface{}{
+		"llmVerifier": map[string]interface{}{
+			"llms":        s.config.LLMs,
+			"concurrency": s.config.Concurrency,
+			"timeout":     s.config.Timeout.String(),
+		},
+		"llmVerifier.api": map[string]interface{}{
+			"port":       s.config.API.Port,
+			"rateLimit":  s.config.API.RateLimit,
+			"enableCors": s.config.API.EnableCORS,
+		},
+		"llmVerifier.global": map[string]interface{}{
+			"defaultModel": s.config.Global.DefaultModel,
+			"maxRetries":   s.config.Global.MaxRetries,
+			"requestDelay": s.config.Global.RequestDelay.String(),
+		},
+		"[json]": map[string]interface{}{
+			"editor.defaultFormatter": "esbenp.prettier-vscode",
+		},
+	}
+
+	jsonBytes, err := json.MarshalIndent(vscodeConfig, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal VS Code config: %w", err)
+	}
+	return string(jsonBytes), nil
 }
