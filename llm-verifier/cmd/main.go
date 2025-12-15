@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
 	"llm-verifier/api"
@@ -171,6 +173,140 @@ func printJSON(data interface{}) error {
 	return nil
 }
 
+func printModelsTable(models []map[string]interface{}) {
+	if len(models) == 0 {
+		fmt.Println("No models found")
+		return
+	}
+
+	// Print header
+	fmt.Printf("%-20s %-15s %-10s %-8s %-6s\n", "NAME", "PROVIDER", "VERSION", "SCORE", "STATUS")
+	fmt.Println(strings.Repeat("-", 60))
+
+	// Print rows
+	for _, model := range models {
+		name := getStringField(model, "name")
+		provider := getStringField(model, "provider")
+		version := getStringField(model, "version")
+		score := getFloatField(model, "score")
+		status := getStringField(model, "status")
+
+		if len(name) > 18 {
+			name = name[:18] + "..."
+		}
+		if len(provider) > 13 {
+			provider = provider[:13] + "..."
+		}
+		if len(version) > 8 {
+			version = version[:8] + "..."
+		}
+
+		scoreStr := ""
+		if score > 0 {
+			scoreStr = fmt.Sprintf("%.1f", score)
+		}
+
+		fmt.Printf("%-20s %-15s %-10s %-8s %-6s\n", name, provider, version, scoreStr, status)
+	}
+}
+
+func getStringField(data map[string]interface{}, key string) string {
+	if val, ok := data[key]; ok {
+		if str, ok := val.(string); ok {
+			return str
+		}
+	}
+	return ""
+}
+
+func getFloatField(data map[string]interface{}, key string) float64 {
+	if val, ok := data[key]; ok {
+		if num, ok := val.(float64); ok {
+			return num
+		}
+	}
+	return 0.0
+}
+
+func printProvidersTable(providers []map[string]interface{}) {
+	if len(providers) == 0 {
+		fmt.Println("No providers found")
+		return
+	}
+
+	// Print header
+	fmt.Printf("%-20s %-10s %-8s %-6s\n", "NAME", "MODELS", "SCORE", "STATUS")
+	fmt.Println(strings.Repeat("-", 45))
+
+	// Print rows
+	for _, provider := range providers {
+		name := getStringField(provider, "name")
+		models := getIntField(provider, "model_count")
+		score := getFloatField(provider, "avg_score")
+		status := getStringField(provider, "status")
+
+		if len(name) > 18 {
+			name = name[:18] + "..."
+		}
+
+		scoreStr := ""
+		if score > 0 {
+			scoreStr = fmt.Sprintf("%.1f", score)
+		}
+
+		fmt.Printf("%-20s %-10d %-8s %-6s\n", name, models, scoreStr, status)
+	}
+}
+
+func getIntField(data map[string]interface{}, key string) int {
+	if val, ok := data[key]; ok {
+		if num, ok := val.(float64); ok {
+			return int(num)
+		}
+	}
+	return 0
+}
+
+func printResultsTable(results []map[string]interface{}) {
+	if len(results) == 0 {
+		fmt.Println("No verification results found")
+		return
+	}
+
+	// Print header
+	fmt.Printf("%-20s %-12s %-8s %-10s %-8s\n", "MODEL", "STATUS", "SCORE", "STARTED", "DURATION")
+	fmt.Println(strings.Repeat("-", 60))
+
+	// Print rows
+	for _, result := range results {
+		model := getStringField(result, "model_name")
+		status := getStringField(result, "status")
+		score := getFloatField(result, "score")
+		started := getStringField(result, "created_at")
+		duration := getStringField(result, "duration")
+
+		if len(model) > 18 {
+			model = model[:18] + "..."
+		}
+		if len(status) > 10 {
+			status = status[:10]
+		}
+		if len(started) > 10 {
+			started = started[:10]
+		}
+		if len(duration) > 8 {
+			duration = duration[:8]
+		}
+
+		scoreStr := ""
+		if score > 0 {
+			scoreStr = fmt.Sprintf("%.1f", score)
+		}
+
+		fmt.Printf("%-20s %-12s %-8s %-10s %-8s\n", model, status, scoreStr, started, duration)
+	}
+}
+
 func modelsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "models",
@@ -178,7 +314,7 @@ func modelsCmd() *cobra.Command {
 		Long:  `List, create, update, delete, and verify LLM models.`,
 	}
 
-	cmd.AddCommand(&cobra.Command{
+	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all models",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -192,11 +328,41 @@ func modelsCmd() *cobra.Command {
 				log.Fatalf("Failed to get models: %v", err)
 			}
 
-			if err := printJSON(models); err != nil {
-				log.Fatalf("Failed to print models: %v", err)
+			// Apply filtering if specified
+			filter, _ := cmd.Flags().GetString("filter")
+			if filter != "" {
+				filtered := make([]map[string]interface{}, 0)
+				for _, model := range models {
+					if name, ok := model["name"].(string); ok && strings.Contains(strings.ToLower(name), strings.ToLower(filter)) {
+						filtered = append(filtered, model)
+					}
+				}
+				models = filtered
+			}
+
+			// Apply limit if specified
+			limit, _ := cmd.Flags().GetInt("limit")
+			if limit > 0 && limit < len(models) {
+				models = models[:limit]
+			}
+
+			// Output format
+			format, _ := cmd.Flags().GetString("format")
+			switch format {
+			case "table":
+				printModelsTable(models)
+			default:
+				if err := printJSON(models); err != nil {
+					log.Fatalf("Failed to print models: %v", err)
+				}
 			}
 		},
-	})
+	}
+	listCmd.Flags().String("filter", "", "Filter models by name")
+	listCmd.Flags().Int("limit", 0, "Limit number of results")
+	listCmd.Flags().String("format", "json", "Output format (json, table)")
+
+	cmd.AddCommand(listCmd)
 
 	cmd.AddCommand(&cobra.Command{
 		Use:   "get [id]",
@@ -220,11 +386,29 @@ func modelsCmd() *cobra.Command {
 	})
 
 	cmd.AddCommand(&cobra.Command{
-		Use:   "create",
+		Use:   "create [provider_id] [model_id] [name]",
 		Short: "Create a new model",
+		Args:  cobra.ExactArgs(3),
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Creating model... (interactive creation not implemented)")
-			fmt.Println("Use the API directly or implement interactive creation")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			model := map[string]interface{}{
+				"provider_id": args[0],
+				"model_id":    args[1],
+				"name":        args[2],
+			}
+
+			result, err := c.CreateModel(model)
+			if err != nil {
+				log.Fatalf("Failed to create model: %v", err)
+			}
+
+			if err := printJSON(result); err != nil {
+				log.Fatalf("Failed to print create result: %v", err)
+			}
 		},
 	})
 
@@ -259,7 +443,7 @@ func providersCmd() *cobra.Command {
 		Long:  `List, create, update, and delete LLM providers.`,
 	}
 
-	cmd.AddCommand(&cobra.Command{
+	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all providers",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -273,18 +457,60 @@ func providersCmd() *cobra.Command {
 				log.Fatalf("Failed to get providers: %v", err)
 			}
 
-			if err := printJSON(providers); err != nil {
-				log.Fatalf("Failed to print providers: %v", err)
+			// Apply filtering if specified
+			filter, _ := cmd.Flags().GetString("filter")
+			if filter != "" {
+				filtered := make([]map[string]interface{}, 0)
+				for _, provider := range providers {
+					if name, ok := provider["name"].(string); ok && strings.Contains(strings.ToLower(name), strings.ToLower(filter)) {
+						filtered = append(filtered, provider)
+					}
+				}
+				providers = filtered
+			}
+
+			// Apply limit if specified
+			limit, _ := cmd.Flags().GetInt("limit")
+			if limit > 0 && limit < len(providers) {
+				providers = providers[:limit]
+			}
+
+			// Output format
+			format, _ := cmd.Flags().GetString("format")
+			switch format {
+			case "table":
+				printProvidersTable(providers)
+			default:
+				if err := printJSON(providers); err != nil {
+					log.Fatalf("Failed to print providers: %v", err)
+				}
 			}
 		},
-	})
+	}
+	listCmd.Flags().String("filter", "", "Filter providers by name")
+	listCmd.Flags().Int("limit", 0, "Limit number of results")
+	listCmd.Flags().String("format", "json", "Output format (json, table)")
+
+	cmd.AddCommand(listCmd)
 
 	cmd.AddCommand(&cobra.Command{
 		Use:   "get [id]",
 		Short: "Get provider details",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("Getting provider %s... (implementation pending)\n", args[0])
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			provider, err := c.GetProvider(args[0])
+			if err != nil {
+				log.Fatalf("Failed to get provider: %v", err)
+			}
+
+			if err := printJSON(provider); err != nil {
+				log.Fatalf("Failed to print provider: %v", err)
+			}
 		},
 	})
 
@@ -298,7 +524,7 @@ func resultsCmd() *cobra.Command {
 		Long:  `List, create, update, and delete verification results.`,
 	}
 
-	cmd.AddCommand(&cobra.Command{
+	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all verification results",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -312,18 +538,60 @@ func resultsCmd() *cobra.Command {
 				log.Fatalf("Failed to get verification results: %v", err)
 			}
 
-			if err := printJSON(results); err != nil {
-				log.Fatalf("Failed to print verification results: %v", err)
+			// Apply filtering if specified
+			filter, _ := cmd.Flags().GetString("filter")
+			if filter != "" {
+				filtered := make([]map[string]interface{}, 0)
+				for _, result := range results {
+					if model, ok := result["model_name"].(string); ok && strings.Contains(strings.ToLower(model), strings.ToLower(filter)) {
+						filtered = append(filtered, result)
+					}
+				}
+				results = filtered
+			}
+
+			// Apply limit if specified
+			limit, _ := cmd.Flags().GetInt("limit")
+			if limit > 0 && limit < len(results) {
+				results = results[:limit]
+			}
+
+			// Output format
+			format, _ := cmd.Flags().GetString("format")
+			switch format {
+			case "table":
+				printResultsTable(results)
+			default:
+				if err := printJSON(results); err != nil {
+					log.Fatalf("Failed to print verification results: %v", err)
+				}
 			}
 		},
-	})
+	}
+	listCmd.Flags().String("filter", "", "Filter results by model name")
+	listCmd.Flags().Int("limit", 0, "Limit number of results")
+	listCmd.Flags().String("format", "json", "Output format (json, table)")
+
+	cmd.AddCommand(listCmd)
 
 	cmd.AddCommand(&cobra.Command{
 		Use:   "get [id]",
 		Short: "Get verification result details",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("Getting verification result %s... (implementation pending)\n", args[0])
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			result, err := c.GetVerificationResult(args[0])
+			if err != nil {
+				log.Fatalf("Failed to get verification result: %v", err)
+			}
+
+			if err := printJSON(result); err != nil {
+				log.Fatalf("Failed to print verification result: %v", err)
+			}
 		},
 	})
 
@@ -625,8 +893,21 @@ func tuiCmd() *cobra.Command {
 }
 
 func runTUI() error {
+	// Create client for TUI
+	client, err := getClient()
+	if err != nil {
+		return fmt.Errorf("failed to create client: %w", err)
+	}
+
 	// Start the TUI application
-	tui.Run()
+	app := tui.NewApp(client)
+	p := tea.NewProgram(app, tea.WithAltScreen())
+
+	if _, err := p.Run(); err != nil {
+		fmt.Printf("Error running TUI: %v\n", err)
+		os.Exit(1)
+	}
+
 	return nil
 }
 

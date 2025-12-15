@@ -177,6 +177,22 @@ func (c *Client) GetProviders() ([]map[string]interface{}, error) {
 	return response.Providers, nil
 }
 
+// GetProvider retrieves a specific provider by ID
+func (c *Client) GetProvider(id string) (map[string]interface{}, error) {
+	resp, err := c.doRequest("GET", "/api/v1/providers/"+id, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var provider map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&provider); err != nil {
+		return nil, fmt.Errorf("failed to decode provider response: %w", err)
+	}
+
+	return provider, nil
+}
+
 // GetVerificationResults retrieves verification results
 func (c *Client) GetVerificationResults() ([]map[string]interface{}, error) {
 	resp, err := c.doRequest("GET", "/api/v1/verification-results", nil)
@@ -191,6 +207,22 @@ func (c *Client) GetVerificationResults() ([]map[string]interface{}, error) {
 	}
 
 	return results, nil
+}
+
+// GetVerificationResult retrieves a specific verification result by ID
+func (c *Client) GetVerificationResult(id string) (map[string]interface{}, error) {
+	resp, err := c.doRequest("GET", "/api/v1/verification-results/"+id, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode verification result response: %w", err)
+	}
+
+	return result, nil
 }
 
 // GetPricing retrieves pricing information

@@ -2,6 +2,7 @@ package screens
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -9,6 +10,8 @@ import (
 
 	"llm-verifier/client"
 )
+
+type tickMsg time.Time
 
 type DashboardScreen struct {
 	client *client.Client
@@ -24,6 +27,7 @@ type DashboardStats struct {
 	PendingModels    int
 	LastVerification time.Time
 	AverageScore     float64
+	LastRefresh      time.Time
 }
 
 func NewDashboardScreen(client *client.Client) *DashboardScreen {
@@ -41,7 +45,16 @@ func NewDashboardScreen(client *client.Client) *DashboardScreen {
 }
 
 func (d *DashboardScreen) Init() tea.Cmd {
-	return nil
+	return tea.Batch(
+		d.refreshStats(),
+		tickCmd(),
+	)
+}
+
+func tickCmd() tea.Cmd {
+	return tea.Tick(time.Second*30, func(t time.Time) tea.Msg {
+		return tickMsg(t)
+	})
 }
 
 func (d *DashboardScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -54,6 +67,8 @@ func (d *DashboardScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "r", "R":
 			return d, d.refreshStats()
 		}
+	case tickMsg:
+		return d, tea.Batch(d.refreshStats(), tickCmd())
 	case StatsRefreshedMsg:
 		d.stats = msg.Stats
 	case StatsErrorMsg:
@@ -132,7 +147,12 @@ func (d *DashboardScreen) renderStats() string {
 		statBox("Avg Score", fmt.Sprintf("%.1f%%", d.stats.AverageScore), "205"),
 		lipgloss.NewStyle().Width(2).Render(""),
 		statBox("Last Verified", d.stats.LastVerification.Format("Jan 02 15:04"), "99"),
+		lipgloss.NewStyle().Width(2).Render(""),
+		statBox("Last Refresh", d.stats.LastRefresh.Format("15:04:05"), "39"),
 	)
+
+	// Add progress visualization
+	progressSection := d.renderProgress()
 
 	return statsStyle.Render(
 		lipgloss.JoinVertical(
@@ -140,7 +160,103 @@ func (d *DashboardScreen) renderStats() string {
 			stats,
 			lipgloss.NewStyle().Height(1).Render(""),
 			additionalStats,
+			lipgloss.NewStyle().Height(1).Render(""),
+			progressSection,
 		),
+	)
+}
+
+func (d *DashboardScreen) renderProgress() string {
+	if d.stats.TotalModels == 0 {
+		return ""
+	}
+
+	// Verification progress
+	verifiedPercent := float64(d.stats.VerifiedModels) / float64(d.stats.TotalModels) * 100
+	progressBar := d.renderProgressBar("Verification Progress", verifiedPercent, 40)
+
+	// Score visualization (simple text-based)
+	scoreIndicator := d.renderScoreIndicator()
+
+	return lipgloss.JoinVertical(
+		lipgloss.Top,
+		lipgloss.NewStyle().Bold(true).Render("📊 Progress Overview:"),
+		lipgloss.NewStyle().Height(1).Render(""),
+		progressBar,
+		lipgloss.NewStyle().Height(1).Render(""),
+		scoreIndicator,
+	)
+}
+
+func (d *DashboardScreen) renderProgressBar(label string, percent float64, width int) string {
+	filled := int(float64(width) * percent / 100)
+	if filled > width {
+		filled = width
+	}
+
+	bar := strings.Repeat("█", filled) + strings.Repeat("░", width-filled)
+
+	return lipgloss.JoinHorizontal(
+		lipgloss.Left,
+		lipgloss.NewStyle().Width(20).Render(label+":"),
+		lipgloss.NewStyle().
+			Foreground(lipgloss.Color("46")).
+			Render(fmt.Sprintf("%.1f%%", percent)),
+		lipgloss.NewStyle().Width(2).Render(""),
+		lipgloss.NewStyle().
+			Foreground(lipgloss.Color("39")).
+			Render("["),
+		lipgloss.NewStyle().
+			Foreground(lipgloss.Color("46")).
+			Render(bar),
+		lipgloss.NewStyle().
+			Foreground(lipgloss.Color("39")).
+			Render("]"),
+	)
+}
+
+func (d *DashboardScreen) renderScoreIndicator() string {
+	score := d.stats.AverageScore
+	var color, label string
+
+	if score >= 90 {
+		color = "46" // Green
+		label = "Excellent"
+	} else if score >= 80 {
+		color = "226" // Yellow
+		label = "Good"
+	} else if score >= 70 {
+		color = "214" // Orange
+		label = "Fair"
+	} else {
+		color = "196" // Red
+		label = "Needs Improvement"
+	}
+
+	stars := ""
+	for i := 0; i < 5; i++ {
+		if float64(i) < score/20 {
+			stars += "★"
+		} else {
+			stars += "☆"
+		}
+	}
+
+	return lipgloss.JoinHorizontal(
+		lipgloss.Left,
+		lipgloss.NewStyle().Width(20).Render("Average Score:"),
+		lipgloss.NewStyle().
+			Foreground(lipgloss.Color(color)).
+			Bold(true).
+			Render(fmt.Sprintf("%.1f", score)),
+		lipgloss.NewStyle().Width(2).Render(""),
+		lipgloss.NewStyle().
+			Foreground(lipgloss.Color(color)).
+			Render(stars),
+		lipgloss.NewStyle().Width(2).Render(""),
+		lipgloss.NewStyle().
+			Foreground(lipgloss.Color(color)).
+			Render("("+label+")"),
 	)
 }
 
@@ -174,7 +290,7 @@ func (d *DashboardScreen) renderActions() string {
 		lipgloss.NewStyle().Height(1).Render(""),
 		lipgloss.JoinHorizontal(
 			lipgloss.Top,
-			actionButton("Refresh Stats", "r", "Update dashboard statistics"),
+			actionButton("Refresh Stats", "r", "Update dashboard statistics (auto-refresh every 30s)"),
 			lipgloss.NewStyle().Width(2).Render(""),
 			actionButton("Run Verification", "v", "Start new verification"),
 			lipgloss.NewStyle().Width(2).Render(""),
@@ -242,6 +358,7 @@ func (d *DashboardScreen) refreshStats() tea.Cmd {
 					PendingModels:    len(models) - verifiedCount,
 					LastVerification: lastVerification,
 					AverageScore:     averageScore,
+					LastRefresh:      time.Now(),
 				},
 			}
 		},

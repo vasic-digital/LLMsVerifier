@@ -6,9 +6,12 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
+	"llm-verifier/client"
 )
 
 type VerificationScreen struct {
+	client          *client.Client
 	width           int
 	height          int
 	verifications   []Verification
@@ -34,21 +37,12 @@ type NewVerification struct {
 	TestTypes []string
 }
 
-func NewVerificationScreen() *VerificationScreen {
-	now := time.Now()
-	oneHourAgo := now.Add(-1 * time.Hour)
-	twoHoursAgo := now.Add(-2 * time.Hour)
-
+func NewVerificationScreen(client *client.Client) *VerificationScreen {
 	return &VerificationScreen{
-		verifications: []Verification{
-			{ID: 1, ModelName: "gpt-4-turbo", Provider: "OpenAI", Status: "Completed", Score: 92.5, StartedAt: twoHoursAgo, CompletedAt: oneHourAgo, Duration: time.Hour},
-			{ID: 2, ModelName: "claude-3-opus", Provider: "Anthropic", Status: "Completed", Score: 91.2, StartedAt: oneHourAgo, CompletedAt: now.Add(-30 * time.Minute), Duration: 30 * time.Minute},
-			{ID: 3, ModelName: "gemini-pro", Provider: "Google", Status: "Running", Score: 0.0, StartedAt: now.Add(-10 * time.Minute), CompletedAt: time.Time{}, Duration: 10 * time.Minute},
-			{ID: 4, ModelName: "llama-3-70b", Provider: "Meta", Status: "Failed", Score: 0.0, StartedAt: now.Add(-5 * time.Minute), CompletedAt: now.Add(-2 * time.Minute), Duration: 3 * time.Minute},
-			{ID: 5, ModelName: "mistral-large", Provider: "Mistral", Status: "Pending", Score: 0.0, StartedAt: time.Time{}, CompletedAt: time.Time{}, Duration: 0},
-		},
-		selected:    0,
-		showNewForm: false,
+		client:        client,
+		verifications: []Verification{}, // Will be populated with real data
+		selected:      0,
+		showNewForm:   false,
 		newVerification: NewVerification{
 			ModelID:   0,
 			Provider:  "",
