@@ -298,6 +298,123 @@ llm-verifier tui --database llm_verifier.db
 - **Performance Charts**: Visual performance metrics
 - **Issue Tracker**: View and manage model issues
 - **Configuration Manager**: Manage configurations
+- **Real-time Updates**: Live data refresh and event streaming
+
+### REST API Usage
+
+#### Starting the API Server
+
+```bash
+# Start API server with default config
+llm-verifier server
+
+# Start with custom config
+llm-verifier server -c config.yaml
+
+# Start with specific port
+llm-verifier server --port 9090
+
+# Start with TLS/HTTPS
+llm-verifier server --tls-cert cert.pem --tls-key key.pem
+```
+
+#### API Authentication
+
+```bash
+# Login to get JWT token
+curl -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "password"}'
+
+# Use token in subsequent requests
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  http://localhost:8080/api/v1/models
+```
+
+#### Common API Operations
+
+```bash
+# List all models
+curl -H "Authorization: Bearer TOKEN" \
+  http://localhost:8080/api/v1/models
+
+# Get specific model
+curl -H "Authorization: Bearer TOKEN" \
+  http://localhost:8080/api/v1/models/1
+
+# Trigger verification
+curl -X POST -H "Authorization: Bearer TOKEN" \
+  http://localhost:8080/api/v1/models/1/verify
+
+# Generate report
+curl -X POST -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"report_type": "summary", "format": "json"}' \
+  http://localhost:8080/api/v1/reports/generate
+```
+
+### Web Client Usage
+
+#### Accessing the Web Interface
+
+1. Start the API server
+2. Open browser to `http://localhost:8080`
+3. Login with your credentials
+4. Navigate through the dashboard
+
+#### Web Client Features
+
+- **Interactive Dashboard**: Real-time model status and metrics
+- **Model Comparison**: Side-by-side model comparison
+- **Report Generation**: Download reports in multiple formats
+- **Configuration Management**: Edit settings through web interface
+- **Event Monitoring**: Live event stream and notifications
+- **Issue Management**: Track and resolve model issues
+
+### Desktop Application
+
+#### Installation
+
+```bash
+# Download desktop app for your platform
+# Linux
+wget https://github.com/your-org/llm-verifier/releases/download/v1.0.0/llm-verifier-desktop-linux.AppImage
+chmod +x llm-verifier-desktop-linux.AppImage
+
+# macOS
+wget https://github.com/your-org/llm-verifier/releases/download/v1.0.0/llm-verifier-desktop-macos.dmg
+
+# Windows
+wget https://github.com/your-org/llm-verifier/releases/download/v1.0.0/llm-verifier-desktop-windows.exe
+```
+
+#### Desktop Features
+
+- **Native Look and Feel**: Platform-specific UI components
+- **System Tray Integration**: Background monitoring and notifications
+- **Offline Capabilities**: Work with cached data when offline
+- **Auto-updates**: Automatic application updates
+- **Keyboard Shortcuts**: Efficient navigation and operations
+
+### Mobile Applications
+
+#### iOS/Android Installation
+
+```bash
+# iOS: Download from App Store
+# Search for "LLM Verifier"
+
+# Android: Download APK or from Play Store
+wget https://github.com/your-org/llm-verifier/releases/download/v1.0.0/llm-verifier-mobile.apk
+```
+
+#### Mobile Features
+
+- **Touch-Optimized Interface**: Designed for mobile interaction
+- **Push Notifications**: Real-time alerts for verification results
+- **QR Code Scanning**: Quick configuration import
+- **Offline Viewing**: Access cached reports offline
+- **Biometric Authentication**: Secure access with fingerprint/face ID
 - **Scheduler**: Set up and manage scheduled verifications
 - **Export Tool**: Export configurations for CLI tools
 
