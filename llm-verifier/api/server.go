@@ -1,3 +1,30 @@
+// Package api LLM Verifier REST API
+//
+// This API provides comprehensive endpoints for managing and verifying Large Language Models (LLMs).
+// It supports model discovery, verification workflows, reporting, and administrative functions.
+//
+// Terms Of Service: https://llm-verifier.ai/terms
+//
+// Schemes: http, https
+// Host: localhost:8080
+// BasePath: /api/v1
+// Version: 1.0.0
+//
+// Consumes:
+// - application/json
+//
+// Produces:
+// - application/json
+//
+// SecurityDefinitions:
+// BearerAuth:
+//
+//	type: apiKey
+//	name: Authorization
+//	in: header
+//	description: "JWT Authorization header using the Bearer scheme. Example: 'Bearer {token}'"
+//
+// swagger:meta
 package api
 
 import (

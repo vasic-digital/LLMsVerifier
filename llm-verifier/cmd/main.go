@@ -82,6 +82,19 @@ func main() {
 	// Users commands
 	rootCmd.AddCommand(usersCmd())
 
+	// Batch operations command
+	rootCmd.AddCommand(batchCmd())
+
+	// Interactive mode command
+	rootCmd.AddCommand(interactiveCmd())
+
+	// Validation commands
+	rootCmd.AddCommand(validateCmd())
+
+	// Export/Import commands
+	rootCmd.AddCommand(exportCmd())
+	rootCmd.AddCommand(importCmd())
+
 	// TUI command
 	rootCmd.AddCommand(tuiCmd())
 
@@ -909,6 +922,382 @@ func runTUI() error {
 	}
 
 	return nil
+}
+
+func batchCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "batch",
+		Short: "Execute batch operations",
+		Long:  `Execute multiple operations in batch mode for efficiency.`,
+	}
+
+	verifyCmd := &cobra.Command{
+		Use:   "verify [file]",
+		Short: "Batch verify models from a file",
+		Long:  `Verify multiple models from a JSON file containing model configurations.`,
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			// Read and parse batch file
+			data, err := os.ReadFile(args[0])
+			if err != nil {
+				log.Fatalf("Failed to read batch file: %v", err)
+			}
+
+			var models []map[string]interface{}
+			if err := json.Unmarshal(data, &models); err != nil {
+				log.Fatalf("Failed to parse batch file: %v", err)
+			}
+
+			fmt.Printf("Starting batch verification of %d models...\n", len(models))
+
+			results := make([]map[string]interface{}, 0, len(models))
+			for i, model := range models {
+				fmt.Printf("Verifying model %d/%d: %v\n", i+1, len(models), model["name"])
+
+				result, err := c.VerifyModel(fmt.Sprintf("%v", model["id"]))
+				if err != nil {
+					fmt.Printf("Error verifying model %v: %v\n", model["name"], err)
+					continue
+				}
+
+				results = append(results, result)
+			}
+
+			fmt.Printf("Batch verification completed. %d models verified successfully.\n", len(results))
+
+			// Save results
+			outputFile := "batch_results.json"
+			data, _ = json.MarshalIndent(results, "", "  ")
+			if err := os.WriteFile(outputFile, data, 0644); err != nil {
+				log.Fatalf("Failed to save results: %v", err)
+			}
+
+			fmt.Printf("Results saved to %s\n", outputFile)
+		},
+	}
+
+	cmd.AddCommand(verifyCmd)
+	return cmd
+}
+
+func interactiveCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "interactive",
+		Short: "Start interactive mode",
+		Long:  `Start an interactive session for managing models and providers.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			runInteractiveMode(c)
+		},
+	}
+	return cmd
+}
+
+func validateCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "validate",
+		Short: "Validate configuration and setup",
+		Long:  `Validate system configuration, database connectivity, and API endpoints.`,
+	}
+
+	configCmd := &cobra.Command{
+		Use:   "config [file]",
+		Short: "Validate configuration file",
+		Long:  `Validate the syntax and structure of a configuration file.`,
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			cfg, err := llmverifier.LoadConfig(args[0])
+			if err != nil {
+				log.Fatalf("Configuration validation failed: %v", err)
+			}
+
+			fmt.Println("✓ Configuration file is valid")
+			fmt.Printf("✓ API Port: %s\n", cfg.API.Port)
+			fmt.Printf("✓ Database Path: %s\n", cfg.Database.Path)
+			fmt.Printf("✓ LLMs configured: %d\n", len(cfg.LLMs))
+			fmt.Printf("✓ Profile: %s\n", cfg.Profile)
+		},
+	}
+
+	systemCmd := &cobra.Command{
+		Use:   "system",
+		Short: "Validate system setup",
+		Long:  `Validate database connectivity, API endpoints, and system health.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			// Test database connectivity
+			fmt.Print("Testing database connectivity... ")
+			_, err = c.GetModels()
+			if err != nil {
+				fmt.Printf("✗ Failed: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Println("✓ OK")
+
+			// Test API endpoints
+			fmt.Print("Testing API endpoints... ")
+			_, err = c.GetProviders()
+			if err != nil {
+				fmt.Printf("✗ Failed: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Println("✓ OK")
+
+			fmt.Println("✓ System validation completed successfully")
+		},
+	}
+
+	cmd.AddCommand(configCmd)
+	cmd.AddCommand(systemCmd)
+	return cmd
+}
+
+func exportCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "export",
+		Short: "Export data and configurations",
+		Long:  `Export models, providers, configurations, and verification results.`,
+	}
+
+	modelsCmd := &cobra.Command{
+		Use:   "models [output_file]",
+		Short: "Export models data",
+		Long:  `Export all models data to a JSON file.`,
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			models, err := c.GetModels()
+			if err != nil {
+				log.Fatalf("Failed to get models: %v", err)
+			}
+
+			data, err := json.MarshalIndent(models, "", "  ")
+			if err != nil {
+				log.Fatalf("Failed to marshal models: %v", err)
+			}
+
+			if err := os.WriteFile(args[0], data, 0644); err != nil {
+				log.Fatalf("Failed to write file: %v", err)
+			}
+
+			fmt.Printf("Exported %d models to %s\n", len(models), args[0])
+		},
+	}
+
+	providersCmd := &cobra.Command{
+		Use:   "providers [output_file]",
+		Short: "Export providers data",
+		Long:  `Export all providers data to a JSON file.`,
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			providers, err := c.GetProviders()
+			if err != nil {
+				log.Fatalf("Failed to get providers: %v", err)
+			}
+
+			data, err := json.MarshalIndent(providers, "", "  ")
+			if err != nil {
+				log.Fatalf("Failed to marshal providers: %v", err)
+			}
+
+			if err := os.WriteFile(args[0], data, 0644); err != nil {
+				log.Fatalf("Failed to write file: %v", err)
+			}
+
+			fmt.Printf("Exported %d providers to %s\n", len(providers), args[0])
+		},
+	}
+
+	cmd.AddCommand(modelsCmd)
+	cmd.AddCommand(providersCmd)
+	return cmd
+}
+
+func importCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "import",
+		Short: "Import data and configurations",
+		Long:  `Import models, providers, and configurations from files.`,
+	}
+
+	modelsCmd := &cobra.Command{
+		Use:   "models [input_file]",
+		Short: "Import models data",
+		Long:  `Import models data from a JSON file.`,
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			data, err := os.ReadFile(args[0])
+			if err != nil {
+				log.Fatalf("Failed to read file: %v", err)
+			}
+
+			var models []map[string]interface{}
+			if err := json.Unmarshal(data, &models); err != nil {
+				log.Fatalf("Failed to parse models: %v", err)
+			}
+
+			imported := 0
+			for _, model := range models {
+				_, err := c.CreateModel(model)
+				if err != nil {
+					fmt.Printf("Failed to import model %v: %v\n", model["name"], err)
+					continue
+				}
+				imported++
+			}
+
+			fmt.Printf("Imported %d/%d models successfully\n", imported, len(models))
+		},
+	}
+
+	providersCmd := &cobra.Command{
+		Use:   "providers [input_file]",
+		Short: "Import providers data",
+		Long:  `Import providers data from a JSON file.`,
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			data, err := os.ReadFile(args[0])
+			if err != nil {
+				log.Fatalf("Failed to read file: %v", err)
+			}
+
+			var providers []map[string]interface{}
+			if err := json.Unmarshal(data, &providers); err != nil {
+				log.Fatalf("Failed to parse providers: %v", err)
+			}
+
+			// Note: Provider import not implemented yet - requires API endpoint
+			fmt.Printf("Provider import not yet available. Found %d providers in file.\n", len(providers))
+		},
+	}
+
+	cmd.AddCommand(modelsCmd)
+	cmd.AddCommand(providersCmd)
+	return cmd
+}
+
+func runInteractiveMode(client *client.Client) {
+	fmt.Println("=== LLM Verifier Interactive Mode ===")
+	fmt.Println("Available commands:")
+	fmt.Println("  list models     - List all models")
+	fmt.Println("  list providers  - List all providers")
+	fmt.Println("  verify [id]     - Verify a specific model")
+	fmt.Println("  status          - Show system status")
+	fmt.Println("  help            - Show this help")
+	fmt.Println("  quit            - Exit interactive mode")
+	fmt.Println()
+
+	for {
+		fmt.Print("> ")
+		var command string
+		fmt.Scanln(&command)
+
+		args := strings.Fields(command)
+		if len(args) == 0 {
+			continue
+		}
+
+		switch args[0] {
+		case "quit", "q", "exit":
+			fmt.Println("Goodbye!")
+			return
+		case "help", "h":
+			fmt.Println("Available commands:")
+			fmt.Println("  list models     - List all models")
+			fmt.Println("  list providers  - List all providers")
+			fmt.Println("  verify [id]     - Verify a specific model")
+			fmt.Println("  status          - Show system status")
+			fmt.Println("  help            - Show this help")
+			fmt.Println("  quit            - Exit interactive mode")
+		case "list":
+			if len(args) < 2 {
+				fmt.Println("Usage: list models|providers")
+				continue
+			}
+			switch args[1] {
+			case "models":
+				models, err := client.GetModels()
+				if err != nil {
+					fmt.Printf("Error: %v\n", err)
+					continue
+				}
+				printModelsTable(models)
+			case "providers":
+				providers, err := client.GetProviders()
+				if err != nil {
+					fmt.Printf("Error: %v\n", err)
+					continue
+				}
+				printProvidersTable(providers)
+			default:
+				fmt.Println("Usage: list models|providers")
+			}
+		case "verify":
+			if len(args) < 2 {
+				fmt.Println("Usage: verify [model_id]")
+				continue
+			}
+			result, err := client.VerifyModel(args[1])
+			if err != nil {
+				fmt.Printf("Error: %v\n", err)
+				continue
+			}
+			fmt.Println("Verification completed:")
+			if err := printJSON(result); err != nil {
+				fmt.Printf("Error displaying result: %v\n", err)
+			}
+		case "status":
+			models, err := client.GetModels()
+			if err != nil {
+				fmt.Printf("Error getting models: %v\n", err)
+				continue
+			}
+			providers, err := client.GetProviders()
+			if err != nil {
+				fmt.Printf("Error getting providers: %v\n", err)
+				continue
+			}
+			fmt.Printf("System Status:\n")
+			fmt.Printf("  Models: %d\n", len(models))
+			fmt.Printf("  Providers: %d\n", len(providers))
+			fmt.Printf("  API Server: Connected\n")
+		default:
+			fmt.Printf("Unknown command: %s\n", args[0])
+		}
+		fmt.Println()
+	}
 }
 
 func usersCmd() *cobra.Command {

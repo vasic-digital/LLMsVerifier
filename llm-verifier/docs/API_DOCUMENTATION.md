@@ -4,6 +4,27 @@
 
 The LLM Verifier REST API provides programmatic access to all functionality of the LLM Verifier system. It is built using the GinGonic framework and provides a comprehensive set of endpoints for managing models, providers, verification results, and system configuration.
 
+### Features
+
+- **Model Management**: CRUD operations for LLM models and providers
+- **Verification**: Trigger and monitor model verification processes
+- **Reporting**: Generate detailed reports in multiple formats
+- **Configuration**: Runtime configuration management
+- **Authentication**: JWT-based secure authentication
+- **Rate Limiting**: Built-in protection against abuse
+- **Swagger Documentation**: Interactive API documentation at `/swagger/index.html`
+
+### Architecture
+
+The API follows RESTful principles with the following key components:
+
+- **Authentication Middleware**: JWT token validation
+- **Rate Limiting Middleware**: Request throttling
+- **CORS Support**: Cross-origin resource sharing
+- **Structured Error Responses**: Consistent error handling
+- **Pagination**: Efficient data retrieval for large datasets
+- **Validation**: Input sanitization and validation
+
 ## Base URL
 
 ```
