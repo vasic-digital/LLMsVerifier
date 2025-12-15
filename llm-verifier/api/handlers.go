@@ -2720,7 +2720,7 @@ func (s *Server) downloadConfigExport(c *gin.Context) {
 	err = s.database.IncrementDownloadCount(id)
 	if err != nil {
 		// Log error but don't fail the download
-		// TODO: Add proper logging
+		log.Printf("Failed to increment download count for config export ID %d: %v", id, err)
 	}
 
 	// Set headers for file download
