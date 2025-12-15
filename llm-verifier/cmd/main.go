@@ -12,6 +12,7 @@ import (
 	"llm-verifier/client"
 	"llm-verifier/database"
 	"llm-verifier/llmverifier"
+	"llm-verifier/tui"
 )
 
 var (
@@ -78,6 +79,9 @@ func main() {
 
 	// Users commands
 	rootCmd.AddCommand(usersCmd())
+
+	// TUI command
+	rootCmd.AddCommand(tuiCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -604,6 +608,26 @@ func configCmd() *cobra.Command {
 	})
 
 	return cmd
+}
+
+func tuiCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "tui",
+		Short: "Start the Terminal User Interface",
+		Long:  `Start the interactive Terminal User Interface for managing models, providers, and verification results.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := runTUI(); err != nil {
+				log.Fatalf("Error starting TUI: %v", err)
+			}
+		},
+	}
+	return cmd
+}
+
+func runTUI() error {
+	// Start the TUI application
+	tui.Run()
+	return nil
 }
 
 func usersCmd() *cobra.Command {

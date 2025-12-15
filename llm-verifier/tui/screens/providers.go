@@ -5,17 +5,21 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
+	"llm-verifier/client"
 )
 
 type ProvidersScreen struct {
+	client    *client.Client
 	width     int
 	height    int
 	providers []Provider
 	selected  int
+	loading   bool
 }
 
 type Provider struct {
-	ID         int
+	ID         string
 	Name       string
 	ModelCount int
 	AvgScore   float64
@@ -23,22 +27,17 @@ type Provider struct {
 	APIKeySet  bool
 }
 
-func NewProvidersScreen() *ProvidersScreen {
+func NewProvidersScreen(client *client.Client) *ProvidersScreen {
 	return &ProvidersScreen{
-		providers: []Provider{
-			{ID: 1, Name: "OpenAI", ModelCount: 4, AvgScore: 89.2, Status: "Active", APIKeySet: true},
-			{ID: 2, Name: "Anthropic", ModelCount: 3, AvgScore: 87.5, Status: "Active", APIKeySet: true},
-			{ID: 3, Name: "Google", ModelCount: 2, AvgScore: 85.8, Status: "Active", APIKeySet: false},
-			{ID: 4, Name: "Meta", ModelCount: 5, AvgScore: 82.3, Status: "Active", APIKeySet: true},
-			{ID: 5, Name: "Mistral", ModelCount: 2, AvgScore: 84.1, Status: "Inactive", APIKeySet: false},
-			{ID: 6, Name: "Cohere", ModelCount: 1, AvgScore: 79.5, Status: "Active", APIKeySet: true},
-		},
-		selected: 0,
+		client:    client,
+		providers: []Provider{},
+		selected:  0,
+		loading:   false,
 	}
 }
 
 func (p *ProvidersScreen) Init() tea.Cmd {
-	return nil
+	return p.loadProviders()
 }
 
 func (p *ProvidersScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -276,16 +275,20 @@ func (p *ProvidersScreen) renderActionButton(key, label, description string) str
 		)
 }
 
-func (p *ProvidersScreen) toggleProviderStatus(providerID int) tea.Cmd {
+func (p *ProvidersScreen) toggleProviderStatus(providerID string) tea.Cmd {
 	return func() tea.Msg {
+		// In a real implementation, this would call the API
+		// For now, just simulate the toggle
 		return ProviderStatusToggledMsg{
 			ProviderID: providerID,
 		}
 	}
 }
 
-func (p *ProvidersScreen) addAPIKey(providerID int) tea.Cmd {
+func (p *ProvidersScreen) addAPIKey(providerID string) tea.Cmd {
 	return func() tea.Msg {
+		// In a real implementation, this would call the API
+		// For now, just simulate adding API key
 		return APIKeyAddedMsg{
 			ProviderID: providerID,
 		}
@@ -293,9 +296,9 @@ func (p *ProvidersScreen) addAPIKey(providerID int) tea.Cmd {
 }
 
 type ProviderStatusToggledMsg struct {
-	ProviderID int
+	ProviderID string
 }
 
 type APIKeyAddedMsg struct {
-	ProviderID int
+	ProviderID string
 }
