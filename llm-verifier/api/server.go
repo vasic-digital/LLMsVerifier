@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -91,10 +92,10 @@ func (s *Server) setupRoutes() {
 		{
 			models.GET("", s.getModels)
 			models.GET("/:id", s.getModel)
-			models.POST("", s.createModel)
-			models.PUT("/:id", s.updateModel)
+			models.POST("", s.createModel, s.requireRoleMiddleware("admin"))
+			models.PUT("/:id", s.updateModel, s.requireRoleMiddleware("admin"))
 			models.POST("/:id/verify", s.verifyModel)
-			models.DELETE("/:id", s.deleteModel)
+			models.DELETE("/:id", s.deleteModel, s.requireRoleMiddleware("admin"))
 		}
 
 		// Providers
@@ -102,9 +103,9 @@ func (s *Server) setupRoutes() {
 		{
 			providers.GET("", s.getProviders)
 			providers.GET("/:id", s.getProvider)
-			providers.POST("", s.createProvider)
-			providers.PUT("/:id", s.updateProvider)
-			providers.DELETE("/:id", s.deleteProvider)
+			providers.POST("", s.createProvider, s.requireRoleMiddleware("admin"))
+			providers.PUT("/:id", s.updateProvider, s.requireRoleMiddleware("admin"))
+			providers.DELETE("/:id", s.deleteProvider, s.requireRoleMiddleware("admin"))
 		}
 
 		// Verification results
@@ -199,6 +200,13 @@ func (s *Server) setupRoutes() {
 			config.PUT("", s.updateConfig)
 			config.POST("/export", s.exportConfig)
 		}
+
+		// System
+		system := v1.Group("/system")
+		{
+			system.GET("/info", s.getSystemInfo)
+			system.GET("/database-stats", s.getDatabaseStats)
+		}
 	}
 
 	// Swagger documentation
@@ -240,12 +248,13 @@ func corsMiddleware() gin.HandlerFunc {
 	}
 }
 
-// rateLimitMiddleware implements configurable rate limiting
+// rateLimitMiddleware implements configurable rate limiting with enhanced features
 func (s *Server) rateLimitMiddleware() gin.HandlerFunc {
-	// Simple in-memory rate limiter (in production, use Redis or similar)
+	// Enhanced in-memory rate limiter with sliding window support
 	type client struct {
-		requests  int
-		resetTime time.Time
+		requests    int
+		resetTime   time.Time
+		windowStart time.Time
 	}
 
 	clients := make(map[string]*client)
@@ -254,32 +263,126 @@ func (s *Server) rateLimitMiddleware() gin.HandlerFunc {
 		rateLimit = 100 // default
 	}
 
+	burstLimit := s.config.API.BurstLimit
+	if burstLimit <= 0 {
+		burstLimit = rateLimit * 2 // default burst is 2x rate limit
+	}
+
+	windowSeconds := s.config.API.RateLimitWindow
+	if windowSeconds <= 0 {
+		windowSeconds = 60 // default 60-second window
+	}
+	windowSize := time.Duration(windowSeconds) * time.Second
+
 	return func(c *gin.Context) {
 		ip := c.ClientIP()
 		now := time.Now()
 
-		if cli, exists := clients[ip]; exists {
+		// Skip rate limiting for certain paths (health checks, metrics)
+		if strings.HasPrefix(c.Request.URL.Path, "/api/v1/health") ||
+			strings.HasPrefix(c.Request.URL.Path, "/api/v1/metrics") {
+			c.Next()
+			return
+		}
+
+		// Get or create client record
+		cli, exists := clients[ip]
+		if !exists {
+			cli = &client{
+				requests:    1,
+				resetTime:   now.Add(windowSize),
+				windowStart: now,
+			}
+			clients[ip] = cli
+		} else {
+			// Check if window has expired
 			if now.After(cli.resetTime) {
 				cli.requests = 1
-				cli.resetTime = now.Add(time.Minute)
-			} else if cli.requests >= rateLimit {
-				c.JSON(http.StatusTooManyRequests, gin.H{
-					"error":             "Rate limit exceeded",
-					"retry_after":       cli.resetTime.Unix(),
-					"rate_limit":        rateLimit,
-					"rate_limit_window": "60 seconds",
-				})
-				c.Abort()
-				return
+				cli.resetTime = now.Add(windowSize)
+				cli.windowStart = now
 			} else {
-				cli.requests++
-			}
-		} else {
-			clients[ip] = &client{
-				requests:  1,
-				resetTime: now.Add(time.Minute),
+				// Check if rate limit is exceeded
+				timeInWindow := now.Sub(cli.windowStart).Seconds()
+				expectedRequests := int(float64(rateLimit) * (timeInWindow / float64(windowSeconds)))
+
+				// Check burst limit first (more strict)
+				if cli.requests > expectedRequests+burstLimit {
+					// Burst limit exceeded - immediate rejection
+					retryAfter := int(cli.resetTime.Sub(now).Seconds())
+
+					// Set standard rate limit headers
+					c.Header("X-RateLimit-Limit", fmt.Sprintf("%d", rateLimit))
+					c.Header("X-RateLimit-Remaining", "0")
+					c.Header("X-RateLimit-Reset", fmt.Sprintf("%d", cli.resetTime.Unix()))
+					c.Header("Retry-After", fmt.Sprintf("%d", retryAfter))
+					c.Header("X-RateLimit-Burst-Exceeded", "true")
+
+					// Clean up old entries periodically
+					if len(clients) > 10000 {
+						for k, v := range clients {
+							if now.After(v.resetTime.Add(5 * time.Minute)) {
+								delete(clients, k)
+							}
+						}
+					}
+
+					c.JSON(http.StatusTooManyRequests, gin.H{
+						"error":             "Burst rate limit exceeded",
+						"retry_after":       retryAfter,
+						"rate_limit":        rateLimit,
+						"burst_limit":       burstLimit,
+						"rate_limit_window": fmt.Sprintf("%d seconds", windowSeconds),
+						"window_start":      cli.windowStart.Unix(),
+						"window_end":        cli.resetTime.Unix(),
+					})
+					c.Abort()
+					return
+				} else if cli.requests >= rateLimit {
+					// Regular rate limit exceeded
+					retryAfter := int(cli.resetTime.Sub(now).Seconds())
+
+					// Set standard rate limit headers
+					c.Header("X-RateLimit-Limit", fmt.Sprintf("%d", rateLimit))
+					c.Header("X-RateLimit-Remaining", "0")
+					c.Header("X-RateLimit-Reset", fmt.Sprintf("%d", cli.resetTime.Unix()))
+					c.Header("Retry-After", fmt.Sprintf("%d", retryAfter))
+
+					// Clean up old entries periodically
+					if len(clients) > 10000 {
+						for k, v := range clients {
+							if now.After(v.resetTime.Add(5 * time.Minute)) {
+								delete(clients, k)
+							}
+						}
+					}
+
+					c.JSON(http.StatusTooManyRequests, gin.H{
+						"error":             "Rate limit exceeded",
+						"retry_after":       retryAfter,
+						"rate_limit":        rateLimit,
+						"burst_limit":       burstLimit,
+						"rate_limit_window": fmt.Sprintf("%d seconds", windowSeconds),
+						"window_start":      cli.windowStart.Unix(),
+						"window_end":        cli.resetTime.Unix(),
+					})
+					c.Abort()
+					return
+				} else {
+					// Within limits, increment request count
+					cli.requests++
+				}
 			}
 		}
+
+		// Set rate limit headers for successful requests
+		remaining := rateLimit - cli.requests
+		if remaining < 0 {
+			remaining = 0
+		}
+
+		c.Header("X-RateLimit-Limit", fmt.Sprintf("%d", rateLimit))
+		c.Header("X-RateLimit-Remaining", fmt.Sprintf("%d", remaining))
+		c.Header("X-RateLimit-Reset", fmt.Sprintf("%d", cli.resetTime.Unix()))
 
 		c.Next()
 	}
@@ -329,5 +432,35 @@ func (s *Server) jwtAuthMiddleware() gin.HandlerFunc {
 		}
 
 		c.Next()
+	}
+}
+
+// requireRoleMiddleware creates middleware that requires specific roles
+func (s *Server) requireRoleMiddleware(allowedRoles ...string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userRole, exists := c.Get("role")
+		if !exists {
+			c.JSON(http.StatusForbidden, gin.H{"error": "User role not found"})
+			c.Abort()
+			return
+		}
+
+		roleStr, ok := userRole.(string)
+		if !ok {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Invalid user role type"})
+			c.Abort()
+			return
+		}
+
+		// Check if user role is in allowed roles
+		for _, allowedRole := range allowedRoles {
+			if roleStr == allowedRole {
+				c.Next()
+				return
+			}
+		}
+
+		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
+		c.Abort()
 	}
 }
