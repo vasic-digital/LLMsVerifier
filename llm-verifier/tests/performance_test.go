@@ -41,12 +41,12 @@ func BenchmarkCalculateResponsivenessScore(b *testing.B) {
 	availability := llmverifier.AvailabilityResult{
 		Latency: 500 * time.Millisecond,
 	}
-	
+
 	responseTime := llmverifier.ResponseTimeResult{
-		AverageLatency: 500 * time.Millisecond,
-		MinLatency:     200 * time.Millisecond,
-		MaxLatency:     800 * time.Millisecond,
-		Throughput:     10,
+		AverageLatency:   500 * time.Millisecond,
+		MinLatency:       200 * time.Millisecond,
+		MaxLatency:       800 * time.Millisecond,
+		Throughput:       10,
 		MeasurementCount: 5,
 	}
 
@@ -60,10 +60,10 @@ func BenchmarkCalculateReliabilityScore(b *testing.B) {
 	verifier := &llmverifier.Verifier{}
 
 	availability := llmverifier.AvailabilityResult{
-		Exists:      true,
-		Responsive:  true,
-		Overloaded:  false,
-		Error:       "",
+		Exists:     true,
+		Responsive: true,
+		Overloaded: false,
+		Error:      "",
 	}
 
 	b.ResetTimer()
@@ -76,24 +76,24 @@ func BenchmarkCalculateFeatureRichnessScore(b *testing.B) {
 	verifier := &llmverifier.Verifier{}
 
 	features := llmverifier.FeatureDetectionResult{
-		ToolUse:            true,
-		CodeGeneration:     true,
-		CodeCompletion:     true,
-		CodeExplanation:    true,
-		CodeReview:         true,
-		Streaming:          true,
-		Embeddings:         true,
-		Reasoning:          true,
-		StructuredOutput:   true,
-		JSONMode:           true,
-		ParallelToolUse:    true,
-		Multimodal:         true,
-		ImageGeneration:    false,
-		AudioGeneration:    false,
-		MCPs:               false,
-		LSPs:               false,
-		Reranking:          false,
-		}
+		ToolUse:          true,
+		CodeGeneration:   true,
+		CodeCompletion:   true,
+		CodeExplanation:  true,
+		CodeReview:       true,
+		Streaming:        true,
+		Embeddings:       true,
+		Reasoning:        true,
+		StructuredOutput: true,
+		JSONMode:         true,
+		ParallelToolUse:  true,
+		Multimodal:       true,
+		ImageGeneration:  false,
+		AudioGeneration:  false,
+		MCPs:             false,
+		LSPs:             false,
+		Reranking:        false,
+	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -112,7 +112,7 @@ func BenchmarkSortResultsByScore(b *testing.B) {
 				ID: "model-" + string(rune(i+'0')),
 			},
 			PerformanceScores: llmverifier.PerformanceScore{
-				OverallScore: float64((i*7)%100), // Generate pseudo-random scores
+				OverallScore: float64((i * 7) % 100), // Generate pseudo-random scores
 			},
 		}
 	}
@@ -147,10 +147,10 @@ func TestPerformanceThresholds(t *testing.T) {
 			RuntimeEfficiency: 85,
 		},
 	}
-	
+
 	_, _ = verifier.CalculateCodeCapabilityScore(codeCaps)
 	elapsed := time.Since(start)
-	
+
 	if elapsed > 10*time.Millisecond {
 		t.Errorf("Code capability scoring took too long: %v", elapsed)
 	}
@@ -160,12 +160,12 @@ func TestPerformanceThresholds(t *testing.T) {
 	availability := llmverifier.AvailabilityResult{
 		Latency: 500 * time.Millisecond,
 	}
-	
+
 	responseTime := llmverifier.ResponseTimeResult{
-		AverageLatency: 500 * time.Millisecond,
-		MinLatency:     200 * time.Millisecond,
-		MaxLatency:     800 * time.Millisecond,
-		Throughput:     10,
+		AverageLatency:   500 * time.Millisecond,
+		MinLatency:       200 * time.Millisecond,
+		MaxLatency:       800 * time.Millisecond,
+		Throughput:       10,
 		MeasurementCount: 5,
 	}
 
@@ -189,31 +189,31 @@ func TestScoringWithGenerativeCapabilities(t *testing.T) {
 
 	result := llmverifier.VerificationResult{
 		FeatureDetection: llmverifier.FeatureDetectionResult{
-			CodeGeneration: true,
-			ToolUse: true,
-			Reranking: true,
+			CodeGeneration:  true,
+			ToolUse:         true,
+			Reranking:       true,
 			ImageGeneration: true,
-			MCPs: true,
-			LSPs: true,
+			MCPs:            true,
+			LSPs:            true,
 		},
 		CodeCapabilities: llmverifier.CodeCapabilityResult{
 			CodeGeneration: true,
 			CodeCompletion: true,
-			CodeDebugging: true,
+			CodeDebugging:  true,
 		},
 		GenerativeCapabilities: llmverifier.GenerativeCapabilityResult{
-			CreativeWriting: true,
-			Storytelling: true,
+			CreativeWriting:   true,
+			Storytelling:      true,
 			ContentGeneration: true,
 		},
 		Availability: llmverifier.AvailabilityResult{
-			Exists: true,
+			Exists:     true,
 			Responsive: true,
-			Latency: 200 * time.Millisecond,
+			Latency:    200 * time.Millisecond,
 		},
 		ResponseTime: llmverifier.ResponseTimeResult{
 			AverageLatency: 200 * time.Millisecond,
-			Throughput: 5.0,
+			Throughput:     5.0,
 		},
 	}
 
@@ -229,5 +229,5 @@ func TestScoringWithGenerativeCapabilities(t *testing.T) {
 	}
 
 	t.Logf("Scores calculated - Overall: %.2f, Code: %.2f, Responsiveness: %.2f",
-		   scores.OverallScore, scores.CodeCapability, scores.Responsiveness)
+		scores.OverallScore, scores.CodeCapability, scores.Responsiveness)
 }

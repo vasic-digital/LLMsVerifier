@@ -26,7 +26,7 @@ func (v *Verifier) GenerateMarkdownReport(results []VerificationResult, outputDi
 	// Write report header
 	fmt.Fprintf(file, "# LLM Verification Report\n\n")
 	fmt.Fprintf(file, "Generated on: %s\n\n", time.Now().Format("2006-01-02 15:04:05"))
-	
+
 	// Generate summary
 	summary := v.generateSummary(results)
 	v.writeSummary(file, summary, results)
@@ -55,8 +55,8 @@ func (v *Verifier) GenerateJSONReport(results []VerificationResult, outputDir st
 	// Add summary to results
 	summary := v.generateSummary(results)
 	jsonReport := map[string]interface{}{
-		"summary":  summary,
-		"results":  results,
+		"summary": summary,
+		"results": results,
 		"metadata": map[string]interface{}{
 			"generated_at": time.Now().Format(time.RFC3339),
 			"total_models": len(results),
@@ -255,7 +255,7 @@ func (v *Verifier) writeSummary(file *os.File, summary Summary, results []Verifi
 // writeModelReport writes the report for a single successfully verified model
 func (v *Verifier) writeModelReport(file *os.File, result VerificationResult) {
 	fmt.Fprintf(file, "## Model: %s\n\n", result.ModelInfo.ID)
-	
+
 	// Basic information
 	fmt.Fprintf(file, "### Basic Information\n")
 	fmt.Fprintf(file, "- **Endpoint**: %s\n", result.ModelInfo.Endpoint)
@@ -327,7 +327,7 @@ func (v *Verifier) writeModelReport(file *os.File, result VerificationResult) {
 	fmt.Fprintf(file, "- **Architecture Understanding**: %t\n", result.CodeCapabilities.Architecture)
 	fmt.Fprintf(file, "- **Security Assessment**: %t\n", result.CodeCapabilities.SecurityAssessment)
 	fmt.Fprintf(file, "- **Pattern Recognition**: %t\n", result.CodeCapabilities.PatternRecognition)
-	
+
 	// Complexity handling
 	fmt.Fprintf(file, "- **Complexity Level**: %d/5\n", result.CodeCapabilities.ComplexityHandling.MaxHandledDepth)
 	fmt.Fprintf(file, "- **Code Quality Score**: %.2f\n", result.CodeCapabilities.ComplexityHandling.CodeQuality)

@@ -17,15 +17,15 @@ func TestEndToEndWithEmptyConfig(t *testing.T) {
 	// Test the complete workflow with minimal config
 	// This test verifies the case where no specific LLMs are configured,
 	// so the tool should attempt to discover all available models
-	
+
 	// Create test helper to get mock server
 	helper := NewTestHelper(t)
 	defer helper.Cleanup()
-	
+
 	cfg := &config.Config{
 		Global: config.GlobalConfig{
 			BaseURL:    helper.Config.Global.BaseURL, // Use mock server URL
-			APIKey:     "test-api-key", // This must match what mock server expects
+			APIKey:     "test-api-key",               // This must match what mock server expects
 			MaxRetries: 1,
 			Timeout:    5, // Short timeout for tests
 		},
@@ -34,7 +34,7 @@ func TestEndToEndWithEmptyConfig(t *testing.T) {
 	}
 
 	verifier := llmverifier.New(cfg)
-	
+
 	// This should return results (possibly with errors due to fake API key)
 	results, err := verifier.Verify()
 	if err != nil {
@@ -42,7 +42,7 @@ func TestEndToEndWithEmptyConfig(t *testing.T) {
 		// The important thing is that the process completes without panicking
 		t.Logf("Expected error with fake API key: %v", err)
 	}
-	
+
 	// Verify that results is not nil (even if empty or with errors)
 	if results == nil {
 		t.Error("Expected results to be non-nil, even with errors")
@@ -52,7 +52,7 @@ func TestEndToEndWithEmptyConfig(t *testing.T) {
 func TestReportGeneration(t *testing.T) {
 	// Test that reports can be generated with mock data
 	outputDir := t.TempDir()
-	
+
 	// Create mock verification results
 	mockResults := []llmverifier.VerificationResult{
 		{
@@ -66,11 +66,11 @@ func TestReportGeneration(t *testing.T) {
 				Overloaded: false,
 			},
 			PerformanceScores: llmverifier.PerformanceScore{
-				OverallScore:   85.5,
-				CodeCapability: 90.0,
-				Responsiveness: 80.0,
-				Reliability:    85.0,
-				FeatureRichness: 95.0,
+				OverallScore:     85.5,
+				CodeCapability:   90.0,
+				Responsiveness:   80.0,
+				Reliability:      85.0,
+				FeatureRichness:  95.0,
 				ValueProposition: 82.0,
 			},
 			Timestamp: time.Now(),
@@ -86,11 +86,11 @@ func TestReportGeneration(t *testing.T) {
 				Overloaded: false,
 			},
 			PerformanceScores: llmverifier.PerformanceScore{
-				OverallScore:   75.2,
-				CodeCapability: 70.0,
-				Responsiveness: 85.0,
-				Reliability:    70.0,
-				FeatureRichness: 75.0,
+				OverallScore:     75.2,
+				CodeCapability:   70.0,
+				Responsiveness:   85.0,
+				Reliability:      70.0,
+				FeatureRichness:  75.0,
 				ValueProposition: 72.0,
 			},
 			Timestamp: time.Now(),

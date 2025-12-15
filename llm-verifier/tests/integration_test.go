@@ -65,7 +65,7 @@ timeout: 60s
 func TestVerifierInitialization(t *testing.T) {
 	helper, cleanup := SetupTestEnvironment(t)
 	defer cleanup()
-	
+
 	// Create a basic config
 	cfg := &config.Config{
 		Global: config.GlobalConfig{
@@ -120,8 +120,8 @@ func TestJSONMarshaling(t *testing.T) {
 		},
 		Timestamp: now,
 		PerformanceScores: llmverifier.PerformanceScore{
-				OverallScore: 85.5,
-			},
+			OverallScore: 85.5,
+		},
 	}
 
 	// Test JSON marshaling
@@ -149,16 +149,16 @@ func TestJSONMarshaling(t *testing.T) {
 func TestVerifierWithMockedAPI(t *testing.T) {
 	helper, cleanup := SetupTestEnvironment(t)
 	defer cleanup()
-	
+
 	// Create test verifier with mocked API
 	verifier := CreateTestVerifier(helper.Config)
-	
+
 	// Test verification workflow with mocked API
 	results, err := verifier.Verify()
 	AssertNoError(t, err)
 	AssertTrue(t, results != nil, "Results should not be nil")
 	AssertTrue(t, len(results) > 0, "Should have verification results")
-	
+
 	// Verify that results contain expected data
 	for _, result := range results {
 		AssertTrue(t, result.ModelInfo.ID != "", "Model should have ID")

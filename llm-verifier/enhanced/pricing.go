@@ -59,9 +59,9 @@ func (pd *PricingDetector) detectOpenAIPricing(modelID string) (*PricingInfo, er
 	// OpenAI pricing structure (as of 2024)
 	pricingMap := map[string]*PricingInfo{
 		"gpt-4-turbo": {
-			InputTokenCost:       10.0,  // $10 per 1M input tokens
-			OutputTokenCost:      30.0,  // $30 per 1M output tokens
-			CachedInputTokenCost: 5.0,   // $5 per 1M cached input tokens
+			InputTokenCost:       10.0, // $10 per 1M input tokens
+			OutputTokenCost:      30.0, // $30 per 1M output tokens
+			CachedInputTokenCost: 5.0,  // $5 per 1M cached input tokens
 			Currency:             "USD",
 			PricingModel:         "per_token",
 			EffectiveFrom:        "2024-01-01",
@@ -75,8 +75,8 @@ func (pd *PricingDetector) detectOpenAIPricing(modelID string) (*PricingInfo, er
 			EffectiveFrom:        "2024-01-01",
 		},
 		"gpt-4": {
-			InputTokenCost:       30.0,  // $30 per 1M input tokens
-			OutputTokenCost:      60.0,  // $60 per 1M output tokens
+			InputTokenCost:       30.0, // $30 per 1M input tokens
+			OutputTokenCost:      60.0, // $60 per 1M output tokens
 			CachedInputTokenCost: 15.0,
 			Currency:             "USD",
 			PricingModel:         "per_token",
@@ -91,16 +91,16 @@ func (pd *PricingDetector) detectOpenAIPricing(modelID string) (*PricingInfo, er
 			EffectiveFrom:        "2024-01-01",
 		},
 		"gpt-3.5-turbo": {
-			InputTokenCost:       0.5,   // $0.5 per 1M input tokens
-			OutputTokenCost:      1.5,   // $1.5 per 1M output tokens
+			InputTokenCost:       0.5, // $0.5 per 1M input tokens
+			OutputTokenCost:      1.5, // $1.5 per 1M output tokens
 			CachedInputTokenCost: 0.25,
 			Currency:             "USD",
 			PricingModel:         "per_token",
 			EffectiveFrom:        "2024-01-01",
 		},
 		"gpt-3.5-turbo-16k": {
-			InputTokenCost:       1.0,   // $1.0 per 1M input tokens
-			OutputTokenCost:      2.0,   // $2.0 per 1M output tokens
+			InputTokenCost:       1.0, // $1.0 per 1M input tokens
+			OutputTokenCost:      2.0, // $2.0 per 1M output tokens
 			CachedInputTokenCost: 0.5,
 			Currency:             "USD",
 			PricingModel:         "per_token",
@@ -128,14 +128,14 @@ func (pd *PricingDetector) detectOpenAIPricing(modelID string) (*PricingInfo, er
 			EffectiveFrom:   "2024-01-01",
 		},
 		"dall-e-3": {
-			InputTokenCost:  4.0,  // $4.0 per image (1024x1024)
+			InputTokenCost:  4.0, // $4.0 per image (1024x1024)
 			OutputTokenCost: 4.0,
 			Currency:        "USD",
 			PricingModel:    "per_image",
 			EffectiveFrom:   "2024-01-01",
 		},
 		"dall-e-2": {
-			InputTokenCost:  2.0,  // $2.0 per image (1024x1024)
+			InputTokenCost:  2.0, // $2.0 per image (1024x1024)
 			OutputTokenCost: 2.0,
 			Currency:        "USD",
 			PricingModel:    "per_image",
@@ -163,19 +163,19 @@ func (pd *PricingDetector) detectOpenAIPricing(modelID string) (*PricingInfo, er
 			EffectiveFrom:   "2024-01-01",
 		},
 	}
-	
+
 	// Try exact match first
 	if pricing, exists := pricingMap[modelID]; exists {
 		return pricing, nil
 	}
-	
+
 	// Try prefix matching for variant models
 	for prefix, pricing := range pricingMap {
 		if strings.HasPrefix(modelID, prefix) {
 			return pricing, nil
 		}
 	}
-	
+
 	// Default pricing for unknown OpenAI models
 	return &PricingInfo{
 		InputTokenCost:  10.0, // Conservative default
@@ -226,29 +226,29 @@ func (pd *PricingDetector) detectAnthropicPricing(modelID string) (*PricingInfo,
 			EffectiveFrom:   "2023-07-11",
 		},
 		"claude-instant-1.2": {
-			InputTokenCost:  0.8,  // $0.8 per 1M input tokens
-			OutputTokenCost: 2.4,  // $2.4 per 1M output tokens
+			InputTokenCost:  0.8, // $0.8 per 1M input tokens
+			OutputTokenCost: 2.4, // $2.4 per 1M output tokens
 			Currency:        "USD",
 			PricingModel:    "per_token",
 			EffectiveFrom:   "2023-08-09",
 		},
 	}
-	
+
 	// Try exact match first
 	if pricing, exists := pricingMap[modelID]; exists {
 		return pricing, nil
 	}
-	
+
 	// Try prefix matching for variant models
 	for prefix, pricing := range pricingMap {
 		if strings.HasPrefix(modelID, prefix) {
 			return pricing, nil
 		}
 	}
-	
+
 	// Default pricing for unknown Anthropic models
 	return &PricingInfo{
-		InputTokenCost:  8.0,  // Conservative default
+		InputTokenCost:  8.0, // Conservative default
 		OutputTokenCost: 24.0,
 		Currency:        "USD",
 		PricingModel:    "per_token",
@@ -262,7 +262,7 @@ func (pd *PricingDetector) detectAzureOpenAIPricing(modelID string) (*PricingInf
 	// This is a simplified version - actual Azure pricing varies by region and tier
 	pricingMap := map[string]*PricingInfo{
 		"gpt-4": {
-			InputTokenCost:       30.0,  // Similar to OpenAI but may vary by region
+			InputTokenCost:       30.0, // Similar to OpenAI but may vary by region
 			OutputTokenCost:      60.0,
 			CachedInputTokenCost: 15.0,
 			Currency:             "USD",
@@ -286,12 +286,12 @@ func (pd *PricingDetector) detectAzureOpenAIPricing(modelID string) (*PricingInf
 			EffectiveFrom:        "2024-01-01",
 		},
 	}
-	
+
 	// Try exact match first
 	if pricing, exists := pricingMap[modelID]; exists {
 		return pricing, nil
 	}
-	
+
 	// Default to OpenAI pricing for Azure models
 	return pd.detectOpenAIPricing(modelID)
 }
@@ -301,29 +301,29 @@ func (pd *PricingDetector) detectGooglePricing(modelID string) (*PricingInfo, er
 	// Google Cloud AI pricing (as of 2024)
 	pricingMap := map[string]*PricingInfo{
 		"gemini-pro": {
-			InputTokenCost:       0.5,   // $0.5 per 1M input tokens
-			OutputTokenCost:      1.5,   // $1.5 per 1M output tokens
-			Currency:             "USD",
-			PricingModel:         "per_token",
-			EffectiveFrom:        "2024-01-01",
+			InputTokenCost:  0.5, // $0.5 per 1M input tokens
+			OutputTokenCost: 1.5, // $1.5 per 1M output tokens
+			Currency:        "USD",
+			PricingModel:    "per_token",
+			EffectiveFrom:   "2024-01-01",
 		},
 		"gemini-pro-vision": {
-			InputTokenCost:       0.5,   // $0.5 per 1M input tokens
-			OutputTokenCost:      1.5,   // $1.5 per 1M output tokens
-			Currency:             "USD",
-			PricingModel:         "per_token",
-			EffectiveFrom:        "2024-01-01",
+			InputTokenCost:  0.5, // $0.5 per 1M input tokens
+			OutputTokenCost: 1.5, // $1.5 per 1M output tokens
+			Currency:        "USD",
+			PricingModel:    "per_token",
+			EffectiveFrom:   "2024-01-01",
 		},
 		"text-bison": {
-			InputTokenCost:       0.5,   // $0.5 per 1K characters
-			OutputTokenCost:      0.5,   // $0.5 per 1K characters
+			InputTokenCost:  0.5, // $0.5 per 1K characters
+			OutputTokenCost: 0.5, // $0.5 per 1K characters
 			Currency:        "USD",
 			PricingModel:    "per_character",
 			EffectiveFrom:   "2024-01-01",
 		},
 		"chat-bison": {
-			InputTokenCost:       0.5,   // $0.5 per 1K characters
-			OutputTokenCost:      0.5,   // $0.5 per 1K characters
+			InputTokenCost:  0.5, // $0.5 per 1K characters
+			OutputTokenCost: 0.5, // $0.5 per 1K characters
 			Currency:        "USD",
 			PricingModel:    "per_character",
 			EffectiveFrom:   "2024-01-01",
@@ -336,15 +336,15 @@ func (pd *PricingDetector) detectGooglePricing(modelID string) (*PricingInfo, er
 			EffectiveFrom:   "2024-01-01",
 		},
 	}
-	
+
 	// Try exact match first
 	if pricing, exists := pricingMap[modelID]; exists {
 		return pricing, nil
 	}
-	
+
 	// Default pricing for unknown Google models
 	return &PricingInfo{
-		InputTokenCost:  0.5,  // Conservative default
+		InputTokenCost:  0.5, // Conservative default
 		OutputTokenCost: 1.5,
 		Currency:        "USD",
 		PricingModel:    "per_token",
@@ -399,12 +399,12 @@ func (pd *PricingDetector) detectCoherePricing(modelID string) (*PricingInfo, er
 			EffectiveFrom:   "2024-01-01",
 		},
 	}
-	
+
 	// Try exact match first
 	if pricing, exists := pricingMap[modelID]; exists {
 		return pricing, nil
 	}
-	
+
 	// Default pricing for unknown Cohere models
 	return &PricingInfo{
 		InputTokenCost:  15.0, // Conservative default
@@ -419,7 +419,7 @@ func (pd *PricingDetector) detectCoherePricing(modelID string) (*PricingInfo, er
 func (pd *PricingDetector) detectGenericPricing(providerName, modelID string) (*PricingInfo, error) {
 	// Try to extract pricing from provider's website or API documentation
 	// This is a placeholder for more sophisticated pricing detection
-	
+
 	// Common patterns in model names that might indicate pricing tier
 	if strings.Contains(modelID, "large") || strings.Contains(modelID, "xl") {
 		return &PricingInfo{
@@ -430,17 +430,17 @@ func (pd *PricingDetector) detectGenericPricing(providerName, modelID string) (*
 			EffectiveFrom:   "2024-01-01",
 		}, nil
 	}
-	
+
 	if strings.Contains(modelID, "small") || strings.Contains(modelID, "light") {
 		return &PricingInfo{
-			InputTokenCost:  1.0,  // Lower tier pricing
+			InputTokenCost:  1.0, // Lower tier pricing
 			OutputTokenCost: 3.0,
 			Currency:        "USD",
 			PricingModel:    "per_token",
 			EffectiveFrom:   "2024-01-01",
 		}, nil
 	}
-	
+
 	if strings.Contains(modelID, "embed") || strings.Contains(modelID, "embedding") {
 		return &PricingInfo{
 			InputTokenCost:  0.1, // Embedding model pricing
@@ -450,7 +450,7 @@ func (pd *PricingDetector) detectGenericPricing(providerName, modelID string) (*
 			EffectiveFrom:   "2024-01-01",
 		}, nil
 	}
-	
+
 	// Default conservative pricing
 	return &PricingInfo{
 		InputTokenCost:  10.0, // Medium tier pricing
@@ -471,14 +471,14 @@ func SavePricing(db *database.Database, modelID int64, pricing *PricingInfo) err
 			effectiveFrom = &from
 		}
 	}
-	
+
 	if pricing.EffectiveTo != "" {
 		to, err := time.Parse("2006-01-02", pricing.EffectiveTo)
 		if err == nil {
 			effectiveTo = &to
 		}
 	}
-	
+
 	pricingRecord := &database.Pricing{
 		ModelID:              modelID,
 		InputTokenCost:       pricing.InputTokenCost,
@@ -491,7 +491,7 @@ func SavePricing(db *database.Database, modelID int64, pricing *PricingInfo) err
 		EffectiveFrom:        effectiveFrom,
 		EffectiveTo:          effectiveTo,
 	}
-	
+
 	return db.CreatePricing(pricingRecord)
 }
 
@@ -501,7 +501,7 @@ func (pd *PricingDetector) UpdatePricingFromAPI(db *database.Database, provider 
 	if err != nil {
 		return fmt.Errorf("failed to detect pricing for model %s: %w", model.ModelID, err)
 	}
-	
+
 	return SavePricing(db, model.ID, pricing)
 }
 
@@ -519,7 +519,7 @@ func (pd *PricingDetector) BatchUpdatePricing(db *database.Database, provider *d
 // GetPricingComparison compares pricing between different models
 func GetPricingComparison(db *database.Database, modelIDs []int64) (map[int64]*database.Pricing, error) {
 	pricingMap := make(map[int64]*database.Pricing)
-	
+
 	for _, modelID := range modelIDs {
 		// Get latest pricing for each model
 		pricing, err := db.GetLatestPricing(modelID)
@@ -527,17 +527,17 @@ func GetPricingComparison(db *database.Database, modelIDs []int64) (map[int64]*d
 			// Skip models without pricing information
 			continue
 		}
-		
+
 		pricingMap[modelID] = pricing
 	}
-	
+
 	return pricingMap, nil
 }
 
 // CalculateCostEstimate calculates estimated cost for a given usage pattern
 func CalculateCostEstimate(pricing *PricingInfo, inputTokens, outputTokens int64, requestCount int) float64 {
 	var totalCost float64
-	
+
 	switch pricing.PricingModel {
 	case "per_token":
 		totalCost += (float64(inputTokens) / 1000000.0) * pricing.InputTokenCost
@@ -556,7 +556,7 @@ func CalculateCostEstimate(pricing *PricingInfo, inputTokens, outputTokens int64
 		totalCost += (float64(inputTokens) / 1000000.0) * pricing.InputTokenCost
 		totalCost += (float64(outputTokens) / 1000000.0) * pricing.OutputTokenCost
 	}
-	
+
 	return totalCost
 }
 
@@ -565,19 +565,19 @@ func ValidatePricing(pricing *PricingInfo) error {
 	if pricing.InputTokenCost < 0 {
 		return fmt.Errorf("input token cost cannot be negative")
 	}
-	
+
 	if pricing.OutputTokenCost < 0 {
 		return fmt.Errorf("output token cost cannot be negative")
 	}
-	
+
 	if pricing.Currency == "" {
 		return fmt.Errorf("currency is required")
 	}
-	
+
 	if pricing.PricingModel == "" {
 		return fmt.Errorf("pricing model is required")
 	}
-	
+
 	validModels := []string{"per_token", "per_request", "per_character", "per_image", "per_minute"}
 	isValid := false
 	for _, model := range validModels {
@@ -586,10 +586,10 @@ func ValidatePricing(pricing *PricingInfo) error {
 			break
 		}
 	}
-	
+
 	if !isValid {
 		return fmt.Errorf("invalid pricing model: %s", pricing.PricingModel)
 	}
-	
+
 	return nil
 }

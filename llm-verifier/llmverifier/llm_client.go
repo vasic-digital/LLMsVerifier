@@ -33,7 +33,7 @@ func NewLLMClient(endpoint, apiKey string, headers map[string]string) *LLMClient
 
 // ModelResponse represents the response from the models API endpoint
 type ModelResponse struct {
-	Object string    `json:"object"`
+	Object string      `json:"object"`
 	Data   []ModelInfo `json:"data"`
 }
 
@@ -73,13 +73,13 @@ func (c *LLMClient) ListModels(ctx context.Context) ([]ModelInfo, error) {
 
 // ChatCompletionRequest represents a request to the chat completion endpoint
 type ChatCompletionRequest struct {
-	Model         string                 `json:"model"`
-	Messages      []Message              `json:"messages"`
-	Stream        bool                   `json:"stream,omitempty"`
-	Temperature   *float64               `json:"temperature,omitempty"`
-	MaxTokens     *int                   `json:"max_tokens,omitempty"`
-	Tools         []Tool                 `json:"tools,omitempty"`
-	ToolChoice    interface{}            `json:"tool_choice,omitempty"`
+	Model          string                 `json:"model"`
+	Messages       []Message              `json:"messages"`
+	Stream         bool                   `json:"stream,omitempty"`
+	Temperature    *float64               `json:"temperature,omitempty"`
+	MaxTokens      *int                   `json:"max_tokens,omitempty"`
+	Tools          []Tool                 `json:"tools,omitempty"`
+	ToolChoice     interface{}            `json:"tool_choice,omitempty"`
 	ResponseFormat map[string]interface{} `json:"response_format,omitempty"`
 }
 
@@ -98,12 +98,12 @@ type ChatCompletionChoice struct {
 
 // ChatCompletionResponse represents the response from the chat completion endpoint
 type ChatCompletionResponse struct {
-	ID      string                  `json:"id"`
-	Object  string                  `json:"object"`
-	Created int64                   `json:"created"`
-	Model   string                  `json:"model"`
-	Choices []ChatCompletionChoice  `json:"choices"`
-	Usage   Usage                   `json:"usage"`
+	ID      string                 `json:"id"`
+	Object  string                 `json:"object"`
+	Created int64                  `json:"created"`
+	Model   string                 `json:"model"`
+	Choices []ChatCompletionChoice `json:"choices"`
+	Usage   Usage                  `json:"usage"`
 }
 
 // Usage represents token usage information
@@ -205,7 +205,7 @@ func (c *LLMClient) GetEmbeddings(ctx context.Context, req EmbeddingRequest) (*E
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("embedding endpoint not supported")
 	}
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
 	}
@@ -259,7 +259,7 @@ func (c *LLMClient) CheckModelExists(ctx context.Context, modelName string) (boo
 // makeRequest performs a generic HTTP request to the LLM API
 func (c *LLMClient) makeRequest(ctx context.Context, method, endpoint string, body interface{}) (*http.Response, error) {
 	url := fmt.Sprintf("%s%s", c.endpoint, endpoint)
-	
+
 	var bodyReader io.Reader
 	if body != nil {
 		jsonBody, err := json.Marshal(body)
@@ -268,26 +268,26 @@ func (c *LLMClient) makeRequest(ctx context.Context, method, endpoint string, bo
 		}
 		bodyReader = bytes.NewReader(jsonBody)
 	}
-	
+
 	req, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-	
+
 	c.setAuthHeaders(req)
 	c.setAdditionalHeaders(req)
-	
+
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
-	
+
 	return c.httpClient.Do(req)
 }
 
 // makeRequestWithHeaders performs a generic HTTP request with custom headers
 func (c *LLMClient) makeRequestWithHeaders(ctx context.Context, method, endpoint string, body interface{}, customHeaders map[string]string) (*http.Response, error) {
 	url := fmt.Sprintf("%s%s", c.endpoint, endpoint)
-	
+
 	var bodyReader io.Reader
 	if body != nil {
 		jsonBody, err := json.Marshal(body)
@@ -296,23 +296,23 @@ func (c *LLMClient) makeRequestWithHeaders(ctx context.Context, method, endpoint
 		}
 		bodyReader = bytes.NewReader(jsonBody)
 	}
-	
+
 	req, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-	
+
 	c.setAuthHeaders(req)
 	c.setAdditionalHeaders(req)
-	
+
 	// Add custom headers
 	for key, value := range customHeaders {
 		req.Header.Set(key, value)
 	}
-	
+
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
-	
+
 	return c.httpClient.Do(req)
 }
