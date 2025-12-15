@@ -1264,6 +1264,45 @@ func (d *Database) DeleteVerificationResult(id int64) error {
 	return nil
 }
 
+// GetModelCount returns the total number of models
+func (d *Database) GetModelCount() (int64, error) {
+	var count int64
+	query := `SELECT COUNT(*) FROM models`
+
+	err := d.conn.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get model count: %w", err)
+	}
+
+	return count, nil
+}
+
+// GetProviderCount returns the total number of providers
+func (d *Database) GetProviderCount() (int64, error) {
+	var count int64
+	query := `SELECT COUNT(*) FROM providers`
+
+	err := d.conn.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get provider count: %w", err)
+	}
+
+	return count, nil
+}
+
+// GetVerificationResultCount returns the total number of verification results
+func (d *Database) GetVerificationResultCount() (int64, error) {
+	var count int64
+	query := `SELECT COUNT(*) FROM verification_results`
+
+	err := d.conn.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get verification result count: %w", err)
+	}
+
+	return count, nil
+}
+
 // Helper function to scan nullable int from string
 func scanNullableIntFromString(nullString sql.NullString) *int {
 	if !nullString.Valid || nullString.String == "" {

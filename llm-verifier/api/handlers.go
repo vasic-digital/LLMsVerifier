@@ -20,6 +20,12 @@ import (
 )
 
 // healthCheck handles health check requests
+// @Summary Health check endpoint
+// @Description Returns the health status of the API
+// @Tags system
+// @Produce json
+// @Success 200 {object} map[string]interface{} "Health status"
+// @Router /health [get]
 func (s *Server) healthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":    "healthy",
@@ -29,6 +35,16 @@ func (s *Server) healthCheck(c *gin.Context) {
 }
 
 // login handles user authentication
+// @Summary User login
+// @Description Authenticate user and return JWT token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param credentials body LoginRequest true "Login credentials"
+// @Success 200 {object} map[string]interface{} "Login response with JWT token"
+// @Failure 400 {object} map[string]interface{} "Validation error"
+// @Failure 401 {object} map[string]interface{} "Authentication failed"
+// @Router /auth/login [post]
 func (s *Server) login(c *gin.Context) {
 	var credentials LoginRequest
 
@@ -115,6 +131,17 @@ func (s *Server) refreshToken(c *gin.Context) {
 }
 
 // getModels retrieves all models
+// @Summary Get models
+// @Description Retrieves a list of all LLM models with pagination
+// @Tags models
+// @Produce json
+// @Param limit query int false "Number of results per page (default: 50)"
+// @Param offset query int false "Offset for pagination (default: 0)"
+// @Param provider query string false "Filter by provider name"
+// @Param status query string false "Filter by model status"
+// @Success 200 {object} map[string]interface{} "List of models"
+// @Failure 400 {object} map[string]interface{} "Invalid parameters"
+// @Router /models [get]
 func (s *Server) getModels(c *gin.Context) {
 	limitStr := c.DefaultQuery("limit", "50")
 	offsetStr := c.DefaultQuery("offset", "0")
@@ -152,6 +179,18 @@ func (s *Server) getModels(c *gin.Context) {
 }
 
 // createModel creates a new model
+// @Summary Create model
+// @Description Creates a new LLM model (admin only)
+// @Tags models
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param model body CreateModelRequest true "Model data"
+// @Success 201 {object} map[string]interface{} "Created model"
+// @Failure 400 {object} map[string]interface{} "Validation error"
+// @Failure 401 {object} map[string]interface{} "Unauthorized"
+// @Failure 403 {object} map[string]interface{} "Forbidden (admin only)"
+// @Router /models [post]
 func (s *Server) createModel(c *gin.Context) {
 	var request CreateModelRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -2971,4 +3010,68 @@ func (s *Server) exportAsVSCode() (string, error) {
 		return "", fmt.Errorf("failed to marshal VS Code config: %w", err)
 	}
 	return string(jsonBytes), nil
+}
+
+// getSystemInfo returns system information
+// @Summary Get system information
+// @Description Returns system version, statistics, and counts
+// @Tags system
+// @Produce json
+// @Success 200 {object} map[string]interface{} "System information"
+// @Router /system/info [get]
+func (s *Server) getSystemInfo(c *gin.Context) {
+	// Get basic system stats
+	var totalModels, totalProviders, totalVerifications int64
+
+	// Get counts from database
+	if s.database != nil {
+		totalModels, _ = s.database.GetModelCount()
+		totalProviders, _ = s.database.GetProviderCount()
+		totalVerifications, _ = s.database.GetVerificationResultCount()
+	}
+
+	// Build system info response
+	systemInfo := map[string]interface{}{
+		"version":             "1.0.0",
+		"build_time":          "2024-01-01T00:00:00Z", // This should be set at build time
+		"go_version":          "1.21.0",
+		"git_commit":          "abc123", // This should be set at build time
+		"database_version":    "3.40.0",
+		"total_models":        totalModels,
+		"total_providers":     totalProviders,
+		"total_verifications": totalVerifications,
+		"system_stats": map[string]interface{}{
+			"cpu_usage":    15.2, // Placeholder - in production, get actual stats
+			"memory_usage": 45.8, // Placeholder
+			"disk_usage":   23.1, // Placeholder
+		},
+	}
+
+	SendSuccess(c, http.StatusOK, systemInfo, "")
+}
+
+// getDatabaseStats returns database statistics
+// @Summary Get database statistics
+// @Description Returns database performance and size statistics
+// @Tags system
+// @Produce json
+// @Success 200 {object} map[string]interface{} "Database statistics"
+// @Failure 503 {object} map[string]interface{} "Database not available"
+// @Router /system/database-stats [get]
+func (s *Server) getDatabaseStats(c *gin.Context) {
+	if s.database == nil {
+		SendError(c, http.StatusServiceUnavailable, ErrCodeDatabase, "Database not available", nil)
+		return
+	}
+
+	// Get database stats
+	stats, err := s.database.GetDatabaseStats()
+	if err != nil {
+		SendError(c, http.StatusInternalServerError, ErrCodeDatabase, "Failed to get database stats", map[string]string{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	SendSuccess(c, http.StatusOK, stats, "")
 }

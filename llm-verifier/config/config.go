@@ -41,8 +41,12 @@ type DatabaseConfig struct {
 
 // APIConfig holds REST API configuration options
 type APIConfig struct {
-	Port       string `mapstructure:"port"`        // Port to run the API server on
-	JWTSecret  string `mapstructure:"jwt_secret"`  // Secret key for JWT token signing
-	RateLimit  int    `mapstructure:"rate_limit"`  // Rate limit (requests per minute)
-	EnableCORS bool   `mapstructure:"enable_cors"` // Enable CORS headers
+	Port              string `mapstructure:"port"`                  // Port to run the API server on
+	JWTSecret         string `mapstructure:"jwt_secret"`            // Secret key for JWT token signing
+	RateLimit         int    `mapstructure:"rate_limit"`            // Global rate limit (requests per minute)
+	BurstLimit        int    `mapstructure:"burst_limit"`           // Burst limit for short periods
+	RateLimitWindow   int    `mapstructure:"rate_limit_window"`     // Rate limit window in seconds
+	EnableCORS        bool   `mapstructure:"enable_cors"`           // Enable CORS headers
+	TrustedProxies    string `mapstructure:"trusted_proxies"`       // Comma-separated list of trusted proxy IPs
+	RateLimitByAPIKey bool   `mapstructure:"rate_limit_by_api_key"` // Rate limit by API key instead of IP
 }
