@@ -16,9 +16,9 @@ import (
 
 // TestHelper provides common test utilities
 type TestHelper struct {
-	DB       *database.Database
+	DB         *database.Database
 	MockServer *httptest.Server
-	Config   *config.Config
+	Config     *config.Config
 }
 
 // NewTestHelper creates a new test helper
@@ -26,15 +26,15 @@ func NewTestHelper(t *testing.T) *TestHelper {
 	// Create temp database
 	tempDir := t.TempDir()
 	dbPath := filepath.Join(tempDir, "test.db")
-	
+
 	db, err := database.New(dbPath)
 	if err != nil {
 		t.Fatalf("Failed to create test database: %v", err)
 	}
-	
+
 	// Create mock server
 	mockServer := createMockServer(t)
-	
+
 	// Create test configuration
 	testConfig := &config.Config{
 		Global: config.GlobalConfig{
@@ -48,7 +48,7 @@ func NewTestHelper(t *testing.T) *TestHelper {
 		Concurrency: 2,
 		Timeout:     15 * time.Second,
 	}
-	
+
 	return &TestHelper{
 		DB:         db,
 		MockServer: mockServer,
@@ -88,14 +88,14 @@ func handleModelsRequest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	
+
 	// Check API key
 	auth := r.Header.Get("Authorization")
-	if auth != "Bearer " + MockAPIKey {
+	if auth != "Bearer "+MockAPIKey {
 		http.Error(w, `{"error":{"code":"invalid_api_key","message":"Invalid API key"}}`, http.StatusUnauthorized)
 		return
 	}
-	
+
 	response := map[string]interface{}{
 		"object": "list",
 		"data": []map[string]interface{}{
@@ -119,7 +119,7 @@ func handleModelsRequest(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
@@ -130,30 +130,30 @@ func handleChatCompletionsRequest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	
+
 	// Check API key
 	auth := r.Header.Get("Authorization")
 	if auth != "Bearer test-api-key" {
 		http.Error(w, `{"error":{"code":"invalid_api_key","message":"Invalid API key"}}`, http.StatusUnauthorized)
 		return
 	}
-	
+
 	// Add rate limit headers
 	w.Header().Set("x-ratelimit-limit-requests", "100")
 	w.Header().Set("x-ratelimit-limit-tokens", "10000")
 	w.Header().Set("x-ratelimit-remaining-requests", "95")
 	w.Header().Set("x-ratelimit-remaining-tokens", "9500")
 	w.Header().Set("x-ratelimit-reset", fmt.Sprintf("%d", time.Now().Add(time.Hour).Unix()))
-	
+
 	// Simulate different responses based on model
 	var request map[string]interface{}
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, `{"error":{"code":"invalid_request","message":"Invalid request body"}}`, http.StatusBadRequest)
 		return
 	}
-	
+
 	model := request["model"].(string)
-	
+
 	// Simulate different behaviors
 	switch model {
 	case "gpt-4-turbo":
@@ -189,27 +189,27 @@ func handleGPT4Response(w http.ResponseWriter, r *http.Request, request map[stri
 			"total_tokens":      70,
 		},
 	}
-	
+
 	// Simulate tool use if requested
-		// Simulate tool use if requested
-		if tools, ok := request["tools"].([]interface{}); ok && len(tools) > 0 {
-			if choices, ok := response["choices"].([]interface{}); ok && len(choices) > 0 {
-				if choice, ok := choices[0].(map[string]interface{}); ok {
-					if message, ok := choice["message"].(map[string]interface{}); ok {
-						message["tool_calls"] = []map[string]interface{}{
-							{
-								"id":       "call_test",
-								"type":     "function",
-								"function": map[string]interface{}{
-									"name":      "get_current_weather",
-									"arguments": `{"location": "New York, NY"}`,
-								},
+	// Simulate tool use if requested
+	if tools, ok := request["tools"].([]interface{}); ok && len(tools) > 0 {
+		if choices, ok := response["choices"].([]interface{}); ok && len(choices) > 0 {
+			if choice, ok := choices[0].(map[string]interface{}); ok {
+				if message, ok := choice["message"].(map[string]interface{}); ok {
+					message["tool_calls"] = []map[string]interface{}{
+						{
+							"id":   "call_test",
+							"type": "function",
+							"function": map[string]interface{}{
+								"name":      "get_current_weather",
+								"arguments": `{"location": "New York, NY"}`,
 							},
-						}
+						},
 					}
 				}
 			}
 		}
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
@@ -238,7 +238,7 @@ func handleGPT35Response(w http.ResponseWriter, r *http.Request, request map[str
 			"total_tokens":      60,
 		},
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
@@ -249,30 +249,30 @@ func handleEmbeddingsRequest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	
+
 	// Check API key
 	auth := r.Header.Get("Authorization")
 	if auth != "Bearer test-api-key" {
 		http.Error(w, `{"error":{"code":"invalid_api_key","message":"Invalid API key"}}`, http.StatusUnauthorized)
 		return
 	}
-	
+
 	response := map[string]interface{}{
 		"object": "list",
 		"data": []map[string]interface{}{
 			{
-				"object":       "embedding",
-				"embedding":    generateRandomEmbedding(1536), // Standard embedding size
-				"index":        0,
+				"object":    "embedding",
+				"embedding": generateRandomEmbedding(1536), // Standard embedding size
+				"index":     0,
 			},
 		},
-		"model":   "text-embedding-3-small",
+		"model": "text-embedding-3-small",
 		"usage": map[string]interface{}{
 			"prompt_tokens": 10,
 			"total_tokens":  10,
 		},
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
@@ -305,7 +305,7 @@ func handleDefaultModelResponse(w http.ResponseWriter, r *http.Request, request 
 			"total_tokens":      20,
 		},
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
@@ -356,11 +356,11 @@ func CreateTestVerifier(config *config.Config) *llmverifier.Verifier {
 // SetupTestEnvironment sets up a complete test environment
 func SetupTestEnvironment(t *testing.T) (*TestHelper, func()) {
 	helper := NewTestHelper(t)
-	
+
 	cleanup := func() {
 		helper.Cleanup()
 	}
-	
+
 	return helper, cleanup
 }
 
