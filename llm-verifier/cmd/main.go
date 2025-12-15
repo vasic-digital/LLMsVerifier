@@ -1,13 +1,17 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/crypto/bcrypt"
 
 	"llm-verifier/api"
+	"llm-verifier/client"
+	"llm-verifier/database"
 	"llm-verifier/llmverifier"
 )
 
@@ -73,6 +77,9 @@ func main() {
 	// Config commands
 	rootCmd.AddCommand(configCmd())
 
+	// Users commands
+	rootCmd.AddCommand(usersCmd())
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
@@ -115,7 +122,7 @@ func serverCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("port", "p", "8080", "Port to run the server on")
+	cmd.Flags().String("port", "8080", "Port to run the server on")
 	return cmd
 }
 
@@ -139,6 +146,28 @@ func runServer() error {
 	return server.Start(port)
 }
 
+func getClient() (*client.Client, error) {
+	c := client.New(serverURL)
+
+	// If username and password are provided, try to login
+	if username != "" && password != "" {
+		if err := c.Login(username, password); err != nil {
+			return nil, fmt.Errorf("authentication failed: %w", err)
+		}
+	}
+
+	return c, nil
+}
+
+func printJSON(data interface{}) error {
+	jsonData, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(jsonData))
+	return nil
+}
+
 func modelsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "models",
@@ -150,7 +179,19 @@ func modelsCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List all models",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Listing models... (implementation pending)")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			models, err := c.GetModels()
+			if err != nil {
+				log.Fatalf("Failed to get models: %v", err)
+			}
+
+			if err := printJSON(models); err != nil {
+				log.Fatalf("Failed to print models: %v", err)
+			}
 		},
 	})
 
@@ -159,7 +200,19 @@ func modelsCmd() *cobra.Command {
 		Short: "Get model details",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("Getting model %s... (implementation pending)\n", args[0])
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			model, err := c.GetModel(args[0])
+			if err != nil {
+				log.Fatalf("Failed to get model: %v", err)
+			}
+
+			if err := printJSON(model); err != nil {
+				log.Fatalf("Failed to print model: %v", err)
+			}
 		},
 	})
 
@@ -167,7 +220,8 @@ func modelsCmd() *cobra.Command {
 		Use:   "create",
 		Short: "Create a new model",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Creating model... (implementation pending)")
+			fmt.Println("Creating model... (interactive creation not implemented)")
+			fmt.Println("Use the API directly or implement interactive creation")
 		},
 	})
 
@@ -176,7 +230,19 @@ func modelsCmd() *cobra.Command {
 		Short: "Verify a model",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("Verifying model %s... (implementation pending)\n", args[0])
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			result, err := c.VerifyModel(args[0])
+			if err != nil {
+				log.Fatalf("Failed to verify model: %v", err)
+			}
+
+			if err := printJSON(result); err != nil {
+				log.Fatalf("Failed to print verification result: %v", err)
+			}
 		},
 	})
 
@@ -194,7 +260,19 @@ func providersCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List all providers",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Listing providers... (implementation pending)")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			providers, err := c.GetProviders()
+			if err != nil {
+				log.Fatalf("Failed to get providers: %v", err)
+			}
+
+			if err := printJSON(providers); err != nil {
+				log.Fatalf("Failed to print providers: %v", err)
+			}
 		},
 	})
 
@@ -221,7 +299,19 @@ func resultsCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List all verification results",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Listing verification results... (implementation pending)")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			results, err := c.GetVerificationResults()
+			if err != nil {
+				log.Fatalf("Failed to get verification results: %v", err)
+			}
+
+			if err := printJSON(results); err != nil {
+				log.Fatalf("Failed to print verification results: %v", err)
+			}
 		},
 	})
 
@@ -248,7 +338,19 @@ func pricingCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List all pricing entries",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Listing pricing entries... (implementation pending)")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			pricing, err := c.GetPricing()
+			if err != nil {
+				log.Fatalf("Failed to get pricing: %v", err)
+			}
+
+			if err := printJSON(pricing); err != nil {
+				log.Fatalf("Failed to print pricing: %v", err)
+			}
 		},
 	})
 
@@ -266,7 +368,19 @@ func limitsCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List all limit entries",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Listing limit entries... (implementation pending)")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			limits, err := c.GetLimits()
+			if err != nil {
+				log.Fatalf("Failed to get limits: %v", err)
+			}
+
+			if err := printJSON(limits); err != nil {
+				log.Fatalf("Failed to print limits: %v", err)
+			}
 		},
 	})
 
@@ -284,7 +398,19 @@ func issuesCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List all issues",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Listing issues... (implementation pending)")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			issues, err := c.GetIssues()
+			if err != nil {
+				log.Fatalf("Failed to get issues: %v", err)
+			}
+
+			if err := printJSON(issues); err != nil {
+				log.Fatalf("Failed to print issues: %v", err)
+			}
 		},
 	})
 
@@ -302,7 +428,19 @@ func eventsCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List all events",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Listing events... (implementation pending)")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			events, err := c.GetEvents()
+			if err != nil {
+				log.Fatalf("Failed to get events: %v", err)
+			}
+
+			if err := printJSON(events); err != nil {
+				log.Fatalf("Failed to print events: %v", err)
+			}
 		},
 	})
 
@@ -320,7 +458,19 @@ func schedulesCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List all schedules",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Listing schedules... (implementation pending)")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			schedules, err := c.GetSchedules()
+			if err != nil {
+				log.Fatalf("Failed to get schedules: %v", err)
+			}
+
+			if err := printJSON(schedules); err != nil {
+				log.Fatalf("Failed to print schedules: %v", err)
+			}
 		},
 	})
 
@@ -338,7 +488,19 @@ func exportsCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List all configuration exports",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Listing configuration exports... (implementation pending)")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			exports, err := c.GetConfigExports()
+			if err != nil {
+				log.Fatalf("Failed to get config exports: %v", err)
+			}
+
+			if err := printJSON(exports); err != nil {
+				log.Fatalf("Failed to print config exports: %v", err)
+			}
 		},
 	})
 
@@ -347,7 +509,17 @@ func exportsCmd() *cobra.Command {
 		Short: "Download a configuration export",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("Downloading configuration export %s... (implementation pending)\n", args[0])
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			data, err := c.DownloadConfigExport(args[0])
+			if err != nil {
+				log.Fatalf("Failed to download config export: %v", err)
+			}
+
+			fmt.Println(string(data))
 		},
 	})
 
@@ -365,7 +537,19 @@ func logsCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List all logs",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Listing logs... (implementation pending)")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			logs, err := c.GetLogs()
+			if err != nil {
+				log.Fatalf("Failed to get logs: %v", err)
+			}
+
+			if err := printJSON(logs); err != nil {
+				log.Fatalf("Failed to print logs: %v", err)
+			}
 		},
 	})
 
@@ -383,7 +567,19 @@ func configCmd() *cobra.Command {
 		Use:   "show",
 		Short: "Show current configuration",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Showing configuration... (implementation pending)")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			config, err := c.GetConfig()
+			if err != nil {
+				log.Fatalf("Failed to get config: %v", err)
+			}
+
+			if err := printJSON(config); err != nil {
+				log.Fatalf("Failed to print config: %v", err)
+			}
 		},
 	})
 
@@ -392,7 +588,19 @@ func configCmd() *cobra.Command {
 		Short: "Export configuration in specified format",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("Exporting configuration in %s format... (implementation pending)\n", args[0])
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			result, err := c.ExportConfig(args[0])
+			if err != nil {
+				log.Fatalf("Failed to export config: %v", err)
+			}
+
+			if err := printJSON(result); err != nil {
+				log.Fatalf("Failed to print export result: %v", err)
+			}
 		},
 	})
 

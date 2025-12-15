@@ -122,6 +122,35 @@ func (d *Database) initializeSchema() error {
 	-- Enable foreign keys
 	PRAGMA foreign_keys = ON;
 
+	-- Users table (system users for authentication and authorization)
+	CREATE TABLE IF NOT EXISTS users (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		username TEXT NOT NULL UNIQUE,
+		email TEXT NOT NULL UNIQUE,
+		password_hash TEXT NOT NULL,
+		full_name TEXT,
+		role TEXT NOT NULL DEFAULT 'user',
+		is_active BOOLEAN DEFAULT 1,
+		last_login TIMESTAMP,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		preferences TEXT
+	);
+
+	-- API keys table (for programmatic access)
+	CREATE TABLE IF NOT EXISTS api_keys (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL,
+		name TEXT NOT NULL,
+		key_hash TEXT NOT NULL UNIQUE,
+		scopes TEXT NOT NULL,
+		expires_at TIMESTAMP,
+		last_used TIMESTAMP,
+		is_active BOOLEAN DEFAULT 1,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+	);
+
 	-- Providers table
 	CREATE TABLE IF NOT EXISTS providers (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,

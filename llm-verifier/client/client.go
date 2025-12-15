@@ -38,7 +38,7 @@ func (c *Client) Login(username, password string) error {
 		"password": password,
 	}
 
-	resp, err := c.doRequest("POST", "/api/v1/auth/login", loginReq)
+	resp, err := c.doRequest("POST", "/auth/login", loginReq)
 	if err != nil {
 		return fmt.Errorf("login failed: %w", err)
 	}

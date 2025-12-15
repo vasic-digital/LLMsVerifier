@@ -27,6 +27,9 @@ type Server struct {
 
 // NewServer creates a new API server instance
 func NewServer(cfg *config.Config) (*Server, error) {
+	// Setup Gin to use our custom validator
+	SetupGinValidator()
+
 	// Initialize database
 	db, err := database.New(cfg.Database.Path)
 	if err != nil {

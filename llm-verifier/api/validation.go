@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -979,4 +980,28 @@ func ValidateCronExpression(cron string) error {
 	}
 
 	return nil
+}
+
+// customValidator implements Gin's StructValidator interface
+type customValidator struct {
+	validator *validator.Validate
+}
+
+// ValidateStruct validates a struct using our custom validator
+func (cv *customValidator) ValidateStruct(obj any) error {
+	if obj == nil {
+		return nil
+	}
+	return cv.validator.Struct(obj)
+}
+
+// Engine returns the underlying validator engine
+func (cv *customValidator) Engine() any {
+	return cv.validator
+}
+
+// SetupGinValidator sets up Gin to use our custom validator
+func SetupGinValidator() {
+	cv := &customValidator{validator: validate}
+	binding.Validator = cv
 }

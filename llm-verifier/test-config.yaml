@@ -1,0 +1,23 @@
+# Test configuration for CLI testing
+global:
+  base_url: "http://localhost:8080"
+  api_key: "test-key"
+  max_retries: 3
+  request_delay: 1s
+  timeout: 30s
+
+database:
+  path: "./test.db"
+  encryption_key: ""
+
+api:
+  port: "8080"
+  jwt_secret: "test-secret-key"
+  rate_limit: 100
+  enable_cors: true
+
+# Specify empty LLMs list to avoid external API calls
+llms: []
+
+concurrency: 1
+timeout: 10s
