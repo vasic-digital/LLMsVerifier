@@ -101,12 +101,14 @@ func (c *Client) GetModels() ([]map[string]interface{}, error) {
 	}
 	defer resp.Body.Close()
 
-	var models []map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&models); err != nil {
+	var response struct {
+		Models []map[string]interface{} `json:"models"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("failed to decode models response: %w", err)
 	}
 
-	return models, nil
+	return response.Models, nil
 }
 
 // GetModel retrieves a specific model by ID
@@ -165,12 +167,14 @@ func (c *Client) GetProviders() ([]map[string]interface{}, error) {
 	}
 	defer resp.Body.Close()
 
-	var providers []map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&providers); err != nil {
+	var response struct {
+		Providers []map[string]interface{} `json:"providers"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("failed to decode providers response: %w", err)
 	}
 
-	return providers, nil
+	return response.Providers, nil
 }
 
 // GetVerificationResults retrieves verification results

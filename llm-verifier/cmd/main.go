@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"golang.org/x/crypto/bcrypt"
 
 	"llm-verifier/api"
 	"llm-verifier/client"
@@ -601,6 +600,58 @@ func configCmd() *cobra.Command {
 			if err := printJSON(result); err != nil {
 				log.Fatalf("Failed to print export result: %v", err)
 			}
+		},
+	})
+
+	return cmd
+}
+
+func usersCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "users",
+		Short: "Manage users",
+		Long:  `Create, list, and manage system users.`,
+	}
+
+	cmd.AddCommand(&cobra.Command{
+		Use:   "create [username] [password] [email] [full_name]",
+		Short: "Create a new user",
+		Args:  cobra.MinimumNArgs(3),
+		Run: func(cmd *cobra.Command, args []string) {
+			username := args[0]
+			password := args[1]
+			email := args[2]
+			fullName := ""
+			if len(args) > 3 {
+				fullName = args[3]
+			}
+
+			// Initialize database
+			db, err := database.New("llm-verifier.db")
+			if err != nil {
+				log.Fatalf("Failed to initialize database: %v", err)
+			}
+			defer db.Close()
+
+			// Create user with plain text password
+			// The CreateUser method will hash it
+			user := &database.User{
+				Username:     username,
+				Email:        email,
+				PasswordHash: password,
+				FullName:     fullName,
+				Role:         "admin",
+				IsActive:     true,
+			}
+
+			err = db.CreateUser(user)
+			if err != nil {
+				log.Fatalf("Failed to create user: %v", err)
+			}
+
+			fmt.Printf("User '%s' created successfully with ID: %d\n", username, user.ID)
+			fmt.Println("Role: admin")
+			fmt.Println("Status: active")
 		},
 	})
 
