@@ -778,6 +778,56 @@ func scanJSONString(nullString sql.NullString) []string {
 	return result
 }
 
+// Helper functions to convert from Go pointers to SQL nullable types
+
+// toNullTime converts a *time.Time to sql.NullTime
+func toNullTime(t *time.Time) sql.NullTime {
+	if t != nil {
+		return sql.NullTime{Time: *t, Valid: true}
+	}
+	return sql.NullTime{Valid: false}
+}
+
+// toNullString converts a *string to sql.NullString
+func toNullString(s *string) sql.NullString {
+	if s != nil {
+		return sql.NullString{String: *s, Valid: true}
+	}
+	return sql.NullString{Valid: false}
+}
+
+// toNullInt64 converts a *int64 to sql.NullInt64
+func toNullInt64(i *int64) sql.NullInt64 {
+	if i != nil {
+		return sql.NullInt64{Int64: *i, Valid: true}
+	}
+	return sql.NullInt64{Valid: false}
+}
+
+// toNullInt converts a *int to sql.NullInt32
+func toNullInt(i *int) sql.NullInt32 {
+	if i != nil {
+		return sql.NullInt32{Int32: int32(*i), Valid: true}
+	}
+	return sql.NullInt32{Valid: false}
+}
+
+// toNullFloat64 converts a *float64 to sql.NullFloat64
+func toNullFloat64(f *float64) sql.NullFloat64 {
+	if f != nil {
+		return sql.NullFloat64{Float64: *f, Valid: true}
+	}
+	return sql.NullFloat64{Valid: false}
+}
+
+// toNullBool converts a *bool to sql.NullBool
+func toNullBool(b *bool) sql.NullBool {
+	if b != nil {
+		return sql.NullBool{Bool: *b, Valid: true}
+	}
+	return sql.NullBool{Valid: false}
+}
+
 // Pricing represents model pricing information
 type Pricing struct {
 	ID                   int64      `json:"id"`

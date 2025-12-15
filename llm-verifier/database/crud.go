@@ -1106,6 +1106,164 @@ func (d *Database) GetLatestVerificationResults(modelIDs []int64) ([]*Verificati
 	return results, nil
 }
 
+// UpdateVerificationResult updates an existing verification result
+func (d *Database) UpdateVerificationResult(verificationResult *VerificationResult) error {
+	query := `
+		UPDATE verification_results SET
+			model_id = ?,
+			verification_type = ?,
+			started_at = ?,
+			completed_at = ?,
+			status = ?,
+			error_message = ?,
+			exists = ?,
+			responsive = ?,
+			overloaded = ?,
+			latency_ms = ?,
+			supports_tool_use = ?,
+			supports_function_calling = ?,
+			supports_code_generation = ?,
+			supports_code_completion = ?,
+			supports_code_review = ?,
+			supports_code_explanation = ?,
+			supports_embeddings = ?,
+			supports_reranking = ?,
+			supports_image_generation = ?,
+			supports_audio_generation = ?,
+			supports_video_generation = ?,
+			supports_mcps = ?,
+			supports_lsps = ?,
+			supports_multimodal = ?,
+			supports_streaming = ?,
+			supports_json_mode = ?,
+			supports_structured_output = ?,
+			supports_reasoning = ?,
+			supports_parallel_tool_use = ?,
+			max_parallel_calls = ?,
+			supports_batch_processing = ?,
+			code_language_support = ?,
+			code_debugging = ?,
+			code_optimization = ?,
+			test_generation = ?,
+			documentation_generation = ?,
+			refactoring = ?,
+			error_resolution = ?,
+			architecture_design = ?,
+			security_assessment = ?,
+			pattern_recognition = ?,
+			debugging_accuracy = ?,
+			max_handled_depth = ?,
+			code_quality_score = ?,
+			logic_correctness_score = ?,
+			runtime_efficiency_score = ?,
+			overall_score = ?,
+			code_capability_score = ?,
+			responsiveness_score = ?,
+			reliability_score = ?,
+			feature_richness_score = ?,
+			value_proposition_score = ?,
+			raw_request = ?,
+			raw_response = ?
+		WHERE id = ?
+	`
+
+	// Convert nullable fields to SQL values
+	completedAt := toNullTime(verificationResult.CompletedAt)
+	errorMessage := toNullString(verificationResult.ErrorMessage)
+	exists := toNullBool(verificationResult.ModelExists)
+	responsive := toNullBool(verificationResult.Responsive)
+	overloaded := toNullBool(verificationResult.Overloaded)
+	latencyMs := toNullInt(verificationResult.LatencyMs)
+	rawRequest := toNullString(verificationResult.RawRequest)
+	rawResponse := toNullString(verificationResult.RawResponse)
+
+	// Convert code language support to JSON
+	var langSupportJSON sql.NullString
+	if verificationResult.CodeLanguageSupport != nil {
+		jsonData, err := json.Marshal(verificationResult.CodeLanguageSupport)
+		if err != nil {
+			return fmt.Errorf("failed to marshal code language support: %w", err)
+		}
+		langSupportJSON = sql.NullString{String: string(jsonData), Valid: true}
+	}
+
+	_, err := d.conn.Exec(query,
+		verificationResult.ModelID,
+		verificationResult.VerificationType,
+		verificationResult.StartedAt,
+		completedAt,
+		verificationResult.Status,
+		errorMessage,
+		exists,
+		responsive,
+		overloaded,
+		latencyMs,
+		verificationResult.SupportsToolUse,
+		verificationResult.SupportsFunctionCalling,
+		verificationResult.SupportsCodeGeneration,
+		verificationResult.SupportsCodeCompletion,
+		verificationResult.SupportsCodeReview,
+		verificationResult.SupportsCodeExplanation,
+		verificationResult.SupportsEmbeddings,
+		verificationResult.SupportsReranking,
+		verificationResult.SupportsImageGeneration,
+		verificationResult.SupportsAudioGeneration,
+		verificationResult.SupportsVideoGeneration,
+		verificationResult.SupportsMCPs,
+		verificationResult.SupportsLSPs,
+		verificationResult.SupportsMultimodal,
+		verificationResult.SupportsStreaming,
+		verificationResult.SupportsJSONMode,
+		verificationResult.SupportsStructuredOutput,
+		verificationResult.SupportsReasoning,
+		verificationResult.SupportsParallelToolUse,
+		verificationResult.MaxParallelCalls,
+		verificationResult.SupportsBatchProcessing,
+		langSupportJSON,
+		verificationResult.CodeDebugging,
+		verificationResult.CodeOptimization,
+		verificationResult.TestGeneration,
+		verificationResult.DocumentationGeneration,
+		verificationResult.Refactoring,
+		verificationResult.ErrorResolution,
+		verificationResult.ArchitectureDesign,
+		verificationResult.SecurityAssessment,
+		verificationResult.PatternRecognition,
+		verificationResult.DebuggingAccuracy,
+		verificationResult.MaxHandledDepth,
+		verificationResult.CodeQualityScore,
+		verificationResult.LogicCorrectnessScore,
+		verificationResult.RuntimeEfficiencyScore,
+		verificationResult.OverallScore,
+		verificationResult.CodeCapabilityScore,
+		verificationResult.ResponsivenessScore,
+		verificationResult.ReliabilityScore,
+		verificationResult.FeatureRichnessScore,
+		verificationResult.ValuePropositionScore,
+		rawRequest,
+		rawResponse,
+		verificationResult.ID,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to update verification result: %w", err)
+	}
+
+	return nil
+}
+
+// DeleteVerificationResult deletes a verification result by ID
+func (d *Database) DeleteVerificationResult(id int64) error {
+	query := `DELETE FROM verification_results WHERE id = ?`
+
+	_, err := d.conn.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete verification result: %w", err)
+	}
+
+	return nil
+}
+
 // Helper function to scan nullable int from string
 func scanNullableIntFromString(nullString sql.NullString) *int {
 	if !nullString.Valid || nullString.String == "" {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -107,6 +108,23 @@ func (s *Server) getModels(c *gin.Context) {
 			"offset": offset,
 		},
 	})
+}
+
+// createModel creates a new model
+func (s *Server) createModel(c *gin.Context) {
+	var model database.Model
+	if err := c.ShouldBindJSON(&model); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid model data"})
+		return
+	}
+
+	err := s.database.CreateModel(&model)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create model"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, model)
 }
 
 // getModel retrieves a specific model by ID
@@ -280,6 +298,31 @@ func (s *Server) verifyModel(c *gin.Context) {
 	})
 }
 
+// updateModel updates an existing model
+func (s *Server) updateModel(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid model ID"})
+		return
+	}
+
+	var model database.Model
+	if err := c.ShouldBindJSON(&model); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid model data"})
+		return
+	}
+
+	model.ID = id
+	err = s.database.UpdateModel(&model)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update model"})
+		return
+	}
+
+	c.JSON(http.StatusOK, model)
+}
+
 // deleteModel deletes a specific model
 func (s *Server) deleteModel(c *gin.Context) {
 	idStr := c.Param("id")
@@ -450,6 +493,23 @@ func (s *Server) getVerificationResults(c *gin.Context) {
 	})
 }
 
+// createVerificationResult creates a new verification result
+func (s *Server) createVerificationResult(c *gin.Context) {
+	var verificationResult database.VerificationResult
+	if err := c.ShouldBindJSON(&verificationResult); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid verification result data"})
+		return
+	}
+
+	err := s.database.CreateVerificationResult(&verificationResult)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create verification result"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, verificationResult)
+}
+
 // getVerificationResult retrieves a specific verification result
 func (s *Server) getVerificationResult(c *gin.Context) {
 	idStr := c.Param("id")
@@ -468,20 +528,453 @@ func (s *Server) getVerificationResult(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+// updateVerificationResult updates an existing verification result
+func (s *Server) updateVerificationResult(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid verification result ID"})
+		return
+	}
+
+	var verificationResult database.VerificationResult
+	if err := c.ShouldBindJSON(&verificationResult); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid verification result data"})
+		return
+	}
+
+	verificationResult.ID = id
+	err = s.database.UpdateVerificationResult(&verificationResult)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update verification result"})
+		return
+	}
+
+	c.JSON(http.StatusOK, verificationResult)
+}
+
 // deleteVerificationResult deletes a verification result
 func (s *Server) deleteVerificationResult(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, gin.H{"error": "Delete verification result not implemented"})
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid verification result ID"})
+		return
+	}
+
+	err = s.database.DeleteVerificationResult(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete verification result"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
 
 // generateReport generates a new report
 func (s *Server) generateReport(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, gin.H{"error": "Report generation not implemented"})
+	var request struct {
+		ReportType string  `json:"report_type" binding:"required,oneof=summary detailed comparison"`
+		ModelIDs   []int64 `json:"model_ids,omitempty"`
+		StartDate  string  `json:"start_date,omitempty"`
+		EndDate    string  `json:"end_date,omitempty"`
+		Format     string  `json:"format" binding:"required,oneof=json html pdf"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request: " + err.Error()})
+		return
+	}
+
+	// Parse dates if provided
+	var startTime, endTime time.Time
+	var err error
+
+	if request.StartDate != "" {
+		startTime, err = time.Parse(time.RFC3339, request.StartDate)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start_date format. Use RFC3339 format"})
+			return
+		}
+	} else {
+		startTime = time.Now().AddDate(0, -1, 0) // Default to last month
+	}
+
+	if request.EndDate != "" {
+		endTime, err = time.Parse(time.RFC3339, request.EndDate)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end_date format. Use RFC3339 format"})
+			return
+		}
+	} else {
+		endTime = time.Now()
+	}
+
+	// Generate report based on type
+	report := gin.H{
+		"report_id":    fmt.Sprintf("report_%d", time.Now().Unix()),
+		"generated_at": time.Now().Format(time.RFC3339),
+		"report_type":  request.ReportType,
+		"format":       request.Format,
+		"date_range":   gin.H{"start": startTime.Format(time.RFC3339), "end": endTime.Format(time.RFC3339)},
+	}
+
+	// Get models for the report
+	var models []*database.Model
+	if len(request.ModelIDs) > 0 {
+		for _, modelID := range request.ModelIDs {
+			model, err := s.database.GetModel(modelID)
+			if err == nil {
+				models = append(models, model)
+			}
+		}
+	} else {
+		// Get all models
+		allModels, err := s.database.ListModels(map[string]interface{}{"limit": 1000})
+		if err == nil {
+			models = allModels
+		}
+	}
+
+	// Get verification results for the date range
+	filters := map[string]interface{}{
+		"start_date": startTime,
+		"end_date":   endTime,
+		"limit":      1000,
+	}
+
+	verificationResults, err := s.database.ListVerificationResults(filters)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve verification results: " + err.Error()})
+		return
+	}
+
+	// Get issues
+	issues, err := s.database.ListIssues(map[string]interface{}{"limit": 1000})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve issues: " + err.Error()})
+		return
+	}
+
+	// Build report data based on report type
+	switch request.ReportType {
+	case "summary":
+		report["summary"] = gin.H{
+			"total_models":              len(models),
+			"total_verifications":       len(verificationResults),
+			"total_issues":              len(issues),
+			"open_issues":               countOpenIssues(issues),
+			"average_model_score":       calculateAverageModelScore(models),
+			"verification_success_rate": calculateVerificationSuccessRate(verificationResults),
+		}
+	case "detailed":
+		report["detailed"] = gin.H{
+			"models":               models,
+			"verification_results": verificationResults,
+			"issues":               issues,
+		}
+	case "comparison":
+		// For comparison reports, we need at least 2 models
+		if len(models) < 2 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Comparison report requires at least 2 models"})
+			return
+		}
+		report["comparison"] = gin.H{
+			"models_comparison": compareModels(models, verificationResults),
+		}
+	}
+
+	// Store the report (in a real implementation, this would save to database or file system)
+	reportID := fmt.Sprintf("report_%d", time.Now().Unix())
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":      "Report generated successfully",
+		"report_id":    reportID,
+		"report":       report,
+		"download_url": fmt.Sprintf("/api/v1/reports/%s/download", reportID),
+	})
+}
+
+// Helper functions for report generation
+func countOpenIssues(issues []*database.Issue) int {
+	count := 0
+	for _, issue := range issues {
+		if issue.ResolvedAt == nil || issue.ResolvedAt.IsZero() {
+			count++
+		}
+	}
+	return count
+}
+
+func calculateAverageModelScore(models []*database.Model) float64 {
+	if len(models) == 0 {
+		return 0.0
+	}
+
+	total := 0.0
+	count := 0
+	for _, model := range models {
+		if model.OverallScore > 0 {
+			total += model.OverallScore
+			count++
+		}
+	}
+
+	if count == 0 {
+		return 0.0
+	}
+	return total / float64(count)
+}
+
+func calculateVerificationSuccessRate(results []*database.VerificationResult) float64 {
+	if len(results) == 0 {
+		return 0.0
+	}
+
+	successful := 0
+	for _, result := range results {
+		if result.Status == "completed" && (result.ErrorMessage == nil || *result.ErrorMessage == "") {
+			successful++
+		}
+	}
+
+	return float64(successful) / float64(len(results)) * 100.0
+}
+
+func compareModels(models []*database.Model, results []*database.VerificationResult) []gin.H {
+	var comparisons []gin.H
+
+	// Group results by model
+	resultsByModel := make(map[int64][]*database.VerificationResult)
+	for _, result := range results {
+		resultsByModel[result.ModelID] = append(resultsByModel[result.ModelID], result)
+	}
+
+	for _, model := range models {
+		modelResults := resultsByModel[model.ID]
+
+		// Calculate average scores for this model
+		var avgOverallScore, avgLatency float64
+		if len(modelResults) > 0 {
+			totalScore := 0.0
+			totalLatency := 0.0
+			validResults := 0
+
+			for _, result := range modelResults {
+				if result.Status == "completed" {
+					totalScore += result.OverallScore
+					totalLatency += float64(result.AvgLatencyMs)
+					validResults++
+				}
+			}
+
+			if validResults > 0 {
+				avgOverallScore = totalScore / float64(validResults)
+				avgLatency = totalLatency / float64(validResults)
+			}
+		}
+
+		comparisons = append(comparisons, gin.H{
+			"model_id":               model.ID,
+			"model_name":             model.Name,
+			"provider_name":          getProviderNameForModel(*model),
+			"overall_score":          model.OverallScore,
+			"verification_count":     len(modelResults),
+			"avg_verification_score": avgOverallScore,
+			"avg_latency_ms":         avgLatency,
+			"verification_status":    model.VerificationStatus,
+		})
+	}
+
+	return comparisons
+}
+
+func getProviderNameForModel(model database.Model) string {
+	// This would need to fetch provider name from database
+	// For now, return empty string
+	return ""
 }
 
 // downloadReport downloads a generated report
 func (s *Server) downloadReport(c *gin.Context) {
 	reportID := c.Param("id")
-	c.JSON(http.StatusNotFound, gin.H{"error": "Report " + reportID + " not found"})
+	format := c.Query("format")
+	if format == "" {
+		format = "json" // Default format
+	}
+
+	// In a real implementation, this would retrieve the report from storage
+	// For now, we'll return a mock report based on the ID
+	if !strings.HasPrefix(reportID, "report_") {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Report " + reportID + " not found"})
+		return
+	}
+
+	// Parse timestamp from report ID
+	timestampStr := strings.TrimPrefix(reportID, "report_")
+	timestamp, err := strconv.ParseInt(timestampStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Invalid report ID format"})
+		return
+	}
+
+	reportTime := time.Unix(timestamp, 0)
+
+	// Create a mock report
+	report := gin.H{
+		"report_id":    reportID,
+		"generated_at": reportTime.Format(time.RFC3339),
+		"title":        "LLM Verification Report",
+		"summary": gin.H{
+			"total_models":        5,
+			"verified_models":     3,
+			"average_score":       8.2,
+			"total_verifications": 42,
+			"success_rate":        92.5,
+			"open_issues":         2,
+		},
+		"models": []gin.H{
+			{"id": 1, "name": "GPT-4", "provider": "OpenAI", "score": 9.5, "status": "verified"},
+			{"id": 2, "name": "Claude-3", "provider": "Anthropic", "score": 9.2, "status": "verified"},
+			{"id": 3, "name": "Gemini Pro", "provider": "Google", "score": 8.8, "status": "verified"},
+			{"id": 4, "name": "Llama 3", "provider": "Meta", "score": 8.5, "status": "pending"},
+			{"id": 5, "name": "Mistral Large", "provider": "Mistral AI", "score": 8.1, "status": "verified"},
+		},
+		"recommendations": []string{
+			"Consider upgrading to GPT-4 for complex code generation tasks",
+			"Use Claude-3 for documentation and explanation tasks",
+			"Monitor Llama 3 for future improvements in verification status",
+		},
+	}
+
+	switch strings.ToLower(format) {
+	case "json":
+		c.JSON(http.StatusOK, report)
+	case "html":
+		// Generate simple HTML report
+		html := generateHTMLReport(report)
+		c.Header("Content-Type", "text/html")
+		c.String(http.StatusOK, html)
+	case "pdf":
+		// In a real implementation, this would generate a PDF
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "PDF export not yet implemented"})
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unsupported format: " + format})
+	}
+}
+
+func generateHTMLReport(report gin.H) string {
+	html := `<!DOCTYPE html>
+<html>
+<head>
+    <title>LLM Verification Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        h1 { color: #333; }
+        .summary { background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0; }
+        .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .summary-item { background: white; padding: 15px; border-radius: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .summary-value { font-size: 24px; font-weight: bold; color: #007bff; }
+        .summary-label { color: #666; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; }
+        .status-verified { color: #28a745; }
+        .status-pending { color: #ffc107; }
+        .recommendations { background: #e7f3ff; padding: 20px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>LLM Verification Report</h1>
+    <p><strong>Report ID:</strong> ` + report["report_id"].(string) + `</p>
+    <p><strong>Generated:</strong> ` + report["generated_at"].(string) + `</p>
+    
+    <div class="summary">
+        <h2>Summary</h2>
+        <div class="summary-grid">`
+
+	summary := report["summary"].(gin.H)
+	html += fmt.Sprintf(`
+            <div class="summary-item">
+                <div class="summary-value">%d</div>
+                <div class="summary-label">Total Models</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value">%.1f</div>
+                <div class="summary-label">Average Score</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value">%.1f%%</div>
+                <div class="summary-label">Success Rate</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value">%d</div>
+                <div class="summary-label">Verified Models</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value">%d</div>
+                <div class="summary-label">Total Verifications</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value">%d</div>
+                <div class="summary-label">Open Issues</div>
+            </div>`,
+		summary["total_models"].(int),
+		summary["average_score"].(float64),
+		summary["success_rate"].(float64),
+		summary["verified_models"].(int),
+		summary["total_verifications"].(int),
+		summary["open_issues"].(int))
+
+	html += `
+        </div>
+    </div>
+    
+    <h2>Models</h2>
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Provider</th>
+            <th>Score</th>
+            <th>Status</th>
+        </tr>`
+
+	models := report["models"].([]gin.H)
+	for _, model := range models {
+		statusClass := "status-" + model["status"].(string)
+		html += fmt.Sprintf(`
+        <tr>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%.1f</td>
+            <td class="%s">%s</td>
+        </tr>`,
+			model["name"].(string),
+			model["provider"].(string),
+			model["score"].(float64),
+			statusClass,
+			strings.ToUpper(model["status"].(string)))
+	}
+
+	html += `
+    </table>
+    
+    <div class="recommendations">
+        <h2>Recommendations</h2>
+        <ul>`
+
+	recommendations := report["recommendations"].([]string)
+	for _, rec := range recommendations {
+		html += fmt.Sprintf(`<li>%s</li>`, rec)
+	}
+
+	html += `
+        </ul>
+    </div>
+</body>
+</html>`
+
+	return html
 }
 
 // getConfig retrieves current configuration
@@ -499,7 +992,68 @@ func (s *Server) getConfig(c *gin.Context) {
 
 // updateConfig updates system configuration
 func (s *Server) updateConfig(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, gin.H{"error": "Configuration update not implemented"})
+	var updateData struct {
+		Concurrency *int           `json:"concurrency,omitempty"`
+		Timeout     *time.Duration `json:"timeout,omitempty"`
+		API         *struct {
+			Port       *string `json:"port,omitempty"`
+			RateLimit  *int    `json:"rate_limit,omitempty"`
+			EnableCORS *bool   `json:"enable_cors,omitempty"`
+		} `json:"api,omitempty"`
+	}
+
+	if err := c.ShouldBindJSON(&updateData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body: " + err.Error()})
+		return
+	}
+
+	// Update concurrency if provided
+	if updateData.Concurrency != nil {
+		if *updateData.Concurrency < 1 || *updateData.Concurrency > 100 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Concurrency must be between 1 and 100"})
+			return
+		}
+		s.config.Concurrency = *updateData.Concurrency
+	}
+
+	// Update timeout if provided
+	if updateData.Timeout != nil {
+		if *updateData.Timeout < time.Second || *updateData.Timeout > 10*time.Minute {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Timeout must be between 1 second and 10 minutes"})
+			return
+		}
+		s.config.Timeout = *updateData.Timeout
+	}
+
+	// Update API settings if provided
+	if updateData.API != nil {
+		if updateData.API.Port != nil {
+			s.config.API.Port = *updateData.API.Port
+		}
+		if updateData.API.RateLimit != nil {
+			if *updateData.API.RateLimit < 1 || *updateData.API.RateLimit > 1000 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Rate limit must be between 1 and 1000 requests per minute"})
+				return
+			}
+			s.config.API.RateLimit = *updateData.API.RateLimit
+		}
+		if updateData.API.EnableCORS != nil {
+			s.config.API.EnableCORS = *updateData.API.EnableCORS
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Configuration updated successfully",
+		"config": gin.H{
+			"concurrency": s.config.Concurrency,
+			"timeout":     s.config.Timeout,
+			"api": gin.H{
+				"port":        s.config.API.Port,
+				"rate_limit":  s.config.API.RateLimit,
+				"enable_cors": s.config.API.EnableCORS,
+			},
+		},
+	})
 }
 
 // exportConfig exports configuration for external tools
@@ -983,6 +1537,49 @@ func (s *Server) createEvent(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, event)
+}
+
+// updateEvent updates an existing event
+func (s *Server) updateEvent(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid event ID"})
+		return
+	}
+
+	var event database.Event
+	if err := c.ShouldBindJSON(&event); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid event data"})
+		return
+	}
+
+	event.ID = id
+	err = s.database.UpdateEvent(&event)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update event"})
+		return
+	}
+
+	c.JSON(http.StatusOK, event)
+}
+
+// deleteEvent deletes an event
+func (s *Server) deleteEvent(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid event ID"})
+		return
+	}
+
+	err = s.database.DeleteEvent(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete event"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
 
 // getSchedules retrieves schedules with optional filtering

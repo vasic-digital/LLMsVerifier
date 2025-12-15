@@ -88,6 +88,8 @@ func (s *Server) setupRoutes() {
 		{
 			models.GET("", s.getModels)
 			models.GET("/:id", s.getModel)
+			models.POST("", s.createModel)
+			models.PUT("/:id", s.updateModel)
 			models.POST("/:id/verify", s.verifyModel)
 			models.DELETE("/:id", s.deleteModel)
 		}
