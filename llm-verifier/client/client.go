@@ -201,12 +201,14 @@ func (c *Client) GetPricing() ([]map[string]interface{}, error) {
 	}
 	defer resp.Body.Close()
 
-	var pricing []map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&pricing); err != nil {
+	var response struct {
+		Pricing []map[string]interface{} `json:"pricing"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("failed to decode pricing response: %w", err)
 	}
 
-	return pricing, nil
+	return response.Pricing, nil
 }
 
 // GetLimits retrieves rate limit information
