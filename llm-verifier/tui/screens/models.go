@@ -1,0 +1,407 @@
+package screens
+
+import (
+	"fmt"
+	"strings"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+)
+
+type ModelsScreen struct {
+	width    int
+	height   int
+	models   []Model
+	selected int
+	scroll   int
+	filter   string
+	loading  bool
+}
+
+type Model struct {
+	ID           int
+	Name         string
+	Provider     string
+	Score        float64
+	Verified     bool
+	Capabilities []string
+}
+
+func NewModelsScreen() *ModelsScreen {
+	return &ModelsScreen{
+		models: []Model{
+			{ID: 1, Name: "gpt-4-turbo", Provider: "OpenAI", Score: 92.5, Verified: true, Capabilities: []string{"code", "tools", "vision"}},
+			{ID: 2, Name: "claude-3-opus", Provider: "Anthropic", Score: 91.2, Verified: true, Capabilities: []string{"code", "reasoning"}},
+			{ID: 3, Name: "gemini-pro", Provider: "Google", Score: 88.7, Verified: true, Capabilities: []string{"code", "multimodal"}},
+			{ID: 4, Name: "llama-3-70b", Provider: "Meta", Score: 85.3, Verified: false, Capabilities: []string{"code"}},
+			{ID: 5, Name: "mistral-large", Provider: "Mistral", Score: 87.1, Verified: true, Capabilities: []string{"code", "reasoning"}},
+			{ID: 6, Name: "codellama-34b", Provider: "Meta", Score: 83.9, Verified: true, Capabilities: []string{"code"}},
+			{ID: 7, Name: "starcoder2-15b", Provider: "BigCode", Score: 81.5, Verified: false, Capabilities: []string{"code"}},
+			{ID: 8, Name: "wizardcoder-34b", Provider: "WizardLM", Score: 79.8, Verified: true, Capabilities: []string{"code"}},
+		},
+		selected: 0,
+		scroll:   0,
+		filter:   "",
+		loading:  false,
+	}
+}
+
+func (m *ModelsScreen) Init() tea.Cmd {
+	return m.loadModels()
+}
+
+func (m *ModelsScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "up", "k":
+			if m.selected > 0 {
+				m.selected--
+				m.adjustScroll()
+			}
+		case "down", "j":
+			if m.selected < len(m.filteredModels())-1 {
+				m.selected++
+				m.adjustScroll()
+			}
+		case "enter", " ":
+			if len(m.filteredModels()) > 0 {
+				return m, m.verifyModel(m.filteredModels()[m.selected].ID)
+			}
+		case "r", "R":
+			return m, m.loadModels()
+		case "f", "/":
+			return m, m.startFilter()
+		case "esc":
+			m.filter = ""
+		case "backspace":
+			if len(m.filter) > 0 {
+				m.filter = m.filter[:len(m.filter)-1]
+			}
+		default:
+			if len(msg.String()) == 1 && msg.String() >= "a" && msg.String() <= "z" || msg.String() >= "A" && msg.String() <= "Z" || msg.String() >= "0" && msg.String() <= "9" || msg.String() == "-" || msg.String() == "_" {
+				m.filter += msg.String()
+			}
+		}
+	case ModelsLoadedMsg:
+		m.models = msg.Models
+		m.loading = false
+	case ModelVerifiedMsg:
+		for i, model := range m.models {
+			if model.ID == msg.ModelID {
+				m.models[i].Verified = true
+				m.models[i].Score = msg.Score
+				break
+			}
+		}
+	}
+
+	return m, nil
+}
+
+func (m *ModelsScreen) View() string {
+	if m.width == 0 || m.height == 0 {
+		return "Loading..."
+	}
+
+	title := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("205")).
+		Padding(0, 1).
+		Render("🤖 Models")
+
+	filterDisplay := ""
+	if m.filter != "" {
+		filterDisplay = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("214")).
+			Render(fmt.Sprintf("Filter: %s", m.filter))
+	}
+
+	header := lipgloss.JoinHorizontal(
+		lipgloss.Left,
+		title,
+		lipgloss.NewStyle().Width(m.width-lipgloss.Width(title)-2).Align(lipgloss.Right).Render(filterDisplay),
+	)
+
+	content := lipgloss.JoinVertical(
+		lipgloss.Top,
+		header,
+		m.renderModelsList(),
+		m.renderModelDetails(),
+		m.renderActions(),
+	)
+
+	contentStyle := lipgloss.NewStyle().
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("62")).
+		Padding(1, 2).
+		Width(m.width - 4).
+		Height(m.height - 6)
+
+	return contentStyle.Render(content)
+}
+
+func (m *ModelsScreen) renderModelsList() string {
+	filteredModels := m.filteredModels()
+	if len(filteredModels) == 0 {
+		return lipgloss.NewStyle().
+			Foreground(lipgloss.Color("241")).
+			Padding(1, 0).
+			Render("No models found" + m.filterMessage())
+	}
+
+	listHeight := m.height/2 - 8
+	visibleModels := filteredModels[m.scroll:min(m.scroll+listHeight, len(filteredModels))]
+
+	var rows []string
+	for i, model := range visibleModels {
+		index := m.scroll + i
+		isSelected := index == m.selected
+
+		rowStyle := lipgloss.NewStyle()
+		if isSelected {
+			rowStyle = rowStyle.
+				Background(lipgloss.Color("62")).
+				Foreground(lipgloss.Color("255"))
+		}
+
+		status := "✓"
+		statusColor := "46"
+		if !model.Verified {
+			status = "●"
+			statusColor = "214"
+		}
+
+		scoreColor := "46"
+		if model.Score < 70 {
+			scoreColor = "196"
+		} else if model.Score < 85 {
+			scoreColor = "214"
+		}
+
+		row := lipgloss.JoinHorizontal(
+			lipgloss.Left,
+			lipgloss.NewStyle().
+				Foreground(lipgloss.Color(statusColor)).
+				Width(2).
+				Render(status),
+			lipgloss.NewStyle().Width(1).Render(""),
+			lipgloss.NewStyle().
+				Bold(true).
+				Width(20).
+				Render(model.Name),
+			lipgloss.NewStyle().Width(2).Render(""),
+			lipgloss.NewStyle().
+				Foreground(lipgloss.Color("99")).
+				Width(12).
+				Render(model.Provider),
+			lipgloss.NewStyle().Width(2).Render(""),
+			lipgloss.NewStyle().
+				Foreground(lipgloss.Color(scoreColor)).
+				Width(8).
+				Align(lipgloss.Right).
+				Render(fmt.Sprintf("%.1f", model.Score)),
+			lipgloss.NewStyle().Width(2).Render(""),
+			lipgloss.NewStyle().
+				Foreground(lipgloss.Color("241")).
+				Width(30).
+				Render(strings.Join(model.Capabilities, ", ")),
+		)
+
+		rows = append(rows, rowStyle.Render(row))
+	}
+
+	return lipgloss.NewStyle().
+		Padding(1, 0).
+		Render(
+			lipgloss.JoinVertical(
+				lipgloss.Top,
+				lipgloss.NewStyle().Bold(true).Render(fmt.Sprintf("Models (%d/%d):", len(filteredModels), len(m.models)))+m.filterMessage(),
+				lipgloss.NewStyle().Height(1).Render(""),
+				lipgloss.JoinVertical(lipgloss.Top, rows...),
+			),
+		)
+}
+
+func (m *ModelsScreen) renderModelDetails() string {
+	if len(m.filteredModels()) == 0 || m.selected >= len(m.filteredModels()) {
+		return ""
+	}
+
+	model := m.filteredModels()[m.selected]
+
+	details := lipgloss.JoinVertical(
+		lipgloss.Left,
+		lipgloss.NewStyle().Bold(true).Render("Selected Model:"),
+		lipgloss.NewStyle().Height(1).Render(""),
+		lipgloss.JoinHorizontal(
+			lipgloss.Left,
+			lipgloss.NewStyle().Width(15).Render("Name:"),
+			lipgloss.NewStyle().Bold(true).Render(model.Name),
+		),
+		lipgloss.JoinHorizontal(
+			lipgloss.Left,
+			lipgloss.NewStyle().Width(15).Render("Provider:"),
+			lipgloss.NewStyle().Foreground(lipgloss.Color("99")).Render(model.Provider),
+		),
+		lipgloss.JoinHorizontal(
+			lipgloss.Left,
+			lipgloss.NewStyle().Width(15).Render("Score:"),
+			lipgloss.NewStyle().Foreground(lipgloss.Color("46")).Render(fmt.Sprintf("%.1f", model.Score)),
+		),
+		lipgloss.JoinHorizontal(
+			lipgloss.Left,
+			lipgloss.NewStyle().Width(15).Render("Status:"),
+			lipgloss.NewStyle().Foreground(lipgloss.Color(func() string {
+				if model.Verified {
+					return "46"
+				}
+				return "214"
+			}())).Render(func() string {
+				if model.Verified {
+					return "Verified"
+				}
+				return "Pending"
+			}()),
+		),
+		lipgloss.JoinHorizontal(
+			lipgloss.Left,
+			lipgloss.NewStyle().Width(15).Render("Capabilities:"),
+			lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(strings.Join(model.Capabilities, ", ")),
+		),
+	)
+
+	return lipgloss.NewStyle().
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("62")).
+		Padding(1).
+		MarginTop(1).
+		Render(details)
+}
+
+func (m *ModelsScreen) renderActions() string {
+	actions := lipgloss.JoinVertical(
+		lipgloss.Left,
+		lipgloss.NewStyle().Bold(true).Render("Actions:"),
+		lipgloss.NewStyle().Height(1).Render(""),
+		lipgloss.JoinHorizontal(
+			lipgloss.Top,
+			m.renderActionButton("↑/↓", "Navigate", "Select model"),
+			lipgloss.NewStyle().Width(2).Render(""),
+			m.renderActionButton("Enter", "Verify", "Run verification"),
+			lipgloss.NewStyle().Width(2).Render(""),
+			m.renderActionButton("f", "Filter", "Search models"),
+			lipgloss.NewStyle().Width(2).Render(""),
+			m.renderActionButton("r", "Refresh", "Reload models"),
+		),
+	)
+
+	return lipgloss.NewStyle().
+		Padding(1, 0).
+		MarginTop(1).
+		Render(actions)
+}
+
+func (m *ModelsScreen) renderActionButton(key, label, description string) string {
+	return lipgloss.NewStyle().
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("240")).
+		Padding(1).
+		Width(20).
+		Render(
+			lipgloss.JoinVertical(
+				lipgloss.Left,
+				lipgloss.NewStyle().
+					Bold(true).
+					Foreground(lipgloss.Color("39")).
+					Render(fmt.Sprintf("[%s] %s", key, label)),
+				lipgloss.NewStyle().
+					Foreground(lipgloss.Color("241")).
+					Render(description),
+			),
+		)
+}
+
+func (m *ModelsScreen) filteredModels() []Model {
+	if m.filter == "" {
+		return m.models
+	}
+
+	filterLower := strings.ToLower(m.filter)
+	var filtered []Model
+	for _, model := range m.models {
+		if strings.Contains(strings.ToLower(model.Name), filterLower) ||
+			strings.Contains(strings.ToLower(model.Provider), filterLower) ||
+			strings.Contains(strings.ToLower(strings.Join(model.Capabilities, " ")), filterLower) {
+			filtered = append(filtered, model)
+		}
+	}
+	return filtered
+}
+
+func (m *ModelsScreen) filterMessage() string {
+	if m.filter == "" {
+		return ""
+	}
+	filteredCount := len(m.filteredModels())
+	return lipgloss.NewStyle().
+		Foreground(lipgloss.Color("214")).
+		Render(fmt.Sprintf(" (filtered: %d)", filteredCount))
+}
+
+func (m *ModelsScreen) adjustScroll() {
+	listHeight := m.height/2 - 8
+
+	if m.selected < m.scroll {
+		m.scroll = m.selected
+	} else if m.selected >= m.scroll+listHeight {
+		m.scroll = m.selected - listHeight + 1
+	}
+}
+
+func (m *ModelsScreen) loadModels() tea.Cmd {
+	m.loading = true
+	return func() tea.Msg {
+		return ModelsLoadedMsg{
+			Models: m.models,
+		}
+	}
+}
+
+func (m *ModelsScreen) startFilter() tea.Cmd {
+	return tea.Batch(
+		func() tea.Msg {
+			return FilterStartedMsg{}
+		},
+	)
+}
+
+func (m *ModelsScreen) verifyModel(modelID int) tea.Cmd {
+	return func() tea.Msg {
+		return ModelVerifiedMsg{
+			ModelID: modelID,
+			Score:   90.0,
+		}
+	}
+}
+
+type ModelsLoadedMsg struct {
+	Models []Model
+}
+
+type ModelVerifiedMsg struct {
+	ModelID int
+	Score   float64
+}
+
+type FilterStartedMsg struct{}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
