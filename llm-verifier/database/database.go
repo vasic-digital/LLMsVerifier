@@ -459,6 +459,34 @@ type Provider struct {
 	AverageResponseTimeMs int        `json:"average_response_time_ms"`
 }
 
+// User represents a system user
+type User struct {
+	ID           int64                  `json:"id"`
+	Username     string                 `json:"username"`
+	Email        string                 `json:"email"`
+	PasswordHash string                 `json:"-"` // Never expose password hash
+	FullName     string                 `json:"full_name"`
+	Role         string                 `json:"role"`
+	IsActive     bool                   `json:"is_active"`
+	LastLogin    *time.Time             `json:"last_login"`
+	CreatedAt    time.Time              `json:"created_at"`
+	UpdatedAt    time.Time              `json:"updated_at"`
+	Preferences  map[string]interface{} `json:"preferences"`
+}
+
+// APIKey represents an API key for programmatic access
+type APIKey struct {
+	ID        int64      `json:"id"`
+	UserID    int64      `json:"user_id"`
+	Name      string     `json:"name"`
+	KeyHash   string     `json:"-"` // Never expose key hash
+	Scopes    []string   `json:"scopes"`
+	ExpiresAt *time.Time `json:"expires_at"`
+	LastUsed  *time.Time `json:"last_used"`
+	IsActive  bool       `json:"is_active"`
+	CreatedAt time.Time  `json:"created_at"`
+}
+
 // Model represents an LLM model
 type Model struct {
 	ID                    int64      `json:"id"`
