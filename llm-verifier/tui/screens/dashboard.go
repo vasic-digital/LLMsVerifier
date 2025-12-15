@@ -6,9 +6,12 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
+	"llm-verifier/client"
 )
 
 type DashboardScreen struct {
+	client *client.Client
 	width  int
 	height int
 	stats  DashboardStats
@@ -23,8 +26,9 @@ type DashboardStats struct {
 	AverageScore     float64
 }
 
-func NewDashboardScreen() *DashboardScreen {
+func NewDashboardScreen(client *client.Client) *DashboardScreen {
 	return &DashboardScreen{
+		client: client,
 		stats: DashboardStats{
 			TotalModels:      0,
 			TotalProviders:   0,
@@ -50,6 +54,11 @@ func (d *DashboardScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "r", "R":
 			return d, d.refreshStats()
 		}
+	case StatsRefreshedMsg:
+		d.stats = msg.Stats
+	case StatsErrorMsg:
+		// Log error but don't crash
+		fmt.Printf("Error refreshing stats: %v\n", msg.Error)
 	}
 	return d, nil
 }
@@ -179,15 +188,60 @@ func (d *DashboardScreen) renderActions() string {
 func (d *DashboardScreen) refreshStats() tea.Cmd {
 	return tea.Batch(
 		func() tea.Msg {
-			time.Sleep(500 * time.Millisecond)
+			// Fetch real data from API
+			models, err := d.client.GetModels()
+			if err != nil {
+				return StatsErrorMsg{Error: err}
+			}
+
+			providers, err := d.client.GetProviders()
+			if err != nil {
+				return StatsErrorMsg{Error: err}
+			}
+
+			results, err := d.client.GetVerificationResults()
+			if err != nil {
+				return StatsErrorMsg{Error: err}
+			}
+
+			// Calculate statistics
+			verifiedCount := 0
+			totalScore := 0.0
+			var lastVerification time.Time
+
+			for _, result := range results {
+				if status, ok := result["status"].(string); ok && status == "completed" {
+					verifiedCount++
+				}
+				if score, ok := result["score"].(float64); ok {
+					totalScore += score
+				}
+				if timestamp, ok := result["created_at"].(string); ok {
+					if t, err := time.Parse(time.RFC3339, timestamp); err == nil {
+						if t.After(lastVerification) {
+							lastVerification = t
+						}
+					}
+				}
+			}
+
+			averageScore := 0.0
+			if len(results) > 0 {
+				averageScore = totalScore / float64(len(results))
+			}
+
+			if lastVerification.IsZero() {
+				lastVerification = time.Now()
+			}
+
 			return StatsRefreshedMsg{
 				Stats: DashboardStats{
-					TotalModels:      12,
-					TotalProviders:   5,
-					VerifiedModels:   8,
-					PendingModels:    4,
-					LastVerification: time.Now(),
-					AverageScore:     85.5,
+					TotalModels:      len(models),
+					TotalProviders:   len(providers),
+					VerifiedModels:   verifiedCount,
+					PendingModels:    len(models) - verifiedCount,
+					LastVerification: lastVerification,
+					AverageScore:     averageScore,
 				},
 			}
 		},
@@ -196,4 +250,8 @@ func (d *DashboardScreen) refreshStats() tea.Cmd {
 
 type StatsRefreshedMsg struct {
 	Stats DashboardStats
+}
+
+type StatsErrorMsg struct {
+	Error error
 }

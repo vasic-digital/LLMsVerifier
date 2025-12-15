@@ -6,9 +6,12 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
+	"llm-verifier/client"
 )
 
 type ModelsScreen struct {
+	client   *client.Client
 	width    int
 	height   int
 	models   []Model
@@ -19,7 +22,7 @@ type ModelsScreen struct {
 }
 
 type Model struct {
-	ID           int
+	ID           string
 	Name         string
 	Provider     string
 	Score        float64
@@ -27,18 +30,10 @@ type Model struct {
 	Capabilities []string
 }
 
-func NewModelsScreen() *ModelsScreen {
+func NewModelsScreen(client *client.Client) *ModelsScreen {
 	return &ModelsScreen{
-		models: []Model{
-			{ID: 1, Name: "gpt-4-turbo", Provider: "OpenAI", Score: 92.5, Verified: true, Capabilities: []string{"code", "tools", "vision"}},
-			{ID: 2, Name: "claude-3-opus", Provider: "Anthropic", Score: 91.2, Verified: true, Capabilities: []string{"code", "reasoning"}},
-			{ID: 3, Name: "gemini-pro", Provider: "Google", Score: 88.7, Verified: true, Capabilities: []string{"code", "multimodal"}},
-			{ID: 4, Name: "llama-3-70b", Provider: "Meta", Score: 85.3, Verified: false, Capabilities: []string{"code"}},
-			{ID: 5, Name: "mistral-large", Provider: "Mistral", Score: 87.1, Verified: true, Capabilities: []string{"code", "reasoning"}},
-			{ID: 6, Name: "codellama-34b", Provider: "Meta", Score: 83.9, Verified: true, Capabilities: []string{"code"}},
-			{ID: 7, Name: "starcoder2-15b", Provider: "BigCode", Score: 81.5, Verified: false, Capabilities: []string{"code"}},
-			{ID: 8, Name: "wizardcoder-34b", Provider: "WizardLM", Score: 79.8, Verified: true, Capabilities: []string{"code"}},
-		},
+		client:   client,
+		models:   []Model{},
 		selected: 0,
 		scroll:   0,
 		filter:   "",
@@ -97,6 +92,9 @@ func (m *ModelsScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				break
 			}
 		}
+	case ModelsErrorMsg, ModelErrorMsg:
+		// Log error but don't crash
+		fmt.Printf("Error: %v\n", msg)
 	}
 
 	return m, nil
@@ -365,8 +363,35 @@ func (m *ModelsScreen) adjustScroll() {
 func (m *ModelsScreen) loadModels() tea.Cmd {
 	m.loading = true
 	return func() tea.Msg {
+		apiModels, err := m.client.GetModels()
+		if err != nil {
+			return ModelsErrorMsg{Error: err}
+		}
+
+		var models []Model
+		for _, apiModel := range apiModels {
+			model := Model{
+				ID:       getString(apiModel, "id"),
+				Name:     getString(apiModel, "name"),
+				Provider: getString(apiModel, "provider"),
+				Score:    getFloat64(apiModel, "score"),
+				Verified: getBool(apiModel, "verified"),
+			}
+
+			// Parse capabilities
+			if caps, ok := apiModel["capabilities"].([]interface{}); ok {
+				for _, cap := range caps {
+					if capStr, ok := cap.(string); ok {
+						model.Capabilities = append(model.Capabilities, capStr)
+					}
+				}
+			}
+
+			models = append(models, model)
+		}
+
 		return ModelsLoadedMsg{
-			Models: m.models,
+			Models: models,
 		}
 	}
 }
@@ -379,11 +404,21 @@ func (m *ModelsScreen) startFilter() tea.Cmd {
 	)
 }
 
-func (m *ModelsScreen) verifyModel(modelID int) tea.Cmd {
+func (m *ModelsScreen) verifyModel(modelID string) tea.Cmd {
 	return func() tea.Msg {
+		result, err := m.client.VerifyModel(modelID)
+		if err != nil {
+			return ModelErrorMsg{Error: err}
+		}
+
+		score := 0.0
+		if s, ok := result["score"].(float64); ok {
+			score = s
+		}
+
 		return ModelVerifiedMsg{
 			ModelID: modelID,
-			Score:   90.0,
+			Score:   score,
 		}
 	}
 }
@@ -393,11 +428,46 @@ type ModelsLoadedMsg struct {
 }
 
 type ModelVerifiedMsg struct {
-	ModelID int
+	ModelID string
 	Score   float64
 }
 
+type ModelErrorMsg struct {
+	Error error
+}
+
 type FilterStartedMsg struct{}
+
+type ModelsErrorMsg struct {
+	Error error
+}
+
+func getString(m map[string]interface{}, key string) string {
+	if val, ok := m[key]; ok {
+		if str, ok := val.(string); ok {
+			return str
+		}
+	}
+	return ""
+}
+
+func getFloat64(m map[string]interface{}, key string) float64 {
+	if val, ok := m[key]; ok {
+		if num, ok := val.(float64); ok {
+			return num
+		}
+	}
+	return 0.0
+}
+
+func getBool(m map[string]interface{}, key string) bool {
+	if val, ok := m[key]; ok {
+		if b, ok := val.(bool); ok {
+			return b
+		}
+	}
+	return false
+}
 
 func min(a, b int) int {
 	if a < b {

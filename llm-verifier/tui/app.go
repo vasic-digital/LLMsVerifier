@@ -7,23 +7,26 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"llm-verifier/client"
 	"llm-verifier/tui/screens"
 )
 
 type App struct {
+	client  *client.Client
 	screens []tea.Model
 	current int
 	width   int
 	height  int
 }
 
-func NewApp() *App {
+func NewApp(client *client.Client) *App {
 	return &App{
+		client: client,
 		screens: []tea.Model{
-			screens.NewDashboardScreen(),
-			screens.NewModelsScreen(),
-			screens.NewProvidersScreen(),
-			screens.NewVerificationScreen(),
+			screens.NewDashboardScreen(client),
+			screens.NewModelsScreen(client),
+			screens.NewProvidersScreen(client),
+			screens.NewVerificationScreen(client),
 		},
 		current: 0,
 	}
