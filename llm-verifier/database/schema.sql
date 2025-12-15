@@ -4,6 +4,35 @@
 -- Enable foreign keys
 PRAGMA foreign_keys = ON;
 
+-- Users table (system users for authentication and authorization)
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    full_name TEXT,
+    role TEXT NOT NULL DEFAULT 'user', -- admin, user, viewer
+    is_active BOOLEAN DEFAULT 1,
+    last_login TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    preferences TEXT -- JSON with user preferences
+);
+
+-- API keys table (for programmatic access)
+CREATE TABLE api_keys (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    key_hash TEXT NOT NULL UNIQUE,
+    scopes TEXT NOT NULL, -- JSON array of allowed scopes
+    expires_at TIMESTAMP,
+    last_used TIMESTAMP,
+    is_active BOOLEAN DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- Providers table (companies/organizations providing LLMs)
 CREATE TABLE providers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -213,81 +242,18 @@ CREATE TABLE events (
     FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE CASCADE,
     FOREIGN KEY (provider_id) REFERENCES providers(id) ON DELETE CASCADE,
     FOREIGN KEY (verification_result_id) REFERENCES verification_results(id) ON DELETE CASCADE,
-    FOREIGN KEY (issue_id) REFERENCES issues(id) ON DELETE CASCADE
-);
-
--- Schedules table (for periodic re-tests)
-CREATE TABLE schedules (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    description TEXT,
-    schedule_type TEXT NOT NULL, -- cron, interval, manual
-    cron_expression TEXT,
-    interval_seconds INTEGER,
-    target_type TEXT NOT NULL, -- all_models, provider, specific_model
-    target_id INTEGER, -- provider_id or model_id depending on target_type
-    is_active BOOLEAN DEFAULT 1,
-    last_run TIMESTAMP,
-    next_run TIMESTAMP,
-    run_count INTEGER DEFAULT 0,
-    max_runs INTEGER, -- NULL for unlimited
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT, -- For future multi-user support
-    FOREIGN KEY (target_id) REFERENCES models(id) ON DELETE CASCADE
-);
-
--- Schedule runs table (execution history)
-CREATE TABLE schedule_runs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    schedule_id INTEGER NOT NULL,
-    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    completed_at TIMESTAMP,
-    status TEXT DEFAULT 'running', -- running, completed, failed, cancelled
-    results_count INTEGER DEFAULT 0,
-    errors_count INTEGER DEFAULT 0,
-    error_message TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (schedule_id) REFERENCES schedules(id) ON DELETE CASCADE
-);
-
--- Configuration exports table (exported configs for CLI agents)
-CREATE TABLE config_exports (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    export_type TEXT NOT NULL, -- opencode, crush, claude_code, custom
-    name TEXT NOT NULL,
-    description TEXT,
-    config_data TEXT NOT NULL, -- JSON configuration data
-    target_models TEXT, -- JSON array of model_ids, NULL for all
-    target_providers TEXT, -- JSON array of provider_ids, NULL for all
-    filters TEXT, -- JSON with filtering criteria
-    is_verified BOOLEAN DEFAULT 0,
-    verification_notes TEXT,
-    created_by TEXT, -- For future multi-user support
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    download_count INTEGER DEFAULT 0
-);
-
--- Logs table (structured application logs)
-CREATE TABLE logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    level TEXT NOT NULL, -- DEBUG, INFO, WARNING, ERROR, CRITICAL
-    logger TEXT NOT NULL,
-    message TEXT NOT NULL,
-    details TEXT, -- JSON with additional context
-    request_id TEXT, -- For request tracing
-    user_id INTEGER, -- For future multi-user support
-    model_id INTEGER,
-    provider_id INTEGER,
-    verification_result_id INTEGER,
-    FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE CASCADE,
-    FOREIGN KEY (provider_id) REFERENCES providers(id) ON DELETE CASCADE,
-    FOREIGN KEY (verification_result_id) REFERENCES verification_results(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- Indexes for performance
+CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_users_active ON users(is_active);
+CREATE INDEX idx_api_keys_user ON api_keys(user_id);
+CREATE INDEX idx_api_keys_hash ON api_keys(key_hash);
+CREATE INDEX idx_api_keys_active ON api_keys(is_active);
+CREATE INDEX idx_api_keys_expires ON api_keys(expires_at);
 CREATE INDEX idx_providers_endpoint ON providers(endpoint);
 CREATE INDEX idx_providers_active ON providers(is_active);
 CREATE INDEX idx_models_provider ON models(provider_id);
@@ -446,4 +412,16 @@ CREATE TRIGGER update_config_exports_timestamp
 AFTER UPDATE ON config_exports
 BEGIN
     UPDATE config_exports SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
+CREATE TRIGGER update_users_timestamp 
+AFTER UPDATE ON users
+BEGIN
+    UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
+CREATE TRIGGER update_api_keys_timestamp 
+AFTER UPDATE ON api_keys
+BEGIN
+    UPDATE api_keys SET last_used = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
