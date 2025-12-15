@@ -2,6 +2,7 @@ package screens
 
 import (
 	"fmt"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -37,14 +38,33 @@ func NewProvidersScreen(client *client.Client) *ProvidersScreen {
 }
 
 func (p *ProvidersScreen) Init() tea.Cmd {
-	return p.loadProviders()
+	return tea.Batch(
+		p.loadProviders(),
+		providersTickCmd(),
+	)
 }
+
+func providersTickCmd() tea.Cmd {
+	return tea.Tick(time.Second*60, func(t time.Time) tea.Msg {
+		return providersTickMsg(t)
+	})
+}
+
+type providersTickMsg time.Time
 
 func (p *ProvidersScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		p.width = msg.Width
 		p.height = msg.Height
+	case providersTickMsg:
+		return p, tea.Batch(p.loadProviders(), providersTickCmd())
+	case ProvidersLoadedMsg:
+		p.providers = msg.Providers
+		p.loading = false
+	case ProvidersErrorMsg:
+		// Log error but continue
+		p.loading = false
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "up", "k":
@@ -285,6 +305,31 @@ func (p *ProvidersScreen) toggleProviderStatus(providerID string) tea.Cmd {
 	}
 }
 
+func (p *ProvidersScreen) loadProviders() tea.Cmd {
+	return func() tea.Msg {
+		// Fetch providers from API
+		providers, err := p.client.GetProviders()
+		if err != nil {
+			return ProvidersErrorMsg{Error: err}
+		}
+
+		// Convert to local Provider struct
+		localProviders := make([]Provider, len(providers))
+		for i, prov := range providers {
+			localProviders[i] = Provider{
+				ID:         prov["id"].(string),
+				Name:       prov["name"].(string),
+				ModelCount: 0,        // TODO: Get from API
+				AvgScore:   0.0,      // TODO: Calculate from API
+				Status:     "Active", // TODO: Get from API
+				APIKeySet:  true,     // TODO: Check from API
+			}
+		}
+
+		return ProvidersLoadedMsg{Providers: localProviders}
+	}
+}
+
 func (p *ProvidersScreen) addAPIKey(providerID string) tea.Cmd {
 	return func() tea.Msg {
 		// In a real implementation, this would call the API
@@ -293,6 +338,14 @@ func (p *ProvidersScreen) addAPIKey(providerID string) tea.Cmd {
 			ProviderID: providerID,
 		}
 	}
+}
+
+type ProvidersLoadedMsg struct {
+	Providers []Provider
+}
+
+type ProvidersErrorMsg struct {
+	Error error
 }
 
 type ProviderStatusToggledMsg struct {

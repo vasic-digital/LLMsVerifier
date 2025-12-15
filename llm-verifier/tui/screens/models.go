@@ -3,6 +3,7 @@ package screens
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -42,14 +43,27 @@ func NewModelsScreen(client *client.Client) *ModelsScreen {
 }
 
 func (m *ModelsScreen) Init() tea.Cmd {
-	return m.loadModels()
+	return tea.Batch(
+		m.loadModels(),
+		modelsTickCmd(),
+	)
 }
+
+func modelsTickCmd() tea.Cmd {
+	return tea.Tick(time.Second*60, func(t time.Time) tea.Msg {
+		return modelsTickMsg(t)
+	})
+}
+
+type modelsTickMsg time.Time
 
 func (m *ModelsScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+	case modelsTickMsg:
+		return m, tea.Batch(m.loadModels(), modelsTickCmd())
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "up", "k":
@@ -144,11 +158,41 @@ func (m *ModelsScreen) View() string {
 
 func (m *ModelsScreen) renderModelsList() string {
 	filteredModels := m.filteredModels()
+
+	// Summary statistics
+	total := len(m.models)
+	verified := 0
+	for _, model := range m.models {
+		if model.Verified {
+			verified++
+		}
+	}
+
+	summary := lipgloss.JoinHorizontal(
+		lipgloss.Left,
+		lipgloss.NewStyle().
+			Foreground(lipgloss.Color("39")).
+			Render(fmt.Sprintf("Total: %d", total)),
+		lipgloss.NewStyle().Width(3).Render(""),
+		lipgloss.NewStyle().
+			Foreground(lipgloss.Color("46")).
+			Render(fmt.Sprintf("Verified: %d", verified)),
+		lipgloss.NewStyle().Width(3).Render(""),
+		lipgloss.NewStyle().
+			Foreground(lipgloss.Color("214")).
+			Render(fmt.Sprintf("Pending: %d", total-verified)),
+	)
+
 	if len(filteredModels) == 0 {
-		return lipgloss.NewStyle().
-			Foreground(lipgloss.Color("241")).
-			Padding(1, 0).
-			Render("No models found" + m.filterMessage())
+		return lipgloss.JoinVertical(
+			lipgloss.Top,
+			summary,
+			lipgloss.NewStyle().Height(1).Render(""),
+			lipgloss.NewStyle().
+				Foreground(lipgloss.Color("241")).
+				Padding(1, 0).
+				Render("No models found"+m.filterMessage()),
+		)
 	}
 
 	listHeight := m.height/2 - 8
@@ -217,6 +261,8 @@ func (m *ModelsScreen) renderModelsList() string {
 		Render(
 			lipgloss.JoinVertical(
 				lipgloss.Top,
+				summary,
+				lipgloss.NewStyle().Height(1).Render(""),
 				lipgloss.NewStyle().Bold(true).Render(fmt.Sprintf("Models (%d/%d):", len(filteredModels), len(m.models)))+m.filterMessage(),
 				lipgloss.NewStyle().Height(1).Render(""),
 				lipgloss.JoinVertical(lipgloss.Top, rows...),
