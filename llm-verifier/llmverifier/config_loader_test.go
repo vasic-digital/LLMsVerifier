@@ -3,6 +3,7 @@ package llmverifier
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -75,8 +76,12 @@ timeout: 120s
 	if llm.Model != "test-model" {
 		t.Errorf("Expected model 'test-model', got '%s'", llm.Model)
 	}
-	if llm.Headers["Custom-Header"] != "value" {
-		t.Errorf("Expected custom header 'value', got '%s'", llm.Headers["Custom-Header"])
+	if llm.Headers == nil {
+		t.Error("Headers map is nil")
+	} else if value, exists := llm.Headers["custom-header"]; !exists {
+		t.Errorf("custom-header key not found in headers map: %v", llm.Headers)
+	} else if value != "value" {
+		t.Errorf("Expected custom header 'value', got '%s'", value)
 	}
 	if !llm.Features["tool_use"] {
 		t.Error("Expected tool_use feature to be true")
@@ -264,5 +269,171 @@ func TestLoadConfig_EmptyConfig(t *testing.T) {
 	}
 	if len(cfg.LLMs) != 0 {
 		t.Errorf("Expected 0 LLMs, got %d", len(cfg.LLMs))
+	}
+}
+
+func TestLoadConfig_Validation(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      string
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name: "valid config",
+			config: `
+llms:
+  - name: "test-llm"
+    endpoint: "https://api.test.com/v1"
+    api_key: "test-key"
+concurrency: 5
+timeout: 60s
+`,
+			expectError: false,
+		},
+		{
+			name: "invalid concurrency - too high",
+			config: `
+llms:
+  - name: "test-llm"
+    endpoint: "https://api.test.com/v1"
+    api_key: "test-key"
+concurrency: 200
+`,
+			expectError: true,
+			errorMsg:    "concurrency must be between 1 and 100",
+		},
+		{
+			name: "invalid concurrency - too low",
+			config: `
+llms:
+  - name: "test-llm"
+    endpoint: "https://api.test.com/v1"
+    api_key: "test-key"
+concurrency: 0
+`,
+			expectError: true,
+			errorMsg:    "concurrency must be between 1 and 100",
+		},
+		{
+			name: "invalid timeout - too long",
+			config: `
+llms:
+  - name: "test-llm"
+    endpoint: "https://api.test.com/v1"
+    api_key: "test-key"
+timeout: 15m
+`,
+			expectError: true,
+			errorMsg:    "timeout must be between 1s and 10m",
+		},
+		{
+			name: "invalid LLM endpoint",
+			config: `
+llms:
+  - name: "test-llm"
+    endpoint: "invalid-endpoint"
+    api_key: "test-key"
+`,
+			expectError: true,
+			errorMsg:    "LLM endpoint must start with http:// or https://",
+		},
+		{
+			name: "missing LLM API key for remote endpoint",
+			config: `
+llms:
+  - name: "test-llm"
+    endpoint: "https://api.test.com/v1"
+`,
+			expectError: true,
+			errorMsg:    "LLM API key is required for non-local endpoints",
+		},
+		{
+			name: "invalid API port - too high",
+			config: `
+llms:
+  - name: "test-llm"
+    endpoint: "https://api.test.com/v1"
+    api_key: "test-key"
+api:
+  port: "99999"
+`,
+			expectError: true,
+			errorMsg:    "API port must be between 1 and 65535",
+		},
+		{
+			name: "invalid rate limit - too high",
+			config: `
+llms:
+  - name: "test-llm"
+    endpoint: "https://api.test.com/v1"
+    api_key: "test-key"
+api:
+  rate_limit: 20000
+`,
+			expectError: true,
+			errorMsg:    "rate_limit must be between 1 and 10000",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			configPath := filepath.Join(tempDir, "test_config.yaml")
+
+			if err := os.WriteFile(configPath, []byte(tt.config), 0644); err != nil {
+				t.Fatalf("Failed to create test config file: %v", err)
+			}
+
+			_, err := LoadConfig(configPath)
+			if tt.expectError {
+				if err == nil {
+					t.Error("Expected error but got none")
+				} else if tt.errorMsg != "" && !strings.Contains(err.Error(), tt.errorMsg) {
+					t.Errorf("Expected error message to contain '%s', got '%s'", tt.errorMsg, err.Error())
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Expected no error but got: %v", err)
+				}
+			}
+		})
+	}
+}
+
+func TestLoadConfig_ComputedDefaults(t *testing.T) {
+	// Test that computed defaults are set
+	tempDir := t.TempDir()
+	configPath := filepath.Join(tempDir, "test_computed_defaults.yaml")
+	configContent := `
+llms:
+  - name: "test-llm"
+    endpoint: "https://api.test.com/v1"
+    api_key: "test-key"
+    model: "test-model"
+`
+
+	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		t.Fatalf("Failed to create test config file: %v", err)
+	}
+
+	cfg, err := LoadConfig(configPath)
+	if err != nil {
+		t.Fatalf("LoadConfig failed: %v", err)
+	}
+
+	// Check that default model is set
+	if cfg.Global.DefaultModel != "test-model" {
+		t.Errorf("Expected default model to be 'test-model', got '%s'", cfg.Global.DefaultModel)
+	}
+
+	// Check that JWT secret is generated
+	if cfg.API.JWTSecret == "" {
+		t.Error("Expected JWT secret to be generated")
+	}
+
+	// Check that database encryption key is generated
+	if cfg.Database.EncryptionKey == "" {
+		t.Error("Expected database encryption key to be generated")
 	}
 }
