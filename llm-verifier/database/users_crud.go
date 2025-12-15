@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -65,7 +64,7 @@ func (d *Database) GetUser(id int64) (*User, error) {
 		FROM users WHERE id = ?
 	`
 
-	row := d.db.QueryRow(query, id)
+	row := d.conn.QueryRow(query, id)
 	return d.scanUser(row)
 }
 
@@ -77,7 +76,7 @@ func (d *Database) GetUserByUsername(username string) (*User, error) {
 		FROM users WHERE username = ?
 	`
 
-	row := d.db.QueryRow(query, username)
+	row := d.conn.QueryRow(query, username)
 	return d.scanUser(row)
 }
 
@@ -89,7 +88,7 @@ func (d *Database) GetUserByEmail(email string) (*User, error) {
 		FROM users WHERE email = ?
 	`
 
-	row := d.db.QueryRow(query, email)
+	row := d.conn.QueryRow(query, email)
 	return d.scanUser(row)
 }
 
@@ -136,7 +135,7 @@ func (d *Database) UpdateUser(user *User) error {
 		WHERE id = ?
 	`
 
-	_, err := d.db.Exec(query,
+	_, err := d.conn.Exec(query,
 		user.Username,
 		user.Email,
 		passwordHash,
@@ -158,7 +157,7 @@ func (d *Database) UpdateUser(user *User) error {
 // DeleteUser deletes a user by ID
 func (d *Database) DeleteUser(id int64) error {
 	query := `DELETE FROM users WHERE id = ?`
-	_, err := d.db.Exec(query, id)
+	_, err := d.conn.Exec(query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete user: %w", err)
 	}
@@ -206,7 +205,7 @@ func (d *Database) ListUsers(filters map[string]interface{}) ([]*User, error) {
 	query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
 	args = append(args, limit, offset)
 
-	rows, err := d.db.Query(query, args...)
+	rows, err := d.conn.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query users: %w", err)
 	}
@@ -227,7 +226,7 @@ func (d *Database) ListUsers(filters map[string]interface{}) ([]*User, error) {
 // UpdateUserLastLogin updates the last login timestamp for a user
 func (d *Database) UpdateUserLastLogin(userID int64) error {
 	query := `UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?`
-	_, err := d.db.Exec(query, userID)
+	_, err := d.conn.Exec(query, userID)
 	if err != nil {
 		return fmt.Errorf("failed to update last login: %w", err)
 	}
