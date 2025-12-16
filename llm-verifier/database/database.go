@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -13,6 +14,227 @@ import (
 // Database represents the main database interface
 type Database struct {
 	conn *sql.DB
+}
+
+// configureSQLCipher configures SQL Cipher encryption settings
+func configureSQLCipher(db *sql.DB) error {
+	pragmas := []string{
+		"PRAGMA cipher_page_size = 4096",
+		"PRAGMA kdf_iter = 64000",
+		"PRAGMA cipher_hmac_algorithm = HMAC_SHA1",
+		"PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA1",
+		"PRAGMA cipher_use_hmac = 1",
+		"PRAGMA foreign_keys = ON",
+		"PRAGMA journal_mode = WAL",
+		"PRAGMA synchronous = NORMAL",
+		"PRAGMA cache_size = 10000",
+		"PRAGMA temp_store = memory",
+	}
+
+	for _, pragma := range pragmas {
+		if _, err := db.Exec(pragma); err != nil {
+			return fmt.Errorf("failed to execute pragma '%s': %w", pragma, err)
+		}
+	}
+
+	return nil
+}
+
+// MigrateToEncrypted migrates an existing unencrypted database to encrypted
+func MigrateToEncrypted(sourcePath, destPath, encryptionKey string) error {
+	// Open source database
+	sourceDB, err := sql.Open("sqlite3", sourcePath)
+	if err != nil {
+		return fmt.Errorf("failed to open source database: %w", err)
+	}
+	defer sourceDB.Close()
+
+	// Configure source database
+	if err := configureMigrationDB(sourceDB); err != nil {
+		return fmt.Errorf("failed to configure source database: %w", err)
+	}
+
+	// Create destination database with encryption
+	destConnStr := fmt.Sprintf("%s?_pragma_key=%s&_pragma_cipher_page_size=4096&_pragma_kdf_iter=64000",
+		destPath, encryptionKey)
+
+	destDB, err := sql.Open("sqlite3", destConnStr)
+	if err != nil {
+		return fmt.Errorf("failed to create destination database: %w", err)
+	}
+	defer destDB.Close()
+
+	// Configure destination database
+	if err := configureSQLCipher(destDB); err != nil {
+		return fmt.Errorf("failed to configure destination database: %w", err)
+	}
+
+	// Get all table names from source
+	tables, err := getTableNames(sourceDB)
+	if err != nil {
+		return fmt.Errorf("failed to get table names: %w", err)
+	}
+
+	// Migrate each table
+	for _, table := range tables {
+		if err := migrateTable(sourceDB, destDB, table); err != nil {
+			return fmt.Errorf("failed to migrate table %s: %w", table, err)
+		}
+	}
+
+	// Migrate indexes and triggers
+	if err := migrateIndexesAndTriggers(sourceDB, destDB); err != nil {
+		return fmt.Errorf("failed to migrate indexes and triggers: %w", err)
+	}
+
+	return nil
+}
+
+// configureMigrationDB configures database for migration
+func configureMigrationDB(db *sql.DB) error {
+	pragmas := []string{
+		"PRAGMA foreign_keys = OFF",
+		"PRAGMA journal_mode = DELETE",
+		"PRAGMA synchronous = FULL",
+	}
+
+	for _, pragma := range pragmas {
+		if _, err := db.Exec(pragma); err != nil {
+			return fmt.Errorf("failed to execute pragma '%s': %w", pragma, err)
+		}
+	}
+
+	return nil
+}
+
+// getTableNames returns all table names in the database
+func getTableNames(db *sql.DB) ([]string, error) {
+	rows, err := db.Query(`
+		SELECT name FROM sqlite_master
+		WHERE type='table' AND name NOT LIKE 'sqlite_%'
+		ORDER BY name
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tables []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		tables = append(tables, name)
+	}
+
+	return tables, rows.Err()
+}
+
+// migrateTable migrates a single table from source to destination
+func migrateTable(sourceDB, destDB *sql.DB, tableName string) error {
+	// Get table schema
+	var sql string
+	err := sourceDB.QueryRow("SELECT sql FROM sqlite_master WHERE type='table' AND name=?",
+		tableName).Scan(&sql)
+	if err != nil {
+		return fmt.Errorf("failed to get table schema: %w", err)
+	}
+
+	// Create table in destination
+	if _, err := destDB.Exec(sql); err != nil {
+		return fmt.Errorf("failed to create table: %w", err)
+	}
+
+	// Copy data
+	return copyTableData(sourceDB, destDB, tableName)
+}
+
+// copyTableData copies all data from one table to another
+func copyTableData(sourceDB, destDB *sql.DB, tableName string) error {
+	// Get column names
+	rows, err := sourceDB.Query(fmt.Sprintf("PRAGMA table_info(%s)", tableName))
+	if err != nil {
+		return err
+	}
+
+	var columns []string
+	for rows.Next() {
+		var cid int
+		var name, ctype string
+		var notnull, pk int
+		var dfltValue interface{}
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dfltValue, &pk); err != nil {
+			rows.Close()
+			return err
+		}
+		columns = append(columns, name)
+	}
+	rows.Close()
+
+	if len(columns) == 0 {
+		return nil
+	}
+
+	// Build SELECT and INSERT queries
+	selectQuery := fmt.Sprintf("SELECT %s FROM %s", fmt.Sprintf(`"%s"`, strings.Join(columns, `","`)), tableName)
+	insertQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
+		tableName,
+		fmt.Sprintf(`"%s"`, strings.Join(columns, `","`)),
+		strings.Repeat("?,", len(columns)-1)+"?")
+
+	// Copy data
+	sourceRows, err := sourceDB.Query(selectQuery)
+	if err != nil {
+		return err
+	}
+	defer sourceRows.Close()
+
+	for sourceRows.Next() {
+		values := make([]interface{}, len(columns))
+		valuePtrs := make([]interface{}, len(columns))
+		for i := range values {
+			valuePtrs[i] = &values[i]
+		}
+
+		if err := sourceRows.Scan(valuePtrs...); err != nil {
+			return err
+		}
+
+		if _, err := destDB.Exec(insertQuery, values...); err != nil {
+			return err
+		}
+	}
+
+	return sourceRows.Err()
+}
+
+// migrateIndexesAndTriggers migrates indexes and triggers
+func migrateIndexesAndTriggers(sourceDB, destDB *sql.DB) error {
+	// Get all indexes
+	rows, err := sourceDB.Query(`
+		SELECT name, sql FROM sqlite_master
+		WHERE type IN ('index', 'trigger') AND name NOT LIKE 'sqlite_%'
+	`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name, sql string
+		if err := rows.Scan(&name, &sql); err != nil {
+			return err
+		}
+
+		if sql != "" { // Some indexes might not have SQL
+			if _, err := destDB.Exec(sql); err != nil {
+				return fmt.Errorf("failed to create %s: %w", name, err)
+			}
+		}
+	}
+
+	return rows.Err()
 }
 
 // TxFunc represents a function that can be executed within a transaction
@@ -38,15 +260,36 @@ func DefaultConnectionPoolConfig() ConnectionPoolConfig {
 
 // New creates a new database connection
 func New(dbPath string) (*Database, error) {
-	return NewWithConfig(dbPath, DefaultConnectionPoolConfig())
+	return NewWithConfig(dbPath, DefaultConnectionPoolConfig(), "")
+}
+
+// NewEncrypted creates a new encrypted database connection
+func NewEncrypted(dbPath, encryptionKey string) (*Database, error) {
+	return NewWithConfig(dbPath, DefaultConnectionPoolConfig(), encryptionKey)
 }
 
 // NewWithConfig creates a new database connection with custom pool configuration
-func NewWithConfig(dbPath string, config ConnectionPoolConfig) (*Database, error) {
+func NewWithConfig(dbPath string, config ConnectionPoolConfig, encryptionKey ...string) (*Database, error) {
+	// Build connection string
+	connStr := dbPath
+	if len(encryptionKey) > 0 && encryptionKey[0] != "" {
+		// SQL Cipher connection string with encryption key
+		connStr = fmt.Sprintf("%s?_pragma_key=%s&_pragma_cipher_page_size=4096&_pragma_kdf_iter=64000",
+			dbPath, encryptionKey[0])
+	}
+
 	// Open database
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite3", connStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
+	}
+
+	// Configure SQL Cipher if encryption is enabled
+	if len(encryptionKey) > 0 && encryptionKey[0] != "" {
+		if err := configureSQLCipher(db); err != nil {
+			db.Close()
+			return nil, fmt.Errorf("failed to configure SQL Cipher: %w", err)
+		}
 	}
 
 	// Configure database connection with advanced pooling

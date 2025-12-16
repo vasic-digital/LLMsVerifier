@@ -62,7 +62,13 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	SetupGinValidator()
 
 	// Initialize database
-	db, err := database.New(cfg.Database.Path)
+	var db *database.Database
+	var err error
+	if cfg.Database.EncryptionKey != "" {
+		db, err = database.NewEncrypted(cfg.Database.Path, cfg.Database.EncryptionKey)
+	} else {
+		db, err = database.New(cfg.Database.Path)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize database: %w", err)
 	}
