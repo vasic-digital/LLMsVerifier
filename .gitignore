@@ -1,0 +1,164 @@
+# Go binaries and build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+llm-verifier-*
+*-test
+*.test
+*.prof
+*.cover
+*.out
+main
+test-tui
+
+# Go module cache
+go.sum
+
+# Database files
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+
+# Log files
+*.log
+logs/
+
+# Configuration files (may contain secrets)
+config.yaml
+config.yml
+*.env
+.env.*
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.cache/
+*.bak
+*.backup
+
+# Test files
+test.db
+test.*
+test_*.*
+
+# Performance and coverage
+*.prof
+*.cover
+coverage.txt
+coverage.out
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Root level specific
+llm-verifier.db
+llm-verifier.db-*
+test.db
+test.*
+
+# Node.js (for web/desktop apps)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Node.js build outputs
+dist/
+build/
+.angular/
+.next/
+.nuxt/
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Angular specific
+.angular/cache/
+.angular/
+
+# Electron specific
+app/dist/
+app/build/
+release/
+
+# Tauri specific
+src-tauri/target/
+src-tauri/Cargo.lock
+
+# Python (if any Python tools)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Java (if any Java components)
+*.class
+*.jar
+*.war
+*.ear
+*.iml
+.classpath
+.project
+.settings/
+target/
+bin/
+
+# Docker
+.dockerignore
+
+# Kubernetes secrets (if any)
+*.secret
+.secrets/
+
+# Backup and export files
+*.backup
+*.bak
+*_backup.*
+*_export.*
+bulk_exports/
+bulk_exportsdefault/
+
+# Test results and reports
+TEST_RESULTS.md
+test-results/
+coverage-reports/
+
+# Documentation build
+docs/_build/
+docs/build/
+
+# Monitoring and metrics
+metrics/
+monitoring/data/
+
+# Local development
+.local/
+local/
+dev/

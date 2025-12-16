@@ -86,3 +86,44 @@ cover/
 .idea/*
 !.idea/vcs.xml
 !.idea/misc.xml
+
+# Database files
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+
+# Web specific
+web/node_modules/
+web/dist/
+web/.angular/
+web/package-lock.json
+
+# Desktop Electron specific
+desktop/electron/node_modules/
+desktop/electron/dist/
+desktop/electron/build/
+
+# Desktop Tauri specific
+desktop/tauri/src-tauri/target/
+desktop/tauri/src-tauri/Cargo.lock
+
+# Binary executables
+llm-verifier-*
+*-test
+*.test
+*.prof
+*.cover
+
+# Test databases
+test.db
+test.*
+test_*.*
+
+# Backup and export files
+*.backup
+*.bak
+*_backup.*
+*_export.*
+bulk_exports/
+bulk_exportsdefault/
