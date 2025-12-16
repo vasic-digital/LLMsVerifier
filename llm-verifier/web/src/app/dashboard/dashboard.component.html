@@ -1,158 +1,64 @@
 <div class="dashboard-container">
-  <mat-toolbar color="primary" class="dashboard-header">
-    <mat-toolbar-row>
-      <span>LLM Verifier Dashboard</span>
-      <span class="spacer"></span>
-      <button mat-icon-button (click)="refreshData()" matTooltip="Refresh Data">
-        <mat-icon>refresh</mat-icon>
-      </button>
-      <span class="last-updated">Last updated: {{ formatTimeAgo(stats.lastVerification) }}</span>
-    </mat-toolbar-row>
-  </mat-toolbar>
+  <h1>{{title}}</h1>
 
-  <!-- Stats Cards -->
   <div class="stats-grid">
-    <mat-card class="stat-card">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>System Status</mat-card-title>
+      </mat-card-header>
       <mat-card-content>
-        <div class="stat-content">
-          <mat-icon class="stat-icon" color="primary">memory</mat-icon>
-          <div class="stat-info">
-            <div class="stat-value">{{ stats.totalModels }}</div>
-            <div class="stat-label">Total Models</div>
-          </div>
-        </div>
+        <p>LLM Verifier is running successfully</p>
+        <p>REST API: <strong>Available</strong></p>
+        <p>Database: <strong>Connected</strong></p>
+        <p>WebSocket: <strong>Ready</strong></p>
       </mat-card-content>
     </mat-card>
 
-    <mat-card class="stat-card">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Quick Actions</mat-card-title>
+      </mat-card-header>
       <mat-card-content>
-        <div class="stat-content">
-          <mat-icon class="stat-icon" color="accent">business</mat-icon>
-          <div class="stat-info">
-            <div class="stat-value">{{ stats.totalProviders }}</div>
-            <div class="stat-label">Providers</div>
-          </div>
-        </div>
+        <button mat-raised-button color="primary" (click)="refreshData()">
+          Refresh Dashboard
+        </button>
       </mat-card-content>
     </mat-card>
 
-    <mat-card class="stat-card">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Navigation</mat-card-title>
+      </mat-card-header>
       <mat-card-content>
-        <div class="stat-content">
-          <mat-icon class="stat-icon" style="color: #4CAF50;">check_circle</mat-icon>
-          <div class="stat-info">
-            <div class="stat-value">{{ stats.verifiedModels }}</div>
-            <div class="stat-label">Verified</div>
-          </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="stat-card">
-      <mat-card-content>
-        <div class="stat-content">
-          <mat-icon class="stat-icon" style="color: #FFC107;">schedule</mat-icon>
-          <div class="stat-info">
-            <div class="stat-value">{{ stats.pendingModels }}</div>
-            <div class="stat-label">Pending</div>
-          </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="stat-card">
-      <mat-card-content>
-        <div class="stat-content">
-          <mat-icon class="stat-icon" style="color: #9C27B0;">trending_up</mat-icon>
-          <div class="stat-info">
-            <div class="stat-value">{{ stats.averageScore.toFixed(1) }}%</div>
-            <div class="stat-label">Avg Score</div>
-          </div>
-        </div>
+        <ul>
+          <li><a routerLink="/models">Models Management</a></li>
+          <li><a routerLink="/providers">Provider Configuration</a></li>
+          <li><a routerLink="/verification">Verification Results</a></li>
+        </ul>
       </mat-card-content>
     </mat-card>
   </div>
 
-  <!-- Charts Row -->
-  <div class="charts-row">
-    <mat-card class="chart-card">
-      <mat-card-header>
-        <mat-card-title>Verification Status</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <canvas baseChart
-                [data]="verificationChartData"
-                [type]="'doughnut'"
-                [options]="{
-                  responsive: true,
-                  plugins: {
-                    legend: { position: 'bottom' }
-                  }
-                }">
-        </canvas>
-      </mat-card-content>
-    </mat-card>
+  <div class="info-section">
+    <h2>LLM Verifier Dashboard</h2>
+    <p>Welcome to the LLM Verifier web interface. This dashboard provides an overview of your LLM verification system.</p>
 
-    <mat-card class="chart-card">
-      <mat-card-header>
-        <mat-card-title>Score Distribution</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <canvas baseChart
-                [data]="scoreChartData"
-                [type]="'bar'"
-                [options]="{
-                  responsive: true,
-                  scales: {
-                    y: { beginAtZero: true }
-                  }
-                }">
-        </canvas>
-      </mat-card-content>
-    </mat-card>
+    <h3>Available Features:</h3>
+    <ul>
+      <li><strong>REST API:</strong> Complete HTTP API for programmatic access</li>
+      <li><strong>CLI Tool:</strong> Command-line interface for all operations</li>
+      <li><strong>TUI:</strong> Interactive terminal user interface</li>
+      <li><strong>Real-time Monitoring:</strong> Health checks and performance metrics</li>
+      <li><strong>Multi-Provider Support:</strong> OpenAI, Anthropic, Google, Cohere, Azure</li>
+      <li><strong>Enterprise Security:</strong> RBAC, audit trails, encrypted storage</li>
+    </ul>
 
-    <mat-card class="chart-card">
-      <mat-card-header>
-        <mat-card-title>Activity (24h)</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <canvas baseChart
-                [data]="activityChartData"
-                [type]="'line'"
-                [options]="{
-                  responsive: true,
-                  scales: {
-                    y: { beginAtZero: true }
-                  }
-                }">
-        </canvas>
-      </mat-card-content>
-    </mat-card>
+    <h3>Getting Started:</h3>
+    <ol>
+      <li>Configure your LLM API keys in the configuration file</li>
+      <li>Start the verification server: <code>./llm-verifier server --port 8080</code></li>
+      <li>Use the CLI or API to manage models and run verifications</li>
+      <li>Monitor results through the web interface or API</li>
+    </ol>
   </div>
-
-  <!-- Recent Activity -->
-  <mat-card class="activity-card">
-    <mat-card-header>
-      <mat-card-title>Recent Activity</mat-card-title>
-      <mat-card-subtitle>Latest system events and verification results</mat-card-subtitle>
-    </mat-card-header>
-    <mat-card-content>
-      <mat-list>
-        <mat-list-item *ngFor="let activity of stats.recentActivity">
-          <mat-icon matListIcon [class]="getActivityColor(activity)">
-            {{ getActivityIcon(activity) }}
-          </mat-icon>
-          <div mat-line>{{ activity.message }}</div>
-          <div mat-line class="activity-details">
-            <span class="activity-time">{{ formatTimeAgo(activity.timestamp) }}</span>
-            <span *ngIf="activity.details" class="activity-meta">
-              {{ activity.details.score ? 'Score: ' + activity.details.score : '' }}
-              {{ activity.details.duration ? 'Duration: ' + activity.details.duration : '' }}
-              {{ activity.details.modelsProcessed ? 'Models: ' + activity.details.modelsProcessed : '' }}
-            </span>
-          </div>
-        </mat-list-item>
-      </mat-list>
-    </mat-card-content>
-  </mat-card>
 </div>

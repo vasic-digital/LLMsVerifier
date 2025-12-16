@@ -50,27 +50,27 @@ func main() {
 	rootCmd.AddCommand(aiConfigCmd())
 	// rootCmd.AddCommand(modelsCmd()) // TODO: Implement modelsCmd
 	// Providers commands
-	// rootCmd.AddCommand(providersCmd()) // TODO: Implement providersCmd
+	rootCmd.AddCommand(providersCmd())
 	// Verification results commands
-	// rootCmd.AddCommand(resultsCmd()) // TODO: Implement resultsCmd
+	rootCmd.AddCommand(resultsCmd())
 	// Pricing commands
-	// rootCmd.AddCommand(pricingCmd()) // TODO: Implement pricingCmd
+	rootCmd.AddCommand(pricingCmd())
 	// Limits commands
-	// rootCmd.AddCommand(limitsCmd()) // TODO: Implement limitsCmd
+	rootCmd.AddCommand(limitsCmd())
 	// Issues commands
-	// rootCmd.AddCommand(issuesCmd()) // TODO: Implement issuesCmd
+	rootCmd.AddCommand(issuesCmd())
 	// Events commands
-	// rootCmd.AddCommand(eventsCmd()) // TODO: Implement eventsCmd
+	rootCmd.AddCommand(eventsCmd())
 	// Schedules commands
-	// rootCmd.AddCommand(schedulesCmd()) // TODO: Implement schedulesCmd
+	rootCmd.AddCommand(schedulesCmd())
 	// Exports commands
-	// rootCmd.AddCommand(exportsCmd()) // TODO: Implement exportsCmd
+	rootCmd.AddCommand(exportsCmd())
 	// Logs commands
-	// rootCmd.AddCommand(logsCmd()) // TODO: Implement logsCmd
+	rootCmd.AddCommand(logsCmd())
 	// Config commands
-	// rootCmd.AddCommand(configCmd()) // TODO: Implement configCmd
+	rootCmd.AddCommand(configCmd())
 	// Batch commands
-	// rootCmd.AddCommand(batchCmd()) // TODO: Implement batchCmd
+	rootCmd.AddCommand(batchCmd())
 	// TUI commands
 	rootCmd.AddCommand(tuiCmd())
 
