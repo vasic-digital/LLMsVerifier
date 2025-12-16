@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "exported_at": "2025-12-16T17:57:55.261647951+03:00",
+  "generated_by": "LLM Verifier",
+  "formats": [
+    "opencode",
+    "crush",
+    "claude-code"
+  ],
+  "options": {
+    "format": "",
+    "top": 5,
+    "min_score": 70,
+    "categories": [
+      "coding",
+      "reasoning"
+    ],
+    "include_api_key": false
+  },
+  "description": "Bulk export of AI CLI agent configurations"
+}
