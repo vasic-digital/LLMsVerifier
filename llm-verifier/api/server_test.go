@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"llm-verifier/config"
@@ -70,7 +71,7 @@ func TestServerHealthCheck(t *testing.T) {
 	body := w.Body.String()
 	expectedFields := []string{"status", "timestamp", "version"}
 	for _, field := range expectedFields {
-		if !contains(body, field) {
+		if !strings.Contains(body, field) {
 			t.Errorf("Response body should contain '%s'", field)
 		}
 	}
@@ -156,6 +157,6 @@ func TestServerStart(t *testing.T) {
 }
 
 // Helper function to check if a string contains another string
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && (s[:len(substr)] == substr || contains(s[1:], substr)))
+func containsString(s, substr string) bool {
+	return strings.Contains(s, substr)
 }
