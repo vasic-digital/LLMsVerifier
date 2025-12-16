@@ -7,12 +7,14 @@ import (
 	"os"
 	"strings"
 
+	"github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
 	"llm-verifier/api"
 	"llm-verifier/client"
 	"llm-verifier/database"
 	"llm-verifier/llmverifier"
+	"llm-verifier/tui"
 )
 
 var (
@@ -70,7 +72,7 @@ func main() {
 	// Batch commands
 	// rootCmd.AddCommand(batchCmd()) // TODO: Implement batchCmd
 	// TUI commands
-	// rootCmd.AddCommand(tuiCmd()) // TODO: Implement tuiCmd
+	rootCmd.AddCommand(tuiCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -108,7 +110,8 @@ func serverCmd() *cobra.Command {
 		Short: "Start the REST API server",
 		Long:  `Start the REST API server with all endpoints for managing models, providers, and verification results.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := runServer(); err != nil {
+			port, _ := cmd.Flags().GetString("port")
+			if err := runServer(port); err != nil {
 				log.Fatalf("Error starting server: %v", err)
 			}
 		},
@@ -118,7 +121,23 @@ func serverCmd() *cobra.Command {
 	return cmd
 }
 
-func runServer() error {
+func tuiCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "tui",
+		Short: "Start the Terminal User Interface",
+		Long:  `Start the interactive terminal user interface for managing models, providers, and verification results.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := runTUI(); err != nil {
+				log.Fatalf("Error starting TUI: %v", err)
+			}
+		},
+	}
+
+	cmd.Flags().String("server-url", "http://localhost:8080", "Server URL to connect to")
+	return cmd
+}
+
+func runServer(port string) error {
 	cfg, err := llmverifier.LoadConfig(configFile)
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
@@ -129,13 +148,30 @@ func runServer() error {
 		return fmt.Errorf("failed to create server: %w", err)
 	}
 
-	// Use port from config or flag
-	port := cfg.API.Port
+	// Use provided port, or config port, or default
 	if port == "" {
-		port = "8080"
+		port = cfg.API.Port
+		if port == "" {
+			port = "8080"
+		}
 	}
 
 	return server.Start(port)
+}
+
+func runTUI() error {
+	// Get server URL from flag (if implemented) or use default
+	serverURL := "http://localhost:8080"
+
+	// Create client
+	c := client.New(serverURL)
+
+	// Create and run TUI app
+	app := tui.NewApp(c)
+	p := tea.NewProgram(app, tea.WithAltScreen())
+
+	_, err := p.Run()
+	return err
 }
 
 func getClient() (*client.Client, error) {
@@ -305,9 +341,13 @@ func modelsCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List all models",
 		Run: func(cmd *cobra.Command, args []string) {
-			_, err := getClient()
+			c, err := getClient()
 			if err != nil {
 				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			if len(args) == 0 {
+				log.Fatalf("Batch file path required")
 			}
 
 			data, err := os.ReadFile(args[0])
@@ -348,7 +388,6 @@ func modelsCmd() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(verifyCmd)
 	return cmd
 }
 
@@ -358,7 +397,7 @@ func interactiveCmd() *cobra.Command {
 		Short: "Start interactive mode",
 		Long:  `Start an interactive session for managing models and providers.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			_, err := getClient()
+			c, err := getClient()
 			if err != nil {
 				log.Fatalf("Failed to create client: %v", err)
 			}
@@ -400,7 +439,7 @@ func validateCmd() *cobra.Command {
 		Short: "Validate system setup",
 		Long:  `Validate database connectivity, API endpoints, and system health.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			_, err := getClient()
+			c, err := getClient()
 			if err != nil {
 				log.Fatalf("Failed to create client: %v", err)
 			}
@@ -531,7 +570,7 @@ func exportCmd() *cobra.Command {
 		Long:  `Export all models data to a JSON file.`,
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			_, err := getClient()
+			c, err := getClient()
 			if err != nil {
 				log.Fatalf("Failed to create client: %v", err)
 			}
@@ -561,65 +600,7 @@ func exportCmd() *cobra.Command {
 		Long:  `Export all providers data to a JSON file.`,
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			_, err := getClient()
-			if err != nil {
-				log.Fatalf("Failed to create client: %v", err)
-			}
-
-			providers, err := c.GetProviders()
-			if err != nil {
-				log.Fatalf("Failed to get providers: %v", err)
-			}
-
-			data, err := json.MarshalIndent(providers, "", "  ")
-			if err != nil {
-				log.Fatalf("Failed to marshal providers: %v", err)
-			}
-
-			if err := os.WriteFile(args[0], data, 0644); err != nil {
-				log.Fatalf("Failed to write file: %v", err)
-			}
-
-			fmt.Printf("Exported %d providers to %s\n", len(providers), args[0])
-		},
-	}
-
-	modelsCmd := &cobra.Command{
-		Use:   "models [output_file]",
-		Short: "Export models data",
-		Long:  `Export all models data to a JSON file.`,
-		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			_, err := getClient()
-			if err != nil {
-				log.Fatalf("Failed to create client: %v", err)
-			}
-
-			models, err := c.GetModels()
-			if err != nil {
-				log.Fatalf("Failed to get models: %v", err)
-			}
-
-			data, err := json.MarshalIndent(models, "", "  ")
-			if err != nil {
-				log.Fatalf("Failed to marshal models: %v", err)
-			}
-
-			if err := os.WriteFile(args[0], data, 0644); err != nil {
-				log.Fatalf("Failed to write file: %v", err)
-			}
-
-			fmt.Printf("Exported %d models to %s\n", len(models), args[0])
-		},
-	}
-
-	providersCmd := &cobra.Command{
-		Use:   "providers [output_file]",
-		Short: "Export providers data",
-		Long:  `Export all providers data to a JSON file.`,
-		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			_, err := getClient()
+			c, err := getClient()
 			if err != nil {
 				log.Fatalf("Failed to create client: %v", err)
 			}
@@ -660,7 +641,7 @@ func importCmd() *cobra.Command {
 		Long:  `Import models data from a JSON file.`,
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			_, err := getClient()
+			c, err := getClient()
 			if err != nil {
 				log.Fatalf("Failed to create client: %v", err)
 			}

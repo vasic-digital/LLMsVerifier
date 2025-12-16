@@ -1,0 +1,153 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llm-verifier-config
+  namespace: default
+data:
+  config.yaml: |
+    database:
+      path: "/app/data/llm-verifier.db"
+    api:
+      port: 8080
+      enable_cors: true
+      jwt_secret: "your-jwt-secret-change-in-production"
+      rate_limit: 100
+      burst_limit: 200
+      rate_limit_window: 60
+    scheduler:
+      enabled: true
+      cleanup_interval: "24h"
+    notifications:
+      slack:
+        enabled: false
+        webhook_url: ""
+      email:
+        enabled: false
+        smtp_host: ""
+        smtp_port: 587
+        username: ""
+        password: ""
+      telegram:
+        enabled: false
+        bot_token: ""
+        chat_id: ""
+    monitoring:
+      health_check_interval: "30s"
+    exports:
+      default_path: "/app/exports"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: llm-verifier-data
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llm-verifier
+  namespace: default
+  labels:
+    app: llm-verifier
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: llm-verifier
+  template:
+    metadata:
+      labels:
+        app: llm-verifier
+    spec:
+      containers:
+      - name: llm-verifier
+        image: llm-verifier:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: LLM_DB_PATH
+          value: "/app/data/llm-verifier.db"
+        volumeMounts:
+        - name: data
+          mountPath: /app/data
+        - name: exports
+          mountPath: /app/exports
+        - name: config
+          mountPath: /app/config
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: llm-verifier-data
+      - name: exports
+        emptyDir: {}
+      - name: config
+        configMap:
+          name: llm-verifier-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llm-verifier-service
+  namespace: default
+  labels:
+    app: llm-verifier
+spec:
+  selector:
+    app: llm-verifier
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: llm-verifier-ingress
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: llm-verifier.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: llm-verifier-service
+            port:
+              number: 80
