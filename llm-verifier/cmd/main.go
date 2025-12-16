@@ -856,11 +856,75 @@ func providersCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List all providers",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Providers listing not yet implemented")
-			fmt.Println("Available providers: OpenAI, Anthropic, Google, HuggingFace")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			providers, err := c.GetProviders()
+			if err != nil {
+				log.Fatalf("Failed to fetch providers: %v", err)
+			}
+
+			if len(providers) == 0 {
+				fmt.Println("No providers found.")
+				return
+			}
+
+			fmt.Printf("Found %d providers:\n\n", len(providers))
+			for i, provider := range providers {
+				fmt.Printf("%d. Name: %v\n", i+1, provider["name"])
+				fmt.Printf("   Endpoint: %v\n", provider["endpoint"])
+				fmt.Printf("   Status: %v\n", provider["status"])
+				fmt.Printf("   Created: %v\n\n", provider["created_at"])
+			}
 		},
 	}
+
+	statusCmd := &cobra.Command{
+		Use:   "status [provider-name]",
+		Short: "Get provider status",
+		Args:  cobra.MaximumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			providers, err := c.GetProviders()
+			if err != nil {
+				log.Fatalf("Failed to fetch providers: %v", err)
+			}
+
+			if len(args) == 0 {
+				// Show status for all providers
+				for _, provider := range providers {
+					fmt.Printf("Provider: %v - Status: %v\n", provider["name"], provider["status"])
+				}
+				return
+			}
+
+			// Show status for specific provider
+			providerName := args[0]
+			found := false
+			for _, provider := range providers {
+				if name, ok := provider["name"]; ok && name == providerName {
+					fmt.Printf("Provider: %v\n", name)
+					fmt.Printf("  Status: %v\n", provider["status"])
+					fmt.Printf("  Endpoint: %v\n", provider["endpoint"])
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				fmt.Printf("Provider '%s' not found\n", providerName)
+			}
+		},
+	}
+
 	cmd.AddCommand(listCmd)
+	cmd.AddCommand(statusCmd)
 
 	return cmd
 }
@@ -876,11 +940,63 @@ func resultsCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List verification results",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Results listing not yet implemented")
-			fmt.Println("Use TUI or API to view detailed results")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			results, err := c.GetVerificationResults()
+			if err != nil {
+				log.Fatalf("Failed to fetch verification results: %v", err)
+			}
+
+			if len(results) == 0 {
+				fmt.Println("No verification results found.")
+				return
+			}
+
+			fmt.Printf("Found %d verification results:\n\n", len(results))
+			for i, result := range results {
+				fmt.Printf("%d. ID: %v\n", i+1, result["id"])
+				fmt.Printf("   Model: %v\n", result["model_name"])
+				fmt.Printf("   Score: %v\n", result["score"])
+				fmt.Printf("   Status: %v\n", result["status"])
+				fmt.Printf("   Created: %v\n\n", result["created_at"])
+			}
+		},
+	}
+
+	exportCmd := &cobra.Command{
+		Use:   "export [format] [output-file]",
+		Short: "Export verification results",
+		Args:  cobra.ExactArgs(2),
+		Run: func(cmd *cobra.Command, args []string) {
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			results, err := c.GetVerificationResults()
+			if err != nil {
+				log.Fatalf("Failed to fetch verification results: %v", err)
+			}
+
+			// Simple JSON export for now
+			data, err := json.MarshalIndent(results, "", "  ")
+			if err != nil {
+				log.Fatalf("Failed to marshal results: %v", err)
+			}
+
+			err = os.WriteFile(args[1], data, 0644)
+			if err != nil {
+				log.Fatalf("Failed to write export file: %v", err)
+			}
+
+			fmt.Printf("Exported %d results to %s\n", len(results), args[1])
 		},
 	}
 	cmd.AddCommand(listCmd)
+	cmd.AddCommand(exportCmd)
 
 	return cmd
 }
@@ -896,11 +1012,70 @@ func pricingCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List pricing plans",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Pricing plans listing not yet implemented")
-			fmt.Println("Available plans: Free, Pro, Enterprise")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			pricing, err := c.GetPricing()
+			if err != nil {
+				log.Fatalf("Failed to fetch pricing plans: %v", err)
+			}
+
+			if len(pricing) == 0 {
+				fmt.Println("No pricing plans found.")
+				return
+			}
+
+			fmt.Printf("Found %d pricing plans:\n\n", len(pricing))
+			for i, plan := range pricing {
+				fmt.Printf("%d. Plan: %v\n", i+1, plan["name"])
+				fmt.Printf("   Model: %v\n", plan["model_name"])
+				fmt.Printf("   Input Cost: %v\n", plan["input_cost"])
+				fmt.Printf("   Output Cost: %v\n", plan["output_cost"])
+				fmt.Printf("   Currency: %v\n", plan["currency"])
+				fmt.Printf("   Updated: %v\n\n", plan["updated_at"])
+			}
 		},
 	}
+
+	modelCmd := &cobra.Command{
+		Use:   "model [model-id]",
+		Short: "Get pricing for specific model",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			pricing, err := c.GetPricing()
+			if err != nil {
+				log.Fatalf("Failed to fetch pricing plans: %v", err)
+			}
+
+			modelID := args[0]
+			found := false
+			for _, plan := range pricing {
+				if planID, ok := plan["model_id"]; ok && planID == modelID {
+					fmt.Printf("Pricing for Model %s:\n", modelID)
+					fmt.Printf("  Plan: %v\n", plan["name"])
+					fmt.Printf("  Input Cost: %v\n", plan["input_cost"])
+					fmt.Printf("  Output Cost: %v\n", plan["output_cost"])
+					fmt.Printf("  Currency: %v\n", plan["currency"])
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				fmt.Printf("No pricing found for model ID: %s\n", modelID)
+			}
+		},
+	}
+
 	cmd.AddCommand(listCmd)
+	cmd.AddCommand(modelCmd)
 
 	return cmd
 }
