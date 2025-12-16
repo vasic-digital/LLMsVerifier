@@ -39,6 +39,7 @@ import (
 
 	"llm-verifier/config"
 	"llm-verifier/database"
+	"llm-verifier/events"
 	"llm-verifier/llmverifier"
 	"llm-verifier/monitoring"
 )
@@ -50,6 +51,7 @@ type Server struct {
 	database      *database.Database
 	verifier      *llmverifier.Verifier
 	healthChecker *monitoring.HealthChecker
+	eventBus      *events.EventBus
 	jwtSecret     []byte
 	startTime     time.Time
 }
@@ -72,12 +74,16 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	healthChecker := monitoring.NewHealthChecker(db)
 	healthChecker.Start(30 * time.Second) // Check every 30 seconds
 
+	// Initialize event bus
+	eventBus := events.NewEventBus(db)
+
 	server := &Server{
 		router:        gin.Default(),
 		config:        cfg,
 		database:      db,
 		verifier:      verifier,
 		healthChecker: healthChecker,
+		eventBus:      eventBus,
 		jwtSecret:     []byte(cfg.API.JWTSecret),
 		startTime:     time.Now(),
 	}
