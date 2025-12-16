@@ -420,8 +420,32 @@ BEGIN
     UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
-CREATE TRIGGER update_api_keys_timestamp 
+CREATE TRIGGER update_api_keys_timestamp
 AFTER UPDATE ON api_keys
 BEGIN
     UPDATE api_keys SET last_used = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
+-- Notifications table (sent notifications and their status)
+CREATE TABLE notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL, -- verification_completed, verification_failed, score_changed, etc.
+    channel TEXT NOT NULL, -- slack, email, telegram, matrix, whatsapp
+    priority TEXT NOT NULL DEFAULT 'normal', -- low, normal, high, critical
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    data TEXT, -- JSON additional data
+    recipient TEXT, -- recipient identifier (email, chat_id, etc.)
+    sent BOOLEAN DEFAULT 0,
+    error TEXT,
+    retry_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    sent_at TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER update_notifications_timestamp
+AFTER UPDATE ON notifications
+BEGIN
+    UPDATE notifications SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
