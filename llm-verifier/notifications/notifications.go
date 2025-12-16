@@ -135,6 +135,16 @@ func (nm *NotificationManager) initializeChannels() {
 		nm.channels[ChannelTelegram] = ChannelTelegram
 	}
 
+	// Initialize Matrix channel
+	if nm.config.Notifications.Matrix.Enabled {
+		nm.channels[ChannelMatrix] = ChannelMatrix
+	}
+
+	// Initialize WhatsApp channel
+	if nm.config.Notifications.WhatsApp.Enabled {
+		nm.channels[ChannelWhatsApp] = ChannelWhatsApp
+	}
+
 	log.Printf("Initialized notification channels: %v", nm.getActiveChannels())
 }
 
@@ -181,6 +191,10 @@ func (nm *NotificationManager) sendNotification(notif Notification) error {
 		return nm.sendEmailNotification(notif)
 	case ChannelTelegram:
 		return nm.sendTelegramNotification(notif)
+	case ChannelMatrix:
+		return nm.sendMatrixNotification(notif)
+	case ChannelWhatsApp:
+		return nm.sendWhatsAppNotification(notif)
 	default:
 		return fmt.Errorf("unsupported notification channel: %s", notif.Channel)
 	}
@@ -335,6 +349,126 @@ func (nm *NotificationManager) sendTelegramNotification(notif Notification) erro
 	return nil
 }
 
+func (nm *NotificationManager) sendMatrixNotification(notif Notification) error {
+	if !nm.config.Notifications.Matrix.Enabled || nm.config.Notifications.Matrix.HomeserverURL == "" {
+		return fmt.Errorf("matrix notifications not configured")
+	}
+
+	// Parse room ID
+	roomID := notif.Recipient
+	if roomID == "" {
+		roomID = nm.config.Notifications.Matrix.RoomID
+		if roomID == "" {
+			return fmt.Errorf("no room ID specified for matrix notification")
+		}
+	}
+
+	// Create message
+	message := map[string]interface{}{
+		"msgtype": "m.text",
+		"body": fmt.Sprintf("🚨 **%s**\n\n%s\n\n📅 %s\n🔍 Type: %s\n⚠️ Severity: %s",
+			notif.Title,
+			notif.Message,
+			notif.Event.Timestamp.Format("2006-01-02 15:04:05"),
+			notif.Event.Type,
+			notif.Event.Severity),
+		"formatted_body": fmt.Sprintf("<strong>🚨 %s</strong><br><br>%s<br><br><em>%s</em><br>🔍 %s<br>⚠️ %s",
+			notif.Title,
+			notif.Message,
+			notif.Event.Timestamp.Format("2006-01-02 15:04:05"),
+			notif.Event.Type,
+			notif.Event.Severity),
+		"format": "org.matrix.custom.html",
+	}
+
+	// Send via Matrix API
+	url := fmt.Sprintf("%s/_matrix/client/r0/rooms/%s/send/m.room.message?access_token=%s",
+		nm.config.Notifications.Matrix.HomeserverURL,
+		roomID,
+		nm.config.Notifications.Matrix.AccessToken)
+
+	jsonPayload, err := json.Marshal(message)
+	if err != nil {
+		return fmt.Errorf("failed to marshal matrix payload: %w", err)
+	}
+
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonPayload))
+	if err != nil {
+		return fmt.Errorf("failed to send matrix notification: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("matrix notification failed with status: %d", resp.StatusCode)
+	}
+
+	log.Printf("Matrix notification sent to room %s for event %s", roomID, notif.Event.ID)
+	return nil
+}
+
+func (nm *NotificationManager) sendWhatsAppNotification(notif Notification) error {
+	if !nm.config.Notifications.WhatsApp.Enabled || nm.config.Notifications.WhatsApp.APIKey == "" {
+		return fmt.Errorf("whatsapp notifications not configured")
+	}
+
+	// Parse recipient phone number
+	recipient := notif.Recipient
+	if recipient == "" {
+		recipient = nm.config.Notifications.WhatsApp.DefaultRecipient
+		if recipient == "" {
+			return fmt.Errorf("no recipient specified for whatsapp notification")
+		}
+	}
+
+	// Create message
+	message := fmt.Sprintf("🚨 *%s*\n\n%s\n\n📅 %s\n🔍 Type: %s\n⚠️ Severity: %s",
+		notif.Title,
+		notif.Message,
+		notif.Event.Timestamp.Format("2006-01-02 15:04:05"),
+		notif.Event.Type,
+		notif.Event.Severity)
+
+	// Send via WhatsApp Business API
+	url := fmt.Sprintf("https://graph.facebook.com/v18.0/%s/messages",
+		nm.config.Notifications.WhatsApp.PhoneNumberID)
+
+	payload := map[string]interface{}{
+		"messaging_product": "whatsapp",
+		"to":                recipient,
+		"type":              "text",
+		"text": map[string]string{
+			"body": message,
+		},
+	}
+
+	jsonPayload, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal whatsapp payload: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonPayload))
+	if err != nil {
+		return fmt.Errorf("failed to create whatsapp request: %w", err)
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", nm.config.Notifications.WhatsApp.APIKey))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send whatsapp notification: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("whatsapp notification failed with status: %d", resp.StatusCode)
+	}
+
+	log.Printf("WhatsApp notification sent to %s for event %s", recipient, notif.Event.ID)
+	return nil
+}
+
 func (nm *NotificationManager) generateEmailBody(notif Notification) string {
 	tmpl := `
 <!DOCTYPE html>
@@ -452,6 +586,10 @@ func (nm *NotificationManager) getRecipientForChannel(channel NotificationChanne
 		return nm.config.Notifications.Email.DefaultRecipient
 	case ChannelTelegram:
 		return nm.config.Notifications.Telegram.ChatID
+	case ChannelMatrix:
+		return nm.config.Notifications.Matrix.RoomID
+	case ChannelWhatsApp:
+		return nm.config.Notifications.WhatsApp.DefaultRecipient
 	default:
 		return ""
 	}

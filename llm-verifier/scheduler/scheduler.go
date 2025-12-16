@@ -130,11 +130,56 @@ func (s *Scheduler) CreateSchedule(schedule *Schedule) error {
 	schedule.UpdatedAt = time.Now()
 	schedule.NextRun = s.calculateNextRun(schedule)
 
+	// Convert to database schedule
+	dbSchedule := &database.Schedule{
+		Name:         schedule.Name,
+		ScheduleType: string(schedule.Type),
+		IsActive:     schedule.Enabled,
+		RunCount:     schedule.RunCount,
+		CreatedAt:    schedule.CreatedAt,
+		UpdatedAt:    schedule.UpdatedAt,
+		NextRun:      &schedule.NextRun,
+	}
+
+	// Set cron expression or interval
+	if schedule.Type == ScheduleTypeCron {
+		dbSchedule.CronExpression = &schedule.Expression
+	} else if schedule.Type == ScheduleTypeInterval {
+		// Parse duration
+		duration, err := time.ParseDuration(schedule.Expression)
+		if err != nil {
+			return fmt.Errorf("invalid interval expression: %w", err)
+		}
+		seconds := int(duration.Seconds())
+		dbSchedule.IntervalSeconds = &seconds
+	}
+
+	// Set target type and ID
+	if len(schedule.Targets) > 0 && schedule.Targets[0] != "all" {
+		targetID, err := strconv.ParseInt(schedule.Targets[0], 10, 64)
+		if err == nil {
+			dbSchedule.TargetID = &targetID
+			dbSchedule.TargetType = "specific"
+		} else {
+			dbSchedule.TargetType = "all"
+		}
+	} else {
+		dbSchedule.TargetType = "all"
+	}
+
+	// Persist to database
+	err := s.db.CreateSchedule(dbSchedule)
+	if err != nil {
+		return fmt.Errorf("failed to create schedule in database: %w", err)
+	}
+
+	// Update schedule ID with database ID
+	schedule.ID = fmt.Sprintf("%d", dbSchedule.ID)
+
 	s.mu.Lock()
 	s.schedules[schedule.ID] = schedule
 	s.mu.Unlock()
 
-	// Persist to database (placeholder)
 	log.Printf("Created schedule: %s (%s)", schedule.Name, schedule.ID)
 
 	return nil
@@ -354,29 +399,43 @@ func (s *Scheduler) executeSchedule(schedule *Schedule) error {
 	s.runs[runID] = run
 	s.mu.Unlock()
 
+	// Create database schedule run
+	scheduleID, err := strconv.ParseInt(schedule.ID, 10, 64)
+	if err == nil {
+		dbRun := &database.ScheduleRun{
+			ScheduleID: scheduleID,
+			StartedAt:  run.StartedAt,
+			Status:     run.Status,
+		}
+
+		if createErr := s.db.CreateScheduleRun(dbRun); createErr != nil {
+			log.Printf("Failed to create schedule run in database: %v", createErr)
+		}
+	}
+
 	log.Printf("Executing schedule: %s (%s)", schedule.Name, schedule.ID)
 
 	// Execute the job
-	var err error
+	var jobErr error
 	if s.jobHandler != nil {
-		err = s.jobHandler(schedule.JobType, schedule.Targets, schedule.Options)
+		jobErr = s.jobHandler(schedule.JobType, schedule.Targets, schedule.Options)
 	} else {
-		err = fmt.Errorf("no job handler configured")
+		jobErr = fmt.Errorf("no job handler configured")
 	}
 
 	// Update run status
 	now := time.Now()
 	run.CompletedAt = &now
 
-	if err != nil {
+	if jobErr != nil {
 		run.Status = "failed"
-		run.Error = err.Error()
+		run.Error = jobErr.Error()
 
 		s.mu.Lock()
 		schedule.ErrorCount++
 		s.mu.Unlock()
 
-		log.Printf("Schedule %s failed: %v", schedule.ID, err)
+		log.Printf("Schedule %s failed: %v", schedule.ID, jobErr)
 	} else {
 		run.Status = "completed"
 		run.Results = map[string]interface{}{
@@ -386,7 +445,31 @@ func (s *Scheduler) executeSchedule(schedule *Schedule) error {
 		log.Printf("Schedule %s completed successfully", schedule.ID)
 	}
 
-	return err
+	// Update database schedule run
+	if err == nil {
+		dbRun := &database.ScheduleRun{
+			ScheduleID:  scheduleID,
+			StartedAt:   run.StartedAt,
+			CompletedAt: run.CompletedAt,
+			Status:      run.Status,
+		}
+
+		if run.Error != "" {
+			dbRun.ErrorMessage = &run.Error
+		}
+
+		if updateErr := s.db.UpdateScheduleRun(dbRun); updateErr != nil {
+			log.Printf("Failed to update schedule run in database: %v", updateErr)
+		}
+
+		// Update schedule run info
+		nextRun := s.calculateNextRun(schedule)
+		if updateInfoErr := s.db.UpdateScheduleRunInfo(scheduleID, now, &nextRun, schedule.RunCount+1); updateInfoErr != nil {
+			log.Printf("Failed to update schedule run info: %v", updateInfoErr)
+		}
+	}
+
+	return jobErr
 }
 
 func (s *Scheduler) calculateNextRun(schedule *Schedule) time.Time {
@@ -492,10 +575,62 @@ func (s *Scheduler) matchesCronField(value int, allowed []int) bool {
 }
 
 func (s *Scheduler) loadSchedules() error {
-	// Load schedules from database (placeholder)
-	// In a real implementation, this would query the database
+	// Load schedules from database
+	schedules, err := s.db.ListSchedules(map[string]interface{}{})
+	if err != nil {
+		return fmt.Errorf("failed to load schedules from database: %w", err)
+	}
 
-	log.Println("Loaded schedules from database")
+	for _, dbSchedule := range schedules {
+		if !dbSchedule.IsActive {
+			continue
+		}
+
+		// Convert database schedule to scheduler schedule
+		schedule := &Schedule{
+			ID:          fmt.Sprintf("%d", dbSchedule.ID),
+			Name:        dbSchedule.Name,
+			Description: "",
+			Type:        ScheduleType(dbSchedule.ScheduleType),
+			JobType:     JobTypeVerification, // Default for now
+			Expression:  "",
+			Enabled:     dbSchedule.IsActive,
+			Targets:     []string{},
+			Options:     make(map[string]interface{}),
+			CreatedAt:   dbSchedule.CreatedAt,
+			UpdatedAt:   dbSchedule.UpdatedAt,
+			RunCount:    dbSchedule.RunCount,
+		}
+
+		// Set expression based on type
+		if dbSchedule.CronExpression != nil {
+			schedule.Expression = *dbSchedule.CronExpression
+		} else if dbSchedule.IntervalSeconds != nil {
+			schedule.Expression = fmt.Sprintf("%ds", *dbSchedule.IntervalSeconds)
+		}
+
+		// Set targets
+		if dbSchedule.TargetID != nil {
+			schedule.Targets = []string{fmt.Sprintf("%d", *dbSchedule.TargetID)}
+		} else {
+			schedule.Targets = []string{"all"}
+		}
+
+		// Set next run time
+		if dbSchedule.NextRun != nil {
+			schedule.NextRun = *dbSchedule.NextRun
+		} else {
+			schedule.NextRun = s.calculateNextRun(schedule)
+		}
+
+		if dbSchedule.LastRun != nil {
+			schedule.LastRun = dbSchedule.LastRun
+		}
+
+		s.schedules[schedule.ID] = schedule
+	}
+
+	log.Printf("Loaded %d schedules from database", len(s.schedules))
 	return nil
 }
 
