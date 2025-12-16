@@ -1,552 +1,562 @@
 package scheduler
 
 import (
-	"context"
 	"fmt"
 	"log"
+	"sort"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
-	"github.com/robfig/cron/v3"
 	"llm-verifier/database"
-	"llm-verifier/llmverifier"
 )
 
-// JobType defines the type of scheduled job
+// ScheduleType represents the type of scheduling
+type ScheduleType string
+
+const (
+	ScheduleTypeCron     ScheduleType = "cron"
+	ScheduleTypeInterval ScheduleType = "interval"
+	ScheduleTypeOnce     ScheduleType = "once"
+)
+
+// JobType represents the type of job to execute
 type JobType string
 
 const (
 	JobTypeVerification JobType = "verification"
 	JobTypeExport       JobType = "export"
-	JobTypeMaintenance  JobType = "maintenance"
-	JobTypeCustom       JobType = "custom"
+	JobTypeCleanup      JobType = "cleanup"
+	JobTypeReport       JobType = "report"
 )
 
-// JobStatus defines the status of a scheduled job
-type JobStatus string
-
-const (
-	JobStatusPending   JobStatus = "pending"
-	JobStatusRunning   JobStatus = "running"
-	JobStatusCompleted JobStatus = "completed"
-	JobStatusFailed    JobStatus = "failed"
-	JobStatusCancelled JobStatus = "cancelled"
-)
-
-// ScheduledJob represents a scheduled job
-type ScheduledJob struct {
-	ID        string                 `json:"id"`
-	Name      string                 `json:"name"`
-	Type      JobType                `json:"type"`
-	Schedule  string                 `json:"schedule"` // Cron expression
-	Enabled   bool                   `json:"enabled"`
-	Config    map[string]interface{} `json:"config"`
-	CreatedAt time.Time              `json:"created_at"`
-	UpdatedAt time.Time              `json:"updated_at"`
-
-	// Runtime fields
-	cronID  cron.EntryID
-	lastRun *time.Time
-	nextRun *time.Time
-	status  JobStatus
-	error   string
+// Schedule represents a scheduled job
+type Schedule struct {
+	ID          string                 `json:"id"`
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	Type        ScheduleType           `json:"type"`
+	JobType     JobType                `json:"job_type"`
+	Expression  string                 `json:"expression"` // Cron expression or interval
+	Enabled     bool                   `json:"enabled"`
+	Targets     []string               `json:"targets"` // Model IDs, provider IDs, or "all"
+	Options     map[string]interface{} `json:"options"`
+	CreatedAt   time.Time              `json:"created_at"`
+	UpdatedAt   time.Time              `json:"updated_at"`
+	NextRun     time.Time              `json:"next_run"`
+	LastRun     *time.Time             `json:"last_run,omitempty"`
+	RunCount    int                    `json:"run_count"`
+	ErrorCount  int                    `json:"error_count"`
 }
 
-// JobExecution represents a job execution instance
-type JobExecution struct {
-	ID        string                 `json:"id"`
-	JobID     string                 `json:"job_id"`
-	StartedAt time.Time              `json:"started_at"`
-	EndedAt   *time.Time             `json:"ended_at"`
-	Status    JobStatus              `json:"status"`
-	Error     string                 `json:"error"`
-	Results   map[string]interface{} `json:"results"`
-	Duration  time.Duration          `json:"duration"`
+// ScheduleRun represents a single execution of a scheduled job
+type ScheduleRun struct {
+	ID          string                 `json:"id"`
+	ScheduleID  string                 `json:"schedule_id"`
+	StartedAt   time.Time              `json:"started_at"`
+	CompletedAt *time.Time             `json:"completed_at,omitempty"`
+	Status      string                 `json:"status"` // "running", "completed", "failed"
+	Error       string                 `json:"error,omitempty"`
+	Results     map[string]interface{} `json:"results,omitempty"`
 }
 
 // Scheduler manages scheduled jobs
 type Scheduler struct {
-	cron       *cron.Cron
-	database   *database.Database
-	verifier   *llmverifier.Verifier
-	jobs       map[string]*ScheduledJob
-	executions map[string]*JobExecution
-	mu         sync.RWMutex
+	db         *database.Database
+	schedules  map[string]*Schedule
+	runs       map[string]*ScheduleRun
+	ticker     *time.Ticker
+	stopCh     chan struct{}
 	running    bool
-	ctx        context.Context
-	cancel     context.CancelFunc
+	mu         sync.RWMutex
+	jobHandler func(jobType JobType, targets []string, options map[string]interface{}) error
 }
 
-// NewScheduler creates a new scheduler
-func NewScheduler(db *database.Database, verifier *llmverifier.Verifier) *Scheduler {
-	ctx, cancel := context.WithCancel(context.Background())
-
+// NewScheduler creates a new scheduler instance
+func NewScheduler(db *database.Database) *Scheduler {
 	return &Scheduler{
-		cron:       cron.New(cron.WithSeconds()),
-		database:   db,
-		verifier:   verifier,
-		jobs:       make(map[string]*ScheduledJob),
-		executions: make(map[string]*JobExecution),
-		running:    false,
-		ctx:        ctx,
-		cancel:     cancel,
+		db:        db,
+		schedules: make(map[string]*Schedule),
+		runs:      make(map[string]*ScheduleRun),
+		stopCh:    make(chan struct{}),
+		running:   false,
 	}
 }
 
-// Start starts the scheduler
-func (s *Scheduler) Start() error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+// SetJobHandler sets the function that handles job execution
+func (s *Scheduler) SetJobHandler(handler func(jobType JobType, targets []string, options map[string]interface{}) error) {
+	s.jobHandler = handler
+}
 
+// Start begins the scheduler
+func (s *Scheduler) Start() error {
 	if s.running {
 		return fmt.Errorf("scheduler is already running")
 	}
 
-	// Load existing jobs from database
-	if err := s.loadJobsFromDatabase(); err != nil {
-		return fmt.Errorf("failed to load jobs from database: %w", err)
-	}
-
-	// Schedule all enabled jobs
-	for _, job := range s.jobs {
-		if job.Enabled {
-			if err := s.scheduleJob(job); err != nil {
-				log.Printf("Failed to schedule job %s: %v", job.Name, err)
-				continue
-			}
-		}
-	}
-
-	// Start the cron scheduler
-	s.cron.Start()
 	s.running = true
+	s.ticker = time.NewTicker(30 * time.Second) // Check every 30 seconds
 
-	log.Printf("Scheduler started with %d jobs", len(s.jobs))
+	// Load existing schedules
+	if err := s.loadSchedules(); err != nil {
+		return fmt.Errorf("failed to load schedules: %w", err)
+	}
+
+	// Start the scheduler loop
+	go s.run()
+
+	log.Printf("Scheduler started with %d schedules", len(s.schedules))
 	return nil
 }
 
 // Stop stops the scheduler
-func (s *Scheduler) Stop() error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
+func (s *Scheduler) Stop() {
 	if !s.running {
-		return fmt.Errorf("scheduler is not running")
+		return
 	}
-
-	// Cancel context to stop running jobs
-	s.cancel()
-
-	// Stop cron scheduler
-	ctx := s.cron.Stop()
-	<-ctx.Done()
 
 	s.running = false
-	log.Printf("Scheduler stopped")
+	close(s.stopCh)
+	s.ticker.Stop()
+
+	log.Println("Scheduler stopped")
+}
+
+// CreateSchedule creates a new schedule
+func (s *Scheduler) CreateSchedule(schedule *Schedule) error {
+	schedule.ID = generateScheduleID()
+	schedule.CreatedAt = time.Now()
+	schedule.UpdatedAt = time.Now()
+	schedule.NextRun = s.calculateNextRun(schedule)
+
+	s.mu.Lock()
+	s.schedules[schedule.ID] = schedule
+	s.mu.Unlock()
+
+	// Persist to database (placeholder)
+	log.Printf("Created schedule: %s (%s)", schedule.Name, schedule.ID)
+
 	return nil
 }
 
-// AddJob adds a new scheduled job
-func (s *Scheduler) AddJob(job *ScheduledJob) error {
+// UpdateSchedule updates an existing schedule
+func (s *Scheduler) UpdateSchedule(id string, updates *Schedule) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Validate job
-	if err := s.validateJob(job); err != nil {
-		return fmt.Errorf("invalid job: %w", err)
+	schedule, exists := s.schedules[id]
+	if !exists {
+		return fmt.Errorf("schedule not found: %s", id)
 	}
 
-	// Save to database
-	if err := s.saveJobToDatabase(job); err != nil {
-		return fmt.Errorf("failed to save job to database: %w", err)
+	// Update fields
+	if updates.Name != "" {
+		schedule.Name = updates.Name
+	}
+	if updates.Description != "" {
+		schedule.Description = updates.Description
+	}
+	if updates.Expression != "" {
+		schedule.Expression = updates.Expression
+	}
+	schedule.Enabled = updates.Enabled
+	if updates.Targets != nil {
+		schedule.Targets = updates.Targets
+	}
+	if updates.Options != nil {
+		schedule.Options = updates.Options
+	}
+	schedule.UpdatedAt = time.Now()
+	schedule.NextRun = s.calculateNextRun(schedule)
+
+	log.Printf("Updated schedule: %s", id)
+	return nil
+}
+
+// DeleteSchedule deletes a schedule
+func (s *Scheduler) DeleteSchedule(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if _, exists := s.schedules[id]; !exists {
+		return fmt.Errorf("schedule not found: %s", id)
 	}
 
-	// Add to in-memory map
-	s.jobs[job.ID] = job
+	delete(s.schedules, id)
 
-	// Schedule if enabled
-	if job.Enabled {
-		if err := s.scheduleJob(job); err != nil {
-			return fmt.Errorf("failed to schedule job: %w", err)
+	// Clean up associated runs
+	for runID, run := range s.runs {
+		if run.ScheduleID == id {
+			delete(s.runs, runID)
 		}
 	}
 
-	log.Printf("Added job: %s (%s)", job.Name, job.Schedule)
+	log.Printf("Deleted schedule: %s", id)
 	return nil
 }
 
-// RemoveJob removes a scheduled job
-func (s *Scheduler) RemoveJob(jobID string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	job, exists := s.jobs[jobID]
-	if !exists {
-		return fmt.Errorf("job not found: %s", jobID)
-	}
-
-	// Remove from cron
-	if job.cronID != 0 {
-		s.cron.Remove(job.cronID)
-	}
-
-	// Remove from database
-	if err := s.deleteJobFromDatabase(jobID); err != nil {
-		return fmt.Errorf("failed to delete job from database: %w", err)
-	}
-
-	// Remove from memory
-	delete(s.jobs, jobID)
-
-	log.Printf("Removed job: %s", job.Name)
-	return nil
-}
-
-// EnableJob enables a scheduled job
-func (s *Scheduler) EnableJob(jobID string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	job, exists := s.jobs[jobID]
-	if !exists {
-		return fmt.Errorf("job not found: %s", jobID)
-	}
-
-	if job.Enabled {
-		return fmt.Errorf("job is already enabled: %s", jobID)
-	}
-
-	job.Enabled = true
-	job.UpdatedAt = time.Now()
-
-	// Update database
-	if err := s.updateJobInDatabase(job); err != nil {
-		return fmt.Errorf("failed to update job in database: %w", err)
-	}
-
-	// Schedule the job
-	if err := s.scheduleJob(job); err != nil {
-		return fmt.Errorf("failed to schedule job: %w", err)
-	}
-
-	log.Printf("Enabled job: %s", job.Name)
-	return nil
-}
-
-// DisableJob disables a scheduled job
-func (s *Scheduler) DisableJob(jobID string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	job, exists := s.jobs[jobID]
-	if !exists {
-		return fmt.Errorf("job not found: %s", jobID)
-	}
-
-	if !job.Enabled {
-		return fmt.Errorf("job is already disabled: %s", jobID)
-	}
-
-	job.Enabled = false
-	job.UpdatedAt = time.Now()
-
-	// Remove from cron
-	if job.cronID != 0 {
-		s.cron.Remove(job.cronID)
-		job.cronID = 0
-	}
-
-	// Update database
-	if err := s.updateJobInDatabase(job); err != nil {
-		return fmt.Errorf("failed to update job in database: %w", err)
-	}
-
-	log.Printf("Disabled job: %s", job.Name)
-	return nil
-}
-
-// GetJobs returns all scheduled jobs
-func (s *Scheduler) GetJobs() map[string]*ScheduledJob {
+// GetSchedules returns all schedules
+func (s *Scheduler) GetSchedules() []*Schedule {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	jobs := make(map[string]*ScheduledJob)
-	for id, job := range s.jobs {
-		jobs[id] = job
-	}
-	return jobs
-}
-
-// GetJob returns a specific job
-func (s *Scheduler) GetJob(jobID string) (*ScheduledJob, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	job, exists := s.jobs[jobID]
-	if !exists {
-		return nil, fmt.Errorf("job not found: %s", jobID)
+	var schedules []*Schedule
+	for _, schedule := range s.schedules {
+		schedules = append(schedules, schedule)
 	}
 
-	return job, nil
-}
-
-// GetJobExecutions returns executions for a job
-func (s *Scheduler) GetJobExecutions(jobID string, limit int) ([]*JobExecution, error) {
-	// In a real implementation, this would query the database
-	// For now, return from in-memory map
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	var executions []*JobExecution
-	for _, execution := range s.executions {
-		if execution.JobID == jobID {
-			executions = append(executions, execution)
-		}
-	}
-
-	// Return most recent executions
-	if len(executions) > limit {
-		executions = executions[len(executions)-limit:]
-	}
-
-	return executions, nil
-}
-
-// scheduleJob schedules a job with cron
-func (s *Scheduler) scheduleJob(job *ScheduledJob) error {
-	// Remove existing cron entry if any
-	if job.cronID != 0 {
-		s.cron.Remove(job.cronID)
-	}
-
-	// Add to cron
-	id, err := s.cron.AddFunc(job.Schedule, func() {
-		s.executeJob(job)
+	// Sort by next run time
+	sort.Slice(schedules, func(i, j int) bool {
+		return schedules[i].NextRun.Before(schedules[j].NextRun)
 	})
-	if err != nil {
-		return fmt.Errorf("failed to schedule job: %w", err)
+
+	return schedules
+}
+
+// GetSchedule returns a specific schedule
+func (s *Scheduler) GetSchedule(id string) (*Schedule, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	schedule, exists := s.schedules[id]
+	if !exists {
+		return nil, fmt.Errorf("schedule not found: %s", id)
 	}
 
-	job.cronID = id
-	job.status = JobStatusPending
-	job.nextRun = s.getNextRunTime(job.Schedule)
+	return schedule, nil
+}
 
+// GetScheduleRuns returns runs for a specific schedule
+func (s *Scheduler) GetScheduleRuns(scheduleID string, limit int) []*ScheduleRun {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var runs []*ScheduleRun
+	for _, run := range s.runs {
+		if run.ScheduleID == scheduleID {
+			runs = append(runs, run)
+		}
+	}
+
+	// Sort by start time (newest first)
+	sort.Slice(runs, func(i, j int) bool {
+		return runs[i].StartedAt.After(runs[j].StartedAt)
+	})
+
+	if limit > 0 && len(runs) > limit {
+		runs = runs[:limit]
+	}
+
+	return runs
+}
+
+// EnableSchedule enables a schedule
+func (s *Scheduler) EnableSchedule(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	schedule, exists := s.schedules[id]
+	if !exists {
+		return fmt.Errorf("schedule not found: %s", id)
+	}
+
+	schedule.Enabled = true
+	schedule.UpdatedAt = time.Now()
+	schedule.NextRun = s.calculateNextRun(schedule)
+
+	log.Printf("Enabled schedule: %s", id)
 	return nil
 }
 
-// executeJob executes a scheduled job
-func (s *Scheduler) executeJob(job *ScheduledJob) {
-	execution := &JobExecution{
-		ID:        generateExecutionID(),
-		JobID:     job.ID,
-		StartedAt: time.Now(),
-		Status:    JobStatusRunning,
-	}
-
+// DisableSchedule disables a schedule
+func (s *Scheduler) DisableSchedule(id string) error {
 	s.mu.Lock()
-	s.executions[execution.ID] = execution
-	job.status = JobStatusRunning
-	job.lastRun = &execution.StartedAt
-	s.mu.Unlock()
+	defer s.mu.Unlock()
 
-	log.Printf("Executing job: %s (%s)", job.Name, job.Type)
-
-	var err error
-	var results map[string]interface{}
-
-	// Execute job based on type
-	switch job.Type {
-	case JobTypeVerification:
-		results, err = s.executeVerificationJob(job)
-	case JobTypeExport:
-		results, err = s.executeExportJob(job)
-	case JobTypeMaintenance:
-		results, err = s.executeMaintenanceJob(job)
-	case JobTypeCustom:
-		results, err = s.executeCustomJob(job)
-	default:
-		err = fmt.Errorf("unknown job type: %s", job.Type)
+	schedule, exists := s.schedules[id]
+	if !exists {
+		return fmt.Errorf("schedule not found: %s", id)
 	}
 
-	// Update execution
+	schedule.Enabled = false
+	schedule.UpdatedAt = time.Now()
+
+	log.Printf("Disabled schedule: %s", id)
+	return nil
+}
+
+// RunNow executes a schedule immediately
+func (s *Scheduler) RunNow(id string) error {
+	s.mu.RLock()
+	schedule, exists := s.schedules[id]
+	s.mu.RUnlock()
+
+	if !exists {
+		return fmt.Errorf("schedule not found: %s", id)
+	}
+
+	return s.executeSchedule(schedule)
+}
+
+// Private methods
+
+func (s *Scheduler) run() {
+	log.Println("Scheduler main loop started")
+
+	for {
+		select {
+		case <-s.stopCh:
+			return
+		case <-s.ticker.C:
+			s.checkSchedules()
+		}
+	}
+}
+
+func (s *Scheduler) checkSchedules() {
 	now := time.Now()
-	execution.EndedAt = &now
-	execution.Duration = execution.EndedAt.Sub(execution.StartedAt)
-	execution.Results = results
 
-	if err != nil {
-		execution.Status = JobStatusFailed
-		execution.Error = err.Error()
-		log.Printf("Job failed: %s - %v", job.Name, err)
-	} else {
-		execution.Status = JobStatusCompleted
-		log.Printf("Job completed: %s", job.Name)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, schedule := range s.schedules {
+		if !schedule.Enabled {
+			continue
+		}
+
+		if now.After(schedule.NextRun) || now.Equal(schedule.NextRun) {
+			go func(sched *Schedule) {
+				if err := s.executeSchedule(sched); err != nil {
+					log.Printf("Failed to execute schedule %s: %v", sched.ID, err)
+				}
+			}(schedule)
+
+			// Update next run time
+			schedule.NextRun = s.calculateNextRun(schedule)
+			schedule.LastRun = &now
+			schedule.RunCount++
+		}
+	}
+}
+
+func (s *Scheduler) executeSchedule(schedule *Schedule) error {
+	runID := generateRunID()
+
+	run := &ScheduleRun{
+		ID:         runID,
+		ScheduleID: schedule.ID,
+		StartedAt:  time.Now(),
+		Status:     "running",
 	}
 
 	s.mu.Lock()
-	job.status = JobStatusPending
-	job.nextRun = s.getNextRunTime(job.Schedule)
+	s.runs[runID] = run
 	s.mu.Unlock()
 
-	// Save execution to database (in a real implementation)
-	// For now, just keep in memory
-}
+	log.Printf("Executing schedule: %s (%s)", schedule.Name, schedule.ID)
 
-// executeVerificationJob executes a verification job
-func (s *Scheduler) executeVerificationJob(job *ScheduledJob) (map[string]interface{}, error) {
-	log.Printf("Running scheduled verification for job: %s", job.Name)
-
-	// Run verification
-	results, err := s.verifier.Verify()
-	if err != nil {
-		return nil, fmt.Errorf("verification failed: %w", err)
+	// Execute the job
+	var err error
+	if s.jobHandler != nil {
+		err = s.jobHandler(schedule.JobType, schedule.Targets, schedule.Options)
+	} else {
+		err = fmt.Errorf("no job handler configured")
 	}
 
-	// Process results
-	totalModels := len(results)
-	successfulModels := 0
-	failedModels := 0
+	// Update run status
+	now := time.Now()
+	run.CompletedAt = &now
 
-	for _, result := range results {
-		if result.Error == "" {
-			successfulModels++
+	if err != nil {
+		run.Status = "failed"
+		run.Error = err.Error()
+
+		s.mu.Lock()
+		schedule.ErrorCount++
+		s.mu.Unlock()
+
+		log.Printf("Schedule %s failed: %v", schedule.ID, err)
+	} else {
+		run.Status = "completed"
+		run.Results = map[string]interface{}{
+			"message": "Schedule executed successfully",
+		}
+
+		log.Printf("Schedule %s completed successfully", schedule.ID)
+	}
+
+	return err
+}
+
+func (s *Scheduler) calculateNextRun(schedule *Schedule) time.Time {
+	now := time.Now()
+
+	switch schedule.Type {
+	case ScheduleTypeCron:
+		return s.parseCronExpression(schedule.Expression, now)
+	case ScheduleTypeInterval:
+		return s.parseIntervalExpression(schedule.Expression, now)
+	case ScheduleTypeOnce:
+		// For one-time schedules, set next run to far future
+		return now.Add(365 * 24 * time.Hour)
+	default:
+		// Default to hourly
+		return now.Add(time.Hour)
+	}
+}
+
+func (s *Scheduler) parseCronExpression(expression string, now time.Time) time.Time {
+	// Simple cron parser (supports basic expressions)
+	parts := strings.Fields(expression)
+	if len(parts) != 5 {
+		log.Printf("Invalid cron expression: %s", expression)
+		return now.Add(time.Hour)
+	}
+
+	minute := s.parseCronField(parts[0], 0, 59)
+	hour := s.parseCronField(parts[1], 0, 23)
+	day := s.parseCronField(parts[2], 1, 31)
+	month := s.parseCronField(parts[3], 1, 12)
+	weekday := s.parseCronField(parts[4], 0, 6)
+
+	// Find next matching time
+	next := now.Add(time.Minute)
+	for i := 0; i < 10000; i++ { // Prevent infinite loop
+		if s.matchesCronField(next.Minute(), minute) &&
+			s.matchesCronField(next.Hour(), hour) &&
+			s.matchesCronField(next.Day(), day) &&
+			s.matchesCronField(int(next.Month()), month) &&
+			s.matchesCronField(int(next.Weekday()), weekday) {
+			return next
+		}
+		next = next.Add(time.Minute)
+	}
+
+	return now.Add(time.Hour)
+}
+
+func (s *Scheduler) parseIntervalExpression(expression string, now time.Time) time.Time {
+	// Parse expressions like "1h", "30m", "2h30m", etc.
+	duration, err := time.ParseDuration(expression)
+	if err != nil {
+		log.Printf("Invalid interval expression: %s", expression)
+		return now.Add(time.Hour)
+	}
+
+	return now.Add(duration)
+}
+
+func (s *Scheduler) parseCronField(field string, min, max int) []int {
+	if field == "*" {
+		var values []int
+		for i := min; i <= max; i++ {
+			values = append(values, i)
+		}
+		return values
+	}
+
+	// Handle comma-separated values and ranges
+	var values []int
+	parts := strings.Split(field, ",")
+
+	for _, part := range parts {
+		if strings.Contains(part, "-") {
+			rangeParts := strings.Split(part, "-")
+			if len(rangeParts) == 2 {
+				start, err1 := strconv.Atoi(rangeParts[0])
+				end, err2 := strconv.Atoi(rangeParts[1])
+				if err1 == nil && err2 == nil {
+					for i := start; i <= end; i++ {
+						values = append(values, i)
+					}
+				}
+			}
 		} else {
-			failedModels++
+			if val, err := strconv.Atoi(part); err == nil {
+				values = append(values, val)
+			}
 		}
 	}
 
-	return map[string]interface{}{
-		"total_models":      totalModels,
-		"successful_models": successfulModels,
-		"failed_models":     failedModels,
-		"success_rate":      float64(successfulModels) / float64(totalModels) * 100,
-	}, nil
+	return values
 }
 
-// executeExportJob executes an export job
-func (s *Scheduler) executeExportJob(job *ScheduledJob) (map[string]interface{}, error) {
-	log.Printf("Running scheduled export for job: %s", job.Name)
-
-	// Get export format from job config
-	format, ok := job.Config["format"].(string)
-	if !ok {
-		format = "json"
-	}
-
-	outputPath, ok := job.Config["output_path"].(string)
-	if !ok {
-		outputPath = "./scheduled_exports"
-	}
-
-	// Perform export (simplified - would need actual config)
-	err := llmverifier.ExportConfig(nil, format, outputPath)
-	if err != nil {
-		return nil, fmt.Errorf("export failed: %w", err)
-	}
-
-	return map[string]interface{}{
-		"format":      format,
-		"output_path": outputPath,
-		"exported_at": time.Now(),
-	}, nil
-}
-
-// executeMaintenanceJob executes a maintenance job
-func (s *Scheduler) executeMaintenanceJob(job *ScheduledJob) (map[string]interface{}, error) {
-	log.Printf("Running scheduled maintenance for job: %s", job.Name)
-
-	// Run database maintenance tasks
-	// This would include cleanup, optimization, etc.
-
-	return map[string]interface{}{
-		"maintenance_type": "database_cleanup",
-		"executed_at":      time.Now(),
-	}, nil
-}
-
-// executeCustomJob executes a custom job
-func (s *Scheduler) executeCustomJob(job *ScheduledJob) (map[string]interface{}, error) {
-	log.Printf("Running custom job: %s", job.Name)
-
-	// Execute custom logic based on job config
-	command, ok := job.Config["command"].(string)
-	if !ok {
-		return nil, fmt.Errorf("custom job missing command")
-	}
-
-	// Execute command (simplified)
-	log.Printf("Would execute command: %s", command)
-
-	return map[string]interface{}{
-		"command":     command,
-		"executed_at": time.Now(),
-	}, nil
-}
-
-// validateJob validates a scheduled job
-func (s *Scheduler) validateJob(job *ScheduledJob) error {
-	if job.Name == "" {
-		return fmt.Errorf("job name is required")
-	}
-	if job.Schedule == "" {
-		return fmt.Errorf("job schedule is required")
-	}
-
-	// Validate cron expression (allow both 5 and 6 field formats)
-	parser := cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
-	if _, err := parser.Parse(job.Schedule); err != nil {
-		// Try standard 5-field format
-		if _, err2 := cron.ParseStandard(job.Schedule); err2 != nil {
-			return fmt.Errorf("invalid cron expression: %w", err)
+func (s *Scheduler) matchesCronField(value int, allowed []int) bool {
+	for _, a := range allowed {
+		if value == a {
+			return true
 		}
 	}
+	return false
+}
 
+func (s *Scheduler) loadSchedules() error {
+	// Load schedules from database (placeholder)
+	// In a real implementation, this would query the database
+
+	log.Println("Loaded schedules from database")
 	return nil
 }
 
-// loadJobsFromDatabase loads jobs from the database
-func (s *Scheduler) loadJobsFromDatabase() error {
-	// In a real implementation, this would load from database
-	// For now, just ensure we have a clean state
-	return nil
+// Helper functions
+
+func generateScheduleID() string {
+	return fmt.Sprintf("sched_%d", time.Now().UnixNano())
 }
 
-// saveJobToDatabase saves a job to the database
-func (s *Scheduler) saveJobToDatabase(job *ScheduledJob) error {
-	// In a real implementation, this would save to database
-	return nil
+func generateRunID() string {
+	return fmt.Sprintf("run_%d", time.Now().UnixNano())
 }
 
-// updateJobInDatabase updates a job in the database
-func (s *Scheduler) updateJobInDatabase(job *ScheduledJob) error {
-	// In a real implementation, this would update in database
-	return nil
-}
+// Predefined schedule templates
 
-// deleteJobFromDatabase deletes a job from the database
-func (s *Scheduler) deleteJobFromDatabase(jobID string) error {
-	// In a real implementation, this would delete from database
-	return nil
-}
-
-// getNextRunTime calculates the next run time for a cron schedule
-func (s *Scheduler) getNextRunTime(schedule string) *time.Time {
-	// Try 6-field format first (with seconds)
-	parser := cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
-	scheduleEntry, err := parser.Parse(schedule)
-	if err != nil {
-		// Fall back to 5-field format
-		scheduleEntry, err = cron.ParseStandard(schedule)
-		if err != nil {
-			return nil
-		}
+// CreateDailyVerificationSchedule creates a daily verification schedule
+func CreateDailyVerificationSchedule(name string, targets []string) *Schedule {
+	return &Schedule{
+		Name:        name,
+		Description: "Daily verification of all models",
+		Type:        ScheduleTypeCron,
+		JobType:     JobTypeVerification,
+		Expression:  "0 2 * * *", // Daily at 2 AM
+		Enabled:     true,
+		Targets:     targets,
+		Options: map[string]interface{}{
+			"full_verification": true,
+		},
 	}
-
-	next := scheduleEntry.Next(time.Now())
-	return &next
 }
 
-// generateExecutionID generates a unique execution ID
-func generateExecutionID() string {
-	return fmt.Sprintf("exec_%d", time.Now().UnixNano())
+// CreateHourlyHealthCheckSchedule creates an hourly health check schedule
+func CreateHourlyHealthCheckSchedule(name string) *Schedule {
+	return &Schedule{
+		Name:        name,
+		Description: "Hourly system health check",
+		Type:        ScheduleTypeCron,
+		JobType:     JobTypeCleanup,
+		Expression:  "0 * * * *", // Every hour
+		Enabled:     true,
+		Targets:     []string{"system"},
+		Options: map[string]interface{}{
+			"check_databases":   true,
+			"check_connections": true,
+		},
+	}
+}
+
+// CreateWeeklyReportSchedule creates a weekly report generation schedule
+func CreateWeeklyReportSchedule(name string) *Schedule {
+	return &Schedule{
+		Name:        name,
+		Description: "Weekly comprehensive report",
+		Type:        ScheduleTypeCron,
+		JobType:     JobTypeReport,
+		Expression:  "0 3 * * 1", // Every Monday at 3 AM
+		Enabled:     true,
+		Targets:     []string{"all"},
+		Options: map[string]interface{}{
+			"report_type":    "comprehensive",
+			"include_charts": true,
+		},
+	}
 }

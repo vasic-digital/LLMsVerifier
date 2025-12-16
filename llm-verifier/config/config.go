@@ -38,18 +38,49 @@ type SecurityConfig struct {
 	SessionTimeout       int      `mapstructure:"session_timeout"`        // Session timeout in minutes
 }
 
+// NotificationsConfig holds notification system configuration
+type NotificationsConfig struct {
+	Slack    SlackConfig    `mapstructure:"slack"`
+	Email    EmailConfig    `mapstructure:"email"`
+	Telegram TelegramConfig `mapstructure:"telegram"`
+}
+
+// SlackConfig holds Slack notification configuration
+type SlackConfig struct {
+	Enabled    bool   `mapstructure:"enabled"`
+	WebhookURL string `mapstructure:"webhook_url"`
+}
+
+// EmailConfig holds email notification configuration
+type EmailConfig struct {
+	Enabled          bool   `mapstructure:"enabled"`
+	SMTPHost         string `mapstructure:"smtp_host"`
+	SMTPPort         int    `mapstructure:"smtp_port"`
+	Username         string `mapstructure:"username"`
+	Password         string `mapstructure:"password"`
+	DefaultRecipient string `mapstructure:"default_recipient"`
+}
+
+// TelegramConfig holds Telegram notification configuration
+type TelegramConfig struct {
+	Enabled  bool   `mapstructure:"enabled"`
+	BotToken string `mapstructure:"bot_token"`
+	ChatID   string `mapstructure:"chat_id"`
+}
+
 // Config represents the main configuration for the LLM verifier
 type Config struct {
-	Profile     string           `mapstructure:"profile"` // Configuration profile (dev, prod, test)
-	LLMs        []LLMConfig      `mapstructure:"llms"`
-	Global      GlobalConfig     `mapstructure:"global"`
-	Database    DatabaseConfig   `mapstructure:"database"`
-	API         APIConfig        `mapstructure:"api"`
-	Concurrency int              `mapstructure:"concurrency"`
-	Timeout     time.Duration    `mapstructure:"timeout"`
-	Logging     LoggingConfig    `mapstructure:"logging"`
-	Monitoring  MonitoringConfig `mapstructure:"monitoring"`
-	Security    SecurityConfig   `mapstructure:"security"`
+	Profile       string              `mapstructure:"profile"` // Configuration profile (dev, prod, test)
+	LLMs          []LLMConfig         `mapstructure:"llms"`
+	Global        GlobalConfig        `mapstructure:"global"`
+	Database      DatabaseConfig      `mapstructure:"database"`
+	API           APIConfig           `mapstructure:"api"`
+	Concurrency   int                 `mapstructure:"concurrency"`
+	Timeout       time.Duration       `mapstructure:"timeout"`
+	Logging       LoggingConfig       `mapstructure:"logging"`
+	Monitoring    MonitoringConfig    `mapstructure:"monitoring"`
+	Security      SecurityConfig      `mapstructure:"security"`
+	Notifications NotificationsConfig `mapstructure:"notifications"`
 }
 
 // LLMConfig represents configuration for a single LLM endpoint
