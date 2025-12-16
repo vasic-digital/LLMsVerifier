@@ -16,6 +16,7 @@ import (
 
 	"llm-verifier/config"
 	"llm-verifier/database"
+	"llm-verifier/events"
 	"llm-verifier/llmverifier"
 )
 
@@ -2374,6 +2375,36 @@ func (s *Server) createEvent(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create event"})
 		return
+	}
+
+	// Publish event via event bus
+	if s.eventBus != nil {
+		busEvent := events.Event{
+			ID:        fmt.Sprintf("db_%d", event.ID),
+			Type:      events.EventType(event.EventType),
+			Severity:  events.EventSeverity(event.Severity),
+			Message:   event.Message,
+			Data:      make(map[string]interface{}),
+			Timestamp: event.CreatedAt,
+			Source:    "api",
+		}
+
+		// Add event details to data if present
+		if event.Details != nil {
+			busEvent.Data["details"] = *event.Details
+		}
+		if event.ModelID != nil {
+			busEvent.Data["model_id"] = *event.ModelID
+		}
+		if event.ProviderID != nil {
+			busEvent.Data["provider_id"] = *event.ProviderID
+		}
+
+		go func() {
+			if err := s.eventBus.Publish(busEvent); err != nil {
+				log.Printf("Failed to publish event: %v", err)
+			}
+		}()
 	}
 
 	c.JSON(http.StatusCreated, event)

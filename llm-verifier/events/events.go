@@ -202,12 +202,29 @@ func (eb *EventBus) storeEvent(event Event) error {
 		return fmt.Errorf("failed to marshal event data: %w", err)
 	}
 
-	// Store in database (this would use the actual database methods)
-	// For now, we'll just log it with the data
-	log.Printf("Stored event: %s (%s) - %s - Data: %s",
-		event.ID, event.Type, event.Message, string(dataJSON))
+	// Create database event struct
+	dbEvent := &database.Event{
+		EventType: string(event.Type),
+		Severity:  string(event.Severity),
+		Title:     string(event.Type), // Use event type as title for now
+		Message:   event.Message,
+		Details:   stringPtr(string(dataJSON)),
+		// ModelID, ProviderID, etc. can be set based on event data if needed
+	}
 
+	// Store in database
+	err = eb.db.CreateEvent(dbEvent)
+	if err != nil {
+		return fmt.Errorf("failed to store event in database: %w", err)
+	}
+
+	log.Printf("Stored event: %s (%s) - %s", event.ID, event.Type, event.Message)
 	return nil
+}
+
+// stringPtr returns a pointer to a string
+func stringPtr(s string) *string {
+	return &s
 }
 
 // WebSocketSubscriber implementation
