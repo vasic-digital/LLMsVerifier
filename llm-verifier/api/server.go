@@ -36,21 +36,21 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"llm-verifier/config"
 	"llm-verifier/database"
 	"llm-verifier/llmverifier"
+	"llm-verifier/monitoring"
 )
 
 // Server represents the REST API server
 type Server struct {
-	router    *gin.Engine
-	config    *config.Config
-	database  *database.Database
-	verifier  *llmverifier.Verifier
-	jwtSecret []byte
+	router        *gin.Engine
+	config        *config.Config
+	database      *database.Database
+	verifier      *llmverifier.Verifier
+	healthChecker *monitoring.HealthChecker
+	jwtSecret     []byte
 }
 
 // NewServer creates a new API server instance
@@ -67,16 +67,24 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	// Initialize verifier
 	verifier := llmverifier.New(cfg)
 
+	// Initialize health checker
+	healthChecker := monitoring.NewHealthChecker(db)
+	healthChecker.Start(30 * time.Second) // Check every 30 seconds
+
 	server := &Server{
-		router:    gin.Default(),
-		config:    cfg,
-		database:  db,
-		verifier:  verifier,
-		jwtSecret: []byte(cfg.API.JWTSecret),
+		router:        gin.Default(),
+		config:        cfg,
+		database:      db,
+		verifier:      verifier,
+		healthChecker: healthChecker,
+		jwtSecret:     []byte(cfg.API.JWTSecret),
 	}
 
 	server.setupMiddleware()
 	server.setupRoutes()
+
+	// Register comprehensive health endpoints
+	server.healthChecker.RegisterHealthEndpoints(server.router)
 
 	return server, nil
 }
@@ -87,6 +95,9 @@ func (s *Server) setupMiddleware() {
 	if s.config.API.EnableCORS {
 		s.router.Use(corsMiddleware())
 	}
+
+	// Security headers middleware
+	s.router.Use(s.securityHeadersMiddleware())
 
 	// Rate limiting middleware
 	s.router.Use(s.rateLimitMiddleware())
@@ -100,8 +111,7 @@ func (s *Server) setupMiddleware() {
 
 // setupRoutes configures all API routes
 func (s *Server) setupRoutes() {
-	// Health check endpoint
-	s.router.GET("/health", s.healthCheck)
+	// Health check endpoints are registered by the health checker
 
 	// Authentication routes
 	auth := s.router.Group("/auth")
@@ -235,28 +245,36 @@ func (s *Server) setupRoutes() {
 			system.GET("/database-stats", s.getDatabaseStats)
 		}
 	}
-
-	// Swagger documentation
-	s.router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
 
-// Start starts the HTTP server
-func (s *Server) Start(port string) error {
-	log.Printf("Starting LLM Verifier API server on port %s", port)
-	return s.router.Run(":" + port)
-}
+// securityHeadersMiddleware adds security headers to all responses
+func (s *Server) securityHeadersMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Prevent MIME type sniffing
+		c.Header("X-Content-Type-Options", "nosniff")
 
-// Stop gracefully stops the server
-func (s *Server) Stop() error {
-	if s.database != nil {
-		return s.database.Close()
+		// Prevent clickjacking
+		c.Header("X-Frame-Options", "DENY")
+
+		// XSS protection
+		c.Header("X-XSS-Protection", "1; mode=block")
+
+		// Referrer policy
+		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
+
+		// Content Security Policy (restrictive for API)
+		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'none'; style-src 'none'; img-src 'none'; font-src 'none'; connect-src 'self'; media-src 'none'; object-src 'none'; frame-src 'none'")
+
+		// HSTS (HTTP Strict Transport Security) - only for HTTPS
+		if c.Request.TLS != nil {
+			c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
+		}
+
+		// Remove server header for security
+		c.Header("Server", "")
+
+		c.Next()
 	}
-	return nil
-}
-
-// Router returns the Gin router for testing
-func (s *Server) Router() *gin.Engine {
-	return s.router
 }
 
 // corsMiddleware handles CORS headers
@@ -490,4 +508,15 @@ func (s *Server) requireRoleMiddleware(allowedRoles ...string) gin.HandlerFunc {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
 		c.Abort()
 	}
+}
+
+// Start starts the HTTP server
+func (s *Server) Start(port string) error {
+	log.Printf("Starting LLM Verifier API server on port %s", port)
+	return s.router.Run(":" + port)
+}
+
+// Router returns the Gin router for testing
+func (s *Server) Router() *gin.Engine {
+	return s.router
 }
