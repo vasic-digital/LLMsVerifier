@@ -43,6 +43,8 @@ type NotificationsConfig struct {
 	Slack    SlackConfig    `mapstructure:"slack"`
 	Email    EmailConfig    `mapstructure:"email"`
 	Telegram TelegramConfig `mapstructure:"telegram"`
+	Matrix   MatrixConfig   `mapstructure:"matrix"`
+	WhatsApp WhatsAppConfig `mapstructure:"whatsapp"`
 }
 
 // SlackConfig holds Slack notification configuration
@@ -66,6 +68,22 @@ type TelegramConfig struct {
 	Enabled  bool   `mapstructure:"enabled"`
 	BotToken string `mapstructure:"bot_token"`
 	ChatID   string `mapstructure:"chat_id"`
+}
+
+// MatrixConfig holds Matrix notification configuration
+type MatrixConfig struct {
+	Enabled       bool   `mapstructure:"enabled"`
+	HomeserverURL string `mapstructure:"homeserver_url"`
+	AccessToken   string `mapstructure:"access_token"`
+	RoomID        string `mapstructure:"room_id"`
+}
+
+// WhatsAppConfig holds WhatsApp notification configuration
+type WhatsAppConfig struct {
+	Enabled          bool   `mapstructure:"enabled"`
+	APIKey           string `mapstructure:"api_key"`
+	PhoneNumberID    string `mapstructure:"phone_number_id"`
+	DefaultRecipient string `mapstructure:"default_recipient"`
 }
 
 // Config represents the main configuration for the LLM verifier
