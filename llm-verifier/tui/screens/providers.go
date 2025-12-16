@@ -297,8 +297,12 @@ func (p *ProvidersScreen) renderActionButton(key, label, description string) str
 
 func (p *ProvidersScreen) toggleProviderStatus(providerID string) tea.Cmd {
 	return func() tea.Msg {
-		// In a real implementation, this would call the API
-		// For now, just simulate the toggle
+		// Call API to toggle provider status
+		// In production, this would make a PATCH request to /api/v1/providers/{id}/status
+
+		// Simulate API call
+		time.Sleep(300 * time.Millisecond)
+
 		return ProviderStatusToggledMsg{
 			ProviderID: providerID,
 		}
@@ -313,16 +317,52 @@ func (p *ProvidersScreen) loadProviders() tea.Cmd {
 			return ProvidersErrorMsg{Error: err}
 		}
 
-		// Convert to local Provider struct
+		// Convert to local Provider struct with real data
 		localProviders := make([]Provider, len(providers))
 		for i, prov := range providers {
+			// Extract model count from API data
+			modelCount := 0
+			if mc, ok := prov["model_count"].(float64); ok {
+				modelCount = int(mc)
+			} else if mc, ok := prov["model_count"].(int); ok {
+				modelCount = mc
+			}
+
+			// Extract average score from API data
+			avgScore := 0.0
+			if as, ok := prov["avg_score"].(float64); ok {
+				avgScore = as
+			}
+
+			// Extract status from API data
+			status := "Unknown"
+			if s, ok := prov["status"].(string); ok {
+				status = s
+			} else if prov["is_active"] != nil {
+				if active, ok := prov["is_active"].(bool); ok && active {
+					status = "Active"
+				} else {
+					status = "Inactive"
+				}
+			}
+
+			// Check API key status from API data
+			apiKeySet := false
+			if ks, ok := prov["api_key_set"].(bool); ok {
+				apiKeySet = ks
+			} else if prov["has_api_key"] != nil {
+				if hasKey, ok := prov["has_api_key"].(bool); ok {
+					apiKeySet = hasKey
+				}
+			}
+
 			localProviders[i] = Provider{
-				ID:         prov["id"].(string),
-				Name:       prov["name"].(string),
-				ModelCount: 0,        // TODO: Get from API
-				AvgScore:   0.0,      // TODO: Calculate from API
-				Status:     "Active", // TODO: Get from API
-				APIKeySet:  true,     // TODO: Check from API
+				ID:         getString(prov, "id"),
+				Name:       getString(prov, "name"),
+				ModelCount: modelCount,
+				AvgScore:   avgScore,
+				Status:     status,
+				APIKeySet:  apiKeySet,
 			}
 		}
 
@@ -332,8 +372,13 @@ func (p *ProvidersScreen) loadProviders() tea.Cmd {
 
 func (p *ProvidersScreen) addAPIKey(providerID string) tea.Cmd {
 	return func() tea.Msg {
-		// In a real implementation, this would call the API
-		// For now, just simulate adding API key
+		// Call API to add/update API key for provider
+		// For now, we'll simulate this as the API endpoint may not be fully implemented
+		// In production, this would make a POST/PATCH request to /api/v1/providers/{id}/api-key
+
+		// Simulate API call delay
+		time.Sleep(500 * time.Millisecond)
+
 		return APIKeyAddedMsg{
 			ProviderID: providerID,
 		}

@@ -8,11 +8,12 @@ import (
 )
 
 func TestNewIssueManager(t *testing.T) {
-	// Skip this test as it requires actual database
-	t.Skip("Skipping test that requires actual database connection")
-
-	// Create a mock database
-	db := &database.Database{}
+	// Create an in-memory test database
+	db, err := database.New(":memory:")
+	if err != nil {
+		t.Fatalf("Failed to create test database: %v", err)
+	}
+	defer db.Close()
 
 	manager := NewIssueManager(db)
 	if manager == nil {
@@ -211,16 +212,22 @@ func TestIssueTemplateValidation(t *testing.T) {
 }
 
 func TestIssueManagerMethods(t *testing.T) {
-	// Skip this test as it requires actual database
-	t.Skip("Skipping test that requires actual database connection")
+	// Create an in-memory test database
+	db, err := database.New(":memory:")
+	if err != nil {
+		t.Fatalf("Failed to create test database: %v", err)
+	}
+	defer db.Close()
 
-	// Create a mock database
-	db := &database.Database{}
 	manager := NewIssueManager(db)
 
 	// Test that methods exist (compile-time check)
 	_ = manager
-	// In a real test, we would mock the database and test actual behavior
+
+	// Verify the manager was created successfully
+	if manager.db != db {
+		t.Error("Expected database to be set correctly")
+	}
 }
 
 func TestAutoDetectIssuesLogic(t *testing.T) {
@@ -370,32 +377,35 @@ func containsError(template IssueTemplate, errorMsg string) bool {
 }
 
 func TestIssueStatisticsLogic(t *testing.T) {
-	// Skip this test as it requires actual database
-	t.Skip("Skipping test that requires actual database connection")
+	// Create an in-memory test database
+	db, err := database.New(":memory:")
+	if err != nil {
+		t.Fatalf("Failed to create test database: %v", err)
+	}
+	defer db.Close()
 
-	// Test the logic for generating issue statistics
-	// This is a conceptual test
+	manager := NewIssueManager(db)
 
-	manager := NewIssueManager(&database.Database{})
-
-	// Test that GetIssueStatistics method exists
+	// Test that GetIssueStatistics method exists and works
 	stats, err := manager.GetIssueStatistics()
 	if err != nil {
-		// This is expected since we're using a mock database
-		// In a real test, we'd mock the database calls
-		_ = stats
+		t.Errorf("Expected no error, got: %v", err)
 	}
-
-	// The method should return a map with statistics
-	// We can't easily test the actual values without mocking
+	if stats == nil {
+		t.Error("Expected statistics to be non-nil")
+	}
 }
 
 func TestGenerateIssueReport(t *testing.T) {
-	// Skip this test as it requires actual database
-	t.Skip("Skipping test that requires actual database connection")
+	// Create an in-memory test database
+	db, err := database.New(":memory:")
+	if err != nil {
+		t.Fatalf("Failed to create test database: %v", err)
+	}
+	defer db.Close()
 
 	// Test the issue report generation logic
-	manager := NewIssueManager(&database.Database{})
+	manager := NewIssueManager(db)
 
 	// Test with empty filters
 	report, err := manager.GenerateIssueReport(map[string]interface{}{})
@@ -420,16 +430,21 @@ func TestGenerateIssueReport(t *testing.T) {
 }
 
 func TestAutoResolutionChecker(t *testing.T) {
-	// Skip this test as it requires actual database
-	t.Skip("Skipping test that requires actual database connection")
+	// Create an in-memory test database
+	db, err := database.New(":memory:")
+	if err != nil {
+		t.Fatalf("Failed to create test database: %v", err)
+	}
+	defer db.Close()
 
 	// Test the auto-resolution checker logic
-	manager := NewIssueManager(&database.Database{})
+	manager := NewIssueManager(db)
 
 	// Test that AutoResolutionChecker method exists
-	err := manager.AutoResolutionChecker()
+	err = manager.AutoResolutionChecker()
 	if err != nil {
-		// This is expected since we're using a mock database
+		// This might be expected since we're using an empty database
+		t.Logf("AutoResolutionChecker returned error: %v", err)
 	}
 
 	// The method should check for issues that can be auto-resolved
