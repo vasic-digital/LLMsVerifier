@@ -299,4 +299,87 @@ func (mm *MigrationManager) SetupDefaultMigrations() {
 			return nil
 		},
 	})
+
+	// Migration 4: Add notifications table
+	mm.AddMigration(Migration{
+		Version:     4,
+		Description: "Add notifications table for system notifications",
+		Up: func(tx *sql.Tx) error {
+			// Create notifications table
+			if _, err := tx.Exec(`
+				CREATE TABLE IF NOT EXISTS notifications (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					type TEXT NOT NULL, -- verification_completed, verification_failed, score_changed, etc.
+					channel TEXT NOT NULL, -- slack, email, telegram, matrix, whatsapp
+					priority TEXT NOT NULL DEFAULT 'normal', -- low, normal, high, critical
+					title TEXT NOT NULL,
+					message TEXT NOT NULL,
+					data TEXT, -- JSON additional data
+					recipient TEXT, -- recipient identifier (email, chat_id, etc.)
+					sent BOOLEAN DEFAULT 0,
+					error TEXT,
+					retry_count INTEGER DEFAULT 0,
+					created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+					sent_at TIMESTAMP,
+					updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+				)
+			`); err != nil {
+				return fmt.Errorf("failed to create notifications table: %w", err)
+			}
+
+			// Create indexes for notifications table
+			indexes := []string{
+				"CREATE INDEX IF NOT EXISTS idx_notifications_type_created ON notifications(type, created_at DESC)",
+				"CREATE INDEX IF NOT EXISTS idx_notifications_channel_sent ON notifications(channel, sent)",
+				"CREATE INDEX IF NOT EXISTS idx_notifications_sent_at ON notifications(sent_at)",
+				"CREATE INDEX IF NOT EXISTS idx_notifications_priority_created ON notifications(priority, created_at DESC)",
+			}
+
+			for _, index := range indexes {
+				if _, err := tx.Exec(index); err != nil {
+					return fmt.Errorf("failed to create notification index: %s, error: %w", index, err)
+				}
+			}
+
+			// Create trigger for updating notifications timestamp
+			if _, err := tx.Exec(`
+				CREATE TRIGGER IF NOT EXISTS update_notifications_timestamp
+				AFTER UPDATE ON notifications
+				BEGIN
+					UPDATE notifications SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+				END
+			`); err != nil {
+				return fmt.Errorf("failed to create notifications timestamp trigger: %w", err)
+			}
+
+			return nil
+		},
+		Down: func(tx *sql.Tx) error {
+			// Drop trigger
+			if _, err := tx.Exec("DROP TRIGGER IF EXISTS update_notifications_timestamp"); err != nil {
+				return fmt.Errorf("failed to drop notifications timestamp trigger: %w", err)
+			}
+
+			// Drop indexes
+			indexes := []string{
+				"DROP INDEX IF EXISTS idx_notifications_type_created",
+				"DROP INDEX IF EXISTS idx_notifications_channel_sent",
+				"DROP INDEX IF EXISTS idx_notifications_sent_at",
+				"DROP INDEX IF EXISTS idx_notifications_priority_created",
+			}
+
+			for _, index := range indexes {
+				if _, err := tx.Exec(index); err != nil {
+					return fmt.Errorf("failed to drop notification index: %s, error: %w", index, err)
+				}
+			}
+
+			// Drop table
+			if _, err := tx.Exec("DROP TABLE IF EXISTS notifications"); err != nil {
+				return fmt.Errorf("failed to drop notifications table: %w", err)
+			}
+
+			return nil
+		},
+	})
 }
