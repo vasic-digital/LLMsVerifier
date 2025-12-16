@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{.Title}}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { background-color: #2196F3; color: white; padding: 10px; border-radius: 5px; }
+        .content { margin: 20px 0; }
+        .data { background-color: #e3f2fd; padding: 10px; border-radius: 3px; margin: 10px 0; border-left: 4px solid #2196F3; }
+        .change { font-size: 18px; font-weight: bold; color: {{if (index .Data "change_direction" | eq "increased")}}#4CAF50{{else}}#f44336{{end}}; }
+        .footer { font-size: 12px; color: #666; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>📊 {{.Title}}</h2>
+        <p><strong>Type:</strong> {{.Type}}</p>
+        <p><strong>Time:</strong> {{.Timestamp}}</p>
+    </div>
+
+    <div class="content">
+        <p>{{.Message}}</p>
+
+        {{if .Data}}
+        <div class="data">
+            <h3>Score Change Details:</h3>
+            <p><strong>Model:</strong> {{.Data.model_name}}</p>
+            <p><strong>Previous Score:</strong> {{.Data.old_score}}</p>
+            <p><strong>New Score:</strong> {{.Data.new_score}}</p>
+            <p class="change">Change: {{.Data.change}} points ({{.Data.change_direction}})</p>
+        </div>
+        {{end}}
+    </div>
+
+    <div class="footer">
+        <p>This notification was sent by LLM Verifier. Score changes indicate model performance updates.</p>
+    </div>
+</body>
+</html>

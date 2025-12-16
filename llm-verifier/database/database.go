@@ -908,6 +908,24 @@ type Issue struct {
 	UpdatedAt            time.Time  `json:"updated_at"`
 }
 
+// Notification represents a sent notification and its status
+type Notification struct {
+	ID         int64                  `json:"id"`
+	Type       string                 `json:"type"`
+	Channel    string                 `json:"channel"`
+	Priority   string                 `json:"priority"`
+	Title      string                 `json:"title"`
+	Message    string                 `json:"message"`
+	Data       map[string]interface{} `json:"data"`
+	Recipient  string                 `json:"recipient"`
+	Sent       bool                   `json:"sent"`
+	Error      string                 `json:"error"`
+	RetryCount int                    `json:"retry_count"`
+	CreatedAt  time.Time              `json:"created_at"`
+	SentAt     *time.Time             `json:"sent_at"`
+	UpdatedAt  time.Time              `json:"updated_at"`
+}
+
 // ==================== Transaction Helper Methods ====================
 
 // createVerificationResultTx creates a verification result within a transaction

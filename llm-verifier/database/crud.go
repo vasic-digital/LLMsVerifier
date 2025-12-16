@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 )
 
 // ==================== Provider CRUD Operations ====================
@@ -1301,6 +1302,211 @@ func (d *Database) GetVerificationResultCount() (int64, error) {
 	}
 
 	return count, nil
+}
+
+// ==================== Notification CRUD Operations ====================
+
+// CreateNotification creates a new notification record
+func (d *Database) CreateNotification(notification *Notification) error {
+	dataJSON, err := json.Marshal(notification.Data)
+	if err != nil {
+		return fmt.Errorf("failed to marshal notification data: %w", err)
+	}
+
+	query := `
+		INSERT INTO notifications (
+			type, channel, priority, title, message, data, recipient,
+			sent, error, retry_count, sent_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`
+
+	result, err := d.conn.Exec(query,
+		notification.Type,
+		notification.Channel,
+		notification.Priority,
+		notification.Title,
+		notification.Message,
+		string(dataJSON),
+		notification.Recipient,
+		notification.Sent,
+		notification.Error,
+		notification.RetryCount,
+		notification.SentAt,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to create notification: %w", err)
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("failed to get last insert ID: %w", err)
+	}
+
+	notification.ID = id
+	return nil
+}
+
+// GetNotifications retrieves notifications with optional filtering
+func (d *Database) GetNotifications(limit int, offset int, filters map[string]interface{}) ([]*Notification, error) {
+	whereClause := ""
+	args := make([]interface{}, 0)
+
+	// Build WHERE clause based on filters
+	if len(filters) > 0 {
+		conditions := make([]string, 0, len(filters))
+		for key, value := range filters {
+			conditions = append(conditions, fmt.Sprintf("%s = ?", key))
+			args = append(args, value)
+		}
+		whereClause = "WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	query := fmt.Sprintf(`
+		SELECT id, type, channel, priority, title, message, data, recipient,
+		       sent, error, retry_count, created_at, sent_at, updated_at
+		FROM notifications
+		%s
+		ORDER BY created_at DESC
+		LIMIT ? OFFSET ?
+	`, whereClause)
+
+	args = append(args, limit, offset)
+
+	rows, err := d.conn.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query notifications: %w", err)
+	}
+	defer rows.Close()
+
+	var notifications []*Notification
+	for rows.Next() {
+		var notification Notification
+		var dataJSON string
+		var sentAt *time.Time
+
+		err := rows.Scan(
+			&notification.ID,
+			&notification.Type,
+			&notification.Channel,
+			&notification.Priority,
+			&notification.Title,
+			&notification.Message,
+			&dataJSON,
+			&notification.Recipient,
+			&notification.Sent,
+			&notification.Error,
+			&notification.RetryCount,
+			&notification.CreatedAt,
+			&sentAt,
+			&notification.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan notification: %w", err)
+		}
+
+		// Parse JSON data
+		if err := json.Unmarshal([]byte(dataJSON), &notification.Data); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal notification data: %w", err)
+		}
+
+		notification.SentAt = sentAt
+		notifications = append(notifications, &notification)
+	}
+
+	return notifications, nil
+}
+
+// UpdateNotification updates a notification record
+func (d *Database) UpdateNotification(notification *Notification) error {
+	dataJSON, err := json.Marshal(notification.Data)
+	if err != nil {
+		return fmt.Errorf("failed to marshal notification data: %w", err)
+	}
+
+	query := `
+		UPDATE notifications SET
+			type = ?, channel = ?, priority = ?, title = ?, message = ?,
+			data = ?, recipient = ?, sent = ?, error = ?, retry_count = ?,
+			sent_at = ?
+		WHERE id = ?
+	`
+
+	_, err = d.conn.Exec(query,
+		notification.Type,
+		notification.Channel,
+		notification.Priority,
+		notification.Title,
+		notification.Message,
+		string(dataJSON),
+		notification.Recipient,
+		notification.Sent,
+		notification.Error,
+		notification.RetryCount,
+		notification.SentAt,
+		notification.ID,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to update notification: %w", err)
+	}
+
+	return nil
+}
+
+// DeleteNotification deletes a notification by ID
+func (d *Database) DeleteNotification(id int64) error {
+	query := `DELETE FROM notifications WHERE id = ?`
+
+	result, err := d.conn.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete notification: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("notification not found")
+	}
+
+	return nil
+}
+
+// GetNotificationStats returns notification statistics
+func (d *Database) GetNotificationStats() (map[string]interface{}, error) {
+	query := `
+		SELECT
+			COUNT(*) as total_notifications,
+			SUM(CASE WHEN sent = 1 THEN 1 ELSE 0 END) as sent_notifications,
+			SUM(CASE WHEN sent = 0 THEN 1 ELSE 0 END) as failed_notifications,
+			AVG(retry_count) as avg_retry_count,
+			COUNT(DISTINCT type) as unique_types,
+			COUNT(DISTINCT channel) as unique_channels
+		FROM notifications
+		WHERE created_at >= datetime('now', '-30 days')
+	`
+
+	var total, sent, failed int
+	var avgRetry float64
+	var uniqueTypes, uniqueChannels int
+
+	err := d.conn.QueryRow(query).Scan(&total, &sent, &failed, &avgRetry, &uniqueTypes, &uniqueChannels)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get notification stats: %w", err)
+	}
+
+	return map[string]interface{}{
+		"total_notifications":  total,
+		"sent_notifications":   sent,
+		"failed_notifications": failed,
+		"success_rate":         float64(sent) / float64(total) * 100,
+		"avg_retry_count":      avgRetry,
+		"unique_types":         uniqueTypes,
+		"unique_channels":      uniqueChannels,
+	}, nil
 }
 
 // Helper function to scan nullable int from string
