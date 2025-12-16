@@ -51,6 +51,7 @@ type Server struct {
 	verifier      *llmverifier.Verifier
 	healthChecker *monitoring.HealthChecker
 	jwtSecret     []byte
+	startTime     time.Time
 }
 
 // NewServer creates a new API server instance
@@ -78,6 +79,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		verifier:      verifier,
 		healthChecker: healthChecker,
 		jwtSecret:     []byte(cfg.API.JWTSecret),
+		startTime:     time.Now(),
 	}
 
 	server.setupMiddleware()
@@ -124,6 +126,18 @@ func (s *Server) setupRoutes() {
 	v1 := s.router.Group("/api/v1")
 	v1.Use(s.jwtAuthMiddleware())
 	{
+		// Users
+		users := v1.Group("/users")
+		{
+			users.GET("", s.getUsers)
+			users.GET("/:id", s.getUserByID)
+			users.POST("", s.createUser, s.requireRoleMiddleware("admin"))
+			users.PUT("/:id", s.updateUser, s.requireRoleMiddleware("admin"))
+			users.DELETE("/:id", s.deleteUser, s.requireRoleMiddleware("admin"))
+			users.GET("/me", s.getCurrentUser)
+			users.PUT("/me", s.updateCurrentUser)
+		}
+
 		// Models
 		models := v1.Group("/models")
 		{
