@@ -2,33 +2,19 @@ package notifications
 
 import (
 	"bytes"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"html/template"
+	"log"
 	"net/http"
 	"net/smtp"
-	"path/filepath"
-	"strings"
-	"text/template"
 	"time"
 
-	"llm-verifier/database"
+	"llm-verifier/config"
+	"llm-verifier/events"
 )
 
-// NotificationType defines the type of notification
-type NotificationType string
-
-const (
-	NotificationTypeVerificationCompleted NotificationType = "verification_completed"
-	NotificationTypeVerificationFailed    NotificationType = "verification_failed"
-	NotificationTypeScoreChanged          NotificationType = "score_changed"
-	NotificationTypeNewModel              NotificationType = "new_model"
-	NotificationTypeIssueDetected         NotificationType = "issue_detected"
-	NotificationTypeScheduledTest         NotificationType = "scheduled_test"
-	NotificationTypeSystemError           NotificationType = "system_error"
-)
-
-// NotificationChannel defines the notification channel
+// NotificationChannel represents the type of notification channel
 type NotificationChannel string
 
 const (
@@ -39,574 +25,515 @@ const (
 	ChannelWhatsApp NotificationChannel = "whatsapp"
 )
 
-// NotificationPriority defines the notification priority
-type NotificationPriority string
-
-const (
-	PriorityLow      NotificationPriority = "low"
-	PriorityNormal   NotificationPriority = "normal"
-	PriorityHigh     NotificationPriority = "high"
-	PriorityCritical NotificationPriority = "critical"
-)
-
 // Notification represents a notification to be sent
 type Notification struct {
-	ID         string                 `json:"id"`
-	Type       NotificationType       `json:"type"`
-	Channel    NotificationChannel    `json:"channel"`
-	Priority   NotificationPriority   `json:"priority"`
-	Title      string                 `json:"title"`
-	Message    string                 `json:"message"`
-	Data       map[string]interface{} `json:"data,omitempty"`
-	Timestamp  time.Time              `json:"timestamp"`
-	Recipient  string                 `json:"recipient"`
-	Sent       bool                   `json:"sent"`
-	Error      string                 `json:"error,omitempty"`
-	RetryCount int                    `json:"retry_count"`
+	ID        string
+	Title     string
+	Message   string
+	Channel   NotificationChannel
+	Recipient string
+	Event     events.Event
+	Priority  string
+	Timestamp time.Time
+	Template  string
+	Data      map[string]interface{}
 }
 
-// NotificationConfig holds configuration for notification channels
-type NotificationConfig struct {
-	Slack    SlackConfig    `yaml:"slack" json:"slack"`
-	Email    EmailConfig    `yaml:"email" json:"email"`
-	Telegram TelegramConfig `yaml:"telegram" json:"telegram"`
-	Matrix   MatrixConfig   `yaml:"matrix" json:"matrix"`
-	WhatsApp WhatsAppConfig `yaml:"whatsapp" json:"whatsapp"`
-}
-
-// SlackConfig holds Slack notification configuration
-type SlackConfig struct {
-	Enabled    bool   `yaml:"enabled" json:"enabled"`
-	WebhookURL string `yaml:"webhook_url" json:"webhook_url"`
-	Channel    string `yaml:"channel" json:"channel"`
-	Username   string `yaml:"username" json:"username"`
-	IconEmoji  string `yaml:"icon_emoji" json:"icon_emoji"`
-	IconURL    string `yaml:"icon_url" json:"icon_url"`
-	Timeout    int    `yaml:"timeout" json:"timeout"` // seconds
-}
-
-// EmailConfig holds email notification configuration
-type EmailConfig struct {
-	Enabled      bool     `yaml:"enabled" json:"enabled"`
-	SMTPHost     string   `yaml:"smtp_host" json:"smtp_host"`
-	SMTPPort     int      `yaml:"smtp_port" json:"smtp_port"`
-	Username     string   `yaml:"username" json:"username"`
-	Password     string   `yaml:"password" json:"password"`
-	From         string   `yaml:"from" json:"from"`
-	To           []string `yaml:"to" json:"to"`
-	UseTLS       bool     `yaml:"use_tls" json:"use_tls"`
-	SkipVerify   bool     `yaml:"skip_verify" json:"skip_verify"`
-	TemplatesDir string   `yaml:"templates_dir" json:"templates_dir"`
-}
-
-// TelegramConfig holds Telegram notification configuration
-type TelegramConfig struct {
-	Enabled   bool   `yaml:"enabled" json:"enabled"`
-	BotToken  string `yaml:"bot_token" json:"bot_token"`
-	ChatID    string `yaml:"chat_id" json:"chat_id"`
-	ParseMode string `yaml:"parse_mode" json:"parse_mode"`
-	Timeout   int    `yaml:"timeout" json:"timeout"` // seconds
-}
-
-// MatrixConfig holds Matrix notification configuration
-type MatrixConfig struct {
-	Enabled     bool   `yaml:"enabled" json:"enabled"`
-	Homeserver  string `yaml:"homeserver" json:"homeserver"`
-	UserID      string `yaml:"user_id" json:"user_id"`
-	AccessToken string `yaml:"access_token" json:"access_token"`
-	RoomID      string `yaml:"room_id" json:"room_id"`
-	Timeout     int    `yaml:"timeout" json:"timeout"` // seconds
-}
-
-// WhatsAppConfig holds WhatsApp notification configuration
-type WhatsAppConfig struct {
-	Enabled     bool   `yaml:"enabled" json:"enabled"`
-	APIKey      string `yaml:"api_key" json:"api_key"`
-	PhoneNumber string `yaml:"phone_number" json:"phone_number"`
-	Timeout     int    `yaml:"timeout" json:"timeout"` // seconds
-}
-
-// NotificationManager manages sending notifications through various channels
+// NotificationManager manages all notification channels
 type NotificationManager struct {
-	config    *NotificationConfig
-	database  *database.Database
-	templates map[string]*template.Template
+	config   *config.Config
+	channels map[NotificationChannel]NotificationChannel
+	queue    chan Notification
+	workers  int
+	stopCh   chan struct{}
+	eventBus *events.EventBus
 }
 
 // NewNotificationManager creates a new notification manager
-func NewNotificationManager(config *NotificationConfig, db *database.Database) *NotificationManager {
-	manager := &NotificationManager{
-		config:    config,
-		database:  db,
-		templates: make(map[string]*template.Template),
+func NewNotificationManager(cfg *config.Config, eventBus *events.EventBus) *NotificationManager {
+	nm := &NotificationManager{
+		config:   cfg,
+		channels: make(map[NotificationChannel]NotificationChannel),
+		queue:    make(chan Notification, 1000), // Buffer for 1000 notifications
+		workers:  3,                             // 3 worker goroutines
+		stopCh:   make(chan struct{}),
+		eventBus: eventBus,
 	}
 
-	// Load email templates if email is enabled
-	if config.Email.Enabled {
-		manager.loadTemplates()
-	}
+	// Initialize channels
+	nm.initializeChannels()
 
-	return manager
+	// Start workers
+	nm.startWorkers()
+
+	// Subscribe to events
+	nm.subscribeToEvents()
+
+	return nm
 }
 
-// SendNotification sends a notification through the specified channel
-func (nm *NotificationManager) SendNotification(notification *Notification) error {
-	var err error
+// SendNotification sends a notification via the specified channel
+func (nm *NotificationManager) SendNotification(notif Notification) error {
+	select {
+	case nm.queue <- notif:
+		return nil
+	case <-time.After(5 * time.Second):
+		return fmt.Errorf("notification queue is full")
+	}
+}
 
-	switch notification.Channel {
+// SendEventNotification creates and sends a notification for an event
+func (nm *NotificationManager) SendEventNotification(event events.Event, channels []NotificationChannel) error {
+	for _, channel := range channels {
+		notif := Notification{
+			ID:        fmt.Sprintf("notif_%d", time.Now().UnixNano()),
+			Title:     nm.getEventTitle(event),
+			Message:   event.Message,
+			Channel:   channel,
+			Recipient: nm.getRecipientForChannel(channel),
+			Event:     event,
+			Priority:  nm.getPriorityForSeverity(event.Severity),
+			Timestamp: time.Now(),
+			Template:  nm.getTemplateForEvent(event),
+			Data:      event.Data,
+		}
+
+		if err := nm.SendNotification(notif); err != nil {
+			log.Printf("Failed to queue notification for event %s: %v", event.ID, err)
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Shutdown gracefully shuts down the notification manager
+func (nm *NotificationManager) Shutdown() {
+	close(nm.stopCh)
+
+	// Wait for workers to finish
+	time.Sleep(2 * time.Second)
+
+	log.Println("Notification manager shutdown complete")
+}
+
+// Private methods
+
+func (nm *NotificationManager) initializeChannels() {
+	// Initialize Slack channel
+	if nm.config.Notifications.Slack.Enabled {
+		nm.channels[ChannelSlack] = ChannelSlack
+	}
+
+	// Initialize Email channel
+	if nm.config.Notifications.Email.Enabled {
+		nm.channels[ChannelEmail] = ChannelEmail
+	}
+
+	// Initialize Telegram channel
+	if nm.config.Notifications.Telegram.Enabled {
+		nm.channels[ChannelTelegram] = ChannelTelegram
+	}
+
+	log.Printf("Initialized notification channels: %v", nm.getActiveChannels())
+}
+
+func (nm *NotificationManager) startWorkers() {
+	for i := 0; i < nm.workers; i++ {
+		go nm.worker(i)
+	}
+	log.Printf("Started %d notification workers", nm.workers)
+}
+
+func (nm *NotificationManager) worker(id int) {
+	log.Printf("Notification worker %d started", id)
+
+	for {
+		select {
+		case notif := <-nm.queue:
+			if err := nm.sendNotification(notif); err != nil {
+				log.Printf("Worker %d failed to send notification %s: %v",
+					id, notif.ID, err)
+			}
+		case <-nm.stopCh:
+			log.Printf("Notification worker %d stopped", id)
+			return
+		}
+	}
+}
+
+func (nm *NotificationManager) subscribeToEvents() {
+	// Subscribe to all event types for notification processing
+	subscriber := &NotificationEventSubscriber{
+		ID:      "notification-manager",
+		Manager: nm,
+	}
+
+	nm.eventBus.Subscribe(subscriber)
+	log.Println("Notification manager subscribed to event bus")
+}
+
+func (nm *NotificationManager) sendNotification(notif Notification) error {
+	switch notif.Channel {
 	case ChannelSlack:
-		err = nm.sendSlackNotification(notification)
+		return nm.sendSlackNotification(notif)
 	case ChannelEmail:
-		err = nm.sendEmailNotification(notification)
+		return nm.sendEmailNotification(notif)
 	case ChannelTelegram:
-		err = nm.sendTelegramNotification(notification)
-	case ChannelMatrix:
-		err = nm.sendMatrixNotification(notification)
-	case ChannelWhatsApp:
-		err = nm.sendWhatsAppNotification(notification)
+		return nm.sendTelegramNotification(notif)
 	default:
-		return fmt.Errorf("unsupported notification channel: %s", notification.Channel)
+		return fmt.Errorf("unsupported notification channel: %s", notif.Channel)
 	}
-
-	// Update notification status in database
-	if nm.database != nil {
-		notification.Sent = (err == nil)
-		if err != nil {
-			notification.Error = err.Error()
-			notification.RetryCount++
-		}
-
-		// Store notification in database
-		if saveErr := nm.database.CreateNotification(&database.Notification{
-			Type:       string(notification.Type),
-			Channel:    string(notification.Channel),
-			Priority:   string(notification.Priority),
-			Title:      notification.Title,
-			Message:    notification.Message,
-			Data:       notification.Data,
-			Recipient:  notification.Recipient,
-			Sent:       notification.Sent,
-			Error:      notification.Error,
-			RetryCount: notification.RetryCount,
-			CreatedAt:  notification.Timestamp,
-		}); saveErr != nil {
-			return fmt.Errorf("failed to save notification: %w", saveErr)
-		}
-	}
-
-	return err
 }
 
-// sendSlackNotification sends a notification via Slack webhook
-func (nm *NotificationManager) sendSlackNotification(notification *Notification) error {
-	if !nm.config.Slack.Enabled || nm.config.Slack.WebhookURL == "" {
+func (nm *NotificationManager) sendSlackNotification(notif Notification) error {
+	if !nm.config.Notifications.Slack.Enabled || nm.config.Notifications.Slack.WebhookURL == "" {
 		return fmt.Errorf("slack notifications not configured")
 	}
 
 	payload := map[string]interface{}{
-		"text":       fmt.Sprintf("*%s*\n%s", notification.Title, notification.Message),
-		"username":   nm.config.Slack.Username,
-		"icon_emoji": nm.config.Slack.IconEmoji,
-		"icon_url":   nm.config.Slack.IconURL,
-		"channel":    nm.config.Slack.Channel,
-	}
-
-	// Add attachments for richer formatting if data is provided
-	if notification.Data != nil {
-		attachments := []map[string]interface{}{
+		"text":       fmt.Sprintf("*%s*\n%s", notif.Title, notif.Message),
+		"username":   "LLM Verifier",
+		"icon_emoji": ":robot_face:",
+		"attachments": []map[string]interface{}{
 			{
-				"color":  nm.getSlackColor(notification.Priority),
-				"fields": nm.formatSlackFields(notification.Data),
+				"color": nm.getColorForPriority(notif.Priority),
+				"fields": []map[string]interface{}{
+					{
+						"title": "Event Type",
+						"value": string(notif.Event.Type),
+						"short": true,
+					},
+					{
+						"title": "Severity",
+						"value": string(notif.Event.Severity),
+						"short": true,
+					},
+					{
+						"title": "Source",
+						"value": notif.Event.Source,
+						"short": true,
+					},
+					{
+						"title": "Timestamp",
+						"value": notif.Event.Timestamp.Format(time.RFC3339),
+						"short": true,
+					},
+				},
 			},
-		}
-		payload["attachments"] = attachments
+		},
 	}
 
-	jsonData, err := json.Marshal(payload)
+	jsonPayload, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal slack payload: %w", err)
 	}
 
-	client := &http.Client{Timeout: time.Duration(nm.config.Slack.Timeout) * time.Second}
-	resp, err := client.Post(nm.config.Slack.WebhookURL, "application/json", bytes.NewBuffer(jsonData))
+	resp, err := http.Post(nm.config.Notifications.Slack.WebhookURL,
+		"application/json", bytes.NewBuffer(jsonPayload))
 	if err != nil {
 		return fmt.Errorf("failed to send slack notification: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("slack webhook returned status %d", resp.StatusCode)
+		return fmt.Errorf("slack notification failed with status: %d", resp.StatusCode)
 	}
 
+	log.Printf("Slack notification sent for event %s", notif.Event.ID)
 	return nil
 }
 
-// getSlackColor returns color based on notification priority
-func (nm *NotificationManager) getSlackColor(priority NotificationPriority) string {
-	switch priority {
-	case PriorityCritical:
-		return "danger"
-	case PriorityHigh:
-		return "warning"
-	case PriorityNormal:
-		return "good"
-	case PriorityLow:
-		return "#808080"
-	default:
-		return "#808080"
-	}
-}
-
-// formatSlackFields formats notification data as Slack attachment fields
-func (nm *NotificationManager) formatSlackFields(data map[string]interface{}) []map[string]interface{} {
-	fields := make([]map[string]interface{}, 0, len(data))
-
-	for key, value := range data {
-		field := map[string]interface{}{
-			"title": key,
-			"value": fmt.Sprintf("%v", value),
-			"short": true,
-		}
-		fields = append(fields, field)
-	}
-
-	return fields
-}
-
-// sendEmailNotification sends a notification via email
-func (nm *NotificationManager) sendEmailNotification(notification *Notification) error {
-	if !nm.config.Email.Enabled {
+func (nm *NotificationManager) sendEmailNotification(notif Notification) error {
+	if !nm.config.Notifications.Email.Enabled {
 		return fmt.Errorf("email notifications not configured")
 	}
 
-	// Prepare email content
-	subject := fmt.Sprintf("[%s] %s", strings.ToUpper(string(notification.Type)), notification.Title)
-
-	// Use template if available, otherwise use plain message
-	body := notification.Message
-	if tmpl, exists := nm.templates[string(notification.Type)]; exists {
-		var buf bytes.Buffer
-		data := map[string]interface{}{
-			"Title":     notification.Title,
-			"Message":   notification.Message,
-			"Data":      notification.Data,
-			"Priority":  notification.Priority,
-			"Timestamp": notification.Timestamp.Format("2006-01-02 15:04:05"),
-			"Type":      notification.Type,
-		}
-		if err := tmpl.Execute(&buf, data); err == nil {
-			body = buf.String()
+	// Parse recipient email
+	recipient := notif.Recipient
+	if recipient == "" {
+		recipient = nm.config.Notifications.Email.DefaultRecipient
+		if recipient == "" {
+			return fmt.Errorf("no recipient specified for email notification")
 		}
 	}
 
-	// Create email message
-	message := nm.buildEmailMessage(subject, body, notification)
+	// Create email content
+	subject := fmt.Sprintf("[LLM Verifier] %s", notif.Title)
+	body := nm.generateEmailBody(notif)
 
-	// Send email via SMTP
-	return nm.sendSMTPMail(subject, message)
-}
+	// Send email
+	auth := smtp.PlainAuth("",
+		nm.config.Notifications.Email.Username,
+		nm.config.Notifications.Email.Password,
+		nm.config.Notifications.Email.SMTPHost)
 
-// buildEmailMessage constructs the email message
-func (nm *NotificationManager) buildEmailMessage(subject, body string, notification *Notification) []byte {
-	var message bytes.Buffer
+	addr := fmt.Sprintf("%s:%d",
+		nm.config.Notifications.Email.SMTPHost,
+		nm.config.Notifications.Email.SMTPPort)
 
-	// Email headers
-	message.WriteString(fmt.Sprintf("From: %s\r\n", nm.config.Email.From))
-	message.WriteString(fmt.Sprintf("To: %s\r\n", strings.Join(nm.config.Email.To, ",")))
-	message.WriteString(fmt.Sprintf("Subject: %s\r\n", subject))
-	message.WriteString("MIME-Version: 1.0\r\n")
-	message.WriteString("Content-Type: text/html; charset=\"UTF-8\"\r\n")
-	message.WriteString("\r\n")
+	msg := []byte(fmt.Sprintf("To: %s\r\nSubject: %s\r\n\r\n%s", recipient, subject, body))
 
-	// Email body
-	if strings.Contains(body, "<html>") || strings.Contains(body, "<!DOCTYPE") {
-		// Already HTML
-		message.WriteString(body)
-	} else {
-		// Convert plain text to HTML
-		htmlBody := strings.ReplaceAll(body, "\n", "<br>")
-		message.WriteString(fmt.Sprintf("<html><body>%s</body></html>", htmlBody))
-	}
-
-	return message.Bytes()
-}
-
-// sendSMTPMail sends email via SMTP
-func (nm *NotificationManager) sendSMTPMail(subject string, message []byte) error {
-	// SMTP server configuration
-	addr := fmt.Sprintf("%s:%d", nm.config.Email.SMTPHost, nm.config.Email.SMTPPort)
-
-	// Authentication
-	auth := smtp.PlainAuth("", nm.config.Email.Username, nm.config.Email.Password, nm.config.Email.SMTPHost)
-
-	// TLS configuration
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: nm.config.Email.SkipVerify,
-		ServerName:         nm.config.Email.SMTPHost,
-	}
-
-	// Establish connection
-	conn, err := smtp.Dial(addr)
+	err := smtp.SendMail(addr, auth, nm.config.Notifications.Email.Username,
+		[]string{recipient}, msg)
 	if err != nil {
-		return fmt.Errorf("failed to connect to SMTP server: %w", err)
-	}
-	defer conn.Close()
-
-	// Start TLS if enabled
-	if nm.config.Email.UseTLS {
-		if err = conn.StartTLS(tlsConfig); err != nil {
-			return fmt.Errorf("failed to start TLS: %w", err)
-		}
+		return fmt.Errorf("failed to send email notification: %w", err)
 	}
 
-	// Authenticate
-	if err = conn.Auth(auth); err != nil {
-		return fmt.Errorf("SMTP authentication failed: %w", err)
-	}
-
-	// Set sender
-	if err = conn.Mail(nm.config.Email.From); err != nil {
-		return fmt.Errorf("failed to set sender: %w", err)
-	}
-
-	// Set recipients
-	for _, to := range nm.config.Email.To {
-		if err = conn.Rcpt(to); err != nil {
-			return fmt.Errorf("failed to set recipient %s: %w", to, err)
-		}
-	}
-
-	// Send data
-	w, err := conn.Data()
-	if err != nil {
-		return fmt.Errorf("failed to initiate data transfer: %w", err)
-	}
-
-	_, err = w.Write(message)
-	if err != nil {
-		return fmt.Errorf("failed to write message: %w", err)
-	}
-
-	err = w.Close()
-	if err != nil {
-		return fmt.Errorf("failed to close data transfer: %w", err)
-	}
-
-	// Send QUIT
-	err = conn.Quit()
-	if err != nil {
-		return fmt.Errorf("failed to quit SMTP connection: %w", err)
-	}
-
+	log.Printf("Email notification sent to %s for event %s", recipient, notif.Event.ID)
 	return nil
 }
 
-// sendTelegramNotification sends a notification via Telegram bot
-func (nm *NotificationManager) sendTelegramNotification(notification *Notification) error {
-	if !nm.config.Telegram.Enabled || nm.config.Telegram.BotToken == "" {
+func (nm *NotificationManager) sendTelegramNotification(notif Notification) error {
+	if !nm.config.Notifications.Telegram.Enabled || nm.config.Notifications.Telegram.BotToken == "" {
 		return fmt.Errorf("telegram notifications not configured")
 	}
 
-	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", nm.config.Telegram.BotToken)
-
-	message := fmt.Sprintf("*%s*\n%s", notification.Title, notification.Message)
-	if notification.Data != nil {
-		message += "\n\nDetails:"
-		for key, value := range notification.Data {
-			message += fmt.Sprintf("\n• %s: %v", key, value)
+	// Parse chat ID
+	chatID := notif.Recipient
+	if chatID == "" {
+		chatID = nm.config.Notifications.Telegram.ChatID
+		if chatID == "" {
+			return fmt.Errorf("no chat ID specified for telegram notification")
 		}
 	}
 
+	// Create message
+	message := fmt.Sprintf("🚨 *%s*\n\n%s\n\n📅 %s\n🔍 Type: %s\n⚠️ Severity: %s",
+		notif.Title,
+		notif.Message,
+		notif.Event.Timestamp.Format("2006-01-02 15:04:05"),
+		notif.Event.Type,
+		notif.Event.Severity)
+
+	// Send via Telegram Bot API
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage",
+		nm.config.Notifications.Telegram.BotToken)
+
 	payload := map[string]interface{}{
-		"chat_id":    nm.config.Telegram.ChatID,
+		"chat_id":    chatID,
 		"text":       message,
-		"parse_mode": nm.config.Telegram.ParseMode,
+		"parse_mode": "Markdown",
 	}
 
-	jsonData, err := json.Marshal(payload)
+	jsonPayload, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal telegram payload: %w", err)
 	}
 
-	client := &http.Client{Timeout: time.Duration(nm.config.Telegram.Timeout) * time.Second}
-	resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonPayload))
 	if err != nil {
 		return fmt.Errorf("failed to send telegram notification: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("telegram API returned status %d", resp.StatusCode)
+		return fmt.Errorf("telegram notification failed with status: %d", resp.StatusCode)
+	}
+
+	log.Printf("Telegram notification sent to chat %s for event %s", chatID, notif.Event.ID)
+	return nil
+}
+
+func (nm *NotificationManager) generateEmailBody(notif Notification) string {
+	tmpl := `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{.Title}}</title>
+</head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+        <h2 style="color: #333; margin-top: 0;">{{.Title}}</h2>
+        <p style="font-size: 16px; line-height: 1.5; color: #666;">{{.Message}}</p>
+
+        <div style="background-color: white; padding: 15px; border-radius: 3px; margin: 15px 0;">
+            <h3 style="margin-top: 0; color: #333;">Event Details</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 5px 10px; border-bottom: 1px solid #eee;"><strong>Type:</strong></td>
+                    <td style="padding: 5px 10px; border-bottom: 1px solid #eee;">{{.Event.Type}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px 10px; border-bottom: 1px solid #eee;"><strong>Severity:</strong></td>
+                    <td style="padding: 5px 10px; border-bottom: 1px solid #eee;">{{.Event.Severity}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px 10px; border-bottom: 1px solid #eee;"><strong>Source:</strong></td>
+                    <td style="padding: 5px 10px; border-bottom: 1px solid #eee;">{{.Event.Source}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px 10px;"><strong>Timestamp:</strong></td>
+                    <td style="padding: 5px 10px;">{{.Event.Timestamp.Format "2006-01-02 15:04:05"}}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px; color: #666; font-size: 12px;">
+            This notification was generated by LLM Verifier
+        </div>
+    </div>
+</body>
+</html>
+`
+
+	t, err := template.New("email").Parse(tmpl)
+	if err != nil {
+		log.Printf("Failed to parse email template: %v", err)
+		return fmt.Sprintf("%s\n\n%s", notif.Title, notif.Message)
+	}
+
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, notif); err != nil {
+		log.Printf("Failed to execute email template: %v", err)
+		return fmt.Sprintf("%s\n\n%s", notif.Title, notif.Message)
+	}
+
+	return buf.String()
+}
+
+// Helper methods
+
+func (nm *NotificationManager) getActiveChannels() []NotificationChannel {
+	var active []NotificationChannel
+	for channel := range nm.channels {
+		active = append(active, channel)
+	}
+	return active
+}
+
+func (nm *NotificationManager) getEventTitle(event events.Event) string {
+	switch event.Type {
+	case events.EventTypeModelVerified:
+		return "Model Verification Completed"
+	case events.EventTypeModelVerificationFailed:
+		return "Model Verification Failed"
+	case events.EventTypeScoreChanged:
+		return "Model Score Changed"
+	case events.EventTypeVerificationStarted:
+		return "Verification Started"
+	case events.EventTypeErrorOccurred:
+		return "System Error"
+	default:
+		return "System Notification"
+	}
+}
+
+func (nm *NotificationManager) getPriorityForSeverity(severity events.EventSeverity) string {
+	switch severity {
+	case events.EventSeverityCritical:
+		return "high"
+	case events.EventSeverityError:
+		return "high"
+	case events.EventSeverityWarning:
+		return "medium"
+	default:
+		return "low"
+	}
+}
+
+func (nm *NotificationManager) getColorForPriority(priority string) string {
+	switch priority {
+	case "high":
+		return "danger"
+	case "medium":
+		return "warning"
+	default:
+		return "good"
+	}
+}
+
+func (nm *NotificationManager) getRecipientForChannel(channel NotificationChannel) string {
+	switch channel {
+	case ChannelSlack:
+		return nm.config.Notifications.Slack.WebhookURL
+	case ChannelEmail:
+		return nm.config.Notifications.Email.DefaultRecipient
+	case ChannelTelegram:
+		return nm.config.Notifications.Telegram.ChatID
+	default:
+		return ""
+	}
+}
+
+func (nm *NotificationManager) getTemplateForEvent(event events.Event) string {
+	switch event.Type {
+	case events.EventTypeModelVerified:
+		return "model_verified"
+	case events.EventTypeModelVerificationFailed:
+		return "verification_failed"
+	case events.EventTypeScoreChanged:
+		return "score_changed"
+	default:
+		return "default"
+	}
+}
+
+// NotificationEventSubscriber implements the event subscriber interface
+type NotificationEventSubscriber struct {
+	ID      string
+	Manager *NotificationManager
+}
+
+func (nes *NotificationEventSubscriber) HandleEvent(event events.Event) error {
+	// Determine which channels to notify based on event type and severity
+	channels := nes.getChannelsForEvent(event)
+
+	if len(channels) > 0 {
+		return nes.Manager.SendEventNotification(event, channels)
 	}
 
 	return nil
 }
 
-// sendMatrixNotification sends a notification via Matrix
-func (nm *NotificationManager) sendMatrixNotification(notification *Notification) error {
-	if !nm.config.Matrix.Enabled {
-		return fmt.Errorf("matrix notifications not configured")
+func (nes *NotificationEventSubscriber) GetID() string {
+	return nes.ID
+}
+
+func (nes *NotificationEventSubscriber) GetTypes() []events.EventType {
+	// Subscribe to all event types
+	return []events.EventType{
+		events.EventTypeModelVerified,
+		events.EventTypeModelVerificationFailed,
+		events.EventTypeScoreChanged,
+		events.EventTypeVerificationStarted,
+		events.EventTypeVerificationCompleted,
+		events.EventTypeErrorOccurred,
+	}
+}
+
+func (nes *NotificationEventSubscriber) IsActive() bool {
+	return true
+}
+
+func (nes *NotificationEventSubscriber) getChannelsForEvent(event events.Event) []NotificationChannel {
+	var channels []NotificationChannel
+
+	// Critical and error events go to all channels
+	if event.Severity == events.EventSeverityCritical || event.Severity == events.EventSeverityError {
+		for channel := range nes.Manager.channels {
+			channels = append(channels, channel)
+		}
+		return channels
 	}
 
-	// This is a simplified Matrix implementation
-	// In a real implementation, you'd use a Matrix client library
-	url := fmt.Sprintf("%s/_matrix/client/r0/rooms/%s/send/m.room.message",
-		nm.config.Matrix.Homeserver, nm.config.Matrix.RoomID)
-
-	message := fmt.Sprintf("**%s**\n%s", notification.Title, notification.Message)
-	if notification.Data != nil {
-		message += "\n\nDetails:"
-		for key, value := range notification.Data {
-			message += fmt.Sprintf("\n• %s: %v", key, value)
+	// Warning events go to Slack and email
+	if event.Severity == events.EventSeverityWarning {
+		if _, ok := nes.Manager.channels[ChannelSlack]; ok {
+			channels = append(channels, ChannelSlack)
+		}
+		if _, ok := nes.Manager.channels[ChannelEmail]; ok {
+			channels = append(channels, ChannelEmail)
 		}
 	}
 
-	payload := map[string]interface{}{
-		"msgtype":        "m.text",
-		"body":           message,
-		"format":         "org.matrix.custom.html",
-		"formatted_body": strings.ReplaceAll(message, "\n", "<br>"),
-	}
-
-	jsonData, err := json.Marshal(payload)
-	if err != nil {
-		return fmt.Errorf("failed to marshal matrix payload: %w", err)
-	}
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return fmt.Errorf("failed to create matrix request: %w", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+nm.config.Matrix.AccessToken)
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{Timeout: time.Duration(nm.config.Matrix.Timeout) * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to send matrix notification: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("matrix API returned status %d", resp.StatusCode)
-	}
-
-	return nil
-}
-
-// sendWhatsAppNotification sends a notification via WhatsApp
-func (nm *NotificationManager) sendWhatsAppNotification(notification *Notification) error {
-	if !nm.config.WhatsApp.Enabled {
-		return fmt.Errorf("whatsapp notifications not configured")
-	}
-
-	// This is a simplified WhatsApp implementation
-	// In a real implementation, you'd use WhatsApp Business API
-	message := fmt.Sprintf("*%s*\n%s", notification.Title, notification.Message)
-	if notification.Data != nil {
-		message += "\n\nDetails:"
-		for key, value := range notification.Data {
-			message += fmt.Sprintf("\n• %s: %v", key, value)
+	// Info events only go to Slack
+	if event.Severity == events.EventSeverityInfo {
+		if _, ok := nes.Manager.channels[ChannelSlack]; ok {
+			channels = append(channels, ChannelSlack)
 		}
 	}
 
-	fmt.Printf("Would send WhatsApp message to %s: %s\n",
-		nm.config.WhatsApp.PhoneNumber, message)
-
-	return nil // Placeholder - actual WhatsApp API implementation would go here
-}
-
-// loadTemplates loads email templates from the templates directory
-func (nm *NotificationManager) loadTemplates() {
-	if nm.config.Email.TemplatesDir == "" {
-		return
-	}
-
-	// Template names correspond to notification types
-	templateNames := []string{
-		string(NotificationTypeVerificationCompleted),
-		string(NotificationTypeVerificationFailed),
-		string(NotificationTypeScoreChanged),
-		string(NotificationTypeNewModel),
-		string(NotificationTypeIssueDetected),
-		string(NotificationTypeScheduledTest),
-		string(NotificationTypeSystemError),
-	}
-
-	for _, templateName := range templateNames {
-		templatePath := filepath.Join(nm.config.Email.TemplatesDir, templateName+".html")
-		if tmpl, err := template.ParseFiles(templatePath); err == nil {
-			nm.templates[templateName] = tmpl
-		}
-	}
-}
-
-// CreateVerificationCompletedNotification creates a verification completed notification
-func CreateVerificationCompletedNotification(totalModels, successfulModels int, duration time.Duration) *Notification {
-	return &Notification{
-		ID:       generateNotificationID(),
-		Type:     NotificationTypeVerificationCompleted,
-		Channel:  ChannelSlack, // Default to Slack
-		Priority: PriorityNormal,
-		Title:    "Verification Completed",
-		Message:  fmt.Sprintf("Successfully verified %d out of %d models in %v", successfulModels, totalModels, duration.Round(time.Second)),
-		Data: map[string]interface{}{
-			"total_models":      totalModels,
-			"successful_models": successfulModels,
-			"failed_models":     totalModels - successfulModels,
-			"duration_seconds":  duration.Seconds(),
-			"success_rate":      float64(successfulModels) / float64(totalModels) * 100,
-		},
-		Timestamp: time.Now(),
-	}
-}
-
-// CreateVerificationFailedNotification creates a verification failed notification
-func CreateVerificationFailedNotification(modelName, error string) *Notification {
-	return &Notification{
-		ID:       generateNotificationID(),
-		Type:     NotificationTypeVerificationFailed,
-		Channel:  ChannelSlack, // Default to Slack
-		Priority: PriorityHigh,
-		Title:    "Verification Failed",
-		Message:  fmt.Sprintf("Verification failed for model %s: %s", modelName, error),
-		Data: map[string]interface{}{
-			"model_name": modelName,
-			"error":      error,
-		},
-		Timestamp: time.Now(),
-	}
-}
-
-// CreateScoreChangedNotification creates a score changed notification
-func CreateScoreChangedNotification(modelName string, oldScore, newScore float64) *Notification {
-	change := newScore - oldScore
-	changeDirection := "increased"
-	if change < 0 {
-		changeDirection = "decreased"
-	}
-
-	return &Notification{
-		ID:       generateNotificationID(),
-		Type:     NotificationTypeScoreChanged,
-		Channel:  ChannelSlack, // Default to Slack
-		Priority: PriorityNormal,
-		Title:    "Model Score Changed",
-		Message: fmt.Sprintf("Score for model %s %s by %.1f points (%.1f → %.1f)",
-			modelName, changeDirection, change, oldScore, newScore),
-		Data: map[string]interface{}{
-			"model_name":       modelName,
-			"old_score":        oldScore,
-			"new_score":        newScore,
-			"change":           change,
-			"change_direction": changeDirection,
-		},
-		Timestamp: time.Now(),
-	}
-}
-
-// generateNotificationID generates a unique notification ID
-func generateNotificationID() string {
-	return fmt.Sprintf("notif_%d", time.Now().UnixNano())
+	return channels
 }
