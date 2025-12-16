@@ -350,7 +350,7 @@ func createCrushConfig(results []VerificationResult, options *ExportOptions) (*A
 	}, nil
 }
 
-// createClaudeCodeConfig creates configuration for Claude Code
+// createClaudeCode creates configuration for Claude Code
 func createClaudeCode(results []VerificationResult, options *ExportOptions) (*AIConfig, error) {
 	models := make([]AIModel, 0, len(results))
 	var totalScore float64
