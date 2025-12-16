@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -24,20 +25,16 @@ const (
 	LogLevelFatal   LogLevel = "fatal"
 )
 
-// LogEntry represents a structured log entry
-type LogEntry struct {
-	ID        string                 `json:"id" db:"id"`
-	Timestamp time.Time              `json:"timestamp" db:"timestamp"`
-	Level     LogLevel               `json:"level" db:"level"`
-	Message   string                 `json:"message" db:"message"`
-	Source    string                 `json:"source" db:"source"`
-	UserID    *string                `json:"user_id,omitempty" db:"user_id"`
-	SessionID *string                `json:"session_id,omitempty" db:"session_id"`
-	RequestID *string                `json:"request_id,omitempty" db:"request_id"`
-	Fields    map[string]interface{} `json:"fields,omitempty" db:"fields"`
-	Tags      []string               `json:"tags,omitempty" db:"tags"`
-}
 
+	Level     LogLevel               `json:"level" db:"level"`
+	Message      string                 `json:"message"`
+	Timestamp   time.Time              `json:"timestamp"`
+	CorrelationID string                 `json:"correlation_id,omitempty"`
+	UserID      *string                `json:"user_id,omitempty"`
+	Component    string                 `json:"component,omitempty"`
+	Error       string                 `json:"error,omitempty"`
+	Metadata     map[string]interface{} `json:"metadata,omitempty"`
+}
 // Logger manages structured logging with multiple outputs
 type Logger struct {
 	db           *database.Database
