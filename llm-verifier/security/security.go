@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -219,11 +220,17 @@ func (akm *APIKeyMasker) MaskAPIKeys(input string) string {
 	return result
 }
 
-// maskPattern applies a single masking pattern
+// maskPattern applies a single masking pattern using proper regex
 func (akm *APIKeyMasker) maskPattern(input string, pattern APIKeyPattern) string {
-	// Simple string replacement for demo
-	// In real implementation, use regexp.ReplaceAllStringFunc
-	return strings.ReplaceAll(input, pattern.Regex, akm.createMask(pattern))
+	// Use regex for proper pattern matching and masking
+	re := regexp.MustCompile(pattern.Regex)
+	return re.ReplaceAllStringFunc(input, func(match string) string {
+		// Preserve first and last characters, mask middle
+		if len(match) <= 4 {
+			return strings.Repeat("*", len(match))
+		}
+		return string(match[0]) + strings.Repeat("*", len(match)-2) + string(match[len(match)-1])
+	})
 }
 
 // createMask creates a masked version of a key
