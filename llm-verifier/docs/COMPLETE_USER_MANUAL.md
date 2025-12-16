@@ -126,7 +126,7 @@ database:
 api:
   port: 8080
   enable_cors: true
-  jwt_secret: "your-secret-key"
+  jwt_secret: "${JWT_SECRET:-your-secret-key}"
   rate_limit: 100
   burst_limit: 200
 

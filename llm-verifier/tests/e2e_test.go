@@ -154,8 +154,11 @@ func TestFullWorkflow(t *testing.T) {
 	// This will fail due to fake key, but it should still generate empty reports
 	_, err := verifier.Verify()
 	if err == nil {
-		// If no error occurred, it means we had valid credentials (which we shouldn't in tests)
-		t.Skip("Skipping test as it requires invalid credentials")
+		// If no error occurred, it means we had valid credentials (which is unexpected)
+		t.Log("Unexpected: verification succeeded with fake credentials")
+	} else {
+		// Expected behavior: verification fails with invalid credentials
+		t.Logf("Expected error with fake credentials: %v", err)
 	}
 
 	// We can't properly test the full workflow without real credentials,

@@ -132,7 +132,7 @@ database:
 
 api:
   port: 8080
-  jwt_secret: "your-secret-key"
+  jwt_secret: "${JWT_SECRET:-your-secret-key}"
 
 notifications:
   slack:
