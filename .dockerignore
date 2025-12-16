@@ -1,0 +1,75 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+docs/
+README.md
+
+# Test files
+*_test.go
+test_*
+tests/
+
+# Build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+main
+llm-verifier
+llm-verifier-cli
+llm-verifier-test
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+llm-verifier.db*
+
+# Logs
+*.log
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node modules (for desktop apps)
+node_modules/
+
+# Python files (if any)
+__pycache__/
+*.pyc
+*.pyo
+
+# Temporary files
+tmp/
+temp/
+
+# Export files
+exports/
+bulk_exports/
+bulk_exportsdefault/
+
+# Desktop build artifacts
+desktop/electron/dist/
+desktop/tauri/target/
+
+# Upstreams directory
+Upstreams/
+
+# Test results
+TEST_RESULTS.md
+test.db*
+
+# Configuration files (will be mounted as volumes)
+config.yaml
+test-config.yaml
