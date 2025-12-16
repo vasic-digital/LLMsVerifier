@@ -187,6 +187,7 @@ func setDefaults() {
 
 	// API defaults
 	viper.SetDefault("api.port", "8080")
+	viper.SetDefault("api.jwt_secret", "your-secret-key-change-in-production") // Default for development
 	viper.SetDefault("api.rate_limit", 100)
 	viper.SetDefault("api.burst_limit", 200)
 	viper.SetDefault("api.rate_limit_window", 60)
@@ -288,6 +289,14 @@ func expandEnvVar(value string) string {
 
 // validateConfig validates the configuration
 func validateConfig(cfg *config.Config) error {
+	// Validate JWT secret for production use
+	if cfg.API.JWTSecret == "your-secret-key-change-in-production" {
+		if profile := os.Getenv("LLM_VERIFIER_PROFILE"); profile == "prod" || profile == "production" {
+			return fmt.Errorf("production deployment detected: JWT secret must be changed from default value")
+		}
+		fmt.Fprintf(os.Stderr, "WARNING: Using default JWT secret. Please set LLM_VERIFIER_API_JWT_SECRET environment variable in production.\n")
+	}
+
 	// Validate concurrency
 	if cfg.Concurrency < 1 || cfg.Concurrency > 100 {
 		return fmt.Errorf("concurrency must be between 1 and 100, got %d", cfg.Concurrency)

@@ -127,7 +127,113 @@ func (s *Server) login(c *gin.Context) {
 
 // refreshToken handles token refresh
 func (s *Server) refreshToken(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, gin.H{"error": "Token refresh not implemented"})
+	// Get the current token from Authorization header
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+		return
+	}
+
+	// Extract token from "Bearer <token>" format
+	tokenParts := strings.Split(authHeader, " ")
+	if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header format"})
+		return
+	}
+
+	currentTokenString := tokenParts[1]
+
+	// Parse and validate current token (even if expired, we need the claims)
+	token, err := jwt.Parse(currentTokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return s.jwtSecret, nil
+	})
+
+	if err != nil {
+		// For any token parsing error, we can try to extract claims manually
+		// This handles expired tokens as well
+		if strings.Contains(err.Error(), "token is expired") ||
+			strings.Contains(err.Error(), "expired") {
+			// Token is expired, but we can still extract claims
+			if token != nil {
+				if claims, ok := token.Claims.(jwt.MapClaims); ok {
+					s.createNewTokenFromClaims(c, claims)
+					return
+				}
+			}
+		}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		return
+	}
+
+	// Token is valid, extract claims and create new token
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		s.createNewTokenFromClaims(c, claims)
+		return
+	}
+
+	c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+}
+
+// createNewTokenFromClaims creates a new token from existing claims
+func (s *Server) createNewTokenFromClaims(c *gin.Context, claims jwt.MapClaims) {
+	// Extract user information from claims
+	userID, ok := claims["user_id"].(float64)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID in token"})
+		return
+	}
+
+	username, ok := claims["username"].(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username in token"})
+		return
+	}
+
+	role, ok := claims["role"].(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid role in token"})
+		return
+	}
+
+	// Verify user still exists and is active
+	user, err := s.database.GetUserByUsername(username)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+		return
+	}
+
+	if !user.IsActive {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User account is inactive"})
+		return
+	}
+
+	// Create new JWT token with fresh expiration
+	newToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id":  int(userID),
+		"username": username,
+		"role":     role,
+		"exp":      time.Now().Add(time.Hour * 24).Unix(),
+		"iat":      time.Now().Unix(),
+	})
+
+	newTokenString, err := newToken.SignedString(s.jwtSecret)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate new token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"token":      newTokenString,
+		"expires_in": 86400,
+		"user": gin.H{
+			"id":       user.ID,
+			"username": user.Username,
+			"role":     user.Role,
+		},
+	})
 }
 
 // getModels retrieves all models

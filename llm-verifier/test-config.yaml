@@ -12,7 +12,7 @@ database:
 
 api:
   port: "8080"
-  jwt_secret: "test-secret-key"
+  jwt_secret: "${JWT_SECRET:-test-secret-key}"
   rate_limit: 100
   enable_cors: true
 
