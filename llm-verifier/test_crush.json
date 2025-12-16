@@ -1,0 +1,99 @@
+{
+  "version": "1.0",
+  "created_at": "2025-12-16T17:55:46.264177848+03:00",
+  "generated_by": "LLM Verifier",
+  "models": [
+    {
+      "id": "gpt-4-turbo",
+      "name": "gpt-4-turbo",
+      "provider": "OpenAI",
+      "endpoint": "https://api.openai.com/v1",
+      "capabilities": [
+        "tool_use",
+        "function_calling",
+        "code_generation",
+        "code_review",
+        "code_explanation",
+        "multimodal",
+        "streaming",
+        "json_mode",
+        "structured_output",
+        "reasoning",
+        "parallel_tool_use"
+      ],
+      "score": 92.5,
+      "category": "coding",
+      "tags": [
+        "coding",
+        "reasoning",
+        "multimodal"
+      ],
+      "description": "Latest GPT-4 model with improved capabilities",
+      "settings": {
+        "auto_debug": true,
+        "code_focus": true,
+        "context_window": 128000,
+        "debug_mode": false,
+        "frequency_penalty": 0.1,
+        "max_tokens": 4096,
+        "presence_penalty": 0.1,
+        "temperature": 0.3,
+        "test_generation": true,
+        "top_p": 0.95
+      }
+    },
+    {
+      "id": "claude-3-5-sonnet-20241022",
+      "name": "claude-3-5-sonnet-20241022",
+      "provider": "Anthropic",
+      "endpoint": "https://api.anthropic.com/v1",
+      "capabilities": [
+        "tool_use",
+        "function_calling",
+        "code_generation",
+        "code_review",
+        "code_explanation",
+        "streaming",
+        "json_mode",
+        "structured_output",
+        "reasoning"
+      ],
+      "score": 89.7,
+      "category": "coding",
+      "tags": [
+        "reasoning",
+        "coding",
+        "safety"
+      ],
+      "description": "Anthropic's most capable model",
+      "settings": {
+        "auto_debug": true,
+        "code_focus": true,
+        "context_window": 200000,
+        "debug_mode": false,
+        "frequency_penalty": 0.1,
+        "max_tokens": 8192,
+        "presence_penalty": 0.1,
+        "temperature": 0.3,
+        "test_generation": true,
+        "top_p": 0.95
+      }
+    }
+  ],
+  "preferences": {
+    "primary_model": "gpt-4-turbo",
+    "fallback_models": [
+      "claude-3-5-sonnet-20241022"
+    ],
+    "auto_save": true,
+    "stream_responses": true,
+    "language": "english"
+  },
+  "metadata": {
+    "total_models": 2,
+    "average_score": 91.1,
+    "export_criteria": "Coding-focused models (score \u003e= 70)",
+    "llm_verifier_version": "1.0.0",
+    "last_updated": "2025-12-16T17:55:46.264177926+03:00"
+  }
+}
