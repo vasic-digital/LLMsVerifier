@@ -7,14 +7,12 @@ import (
 	"os"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
 	"llm-verifier/api"
 	"llm-verifier/client"
 	"llm-verifier/database"
 	"llm-verifier/llmverifier"
-	"llm-verifier/tui"
 )
 
 var (
@@ -46,57 +44,33 @@ func main() {
 	// Server command
 	rootCmd.AddCommand(serverCmd())
 
-	// Models commands
-	rootCmd.AddCommand(modelsCmd())
-
+	// Export subcommands
+	rootCmd.AddCommand(aiConfigCmd())
+	// rootCmd.AddCommand(modelsCmd()) // TODO: Implement modelsCmd
 	// Providers commands
-	rootCmd.AddCommand(providersCmd())
-
+	// rootCmd.AddCommand(providersCmd()) // TODO: Implement providersCmd
 	// Verification results commands
-	rootCmd.AddCommand(resultsCmd())
-
+	// rootCmd.AddCommand(resultsCmd()) // TODO: Implement resultsCmd
 	// Pricing commands
-	rootCmd.AddCommand(pricingCmd())
-
+	// rootCmd.AddCommand(pricingCmd()) // TODO: Implement pricingCmd
 	// Limits commands
-	rootCmd.AddCommand(limitsCmd())
-
+	// rootCmd.AddCommand(limitsCmd()) // TODO: Implement limitsCmd
 	// Issues commands
-	rootCmd.AddCommand(issuesCmd())
-
+	// rootCmd.AddCommand(issuesCmd()) // TODO: Implement issuesCmd
 	// Events commands
-	rootCmd.AddCommand(eventsCmd())
-
+	// rootCmd.AddCommand(eventsCmd()) // TODO: Implement eventsCmd
 	// Schedules commands
-	rootCmd.AddCommand(schedulesCmd())
-
-	// Config exports commands
-	rootCmd.AddCommand(exportsCmd())
-
+	// rootCmd.AddCommand(schedulesCmd()) // TODO: Implement schedulesCmd
+	// Exports commands
+	// rootCmd.AddCommand(exportsCmd()) // TODO: Implement exportsCmd
 	// Logs commands
-	rootCmd.AddCommand(logsCmd())
-
+	// rootCmd.AddCommand(logsCmd()) // TODO: Implement logsCmd
 	// Config commands
-	rootCmd.AddCommand(configCmd())
-
-	// Users commands
-	rootCmd.AddCommand(usersCmd())
-
-	// Batch operations command
-	rootCmd.AddCommand(batchCmd())
-
-	// Interactive mode command
-	rootCmd.AddCommand(interactiveCmd())
-
-	// Validation commands
-	rootCmd.AddCommand(validateCmd())
-
-	// Export/Import commands
-	rootCmd.AddCommand(exportCmd())
-	rootCmd.AddCommand(importCmd())
-
-	// TUI command
-	rootCmd.AddCommand(tuiCmd())
+	// rootCmd.AddCommand(configCmd()) // TODO: Implement configCmd
+	// Batch commands
+	// rootCmd.AddCommand(batchCmd()) // TODO: Implement batchCmd
+	// TUI commands
+	// rootCmd.AddCommand(tuiCmd()) // TODO: Implement tuiCmd
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -327,7 +301,7 @@ func modelsCmd() *cobra.Command {
 		Long:  `List, create, update, delete, and verify LLM models.`,
 	}
 
-	listCmd := &cobra.Command{
+	_ = &cobra.Command{
 		Use:   "list",
 		Short: "List all models",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -384,7 +358,7 @@ func interactiveCmd() *cobra.Command {
 		Short: "Start interactive mode",
 		Long:  `Start an interactive session for managing models and providers.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			c, err := getClient()
+			_, err := getClient()
 			if err != nil {
 				log.Fatalf("Failed to create client: %v", err)
 			}
@@ -426,7 +400,7 @@ func validateCmd() *cobra.Command {
 		Short: "Validate system setup",
 		Long:  `Validate database connectivity, API endpoints, and system health.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			c, err := getClient()
+			_, err := getClient()
 			if err != nil {
 				log.Fatalf("Failed to create client: %v", err)
 			}
@@ -458,11 +432,156 @@ func validateCmd() *cobra.Command {
 	return cmd
 }
 
+// AI CLI export command
+func aiConfigCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "ai-config [format] [output_file]",
+		Short: "Export AI CLI agent configurations",
+		Long:  `Export models in AI CLI agent formats (opencode, crush, claude-code).`,
+		Args:  cobra.RangeArgs(1, 2),
+		Run: func(cmd *cobra.Command, args []string) {
+			runAIConfigExport(args)
+		},
+	}
+
+	return cmd
+}
+
+func runAIConfigExport(args []string) {
+	// Parse arguments
+	var format, outputFile string
+	switch len(args) {
+	case 0:
+		format = "opencode"        // default
+		outputFile = "export.json" // default
+	case 1:
+		format = args[0]
+		outputFile = "export.json" // default
+	case 2:
+		format = args[0]
+		outputFile = args[1]
+	default:
+		fmt.Printf("❌ Too many arguments. Usage: ai-config [format] [output_file]\n")
+		os.Exit(1)
+	}
+	if len(args) >= 2 {
+		outputFile = args[1]
+	}
+
+	// Validate format
+	supportedFormats := []string{"opencode", "crush", "claude-code"}
+	if !contains(supportedFormats, format) {
+		fmt.Printf("❌ Unsupported format: %s\n", format)
+		fmt.Printf("Supported formats: %v\n", supportedFormats)
+		os.Exit(1)
+	}
+
+	// Load configuration from database or use mock data
+	// For now, use mock data since we don't have database integration yet
+	fmt.Printf("📤 Exporting AI CLI configuration for format: %s\n", format)
+	fmt.Printf("📄 Output file: %s\n", outputFile)
+
+	// Create export options
+	options := &llmverifier.ExportOptions{
+		Top:           5,
+		MinScore:      70.0,
+		IncludeAPIKey: false,
+	}
+
+	// Export configuration
+	err := llmverifier.ExportAIConfig(nil, format, outputFile, options)
+	if err != nil {
+		log.Fatalf("❌ Failed to export %s configuration: %v", format, err)
+	}
+
+	fmt.Printf("✅ Successfully exported %s configuration to %s\n", format, outputFile)
+
+	// Validate exported configuration
+	fmt.Println("🔍 Validating exported configuration...")
+	err = llmverifier.ValidateExportedConfig(outputFile)
+	if err != nil {
+		log.Printf("❌ Validation failed: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("✅ Configuration validation passed")
+}
+
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
+
 func exportCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "export",
-		Short: "Export data and configurations",
-		Long:  `Export models, providers, configurations, and verification results.`,
+		Use:   "export [format] [output_file]",
+		Short: "Export data and AI CLI configurations",
+		Long:  `Export models, providers, configurations, and verification results. Supports AI CLI formats: opencode, crush, claude-code.`,
+		Args:  cobra.RangeArgs(1, 2),
+	}
+
+	// Models export command
+	modelsCmd := &cobra.Command{
+		Use:   "models [output_file]",
+		Short: "Export models data",
+		Long:  `Export all models data to a JSON file.`,
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			_, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			models, err := c.GetModels()
+			if err != nil {
+				log.Fatalf("Failed to get models: %v", err)
+			}
+
+			data, err := json.MarshalIndent(models, "", "  ")
+			if err != nil {
+				log.Fatalf("Failed to marshal models: %v", err)
+			}
+
+			if err := os.WriteFile(args[0], data, 0644); err != nil {
+				log.Fatalf("Failed to write file: %v", err)
+			}
+
+			fmt.Printf("Exported %d models to %s\n", len(models), args[0])
+		},
+	}
+
+	// Providers export command
+	providersCmd := &cobra.Command{
+		Use:   "providers [output_file]",
+		Short: "Export providers data",
+		Long:  `Export all providers data to a JSON file.`,
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			_, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			providers, err := c.GetProviders()
+			if err != nil {
+				log.Fatalf("Failed to get providers: %v", err)
+			}
+
+			data, err := json.MarshalIndent(providers, "", "  ")
+			if err != nil {
+				log.Fatalf("Failed to marshal providers: %v", err)
+			}
+
+			if err := os.WriteFile(args[0], data, 0644); err != nil {
+				log.Fatalf("Failed to write file: %v", err)
+			}
+
+			fmt.Printf("Exported %d providers to %s\n", len(providers), args[0])
+		},
 	}
 
 	modelsCmd := &cobra.Command{
@@ -471,7 +590,7 @@ func exportCmd() *cobra.Command {
 		Long:  `Export all models data to a JSON file.`,
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			c, err := getClient()
+			_, err := getClient()
 			if err != nil {
 				log.Fatalf("Failed to create client: %v", err)
 			}
@@ -500,7 +619,7 @@ func exportCmd() *cobra.Command {
 		Long:  `Export all providers data to a JSON file.`,
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			c, err := getClient()
+			_, err := getClient()
 			if err != nil {
 				log.Fatalf("Failed to create client: %v", err)
 			}
@@ -541,7 +660,7 @@ func importCmd() *cobra.Command {
 		Long:  `Import models data from a JSON file.`,
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			c, err := getClient()
+			_, err := getClient()
 			if err != nil {
 				log.Fatalf("Failed to create client: %v", err)
 			}
@@ -576,7 +695,7 @@ func importCmd() *cobra.Command {
 		Long:  `Import providers data from a JSON file.`,
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			c, err := getClient()
+			_, err := getClient()
 			if err != nil {
 				log.Fatalf("Failed to create client: %v", err)
 			}

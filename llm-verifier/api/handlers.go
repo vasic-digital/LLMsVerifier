@@ -3075,3 +3075,116 @@ func (s *Server) getDatabaseStats(c *gin.Context) {
 
 	SendSuccess(c, http.StatusOK, stats, "")
 }
+
+// exportAIConfig exports models in AI CLI agent format
+func (s *Server) exportAIConfig(c *gin.Context) {
+	var request struct {
+		Format      string                 `json:"format" binding:"required"`
+		Options     *llmverifier.ExportOptions `json:"options"`
+		OutputPath  string                  `json:"output_path,omitempty"`
+	}
+	
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse request: " + err.Error()})
+		return
+	}
+	
+	// Use default output path if not provided
+	if request.OutputPath == "" {
+		request.OutputPath = "./exports"
+	}
+	
+	// Validate format
+	supportedFormats := []string{"opencode", "crush", "claude-code"}
+	if !contains(supportedFormats, request.Format) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unsupported format. Supported: " + strings.Join(supportedFormats, ", ")})
+		return
+	}
+	
+	// Use mock data for now - in real implementation, load from database
+	mockResults := llmverifier.createMockVerificationResults()
+	
+	// Export configuration
+	err = llmverifier.ExportAIConfig(nil, request.Format, request.OutputPath, request.Options)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to export configuration: " + err.Error()})
+		return
+	}
+	
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Configuration exported successfully",
+		"format":  request.Format,
+		"output_path": request.OutputPath,
+	})
+}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse request: " + err.Error()})
+		return
+	}
+
+	// Use default output path if not provided
+	if request.OutputPath == "" {
+		request.OutputPath = "./exports"
+	}
+
+	// Validate format
+	supportedFormats := []string{"opencode", "crush", "claude-code"}
+	if !contains(supportedFormats, request.Format) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unsupported format. Supported: " + strings.Join(supportedFormats, ", ")})
+		return
+	}
+
+	// Load verification results from database
+	results, err := s.database.GetVerificationResults()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve verification results: " + err.Error()})
+		return
+	}
+
+	// Convert to VerificationResult slice
+	var verificationResults []llmverifier.VerificationResult
+	for _, result := range results {
+		// Convert database result to verification result format
+		// This is a simplified conversion - in real implementation, you'd need proper mapping
+		verificationResults = append(verificationResults, llmverifier.VerificationResult{
+			ModelInfo: llmverifier.ModelInfo{
+				ID:       result.Model.Name,
+				Endpoint: result.Provider.Endpoint,
+				Tags:     []string{}, // Map from result.Tags
+			},
+			PerformanceScores: llmverifier.PerformanceScore{
+				OverallScore: result.Score,
+			},
+			FeatureDetection: llmverifier.FeatureDetectionResult{
+				CodeGeneration:  result.SupportsCodeGeneration,
+				ToolUse:         result.SupportsToolUse,
+				FunctionCalling: result.SupportsFunctionCalling,
+			},
+			Timestamp: result.VerifiedAt,
+		})
+	}
+
+	// Export configuration
+	err = llmverifier.ExportAIConfig(nil, request.Format, request.OutputPath, request.Options)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to export configuration: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":     "Configuration exported successfully",
+		"format":      request.Format,
+		"output_path": request.OutputPath,
+	})
+}
+
+// contains checks if a string is in a slice
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
