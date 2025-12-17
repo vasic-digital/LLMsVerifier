@@ -492,3 +492,284 @@ func (cpv *CrossProviderValidator) calculateMaxDeviation(scores map[string]float
 	}
 	return maxDev
 }
+
+// ContextAwareValidator provides context-aware validation rules
+type ContextAwareValidator struct {
+	contextRules map[string][]ValidationRule
+	history      []ValidationResult
+	maxHistory   int
+}
+
+// ValidationRule represents a context-aware validation rule
+type ValidationRule struct {
+	Name        string
+	Description string
+	Condition   func(context map[string]interface{}) bool
+	Action      func(result *ValidationResult, context map[string]interface{})
+	Priority    int // Higher priority rules are checked first
+}
+
+// NewContextAwareValidator creates a new context-aware validator
+func NewContextAwareValidator(maxHistory int) *ContextAwareValidator {
+	return &ContextAwareValidator{
+		contextRules: make(map[string][]ValidationRule),
+		history:      make([]ValidationResult, 0),
+		maxHistory:   maxHistory,
+	}
+}
+
+// AddRule adds a validation rule for a specific context type
+func (cav *ContextAwareValidator) AddRule(contextType string, rule ValidationRule) {
+	cav.contextRules[contextType] = append(cav.contextRules[contextType], rule)
+
+	// Sort rules by priority (highest first)
+	rules := cav.contextRules[contextType]
+	for i := 0; i < len(rules)-1; i++ {
+		for j := i + 1; j < len(rules); j++ {
+			if rules[i].Priority < rules[j].Priority {
+				rules[i], rules[j] = rules[j], rules[i]
+			}
+		}
+	}
+}
+
+// ValidateWithContext validates input with context awareness
+func (cav *ContextAwareValidator) ValidateWithContext(input interface{}, contextType string, context map[string]interface{}) *ValidationResult {
+	// Start with basic validation
+	baseResult := &ValidationResult{
+		Level:    LevelSemantic,
+		Passed:   true,
+		Errors:   []string{},
+		Warnings: []string{},
+		Score:    1.0,
+		Metadata: make(map[string]interface{}),
+	}
+
+	// Apply context-aware rules
+	if rules, exists := cav.contextRules[contextType]; exists {
+		for _, rule := range rules {
+			if rule.Condition(context) {
+				rule.Action(baseResult, context)
+			}
+		}
+	}
+
+	// Add historical context
+	cav.addHistoricalContext(baseResult, contextType, context)
+
+	// Store result in history
+	cav.addToHistory(*baseResult)
+
+	return baseResult
+}
+
+// addHistoricalContext adds insights from historical validation results
+func (cav *ContextAwareValidator) addHistoricalContext(result *ValidationResult, contextType string, context map[string]interface{}) {
+	if len(cav.history) == 0 {
+		return
+	}
+
+	// Analyze recent history for patterns
+	recentResults := cav.getRecentResults(10) // Last 10 results
+
+	// Check for error patterns
+	errorPatterns := cav.analyzeErrorPatterns(recentResults, contextType)
+	for _, pattern := range errorPatterns {
+		result.Warnings = append(result.Warnings, pattern)
+		result.Score -= 0.1
+	}
+
+	// Check for performance trends
+	performanceTrend := cav.analyzePerformanceTrend(recentResults)
+	if performanceTrend < 0 {
+		result.Warnings = append(result.Warnings, "Validation scores trending downward")
+		result.Score -= 0.05
+	}
+
+	result.Metadata["historical_analysis"] = true
+	result.Metadata["recent_results_count"] = len(recentResults)
+	result.Metadata["performance_trend"] = performanceTrend
+}
+
+// analyzeErrorPatterns analyzes patterns in recent validation errors
+func (cav *ContextAwareValidator) analyzeErrorPatterns(results []ValidationResult, contextType string) []string {
+	errorCounts := make(map[string]int)
+
+	for _, result := range results {
+		for _, err := range result.Errors {
+			errorCounts[err]++
+		}
+	}
+
+	var patterns []string
+	for errorMsg, count := range errorCounts {
+		if count >= 3 { // Error occurred 3+ times recently
+			patterns = append(patterns, fmt.Sprintf("Recurring error pattern: %s (%d occurrences)", errorMsg, count))
+		}
+	}
+
+	return patterns
+}
+
+// analyzePerformanceTrend analyzes the trend in validation scores
+func (cav *ContextAwareValidator) analyzePerformanceTrend(results []ValidationResult) float64 {
+	if len(results) < 2 {
+		return 0
+	}
+
+	// Calculate trend using simple linear regression
+	n := float64(len(results))
+	sumX := n * (n - 1) / 2
+	sumY := 0.0
+	sumXY := 0.0
+	sumXX := 0.0
+
+	for i, result := range results {
+		x := float64(i)
+		y := result.Score
+		sumY += y
+		sumXY += x * y
+		sumXX += x * x
+	}
+
+	slope := (n*sumXY - sumX*sumY) / (n*sumXX - sumX*sumX)
+	return slope
+}
+
+// getRecentResults returns the most recent validation results
+func (cav *ContextAwareValidator) getRecentResults(count int) []ValidationResult {
+	if len(cav.history) <= count {
+		return cav.history
+	}
+	return cav.history[len(cav.history)-count:]
+}
+
+// addToHistory adds a result to the validation history
+func (cav *ContextAwareValidator) addToHistory(result ValidationResult) {
+	cav.history = append(cav.history, result)
+
+	// Maintain maximum history size
+	if len(cav.history) > cav.maxHistory {
+		cav.history = cav.history[len(cav.history)-cav.maxHistory:]
+	}
+}
+
+// SetupDefaultRules sets up default context-aware validation rules
+func (cav *ContextAwareValidator) SetupDefaultRules() {
+	// LLM Request Context Rules
+	cav.AddRule("llm_request", ValidationRule{
+		Name:        "high_frequency_user",
+		Description: "Check for unusually high request frequency from user",
+		Condition: func(context map[string]interface{}) bool {
+			if frequency, ok := context["requests_per_minute"].(float64); ok {
+				return frequency > 10.0 // More than 10 requests per minute
+			}
+			return false
+		},
+		Action: func(result *ValidationResult, context map[string]interface{}) {
+			result.Warnings = append(result.Warnings, "High request frequency detected - may indicate abuse")
+			result.Score -= 0.2
+			result.Metadata["high_frequency_detected"] = true
+		},
+		Priority: 10,
+	})
+
+	cav.AddRule("llm_request", ValidationRule{
+		Name:        "large_context_window",
+		Description: "Check for very large context windows that may impact performance",
+		Condition: func(context map[string]interface{}) bool {
+			if messages, ok := context["message_count"].(int); ok {
+				return messages > 20 // More than 20 messages
+			}
+			return false
+		},
+		Action: func(result *ValidationResult, context map[string]interface{}) {
+			result.Warnings = append(result.Warnings, "Large context window may impact response quality and latency")
+			result.Score -= 0.1
+			result.Metadata["large_context"] = true
+		},
+		Priority: 8,
+	})
+
+	cav.AddRule("llm_request", ValidationRule{
+		Name:        "suspicious_prompt_patterns",
+		Description: "Check for suspicious prompt patterns that may indicate jailbreak attempts",
+		Condition: func(context map[string]interface{}) bool {
+			if prompt, ok := context["prompt"].(string); ok {
+				suspiciousPatterns := []string{
+					"ignore previous instructions",
+					"override safety",
+					"jailbreak",
+					"uncensored mode",
+				}
+				promptLower := strings.ToLower(prompt)
+				for _, pattern := range suspiciousPatterns {
+					if strings.Contains(promptLower, pattern) {
+						return true
+					}
+				}
+			}
+			return false
+		},
+		Action: func(result *ValidationResult, context map[string]interface{}) {
+			result.Errors = append(result.Errors, "Prompt contains suspicious patterns that may violate usage policies")
+			result.Passed = false
+			result.Score = 0.0
+			result.Metadata["suspicious_content"] = true
+		},
+		Priority: 15, // High priority - security related
+	})
+
+	// Verification Context Rules
+	cav.AddRule("verification", ValidationRule{
+		Name:        "model_performance_drift",
+		Description: "Check for significant changes in model performance over time",
+		Condition: func(context map[string]interface{}) bool {
+			if baselineScore, ok := context["baseline_score"].(float64); ok {
+				if currentScore, ok := context["current_score"].(float64); ok {
+					deviation := math.Abs(currentScore - baselineScore)
+					return deviation > 15.0 // More than 15 points deviation
+				}
+			}
+			return false
+		},
+		Action: func(result *ValidationResult, context map[string]interface{}) {
+			result.Warnings = append(result.Warnings, "Significant model performance drift detected")
+			result.Score -= 0.3
+			result.Metadata["performance_drift"] = true
+		},
+		Priority: 12,
+	})
+
+	cav.AddRule("verification", ValidationRule{
+		Name:        "provider_outage_pattern",
+		Description: "Check for patterns indicating provider outages",
+		Condition: func(context map[string]interface{}) bool {
+			if recentErrors, ok := context["recent_errors"].(int); ok {
+				if totalRequests, ok := context["total_requests"].(int); ok {
+					errorRate := float64(recentErrors) / float64(totalRequests)
+					return errorRate > 0.5 // More than 50% error rate
+				}
+			}
+			return false
+		},
+		Action: func(result *ValidationResult, context map[string]interface{}) {
+			result.Warnings = append(result.Warnings, "High error rate may indicate provider outage or configuration issues")
+			result.Score -= 0.4
+			result.Metadata["potential_outage"] = true
+		},
+		Priority: 14,
+	})
+}
+
+// GetValidationHistory returns the validation history
+func (cav *ContextAwareValidator) GetValidationHistory() []ValidationResult {
+	history := make([]ValidationResult, len(cav.history))
+	copy(history, cav.history)
+	return history
+}
+
+// ClearHistory clears the validation history
+func (cav *ContextAwareValidator) ClearHistory() {
+	cav.history = make([]ValidationResult, 0)
+}
