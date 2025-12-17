@@ -2,8 +2,10 @@ package supervisor
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -176,18 +178,151 @@ func (s *Supervisor) SubmitTask(task *Task) error {
 	return nil
 }
 
-// BreakDownTask breaks down a complex task into smaller subtasks
+// BreakDownTask breaks down a complex task into smaller subtasks using LLM
 func (s *Supervisor) BreakDownTask(complexTask *Task) ([]*Task, error) {
-	// TODO: Use LLM to break down the task into subtasks
-	// For now, create mock subtasks
+	if s.verifier == nil {
+		// Fallback to basic breakdown if no verifier available
+		log.Printf("No verifier available, using basic task breakdown")
+		return s.basicTaskBreakdown(complexTask), nil
+	}
 
-	// This would normally call the LLM, but for now we'll create mock subtasks
+	// Use LLM to analyze the task and create intelligent subtasks
+	taskDescription, ok := complexTask.Data["description"].(string)
+	if !ok {
+		taskDescription = fmt.Sprintf("Task: %s (Type: %s)", complexTask.ID, complexTask.Type)
+	}
+
+	// Create LLM prompt for task breakdown
+	prompt := fmt.Sprintf(`Analyze this complex task and break it down into logical, actionable subtasks:
+
+Task: %s
+Type: %s
+Priority: %d
+
+Please break this task into 3-7 smaller, manageable subtasks that can be executed in sequence or parallel. For each subtask, provide:
+1. A clear, concise name
+2. Task type (analysis, implementation, testing, research, etc.)
+3. Priority level (1-10, where 10 is highest)
+4. Brief description of what needs to be done
+5. Dependencies on other subtasks (if any)
+
+Format your response as a JSON array of subtasks with the following structure:
+[
+  {
+    "name": "Subtask name",
+    "type": "task_type",
+    "priority": 8,
+    "description": "What needs to be done",
+    "dependencies": ["subtask_id1", "subtask_id2"]
+  }
+]`, taskDescription, complexTask.Type, complexTask.Priority)
+
+	// Get an LLM client from the verifier's global configuration
+	client := s.verifier.GetGlobalClient()
+
+	// Call LLM for task breakdown
+	maxTokens := 1000
+	temperature := 0.3
+	req := llmverifier.ChatCompletionRequest{
+		Model: "gpt-3.5-turbo",
+		Messages: []llmverifier.Message{
+			{
+				Role:    "system",
+				Content: "You are an expert task breakdown assistant. Break down complex tasks into manageable subtasks with proper dependencies and priorities.",
+			},
+			{
+				Role:    "user",
+				Content: prompt,
+			},
+		},
+		MaxTokens:   &maxTokens,
+		Temperature: &temperature,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	response, err := client.ChatCompletion(ctx, req)
+	if err != nil {
+		log.Printf("LLM task breakdown failed, falling back to basic breakdown: %v", err)
+		return s.basicTaskBreakdown(complexTask), nil
+	}
+
+	// Parse LLM response
+	var subtaskSpecs []struct {
+		Name         string   `json:"name"`
+		Type         string   `json:"type"`
+		Priority     int      `json:"priority"`
+		Description  string   `json:"description"`
+		Dependencies []string `json:"dependencies"`
+	}
+
+	// Extract JSON from response
+	content := response.Choices[0].Message.Content
+	// Find JSON array in the response
+	start := strings.Index(content, "[")
+	end := strings.LastIndex(content, "]")
+	if start == -1 || end == -1 {
+		log.Printf("No JSON found in LLM response, falling back to basic breakdown")
+		return s.basicTaskBreakdown(complexTask), nil
+	}
+
+	jsonStr := content[start : end+1]
+	if err := json.Unmarshal([]byte(jsonStr), &subtaskSpecs); err != nil {
+		log.Printf("Failed to parse LLM response JSON, falling back to basic breakdown: %v", err)
+		return s.basicTaskBreakdown(complexTask), nil
+	}
+
+	// Create subtasks from LLM response
+	var subtasks []*Task
+	baseID := complexTask.ID
+
+	for i, spec := range subtaskSpecs {
+		// Validate and clamp priority
+		priority := spec.Priority
+		if priority < 1 {
+			priority = 1
+		} else if priority > 10 {
+			priority = 10
+		}
+
+		subtask := &Task{
+			ID:       fmt.Sprintf("%s_sub_%d", baseID, i+1),
+			Type:     spec.Type,
+			Priority: priority,
+			Data: map[string]any{
+				"parent_task":  complexTask.ID,
+				"name":         spec.Name,
+				"description":  spec.Description,
+				"dependencies": spec.Dependencies,
+				"step":         i + 1,
+			},
+			CreatedAt:  time.Now(),
+			MaxRetries: 3,
+			Status:     "pending",
+		}
+
+		subtasks = append(subtasks, subtask)
+	}
+
+	// If no subtasks were created, fall back to basic breakdown
+	if len(subtasks) == 0 {
+		log.Printf("LLM returned no subtasks, falling back to basic breakdown")
+		return s.basicTaskBreakdown(complexTask), nil
+	}
+
+	log.Printf("LLM broke down task %s into %d intelligent subtasks", complexTask.ID, len(subtasks))
+	return subtasks, nil
+}
+
+// basicTaskBreakdown provides a fallback task breakdown when LLM is not available
+func (s *Supervisor) basicTaskBreakdown(complexTask *Task) []*Task {
 	subtasks := []*Task{
 		{
 			ID:         fmt.Sprintf("%s_sub_1", complexTask.ID),
 			Type:       "analysis",
 			Priority:   8,
-			Data:       map[string]interface{}{"parent_task": complexTask.ID, "step": "analyze_requirements"},
+			Data:       map[string]any{"parent_task": complexTask.ID, "step": "analyze_requirements"},
 			CreatedAt:  time.Now(),
 			MaxRetries: 3,
 			Status:     "pending",
@@ -196,7 +331,7 @@ func (s *Supervisor) BreakDownTask(complexTask *Task) ([]*Task, error) {
 			ID:         fmt.Sprintf("%s_sub_2", complexTask.ID),
 			Type:       "implementation",
 			Priority:   7,
-			Data:       map[string]interface{}{"parent_task": complexTask.ID, "step": "implement_solution"},
+			Data:       map[string]any{"parent_task": complexTask.ID, "step": "implement_solution"},
 			CreatedAt:  time.Now(),
 			MaxRetries: 3,
 			Status:     "pending",
@@ -205,15 +340,15 @@ func (s *Supervisor) BreakDownTask(complexTask *Task) ([]*Task, error) {
 			ID:         fmt.Sprintf("%s_sub_3", complexTask.ID),
 			Type:       "testing",
 			Priority:   6,
-			Data:       map[string]interface{}{"parent_task": complexTask.ID, "step": "test_implementation"},
+			Data:       map[string]any{"parent_task": complexTask.ID, "step": "test_implementation"},
 			CreatedAt:  time.Now(),
 			MaxRetries: 2,
 			Status:     "pending",
 		},
 	}
 
-	log.Printf("Broke down task %s into %d subtasks", complexTask.ID, len(subtasks))
-	return subtasks, nil
+	log.Printf("Created %d basic subtasks for task %s", len(subtasks), complexTask.ID)
+	return subtasks
 }
 
 // taskDispatcher dispatches tasks to available workers
