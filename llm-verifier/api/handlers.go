@@ -2876,6 +2876,95 @@ func (s *Server) selectProviderForModel(c *gin.Context) {
 	})
 }
 
+// startConversation starts a new conversation
+func (s *Server) startConversation(c *gin.Context) {
+	var req struct {
+		ConversationID string `json:"conversation_id" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
+		return
+	}
+
+	conv, err := s.contextMgr.StartConversation(req.ConversationID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"conversation_id": req.ConversationID,
+		"max_messages":    conv.MaxMessages,
+		"window_duration": conv.WindowDuration.String(),
+		"created_at":      conv.CreatedAt,
+	})
+}
+
+// addMessage adds a message to a conversation
+func (s *Server) addMessage(c *gin.Context) {
+	conversationID := c.Param("id")
+
+	var req struct {
+		Role     string                 `json:"role" binding:"required"`
+		Content  string                 `json:"content" binding:"required"`
+		Metadata map[string]interface{} `json:"metadata,omitempty"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
+		return
+	}
+
+	err := s.contextMgr.AddMessage(conversationID, req.Role, req.Content, req.Metadata)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"conversation_id": conversationID,
+		"message": gin.H{
+			"role":    req.Role,
+			"content": req.Content,
+		},
+	})
+}
+
+// getConversationContext retrieves context for a conversation
+func (s *Server) getConversationContext(c *gin.Context) {
+	conversationID := c.Param("id")
+	query := c.Query("query")
+	maxResults := 5
+
+	context, err := s.contextMgr.GetContext(conversationID, query, maxResults)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, context)
+}
+
+// endConversation ends a conversation
+func (s *Server) endConversation(c *gin.Context) {
+	conversationID := c.Param("id")
+
+	err := s.contextMgr.EndConversation(conversationID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+// getContextStats returns context management statistics
+func (s *Server) getContextStats(c *gin.Context) {
+	stats := s.contextMgr.GetConversationStats()
+	c.JSON(http.StatusOK, stats)
+}
+
 // getSchedules retrieves schedules with optional filtering
 func (s *Server) getSchedules(c *gin.Context) {
 	limitStr := c.DefaultQuery("limit", "50")
