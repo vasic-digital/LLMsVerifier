@@ -24,6 +24,11 @@ func New(cfg *config.Config) *Verifier {
 	}
 }
 
+// GetGlobalClient returns an LLM client configured with global settings
+func (v *Verifier) GetGlobalClient() *LLMClient {
+	return NewLLMClient(v.cfg.Global.BaseURL, v.cfg.Global.APIKey, nil)
+}
+
 // Verify performs the verification of LLMs based on the configuration
 func (v *Verifier) Verify() ([]VerificationResult, error) {
 	var allResults []VerificationResult
