@@ -62,6 +62,7 @@ type Server struct {
 	scheduler       *scheduler.Scheduler
 	issueMgr        *enhanced.IssueManager
 	failoverMgr     *failover.FailoverManager
+	contextMgr      *enhanced.ContextManager
 	jwtSecret       []byte
 	startTime       time.Time
 }
@@ -105,6 +106,9 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	// Initialize failover manager
 	failoverMgr := failover.NewFailoverManager(db)
 
+	// Initialize context manager
+	contextMgr := enhanced.NewContextManager(verifier)
+
 	server := &Server{
 		router:          gin.Default(),
 		config:          cfg,
@@ -116,6 +120,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		scheduler:       sched,
 		issueMgr:        issueMgr,
 		failoverMgr:     failoverMgr,
+		contextMgr:      contextMgr,
 		jwtSecret:       []byte(cfg.API.JWTSecret),
 		startTime:       time.Now(),
 	}
@@ -270,6 +275,16 @@ func (s *Server) setupRoutes() {
 		{
 			failover.GET("/status", s.getFailoverStatus)
 			failover.POST("/select/:model", s.selectProviderForModel)
+		}
+
+		// Context
+		context := v1.Group("/context")
+		{
+			context.POST("/conversations", s.startConversation)
+			context.POST("/conversations/:id/messages", s.addMessage)
+			context.GET("/conversations/:id", s.getConversationContext)
+			context.DELETE("/conversations/:id", s.endConversation)
+			context.GET("/stats", s.getContextStats)
 		}
 
 		// Schedules
