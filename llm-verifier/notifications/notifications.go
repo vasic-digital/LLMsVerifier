@@ -36,7 +36,7 @@ type Notification struct {
 	Priority  string
 	Timestamp time.Time
 	Template  string
-	Data      map[string]interface{}
+	Data      map[string]any
 }
 
 // NotificationManager manages all notification channels
@@ -205,14 +205,14 @@ func (nm *NotificationManager) sendSlackNotification(notif Notification) error {
 		return fmt.Errorf("slack notifications not configured")
 	}
 
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"text":       fmt.Sprintf("*%s*\n%s", notif.Title, notif.Message),
 		"username":   "LLM Verifier",
 		"icon_emoji": ":robot_face:",
-		"attachments": []map[string]interface{}{
+		"attachments": []map[string]any{
 			{
 				"color": nm.getColorForPriority(notif.Priority),
-				"fields": []map[string]interface{}{
+				"fields": []map[string]any{
 					{
 						"title": "Event Type",
 						"value": string(notif.Event.Type),
@@ -324,7 +324,7 @@ func (nm *NotificationManager) sendTelegramNotification(notif Notification) erro
 	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage",
 		nm.config.Notifications.Telegram.BotToken)
 
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"chat_id":    chatID,
 		"text":       message,
 		"parse_mode": "Markdown",
@@ -364,7 +364,7 @@ func (nm *NotificationManager) sendMatrixNotification(notif Notification) error 
 	}
 
 	// Create message
-	message := map[string]interface{}{
+	message := map[string]any{
 		"msgtype": "m.text",
 		"body": fmt.Sprintf("🚨 **%s**\n\n%s\n\n📅 %s\n🔍 Type: %s\n⚠️ Severity: %s",
 			notif.Title,
@@ -432,7 +432,7 @@ func (nm *NotificationManager) sendWhatsAppNotification(notif Notification) erro
 	url := fmt.Sprintf("https://graph.facebook.com/v18.0/%s/messages",
 		nm.config.Notifications.WhatsApp.PhoneNumberID)
 
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"messaging_product": "whatsapp",
 		"to":                recipient,
 		"type":              "text",
