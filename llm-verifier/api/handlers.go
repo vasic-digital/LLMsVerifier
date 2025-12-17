@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/gorilla/websocket"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/yaml.v3"
 
@@ -382,20 +383,26 @@ func (s *Server) verifyModel(c *gin.Context) {
 		return
 	}
 
+	// Publish verification started event
+	s.eventBus.Publish(events.NewEvent(
+		events.EventTypeVerificationStarted,
+		events.EventSeverityInfo,
+		fmt.Sprintf("Verification started for model %s", model.Name),
+		"api",
+	).WithData("model_id", id).WithData("model_name", model.Name))
+
 	// Start verification in background
 	go func() {
 		// Create LLM client from model's provider
 		provider, err := s.database.GetProvider(model.ProviderID)
 		if err != nil {
-			// Log error and create event
-			_ = s.database.CreateEvent(&database.Event{
-				EventType: "verification_failed",
-				Severity:  "error",
-				Title:     "Verification Failed",
-				Message:   fmt.Sprintf("Failed to get provider for model %s: %v", model.Name, err),
-				ModelID:   &id,
-				CreatedAt: time.Now(),
-			})
+			// Publish verification failed event
+			s.eventBus.Publish(events.NewEvent(
+				events.EventTypeModelVerificationFailed,
+				events.EventSeverityError,
+				fmt.Sprintf("Failed to get provider for model %s: %v", model.Name, err),
+				"api",
+			).WithData("model_id", id).WithData("model_name", model.Name).WithData("error", err.Error()))
 			return
 		}
 
@@ -417,15 +424,13 @@ func (s *Server) verifyModel(c *gin.Context) {
 		tempVerifier := llmverifier.New(tempConfig)
 		results, err := tempVerifier.Verify()
 		if err != nil {
-			// Log error and create event
-			_ = s.database.CreateEvent(&database.Event{
-				EventType: "verification_failed",
-				Severity:  "error",
-				Title:     "Verification Failed",
-				Message:   fmt.Sprintf("Verification failed for model %s: %v", model.Name, err),
-				ModelID:   &id,
-				CreatedAt: time.Now(),
-			})
+			// Publish verification failed event
+			s.eventBus.Publish(events.NewEvent(
+				events.EventTypeModelVerificationFailed,
+				events.EventSeverityError,
+				fmt.Sprintf("Verification failed for model %s: %v", model.Name, err),
+				"verifier",
+			).WithData("model_id", id).WithData("model_name", model.Name).WithData("error", err.Error()))
 			return
 		}
 
@@ -488,27 +493,23 @@ func (s *Server) verifyModel(c *gin.Context) {
 				ValuePropositionScore:    result.PerformanceScores.ValueProposition,
 			})
 			if err != nil {
-				// Log error
-				_ = s.database.CreateEvent(&database.Event{
-					EventType: "verification_failed",
-					Severity:  "error",
-					Title:     "Database Error",
-					Message:   fmt.Sprintf("Failed to save verification result for model %s: %v", model.Name, err),
-					ModelID:   &id,
-					CreatedAt: time.Now(),
-				})
+				// Publish database error event
+				s.eventBus.Publish(events.NewEvent(
+					events.EventTypeErrorOccurred,
+					events.EventSeverityError,
+					fmt.Sprintf("Failed to save verification result for model %s: %v", model.Name, err),
+					"database",
+				).WithData("model_id", id).WithData("model_name", model.Name).WithData("error", err.Error()))
 				return
 			}
 
-			// Create success event
-			_ = s.database.CreateEvent(&database.Event{
-				EventType: "verification_completed",
-				Severity:  "info",
-				Title:     "Verification Completed",
-				Message:   fmt.Sprintf("Verification completed for model %s with score %.2f", model.Name, result.PerformanceScores.OverallScore),
-				ModelID:   &id,
-				CreatedAt: time.Now(),
-			})
+			// Publish verification completed event
+			s.eventBus.Publish(events.NewEvent(
+				events.EventTypeModelVerified,
+				events.EventSeverityInfo,
+				fmt.Sprintf("Verification completed for model %s with score %.2f", model.Name, result.PerformanceScores.OverallScore),
+				"verifier",
+			).WithData("model_id", id).WithData("model_name", model.Name).WithData("overall_score", result.PerformanceScores.OverallScore))
 		}
 	}()
 
@@ -738,6 +739,14 @@ func (s *Server) createProvider(c *gin.Context) {
 		return
 	}
 
+	// Publish provider added event
+	s.eventBus.Publish(events.NewEvent(
+		events.EventTypeProviderAdded,
+		events.EventSeverityInfo,
+		fmt.Sprintf("Provider %s added with endpoint %s", provider.Name, provider.Endpoint),
+		"api",
+	).WithData("provider_id", provider.ID).WithData("provider_name", provider.Name).WithData("endpoint", provider.Endpoint))
+
 	c.JSON(http.StatusCreated, provider)
 }
 
@@ -801,6 +810,14 @@ func (s *Server) updateProvider(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update provider"})
 		return
 	}
+
+	// Publish provider updated event
+	s.eventBus.Publish(events.NewEvent(
+		events.EventTypeProviderUpdated,
+		events.EventSeverityInfo,
+		fmt.Sprintf("Provider %s updated", existingProvider.Name),
+		"api",
+	).WithData("provider_id", existingProvider.ID).WithData("provider_name", existingProvider.Name))
 
 	c.JSON(http.StatusOK, existingProvider)
 }
@@ -2514,6 +2531,186 @@ func (s *Server) deleteEvent(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+// WebSocket upgrader
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		// Allow connections from any origin in development
+		// In production, implement proper origin checking
+		return true
+	},
+}
+
+// handleWebSocket handles WebSocket connections for real-time event streaming
+func (s *Server) handleWebSocket(c *gin.Context) {
+	// Get event types to subscribe to from query parameters
+	eventTypesStr := c.Query("types")
+	var eventTypes []events.EventType
+
+	if eventTypesStr != "" {
+		// Parse comma-separated event types
+		typeStrings := strings.Split(eventTypesStr, ",")
+		for _, ts := range typeStrings {
+			ts = strings.TrimSpace(ts)
+			switch ts {
+			case "model.verified":
+				eventTypes = append(eventTypes, events.EventTypeModelVerified)
+			case "model.verification.failed":
+				eventTypes = append(eventTypes, events.EventTypeModelVerificationFailed)
+			case "model.score.changed":
+				eventTypes = append(eventTypes, events.EventTypeScoreChanged)
+			case "provider.added":
+				eventTypes = append(eventTypes, events.EventTypeProviderAdded)
+			case "provider.updated":
+				eventTypes = append(eventTypes, events.EventTypeProviderUpdated)
+			case "system.health.changed":
+				eventTypes = append(eventTypes, events.EventTypeSystemHealthChanged)
+			case "verification.started":
+				eventTypes = append(eventTypes, events.EventTypeVerificationStarted)
+			case "verification.completed":
+				eventTypes = append(eventTypes, events.EventTypeVerificationCompleted)
+			case "schedule.executed":
+				eventTypes = append(eventTypes, events.EventTypeScheduleExecuted)
+			case "error.occurred":
+				eventTypes = append(eventTypes, events.EventTypeErrorOccurred)
+			}
+		}
+	} else {
+		// Subscribe to all event types if none specified
+		eventTypes = []events.EventType{
+			events.EventTypeModelVerified,
+			events.EventTypeModelVerificationFailed,
+			events.EventTypeScoreChanged,
+			events.EventTypeProviderAdded,
+			events.EventTypeProviderUpdated,
+			events.EventTypeSystemHealthChanged,
+			events.EventTypeVerificationStarted,
+			events.EventTypeVerificationCompleted,
+			events.EventTypeScheduleExecuted,
+			events.EventTypeErrorOccurred,
+		}
+	}
+
+	// Upgrade HTTP connection to WebSocket
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		log.Printf("Failed to upgrade connection to WebSocket: %v", err)
+		return
+	}
+	defer conn.Close()
+
+	// Create WebSocket subscriber
+	subscriberID := fmt.Sprintf("ws_%d", time.Now().UnixNano())
+	wsSubscriber := &events.WebSocketSubscriber{
+		ID:     subscriberID,
+		Conn:   conn,
+		Types:  eventTypes,
+		Active: true,
+	}
+
+	// Subscribe to event bus
+	s.eventBus.Subscribe(wsSubscriber)
+	defer s.eventBus.Unsubscribe(subscriberID)
+
+	log.Printf("WebSocket subscriber %s connected, subscribed to %d event types", subscriberID, len(eventTypes))
+
+	// Keep connection alive and handle incoming messages
+	for {
+		_, _, err := conn.ReadMessage()
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				log.Printf("WebSocket error for subscriber %s: %v", subscriberID, err)
+			}
+			break
+		}
+		// For now, we don't handle incoming messages from client
+		// Could be extended to handle subscription changes, etc.
+	}
+
+	log.Printf("WebSocket subscriber %s disconnected", subscriberID)
+}
+
+// getEventSubscribers returns information about active event subscribers
+func (s *Server) getEventSubscribers(c *gin.Context) {
+	subscribers := s.eventBus.GetSubscribers()
+
+	// Convert subscribers to API-friendly format
+	subscriberInfo := make([]gin.H, len(subscribers))
+	for i, sub := range subscribers {
+		subscriberInfo[i] = gin.H{
+			"id":          sub.GetID(),
+			"active":      sub.IsActive(),
+			"event_types": sub.GetTypes(),
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"subscribers": subscriberInfo,
+		"total":       len(subscribers),
+	})
+}
+
+// createNotificationSubscriber creates a new notification subscriber
+func (s *Server) createNotificationSubscriber(c *gin.Context) {
+	var req struct {
+		Channels   []string `json:"channels" binding:"required"`
+		EventTypes []string `json:"event_types" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
+		return
+	}
+
+	// Convert string event types to EventType
+	var eventTypes []events.EventType
+	for _, et := range req.EventTypes {
+		switch et {
+		case "model.verified":
+			eventTypes = append(eventTypes, events.EventTypeModelVerified)
+		case "model.verification.failed":
+			eventTypes = append(eventTypes, events.EventTypeModelVerificationFailed)
+		case "model.score.changed":
+			eventTypes = append(eventTypes, events.EventTypeScoreChanged)
+		case "provider.added":
+			eventTypes = append(eventTypes, events.EventTypeProviderAdded)
+		case "provider.updated":
+			eventTypes = append(eventTypes, events.EventTypeProviderUpdated)
+		case "system.health.changed":
+			eventTypes = append(eventTypes, events.EventTypeSystemHealthChanged)
+		case "verification.started":
+			eventTypes = append(eventTypes, events.EventTypeVerificationStarted)
+		case "verification.completed":
+			eventTypes = append(eventTypes, events.EventTypeVerificationCompleted)
+		case "schedule.executed":
+			eventTypes = append(eventTypes, events.EventTypeScheduleExecuted)
+		case "error.occurred":
+			eventTypes = append(eventTypes, events.EventTypeErrorOccurred)
+		default:
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid event type: " + et})
+			return
+		}
+	}
+
+	// Create notification subscriber
+	subscriberID := fmt.Sprintf("notification_%d", time.Now().UnixNano())
+	notificationSub := &events.NotificationSubscriber{
+		ID:       subscriberID,
+		Channels: req.Channels,
+		Types:    eventTypes,
+		Active:   true,
+	}
+
+	// Subscribe to event bus
+	s.eventBus.Subscribe(notificationSub)
+
+	c.JSON(http.StatusCreated, gin.H{
+		"id":          subscriberID,
+		"channels":    req.Channels,
+		"event_types": req.EventTypes,
+		"active":      true,
+	})
 }
 
 // getSchedules retrieves schedules with optional filtering

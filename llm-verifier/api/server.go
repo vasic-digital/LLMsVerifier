@@ -220,6 +220,9 @@ func (s *Server) setupRoutes() {
 			events.POST("", s.createEvent)
 			events.PUT("/:id", s.updateEvent)
 			events.DELETE("/:id", s.deleteEvent)
+			events.GET("/ws", s.handleWebSocket)
+			events.GET("/subscribers", s.getEventSubscribers)
+			events.POST("/subscribers/notifications", s.createNotificationSubscriber)
 		}
 
 		// Schedules
