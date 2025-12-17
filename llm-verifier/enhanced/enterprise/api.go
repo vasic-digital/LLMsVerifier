@@ -538,7 +538,23 @@ func (api *EnterpriseAPI) validateToken(token string) (*User, error) {
 func (api *EnterpriseAPI) authenticateUser(username, password string) (*User, error) {
 	// Try LDAP first if configured
 	if api.manager.LDAP != nil {
-		return api.manager.LDAP.Authenticate(username, password)
+		ldapUser, err := api.manager.LDAP.Authenticate(username, password)
+		if err != nil {
+			return nil, err
+		}
+
+		// Convert LDAPUser to User
+		return &User{
+			ID:        ldapUser.ID,
+			Username:  ldapUser.Username,
+			Email:     ldapUser.Email,
+			FirstName: ldapUser.FirstName,
+			LastName:  ldapUser.LastName,
+			Roles:     ldapUser.Roles,
+			Enabled:   ldapUser.Enabled,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}, nil
 	}
 
 	// Fall back to local authentication

@@ -2,15 +2,10 @@ package enterprise
 
 import (
 	"context"
-	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"sync"
 	"time"
-
-	"llm-verifier/enhanced/supervisor"
 )
 
 // RBACRole represents role-based access control roles
@@ -403,87 +398,25 @@ type TLSConfig struct {
 	InsecureSkipVerify bool   `yaml:"insecure_skip_verify"`
 }
 
-// LDAPAuthenticator provides LDAP authentication
-type LDAPAuthenticator struct {
-	config LDAPConfig
-}
-
-// NewLDAPAuthenticator creates a new LDAP authenticator
-func NewLDAPAuthenticator(config LDAPConfig) *LDAPAuthenticator {
-	return &LDAPAuthenticator{
-		config: config,
-	}
-}
-
-// Authenticate authenticates user against LDAP
-func (ldap *LDAPAuthenticator) Authenticate(username, password string) (*LDAPUser, error) {
-	// In a real implementation, you would use an LDAP library like github.com/go-ldap/ldap/v3
-	// For now, return a mock implementation
-
-	if username == "" || password == "" {
-		return nil, fmt.Errorf("username and password required")
+// Authenticate authenticates user against LDAP and returns User type
+func (ldap *LDAPAuthenticator) AuthenticateAsUser(username, password string) (*User, error) {
+	ldapUser, err := ldap.Authenticate(username, password)
+	if err != nil {
+		return nil, err
 	}
 
-	// Mock LDAP user lookup
-	user := &LDAPUser{
-		ID:        fmt.Sprintf("ldap_%s", username),
-		Username:  username,
-		Email:     fmt.Sprintf("%s@company.com", username),
-		FirstName: "LDAP",
-		LastName:  "User",
-		Roles:     []RBACRole{RBACRoleAnalyst},
-		Enabled:   true,
-	}
-
-	log.Printf("LDAP authentication successful for user: %s", username)
-
-	return user, nil
-}
-
-// TLSConfig holds TLS configuration
-type TLSConfig struct {
-	Enabled            bool   `yaml:"enabled"`
-	CertFile           string `yaml:"cert_file"`
-	KeyFile            string `yaml:"key_file"`
-	CAFile             string `yaml:"ca_file"`
-	InsecureSkipVerify bool   `yaml:"insecure_skip_verify"`
-}
-
-// LDAPAuthenticator provides LDAP authentication
-type LDAPAuthenticator struct {
-	config LDAPConfig
-}
-
-// NewLDAPAuthenticator creates a new LDAP authenticator
-func NewLDAPAuthenticator(config LDAPConfig) *LDAPAuthenticator {
-	return &LDAPAuthenticator{
-		config: config,
-	}
-}
-
-// Authenticate authenticates user against LDAP
-func (ldap *LDAPAuthenticator) Authenticate(username, password string) (*User, error) {
-	// In a real implementation, you would use an LDAP library like github.com/go-ldap/ldap/v3
-	// For now, return a mock implementation
-
-	if username == "" || password == "" {
-		return nil, fmt.Errorf("username and password required")
-	}
-
-	// Mock LDAP user lookup
+	// Convert LDAPUser to User
 	user := &User{
-		ID:        fmt.Sprintf("ldap_%s", username),
-		Username:  username,
-		Email:     fmt.Sprintf("%s@company.com", username),
-		FirstName: "LDAP",
-		LastName:  "User",
-		Roles:     []RBACRole{RBACRoleAnalyst},
-		Enabled:   true,
+		ID:        ldapUser.ID,
+		Username:  ldapUser.Username,
+		Email:     ldapUser.Email,
+		FirstName: ldapUser.FirstName,
+		LastName:  ldapUser.LastName,
+		Roles:     ldapUser.Roles,
+		Enabled:   ldapUser.Enabled,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-
-	log.Printf("LDAP authentication successful for user: %s", username)
 
 	return user, nil
 }
@@ -576,6 +509,20 @@ func (mtm *MultiTenantManager) CreateTenant(tenant *Tenant) error {
 	return nil
 }
 
+// GetAllTenants retrieves all tenants
+func (mtm *MultiTenantManager) GetAllTenants() []*Tenant {
+	mtm.mu.RLock()
+	defer mtm.mu.RUnlock()
+
+	tenants := make([]*Tenant, 0, len(mtm.tenants))
+	for _, tenant := range mtm.tenants {
+		tenantCopy := *tenant
+		tenants = append(tenants, &tenantCopy)
+	}
+
+	return tenants
+}
+
 // GetTenant retrieves a tenant by ID
 func (mtm *MultiTenantManager) GetTenant(tenantID string) (*Tenant, error) {
 	mtm.mu.RLock()
@@ -637,7 +584,7 @@ type EnterpriseManager struct {
 	LDAP        *LDAPAuthenticator
 	SAML        *SAMLAuthenticator
 	MultiTenant *MultiTenantManager
-	Supervisor  *supervisor.EnhancedSupervisor
+	Supervisor  interface{} // Use interface{} to avoid circular dependency
 	API         *EnterpriseAPI
 	Config      EnterpriseConfig
 }
@@ -707,11 +654,14 @@ type AuthConfig struct {
 }
 
 // NewEnterpriseManager creates a new enterprise manager
-func NewEnterpriseManager(config EnterpriseConfig, supervisor *supervisor.EnhancedSupervisor) *EnterpriseManager {
+func NewEnterpriseManager(config EnterpriseConfig) *EnterpriseManager {
 	manager := &EnterpriseManager{
-		Config:     config,
-		RBAC:       NewRBACManager(),
-		Supervisor: supervisor,
+		RBAC:        NewRBACManager(),
+		LDAP:        NewLDAPAuthenticator(config.LDAP),
+		SAML:        NewSAMLAuthenticator(config.SAML),
+		MultiTenant: NewMultiTenantManager(),
+		Supervisor:  nil, // Initialize supervisor later to avoid circular dependency
+		Config:      config,
 	}
 
 	// Initialize authenticators if enabled
@@ -721,10 +671,6 @@ func NewEnterpriseManager(config EnterpriseConfig, supervisor *supervisor.Enhanc
 
 	if config.SAML.IdentityProviderURL != "" {
 		manager.SAML = NewSAMLAuthenticator(config.SAML)
-	}
-
-	if config.MultiTenant.Enabled {
-		manager.MultiTenant = NewMultiTenantManager()
 	}
 
 	// Initialize API

@@ -27,19 +27,19 @@ type ProductionConfig struct {
 	LogLevel    string      `yaml:"log_level"`
 
 	// Server configuration
-	Server ServerConfig `yaml:"server"`
+	Server ProductionServerConfig `yaml:"server"`
 
 	// Database configuration
-	Database DatabaseConfig `yaml:"database"`
+	Database ProductionDatabaseConfig `yaml:"database"`
 
 	// Security configuration
-	Security SecurityConfig `yaml:"security"`
+	Security ProductionSecurityConfig `yaml:"security"`
 
 	// Performance configuration
-	Performance PerformanceConfig `yaml:"performance"`
+	Performance ProductionPerformanceConfig `yaml:"performance"`
 
 	// Monitoring configuration
-	Monitoring MonitoringConfig `yaml:"monitoring"`
+	Monitoring ProductionMonitoringConfig `yaml:"monitoring"`
 
 	// LLM provider configuration
 	Providers ProvidersConfig `yaml:"providers"`
@@ -48,25 +48,25 @@ type ProductionConfig struct {
 	Enterprise EnterpriseConfig `yaml:"enterprise"`
 }
 
-// ServerConfig holds server configuration
-type ServerConfig struct {
-	Host         string        `yaml:"host"`
-	Port         int           `yaml:"port"`
-	ReadTimeout  time.Duration `yaml:"read_timeout"`
-	WriteTimeout time.Duration `yaml:"write_timeout"`
-	IdleTimeout  time.Duration `yaml:"idle_timeout"`
-	TLS          TLSConfig     `yaml:"tls"`
+// ProductionServerConfig holds server configuration
+type ProductionServerConfig struct {
+	Host         string              `yaml:"host"`
+	Port         int                 `yaml:"port"`
+	ReadTimeout  time.Duration       `yaml:"read_timeout"`
+	WriteTimeout time.Duration       `yaml:"write_timeout"`
+	IdleTimeout  time.Duration       `yaml:"idle_timeout"`
+	TLS          ProductionTLSConfig `yaml:"tls"`
 }
 
-// TLSConfig holds TLS configuration
-type TLSConfig struct {
+// ProductionTLSConfig holds TLS configuration
+type ProductionTLSConfig struct {
 	Enabled  bool   `yaml:"enabled"`
 	CertFile string `yaml:"cert_file"`
 	KeyFile  string `yaml:"key_file"`
 }
 
-// DatabaseConfig holds database configuration
-type DatabaseConfig struct {
+// ProductionDatabaseConfig holds production database configuration
+type ProductionDatabaseConfig struct {
 	Driver          string        `yaml:"driver"`
 	Host            string        `yaml:"host"`
 	Port            int           `yaml:"port"`
@@ -79,28 +79,28 @@ type DatabaseConfig struct {
 	ConnMaxLifetime time.Duration `yaml:"conn_max_lifetime"`
 }
 
-// SecurityConfig holds security configuration
-type SecurityConfig struct {
-	JWTSecret          string          `yaml:"jwt_secret"`
-	TokenExpiry        time.Duration   `yaml:"token_expiry"`
-	RefreshTokenExpiry time.Duration   `yaml:"refresh_token_expiry"`
-	MaxLoginAttempts   int             `yaml:"max_login_attempts"`
-	LockoutDuration    time.Duration   `yaml:"lockout_duration"`
-	SessionTimeout     time.Duration   `yaml:"session_timeout"`
-	RequireHTTPS       bool            `yaml:"require_https"`
-	RateLimiting       RateLimitConfig `yaml:"rate_limiting"`
-	CORS               CORSConfig      `yaml:"cors"`
+// ProductionSecurityConfig holds production security configuration
+type ProductionSecurityConfig struct {
+	JWTSecret          string                    `yaml:"jwt_secret"`
+	TokenExpiry        time.Duration             `yaml:"token_expiry"`
+	RefreshTokenExpiry time.Duration             `yaml:"refresh_token_expiry"`
+	MaxLoginAttempts   int                       `yaml:"max_login_attempts"`
+	LockoutDuration    time.Duration             `yaml:"lockout_duration"`
+	SessionTimeout     time.Duration             `yaml:"session_timeout"`
+	RequireHTTPS       bool                      `yaml:"require_https"`
+	RateLimiting       ProductionRateLimitConfig `yaml:"rate_limiting"`
+	CORS               ProductionCORSConfig      `yaml:"cors"`
 }
 
-// RateLimitConfig holds rate limiting configuration
-type RateLimitConfig struct {
+// ProductionRateLimitConfig holds rate limiting configuration
+type ProductionRateLimitConfig struct {
 	Enabled  bool          `yaml:"enabled"`
 	Requests int           `yaml:"requests"`
 	Window   time.Duration `yaml:"window"`
 }
 
-// CORSConfig holds CORS configuration
-type CORSConfig struct {
+// ProductionCORSConfig holds CORS configuration
+type ProductionCORSConfig struct {
 	Enabled          bool     `yaml:"enabled"`
 	AllowedOrigins   []string `yaml:"allowed_origins"`
 	AllowedMethods   []string `yaml:"allowed_methods"`
@@ -110,8 +110,8 @@ type CORSConfig struct {
 	MaxAge           int      `yaml:"max_age"`
 }
 
-// PerformanceConfig holds performance configuration
-type PerformanceConfig struct {
+// ProductionPerformanceConfig holds performance configuration
+type ProductionPerformanceConfig struct {
 	MaxWorkers      int           `yaml:"max_workers"`
 	WorkerTimeout   time.Duration `yaml:"worker_timeout"`
 	QueueSize       int           `yaml:"queue_size"`
@@ -121,35 +121,36 @@ type PerformanceConfig struct {
 	CPUQuota        int           `yaml:"cpu_quota"`
 }
 
-// MonitoringConfig holds monitoring configuration
-type MonitoringConfig struct {
-	Enabled    bool             `yaml:"enabled"`
-	Prometheus PrometheusConfig `yaml:"prometheus"`
-	Tracing    TracingConfig    `yaml:"tracing"`
-	Logging    LoggingConfig    `yaml:"logging"`
+// ProductionMonitoringConfig holds monitoring configuration
+type ProductionMonitoringConfig struct {
+	Enabled    bool                       `yaml:"enabled"`
+	Prometheus ProductionPrometheusConfig `yaml:"prometheus"`
+	Tracing    ProductionTracingConfig    `yaml:"tracing"`
+	Logging    ProductionLoggingConfig    `yaml:"logging"`
 }
 
-// PrometheusConfig holds Prometheus configuration
-type PrometheusConfig struct {
+// ProductionPrometheusConfig holds Prometheus configuration
+type ProductionPrometheusConfig struct {
 	Enabled   bool   `yaml:"enabled"`
 	Port      int    `yaml:"port"`
 	Path      string `yaml:"path"`
 	Namespace string `yaml:"namespace"`
 }
 
-// TracingConfig holds distributed tracing configuration
-type TracingConfig struct {
+// ProductionTracingConfig holds distributed tracing configuration
+type ProductionTracingConfig struct {
 	Enabled  bool   `yaml:"enabled"`
 	Provider string `yaml:"provider"`
 	Endpoint string `yaml:"endpoint"`
 	Service  string `yaml:"service"`
 }
 
-// LoggingConfig holds logging configuration
-type LoggingConfig struct {
+// ProductionLoggingConfig holds production logging configuration
+type ProductionLoggingConfig struct {
 	Level      string `yaml:"level"`
 	Format     string `yaml:"format"`
 	Output     string `yaml:"output"`
+	FilePath   string `yaml:"file_path"`
 	MaxSize    int    `yaml:"max_size"`
 	MaxBackups int    `yaml:"max_backups"`
 	MaxAge     int    `yaml:"max_age"`
@@ -158,323 +159,544 @@ type LoggingConfig struct {
 
 // ProvidersConfig holds LLM provider configurations
 type ProvidersConfig struct {
-	DefaultProvider string                 `yaml:"default_provider"`
-	OpenAI          OpenAIConfig           `yaml:"openai"`
-	Azure           AzureConfig            `yaml:"azure"`
-	Anthropic       AnthropicConfig        `yaml:"anthropic"`
-	Google          GoogleConfig           `yaml:"google"`
-	Local           map[string]interface{} `yaml:"local"`
+	OpenAI    ProviderConfig `yaml:"openai"`
+	Anthropic ProviderConfig `yaml:"anthropic"`
+	Google    ProviderConfig `yaml:"google"`
+	Meta      ProviderConfig `yaml:"meta"`
+	DeepSeek  ProviderConfig `yaml:"deepseek"`
 }
 
-// OpenAIConfig holds OpenAI configuration
-type OpenAIConfig struct {
-	APIKey      string        `yaml:"api_key"`
-	BaseURL     string        `yaml:"base_url"`
-	Timeout     time.Duration `yaml:"timeout"`
-	MaxTokens   int           `yaml:"max_tokens"`
-	Temperature float64       `yaml:"temperature"`
+// ProviderConfig holds individual provider configuration
+type ProviderConfig struct {
+	Enabled   bool              `yaml:"enabled"`
+	APIKey    string            `yaml:"api_key"`
+	BaseURL   string            `yaml:"base_url"`
+	Models    []string          `yaml:"models"`
+	Timeout   time.Duration     `yaml:"timeout"`
+	RateLimit ProviderRateLimit `yaml:"rate_limit"`
 }
 
-// AzureConfig holds Azure OpenAI configuration
-type AzureConfig struct {
-	APIKey         string        `yaml:"api_key"`
-	Endpoint       string        `yaml:"endpoint"`
-	DeploymentName string        `yaml:"deployment_name"`
-	APIVersion     string        `yaml:"api_version"`
-	Timeout        time.Duration `yaml:"timeout"`
-	MaxTokens      int           `yaml:"max_tokens"`
-	Temperature    float64       `yaml:"temperature"`
-}
-
-// AnthropicConfig holds Anthropic configuration
-type AnthropicConfig struct {
-	APIKey      string        `yaml:"api_key"`
-	BaseURL     string        `yaml:"base_url"`
-	Timeout     time.Duration `yaml:"timeout"`
-	MaxTokens   int           `yaml:"max_tokens"`
-	Temperature float64       `yaml:"temperature"`
-}
-
-// GoogleConfig holds Google AI configuration
-type GoogleConfig struct {
-	APIKey      string        `yaml:"api_key"`
-	ProjectID   string        `yaml:"project_id"`
-	Timeout     time.Duration `yaml:"timeout"`
-	MaxTokens   int           `yaml:"max_tokens"`
-	Temperature float64       `yaml:"temperature"`
+// ProviderRateLimit holds provider-specific rate limiting
+type ProviderRateLimit struct {
+	Requests int           `yaml:"requests"`
+	Window   time.Duration `yaml:"window"`
 }
 
 // EnterpriseConfig holds enterprise features configuration
 type EnterpriseConfig struct {
-	RBAC         RBACConfig         `yaml:"rbac"`
-	MultiTenant  MultiTenantConfig  `yaml:"multi_tenant"`
-	LDAP         LDAPConfig         `yaml:"ldap"`
-	SAML         SAMLConfig         `yaml:"saml"`
-	AuditLogging AuditLoggingConfig `yaml:"audit_logging"`
+	RBAC             RBACConfig             `yaml:"rbac"`
+	MultiTenancy     MultiTenancyConfig     `yaml:"multi_tenancy"`
+	SSO              SSOConfig              `yaml:"sso"`
+	AuditLogging     AuditLoggingConfig     `yaml:"audit_logging"`
+	Compliance       ComplianceConfig       `yaml:"compliance"`
+	AdvancedFeatures AdvancedFeaturesConfig `yaml:"advanced_features"`
 }
 
-// RBACConfig holds RBAC configuration
+// RBACConfig holds Role-Based Access Control configuration
 type RBACConfig struct {
-	Enabled        bool   `yaml:"enabled"`
-	DefaultRole    string `yaml:"default_role"`
-	AdminRole      string `yaml:"admin_role"`
-	SuperAdminRole string `yaml:"super_admin_role"`
+	Enabled  bool                    `yaml:"enabled"`
+	Roles    map[string][]string     `yaml:"roles"`
+	Policies map[string]PolicyConfig `yaml:"policies"`
 }
 
-// MultiTenantConfig holds multi-tenant configuration
-type MultiTenantConfig struct {
-	Enabled       bool   `yaml:"enabled"`
-	DefaultTenant string `yaml:"default_tenant"`
-	TenantHeader  string `yaml:"tenant_header"`
-	IsolationMode string `yaml:"isolation_mode"`
+// PolicyConfig holds policy configuration
+type PolicyConfig struct {
+	Resources []string `yaml:"resources"`
+	Actions   []string `yaml:"actions"`
+	Effect    string   `yaml:"effect"`
 }
 
-// LDAPConfig holds LDAP configuration
-type LDAPConfig struct {
-	Enabled      bool     `yaml:"enabled"`
-	Host         string   `yaml:"host"`
-	Port         int      `yaml:"port"`
-	BaseDN       string   `yaml:"base_dn"`
-	BindUser     string   `yaml:"bind_user"`
-	BindPassword string   `yaml:"bind_password"`
-	UserFilter   string   `yaml:"user_filter"`
-	GroupFilter  string   `yaml:"group_filter"`
-	Attributes   []string `yaml:"attributes"`
-	UseSSL       bool     `yaml:"use_ssl"`
+// MultiTenancyConfig holds multi-tenancy configuration
+type MultiTenancyConfig struct {
+	Enabled       bool     `yaml:"enabled"`
+	IsolationType string   `yaml:"isolation_type"`
+	TenantHeader  string   `yaml:"tenant_header"`
+	DefaultTenant string   `yaml:"default_tenant"`
+	AdminTenants  []string `yaml:"admin_tenants"`
 }
 
-// SAMLConfig holds SAML configuration
-type SAMLConfig struct {
-	Enabled             bool   `yaml:"enabled"`
-	EntityID            string `yaml:"entity_id"`
-	SSOURL              string `yaml:"sso_url"`
-	IdentityProviderURL string `yaml:"identity_provider_url"`
-	CertificateFile     string `yaml:"certificate_file"`
-	KeyFile             string `yaml:"key_file"`
+// SSOConfig holds Single Sign-On configuration
+type SSOConfig struct {
+	Enabled   bool     `yaml:"enabled"`
+	Providers []string `yaml:"providers"`
+	Metadata  string   `yaml:"metadata"`
+	Callback  string   `yaml:"callback"`
 }
 
 // AuditLoggingConfig holds audit logging configuration
 type AuditLoggingConfig struct {
-	Enabled     bool          `yaml:"enabled"`
-	Storage     string        `yaml:"storage"`
-	Retention   time.Duration `yaml:"retention"`
-	Compression bool          `yaml:"compression"`
+	Enabled    bool   `yaml:"enabled"`
+	LogLevel   string `yaml:"log_level"`
+	OutputPath string `yaml:"output_path"`
+	MaxSize    int    `yaml:"max_size"`
+	MaxBackups int    `yaml:"max_backups"`
+	MaxAge     int    `yaml:"max_age"`
+	Compress   bool   `yaml:"compress"`
 }
 
-// ConfigManager manages configuration loading and validation
-type ConfigManager struct {
-	config *ProductionConfig
-	env    Environment
+// ComplianceConfig holds compliance configuration
+type ComplianceConfig struct {
+	Enabled       bool     `yaml:"enabled"`
+	Standards     []string `yaml:"standards"`
+	DataRetention int      `yaml:"data_retention"`
+	Encryption    bool     `yaml:"encryption"`
+	AccessControl bool     `yaml:"access_control"`
 }
 
-// NewConfigManager creates a new configuration manager
-func NewConfigManager() *ConfigManager {
-	return &ConfigManager{
-		env: getEnvironment(),
-	}
+// AdvancedFeaturesConfig holds advanced features configuration
+type AdvancedFeaturesConfig struct {
+	Analytics      bool `yaml:"analytics"`
+	ContextManager bool `yaml:"context_manager"`
+	Checkpointing  bool `yaml:"checkpointing"`
+	VectorStore    bool `yaml:"vector_store"`
+	MLPipeline     bool `yaml:"ml_pipeline"`
 }
 
-// LoadConfiguration loads configuration from files and environment
-func (cm *ConfigManager) LoadConfiguration() (*ProductionConfig, error) {
-	// Load base configuration
-	config, err := cm.loadBaseConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load base config: %w", err)
+// LoadProductionConfig loads production configuration from file
+func LoadProductionConfig(configPath string) (*ProductionConfig, error) {
+	config := &ProductionConfig{
+		Environment: EnvProduction,
+		Debug:       false,
+		LogLevel:    "info",
 	}
 
-	// Override with environment-specific configuration
-	envConfig, err := cm.loadEnvironmentConfig(cm.env)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load environment config: %w", err)
-	}
-
-	// Merge configurations
-	config = cm.mergeConfigs(config, envConfig)
-
-	// Override with environment variables
-	config = cm.overrideWithEnvVars(config)
-
-	// Set environment
-	config.Environment = cm.env
-
-	// Validate configuration
-	if err := cm.validateConfig(config); err != nil {
-		return nil, fmt.Errorf("configuration validation failed: %w", err)
-	}
-
-	cm.config = config
-	return config, nil
-}
-
-// GetConfiguration returns the loaded configuration
-func (cm *ConfigManager) GetConfiguration() *ProductionConfig {
-	return cm.config
-}
-
-// getEnvironment determines the current environment
-func getEnvironment() Environment {
-	env := strings.ToLower(os.Getenv("ENVIRONMENT"))
-	if env == "" {
-		env = strings.ToLower(os.Getenv("GO_ENV"))
-	}
-	if env == "" {
-		env = strings.ToLower(os.Getenv("ENV"))
-	}
-	if env == "" {
-		return EnvDevelopment
-	}
-
-	switch env {
-	case "dev", "development":
-		return EnvDevelopment
-	case "staging", "stage":
-		return EnvStaging
-	case "prod", "production":
-		return EnvProduction
-	default:
-		return EnvDevelopment
-	}
-}
-
-// loadBaseConfig loads the base configuration file
-func (cm *ConfigManager) loadBaseConfig() (*ProductionConfig, error) {
-	configPath := os.Getenv("CONFIG_PATH")
-	if configPath == "" {
-		configPath = "config/production.yaml"
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		return getDefaultProductionConfig(), nil
 	}
 
 	data, err := os.ReadFile(configPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config file %s: %w", configPath, err)
+		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	var config ProductionConfig
-	if err := yaml.Unmarshal(data, &config); err != nil {
+	if err := yaml.Unmarshal(data, config); err != nil {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
 
-	return &config, nil
+	return config, nil
 }
 
-// loadEnvironmentConfig loads environment-specific configuration
-func (cm *ConfigManager) loadEnvironmentConfig(env Environment) (*ProductionConfig, error) {
-	configPath := filepath.Join("config", fmt.Sprintf("%s.yaml", env))
-
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return &ProductionConfig{}, nil
-		}
-		return nil, fmt.Errorf("failed to read environment config file %s: %w", configPath, err)
+// getDefaultProductionConfig returns default production configuration
+func getDefaultProductionConfig() *ProductionConfig {
+	return &ProductionConfig{
+		Environment: EnvProduction,
+		Debug:       false,
+		LogLevel:    "info",
+		Server: ProductionServerConfig{
+			Host:         "0.0.0.0",
+			Port:         8080,
+			ReadTimeout:  30 * time.Second,
+			WriteTimeout: 30 * time.Second,
+			IdleTimeout:  120 * time.Second,
+			TLS: ProductionTLSConfig{
+				Enabled:  false,
+				CertFile: "/etc/ssl/certs/server.crt",
+				KeyFile:  "/etc/ssl/private/server.key",
+			},
+		},
+		Database: ProductionDatabaseConfig{
+			Driver:          "postgres",
+			Host:            "localhost",
+			Port:            5432,
+			Database:        "llm_verifier",
+			Username:        "llm_verifier",
+			Password:        "",
+			SSLMode:         "require",
+			MaxConnections:  100,
+			MaxIdleTime:     30 * time.Minute,
+			ConnMaxLifetime: 24 * time.Hour,
+		},
+		Security: ProductionSecurityConfig{
+			JWTSecret:          "",
+			TokenExpiry:        24 * time.Hour,
+			RefreshTokenExpiry: 168 * time.Hour, // 7 days
+			MaxLoginAttempts:   5,
+			LockoutDuration:    15 * time.Minute,
+			SessionTimeout:     8 * time.Hour,
+			RequireHTTPS:       true,
+			RateLimiting: ProductionRateLimitConfig{
+				Enabled:  true,
+				Requests: 1000,
+				Window:   time.Minute,
+			},
+			CORS: ProductionCORSConfig{
+				Enabled:          true,
+				AllowedOrigins:   []string{"https://llm-verifier.com"},
+				AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+				AllowedHeaders:   []string{"*"},
+				ExposedHeaders:   []string{"X-Total-Count"},
+				AllowCredentials: true,
+				MaxAge:           86400,
+			},
+		},
+		Performance: ProductionPerformanceConfig{
+			MaxWorkers:      50,
+			WorkerTimeout:   30 * time.Second,
+			QueueSize:       1000,
+			EnableProfiling: false,
+			EnableMetrics:   true,
+			MemoryLimit:     4 * 1024 * 1024 * 1024, // 4GB
+			CPUQuota:        200,                    // 200% CPU
+		},
+		Monitoring: ProductionMonitoringConfig{
+			Enabled: true,
+			Prometheus: ProductionPrometheusConfig{
+				Enabled:   true,
+				Port:      9090,
+				Path:      "/metrics",
+				Namespace: "llm_verifier",
+			},
+			Tracing: ProductionTracingConfig{
+				Enabled:  true,
+				Provider: "jaeger",
+				Endpoint: "http://localhost:14268/api/traces",
+				Service:  "llm-verifier",
+			},
+			Logging: ProductionLoggingConfig{
+				Level:      "info",
+				Format:     "json",
+				Output:     "file",
+				FilePath:   "/app/logs/llm-verifier.log",
+				MaxSize:    100,
+				MaxBackups: 10,
+				MaxAge:     30,
+				Compress:   true,
+			},
+		},
+		Providers: ProvidersConfig{
+			OpenAI: ProviderConfig{
+				Enabled: true,
+				APIKey:  "",
+				BaseURL: "https://api.openai.com/v1",
+				Models:  []string{"gpt-4", "gpt-3.5-turbo"},
+				Timeout: 30 * time.Second,
+				RateLimit: ProviderRateLimit{
+					Requests: 100,
+					Window:   time.Minute,
+				},
+			},
+			Anthropic: ProviderConfig{
+				Enabled: true,
+				APIKey:  "",
+				BaseURL: "https://api.anthropic.com",
+				Models:  []string{"claude-3-opus-20240229"},
+				Timeout: 30 * time.Second,
+				RateLimit: ProviderRateLimit{
+					Requests: 50,
+					Window:   time.Minute,
+				},
+			},
+			Google: ProviderConfig{
+				Enabled: true,
+				APIKey:  "",
+				BaseURL: "https://generativelanguage.googleapis.com",
+				Models:  []string{"gemini-pro"},
+				Timeout: 30 * time.Second,
+				RateLimit: ProviderRateLimit{
+					Requests: 60,
+					Window:   time.Minute,
+				},
+			},
+		},
+		Enterprise: EnterpriseConfig{
+			RBAC: RBACConfig{
+				Enabled: true,
+				Roles: map[string][]string{
+					"admin": {"*"},
+					"user":  {"read", "write"},
+					"guest": {"read"},
+				},
+				Policies: map[string]PolicyConfig{
+					"admin-policy": {
+						Resources: []string{"*"},
+						Actions:   []string{"*"},
+						Effect:    "allow",
+					},
+				},
+			},
+			MultiTenancy: MultiTenancyConfig{
+				Enabled:       true,
+				IsolationType: "database",
+				TenantHeader:  "X-Tenant-ID",
+				DefaultTenant: "default",
+				AdminTenants:  []string{"system"},
+			},
+			SSO: SSOConfig{
+				Enabled:   false,
+				Providers: []string{"oidc", "saml"},
+				Metadata:  "/etc/sso/metadata.xml",
+				Callback:  "/auth/callback",
+			},
+			AuditLogging: AuditLoggingConfig{
+				Enabled:    true,
+				LogLevel:   "info",
+				OutputPath: "/app/logs/audit.log",
+				MaxSize:    100,
+				MaxBackups: 30,
+				MaxAge:     90,
+				Compress:   true,
+			},
+			Compliance: ComplianceConfig{
+				Enabled:       true,
+				Standards:     []string{"SOC2", "GDPR", "HIPAA"},
+				DataRetention: 2555, // 7 years
+				Encryption:    true,
+				AccessControl: true,
+			},
+			AdvancedFeatures: AdvancedFeaturesConfig{
+				Analytics:      true,
+				ContextManager: true,
+				Checkpointing:  true,
+				VectorStore:    true,
+				MLPipeline:     true,
+			},
+		},
 	}
-
-	var config ProductionConfig
-	if err := yaml.Unmarshal(data, &config); err != nil {
-		return nil, fmt.Errorf("failed to parse environment config file: %w", err)
-	}
-
-	return &config, nil
 }
 
-// mergeConfigs merges two configurations
-func (cm *ConfigManager) mergeConfigs(base, override *ProductionConfig) *ProductionConfig {
-	// Simple merge - in production, you'd use a more sophisticated merge
-	if override.Server.Host != "" {
-		base.Server.Host = override.Server.Host
-	}
-	if override.Server.Port != 0 {
-		base.Server.Port = override.Server.Port
-	}
-	if override.Database.Host != "" {
-		base.Database.Host = override.Database.Host
-	}
-	if override.Database.Port != 0 {
-		base.Database.Port = override.Database.Port
+// GetProductionConfigPath returns the path to production config file
+func GetProductionConfigPath() string {
+	if configPath := os.Getenv("CONFIG_PATH"); configPath != "" {
+		return configPath
 	}
 
-	return base
+	return "/app/config/production.yaml"
 }
 
-// overrideWithEnvVars overrides configuration with environment variables
-func (cm *ConfigManager) overrideWithEnvVars(config *ProductionConfig) *ProductionConfig {
+// ValidateProductionConfig validates production configuration
+func ValidateProductionConfig(config *ProductionConfig) error {
+	if config == nil {
+		return fmt.Errorf("production config is nil")
+	}
+
+	if config.Server.Port <= 0 || config.Server.Port > 65535 {
+		return fmt.Errorf("invalid server port: %d", config.Server.Port)
+	}
+
+	if config.Security.JWTSecret == "" {
+		return fmt.Errorf("JWT secret is required in production")
+	}
+
+	if config.Database.Host == "" {
+		return fmt.Errorf("database host is required")
+	}
+
+	if config.Database.Password == "" {
+		return fmt.Errorf("database password is required")
+	}
+
+	return nil
+}
+
+// LoadProductionConfigFromEnv loads production configuration from environment variables
+func LoadProductionConfigFromEnv() *ProductionConfig {
+	config := getDefaultProductionConfig()
+
 	if host := os.Getenv("SERVER_HOST"); host != "" {
 		config.Server.Host = host
 	}
+
 	if port := os.Getenv("SERVER_PORT"); port != "" {
-		if p, err := parseInt(port); err == nil {
-			config.Server.Port = p
+		if p, err := fmt.Sscanf(port, "%d", &config.Server.Port); err == nil && p == 1 {
+			// Successfully parsed port
 		}
 	}
+
+	if jwtSecret := os.Getenv("JWT_SECRET"); jwtSecret != "" {
+		config.Security.JWTSecret = jwtSecret
+	}
+
 	if dbHost := os.Getenv("DB_HOST"); dbHost != "" {
 		config.Database.Host = dbHost
 	}
+
 	if dbPort := os.Getenv("DB_PORT"); dbPort != "" {
-		if p, err := parseInt(dbPort); err == nil {
-			config.Database.Port = p
+		if p, err := fmt.Sscanf(dbPort, "%d", &config.Database.Port); err == nil && p == 1 {
+			// Successfully parsed port
 		}
 	}
+
 	if dbPassword := os.Getenv("DB_PASSWORD"); dbPassword != "" {
 		config.Database.Password = dbPassword
 	}
-	if jwtSecret := os.Getenv("JWT_SECRET"); jwtSecret != "" {
-		config.Security.JWTSecret = jwtSecret
+
+	if openAIKey := os.Getenv("OPENAI_API_KEY"); openAIKey != "" {
+		config.Providers.OpenAI.APIKey = openAIKey
+	}
+
+	if anthropicKey := os.Getenv("ANTHROPIC_API_KEY"); anthropicKey != "" {
+		config.Providers.Anthropic.APIKey = anthropicKey
+	}
+
+	if googleKey := os.Getenv("GOOGLE_API_KEY"); googleKey != "" {
+		config.Providers.Google.APIKey = googleKey
 	}
 
 	return config
 }
 
-// validateConfig validates the configuration
-func (cm *ConfigManager) validateConfig(config *ProductionConfig) error {
-	if config.Server.Host == "" {
-		return fmt.Errorf("server host is required")
-	}
-	if config.Server.Port == 0 {
-		return fmt.Errorf("server port is required")
-	}
-	if config.Database.Host == "" {
-		return fmt.Errorf("database host is required")
-	}
-	if config.Database.Database == "" {
-		return fmt.Errorf("database name is required")
-	}
-	if config.Security.JWTSecret == "" {
-		return fmt.Errorf("JWT secret is required")
+// SaveProductionConfig saves production configuration to file
+func SaveProductionConfig(config *ProductionConfig, configPath string) error {
+	if err := ValidateProductionConfig(config); err != nil {
+		return fmt.Errorf("invalid config: %w", err)
 	}
 
-	if cm.env == EnvProduction {
-		if config.Security.RequireHTTPS {
-			if !config.Server.TLS.Enabled {
-				return fmt.Errorf("HTTPS is required in production but TLS is not enabled")
-			}
-		}
+	// Create directory if it doesn't exist
+	dir := filepath.Dir(configPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create config directory: %w", err)
 	}
 
-	return nil
-}
-
-// parseInt parses an integer from string
-func parseInt(s string) (int, error) {
-	var result int
-	_, err := fmt.Sscanf(s, "%d", &result)
-	return result, err
-}
-
-// IsProduction checks if the current environment is production
-func (cm *ConfigManager) IsProduction() bool {
-	return cm.env == EnvProduction
-}
-
-// IsDevelopment checks if the current environment is development
-func (cm *ConfigManager) IsDevelopment() bool {
-	return cm.env == EnvDevelopment
-}
-
-// ReloadConfiguration reloads the configuration
-func (cm *ConfigManager) ReloadConfiguration() error {
-	config, err := cm.LoadConfiguration()
+	data, err := yaml.Marshal(config)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal config: %w", err)
 	}
-	cm.config = config
+
+	if err := os.WriteFile(configPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write config file: %w", err)
+	}
+
 	return nil
+}
+
+// MergeProductionConfigs merges two production configurations
+func MergeProductionConfigs(base, override *ProductionConfig) *ProductionConfig {
+	result := *base // Deep copy
+
+	if override.Environment != "" {
+		result.Environment = override.Environment
+	}
+
+	if override.Debug {
+		result.Debug = override.Debug
+	}
+
+	if override.LogLevel != "" {
+		result.LogLevel = override.LogLevel
+	}
+
+	// Merge server config
+	if override.Server.Host != "" {
+		result.Server.Host = override.Server.Host
+	}
+	if override.Server.Port > 0 {
+		result.Server.Port = override.Server.Port
+	}
+	if override.Server.ReadTimeout > 0 {
+		result.Server.ReadTimeout = override.Server.ReadTimeout
+	}
+	if override.Server.WriteTimeout > 0 {
+		result.Server.WriteTimeout = override.Server.WriteTimeout
+	}
+	if override.Server.IdleTimeout > 0 {
+		result.Server.IdleTimeout = override.Server.IdleTimeout
+	}
+
+	// Merge database config
+	if override.Database.Driver != "" {
+		result.Database.Driver = override.Database.Driver
+	}
+	if override.Database.Host != "" {
+		result.Database.Host = override.Database.Host
+	}
+	if override.Database.Port > 0 {
+		result.Database.Port = override.Database.Port
+	}
+	if override.Database.Database != "" {
+		result.Database.Database = override.Database.Database
+	}
+	if override.Database.Username != "" {
+		result.Database.Username = override.Database.Username
+	}
+	if override.Database.Password != "" {
+		result.Database.Password = override.Database.Password
+	}
+
+	// Merge security config
+	if override.Security.JWTSecret != "" {
+		result.Security.JWTSecret = override.Security.JWTSecret
+	}
+	if override.Security.TokenExpiry > 0 {
+		result.Security.TokenExpiry = override.Security.TokenExpiry
+	}
+	if override.Security.MaxLoginAttempts > 0 {
+		result.Security.MaxLoginAttempts = override.Security.MaxLoginAttempts
+	}
+	if override.Security.RequireHTTPS {
+		result.Security.RequireHTTPS = override.Security.RequireHTTPS
+	}
+
+	// Merge monitoring config
+	if override.Monitoring.Enabled {
+		result.Monitoring.Enabled = override.Monitoring.Enabled
+	}
+
+	return &result
+}
+
+// GetProductionEnvVars returns environment variables for production deployment
+func GetProductionEnvVars(config *ProductionConfig) map[string]string {
+	envVars := make(map[string]string)
+
+	envVars["GIN_MODE"] = "release"
+	envVars["PORT"] = fmt.Sprintf("%d", config.Server.Port)
+	envVars["LOG_LEVEL"] = config.LogLevel
+	envVars["JWT_SECRET"] = config.Security.JWTSecret
+	envVars["DB_HOST"] = config.Database.Host
+	envVars["DB_PORT"] = fmt.Sprintf("%d", config.Database.Port)
+	envVars["DB_NAME"] = config.Database.Database
+	envVars["DB_USER"] = config.Database.Username
+	envVars["DB_PASSWORD"] = config.Database.Password
+	envVars["OPENAI_API_KEY"] = config.Providers.OpenAI.APIKey
+	envVars["ANTHROPIC_API_KEY"] = config.Providers.Anthropic.APIKey
+	envVars["GOOGLE_API_KEY"] = config.Providers.Google.APIKey
+
+	// Monitoring and observability
+	envVars["PROMETHEUS_ENABLED"] = fmt.Sprintf("%t", config.Monitoring.Prometheus.Enabled)
+	envVars["PROMETHEUS_PORT"] = fmt.Sprintf("%d", config.Monitoring.Prometheus.Port)
+	envVars["TRACING_ENABLED"] = fmt.Sprintf("%t", config.Monitoring.Tracing.Enabled)
+
+	// Security
+	envVars["REQUIRE_HTTPS"] = fmt.Sprintf("%t", config.Security.RequireHTTPS)
+	envVars["RATE_LIMIT_ENABLED"] = fmt.Sprintf("%t", config.Security.RateLimiting.Enabled)
+	envVars["RATE_LIMIT_REQUESTS"] = fmt.Sprintf("%d", config.Security.RateLimiting.Requests)
+
+	// Enterprise features
+	envVars["ENTERPRISE_ENABLED"] = "true"
+	envVars["RBAC_ENABLED"] = fmt.Sprintf("%t", config.Enterprise.RBAC.Enabled)
+	envVars["MULTI_TENANCY_ENABLED"] = fmt.Sprintf("%t", config.Enterprise.MultiTenancy.Enabled)
+	envVars["AUDIT_LOGGING_ENABLED"] = fmt.Sprintf("%t", config.Enterprise.AuditLogging.Enabled)
+
+	return envVars
+}
+
+// IsProductionEnvironment checks if running in production environment
+func IsProductionEnvironment() bool {
+	env := strings.ToLower(os.Getenv("ENVIRONMENT"))
+	return env == "production" || env == "prod"
+}
+
+// GetProductionDatabaseURL returns production database URL
+func GetProductionDatabaseURL(config *ProductionConfig) string {
+	switch config.Database.Driver {
+	case "postgres":
+		return fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
+			config.Database.Username,
+			config.Database.Password,
+			config.Database.Host,
+			config.Database.Port,
+			config.Database.Database,
+			config.Database.SSLMode,
+		)
+	case "mysql":
+		return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+			config.Database.Username,
+			config.Database.Password,
+			config.Database.Host,
+			config.Database.Port,
+			config.Database.Database,
+		)
+	default:
+		return ""
+	}
 }
