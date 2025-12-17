@@ -141,10 +141,10 @@ type EnhancedSupervisor struct {
 	mu      sync.RWMutex
 
 	// Enhanced components
-	contextManager  enhancedContext.ContextManagerInterface
-	analyticsEngine analytics.AnalyticsEngineInterface
-	validator       validation.ValidationGateInterface
-	monitor         monitoring.MonitoringInterface
+	contextManager  *enhancedContext.ContextManager
+	analyticsEngine *analytics.AnalyticsEngine
+	validator       *validation.ValidationGate
+	monitor         *monitoring.MonitoringEngine
 	verifier        llmverifier.VerifierInterface
 
 	// Job management
