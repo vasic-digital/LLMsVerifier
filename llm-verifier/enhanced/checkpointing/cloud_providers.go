@@ -44,13 +44,9 @@ func NewS3BackupProvider(bucketName, region, accessKey, secretKey string) *S3Bac
 	return provider
 }
 
-func (s3 *S3BackupProvider) Upload(ctx context.Context, key string, data []byte) error {
-	// AWS S3 upload implementation would go here
-	// For now, return a placeholder implementation
-	fmt.Printf("S3: Uploading %d bytes to %s/%s\n", len(data), s3.bucketName, key)
-
+func (p *S3BackupProvider) Upload(ctx context.Context, key string, data []byte) error {
 	// Validate inputs
-	if s3.bucketName == "" {
+	if p.bucketName == "" {
 		return fmt.Errorf("bucket name is required")
 	}
 	if key == "" {
@@ -60,35 +56,71 @@ func (s3 *S3BackupProvider) Upload(ctx context.Context, key string, data []byte)
 		return fmt.Errorf("data cannot be empty")
 	}
 
-	// TODO: Implement actual AWS S3 upload using AWS SDK
-	// This would involve:
-	// 1. Creating an S3 client with credentials
-	// 2. Using PutObject to upload the data
-	// 3. Handling retries and errors
+	// Initialize client if not already done
+	if p.client == nil {
+		cfg, err := config.LoadDefaultConfig(ctx,
+			config.WithRegion(p.region),
+			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(p.accessKey, p.secretKey, "")),
+		)
+		if err != nil {
+			return fmt.Errorf("failed to create AWS config: %w", err)
+		}
+		p.client = s3.NewFromConfig(cfg)
+	}
 
+	// Upload to S3
+	_, err := p.client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket: &p.bucketName,
+		Key:    &key,
+		Body:   bytes.NewReader(data),
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to upload to S3: %w", err)
+	}
+
+	fmt.Printf("S3: Successfully uploaded %d bytes to %s/%s\n", len(data), p.bucketName, key)
 	return nil
 }
 
-func (s3 *S3BackupProvider) Download(ctx context.Context, key string) ([]byte, error) {
-	// AWS S3 download implementation would go here
-	// For now, return a placeholder implementation
-	fmt.Printf("S3: Downloading from %s/%s\n", s3.bucketName, key)
-
+func (p *S3BackupProvider) Download(ctx context.Context, key string) ([]byte, error) {
 	// Validate inputs
-	if s3.bucketName == "" {
+	if p.bucketName == "" {
 		return nil, fmt.Errorf("bucket name is required")
 	}
 	if key == "" {
 		return nil, fmt.Errorf("key is required")
 	}
 
-	// TODO: Implement actual AWS S3 download using AWS SDK
-	// This would involve:
-	// 1. Creating an S3 client with credentials
-	// 2. Using GetObject to download the data
-	// 3. Handling retries and errors
+	// Initialize client if not already done
+	if p.client == nil {
+		cfg, err := config.LoadDefaultConfig(ctx,
+			config.WithRegion(p.region),
+			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(p.accessKey, p.secretKey, "")),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create AWS config: %w", err)
+		}
+		p.client = s3.NewFromConfig(cfg)
+	}
 
-	return []byte("placeholder data"), nil
+	// Download from S3
+	result, err := p.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: &p.bucketName,
+		Key:    &key,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to download from S3: %w", err)
+	}
+	defer result.Body.Close()
+
+	data, err := io.ReadAll(result.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read S3 object body: %w", err)
+	}
+
+	fmt.Printf("S3: Successfully downloaded %d bytes from %s/%s\n", len(data), p.bucketName, key)
+	return data, nil
 }
 
 func (s3 *S3BackupProvider) List(ctx context.Context, prefix string) ([]string, error) {
@@ -113,17 +145,38 @@ func (s3 *S3BackupProvider) GetProviderName() string {
 	return "AWS S3"
 }
 
-func (s3 *S3BackupProvider) HealthCheck(ctx context.Context) error {
+func (p *S3BackupProvider) HealthCheck(ctx context.Context) error {
 	// Validate configuration
-	if s3.bucketName == "" {
+	if p.bucketName == "" {
 		return fmt.Errorf("bucket name not configured")
 	}
-	if s3.region == "" {
+	if p.region == "" {
 		return fmt.Errorf("region not configured")
 	}
 
-	// TODO: Implement actual S3 health check
-	// This would involve testing connectivity and permissions
+	// Initialize client if not already done
+	if p.client == nil {
+		cfg, err := config.LoadDefaultConfig(ctx,
+			config.WithRegion(p.region),
+			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(p.accessKey, p.secretKey, "")),
+		)
+		if err != nil {
+			return fmt.Errorf("failed to create AWS config: %w", err)
+		}
+		p.client = s3.NewFromConfig(cfg)
+	}
+
+	// Test connectivity by listing objects with a prefix that doesn't exist
+	// This is a lightweight way to test permissions and connectivity
+	_, err := p.client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+		Bucket:  &p.bucketName,
+		Prefix:  aws.String("health-check-nonexistent-prefix"),
+		MaxKeys: aws.Int32(1),
+	})
+
+	if err != nil {
+		return fmt.Errorf("S3 health check failed: %w", err)
+	}
 
 	return nil
 }
