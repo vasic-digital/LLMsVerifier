@@ -1,0 +1,169 @@
+# Machine Learning and AI Model Management Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llm-verifier-ml-config
+  namespace: llm-verifier
+data:
+  ml-config.yaml: |
+    # ML Management Configuration
+    enabled: true
+    model_registry:
+      storage: database
+      backup_enabled: true
+      retention_days: 90
+    
+    # Model Training
+    training:
+      enabled: true
+      auto_retraining: true
+      schedule: "0 2 * * *"  # Every 2 AM
+      min_samples: 1000
+      validation_split: 0.2  # 20% for validation
+      
+    # Model Evaluation
+    evaluation:
+      enabled: true
+      auto_evaluation: true
+      benchmarks:
+        - accuracy: true
+        - performance: true
+        - cost_efficiency: true
+      a_b_testing: true
+      comparison_models:
+        - gpt-4
+        - claude-3
+        - gemini-pro
+      
+    # Model Optimization
+    optimization:
+      enabled: true
+      auto_quantization: false  # Future feature
+      pruning: true
+      distillation: false  # Future feature
+      
+    # Model Versioning
+    versioning:
+      enabled: true
+      auto_tagging: true
+      semantic_versioning: false  # Future feature
+      changelog_tracking: true
+
+---
+
+# ML Service Configuration
+ml-service.yaml: |
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: llm-verifier-ml-service
+    namespace: llm-verifier
+    labels:
+      app: llm-verifier
+      component: ml-service
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: llm-verifier
+        component: ml-service
+    template:
+      metadata:
+        labels:
+          app: llm-verifier
+          component: ml-service
+      spec:
+        containers:
+        - name: ml-service
+          image: ghcr.io/your-org/llm-verifier-ml-service:latest
+          ports:
+            - containerPort: 8081
+              name: http
+              protocol: TCP
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: llm-verifier-config
+                  key: database_url
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: llm-verifier-secrets
+                  key: db-password
+            - name: REDIS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: llm-verifier-config
+                  key: redis_url
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: llm-verifier-secrets
+                  key: redis-password
+            - name: MODEL_STORAGE_PATH
+              value: "/app/models"
+            - name: LOG_LEVEL
+              value: "info"
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            readinessProbe:
+              httpGet:
+                path: /ready
+                port: http
+          volumeMounts:
+            - name: model-storage
+              mountPath: /app/models
+            - name: logs
+              mountPath: /app/logs
+
+---
+
+# Auto-scaling Configuration
+ml-hpa.yaml: |
+  apiVersion: autoscaling/v2
+  kind: HorizontalPodAutoscaler
+  metadata:
+    name: llm-verifier-ml-service-hpa
+    namespace: llm-verifier
+  spec:
+    scaleTargetRef:
+      apiVersion: apps/v1
+      kind: Deployment
+      name: llm-verifier-ml-service
+    minReplicas: 1
+    maxReplicas: 5
+    metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+      - resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+    behavior:
+      scaleUp:
+        stabilizationWindowSeconds: 300
+        policies:
+          - type: Percent
+            value: 100
+        selectPolicy: MaxUnavailablePolicy
+      scaleDown:
+        stabilizationWindowSeconds: 300
+        policies:
+          - type: Percent
+            value: 50
+          selectPolicy: MinAvailablePolicy

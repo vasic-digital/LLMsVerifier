@@ -1,0 +1,321 @@
+# Advanced API Gateway Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llm-verifier-gateway-config
+  namespace: llm-verifier
+data:
+  gateway-config.yaml: |
+    # Gateway Configuration
+    server:
+      listen: 8080
+      ssl:
+        enabled: true
+        cert_file: /etc/ssl/tls.crt
+        key_file: /etc/ssl/tls.key
+      
+      # Routing Configuration
+      upstreams:
+        llm-verifier-api:
+          targets:
+            - host: llm-verifier-service
+              port: 8080
+          analytics-service:
+            targets:
+              - host: llm-verifier-analytics-service
+                port: 9091
+          
+      # Rate Limiting
+      rate_limits:
+        global:
+          requests_per_second: 100
+          burst: 200
+          key: "global_ratelimit"
+        per_user:
+          requests_per_second: 50
+          burst: 100
+          key: "user_ratelimit"
+        per_ip:
+          requests_per_second: 30
+          burst: 60
+          key: "ip_ratelimit"
+      
+      # CORS Configuration
+      cors:
+        allowed_origins:
+          - "https://yourdomain.com"
+          - "https://app.yourdomain.com"
+          - "https://api.yourdomain.com"
+        allowed_methods:
+          - "GET"
+          - "POST"
+          - "PUT"
+          - "DELETE"
+          - "OPTIONS"
+          - "PATCH"
+        allowed_headers:
+          - "Authorization"
+          - "Content-Type"
+          - "X-Tenant-ID"
+          - "X-API-Key"
+          - "X-Request-ID"
+        exposed_headers:
+          - "X-Total-Count"
+          - "X-Response-Time"
+          - "X-Rate-Limit-Remaining"
+          - "X-Cache-Control"
+        max_age: 86400
+        allow_credentials: true
+        preflight_continue: true
+      
+      # Security Headers
+      security:
+        enable_content_type_nosniff: true
+        enable_xss_protection: true
+        enable_frame_options: "DENY"
+        enable_strict_transport_security: true
+        content_security_policy: "default-src"
+        
+      # Request Size Limits
+      request_limits:
+        max_request_size: "10m"
+        max_header_size: "8k"
+        max_body_size: "10m"
+        max_response_size: "10m"
+        timeout: 30s
+      
+      # SSL/TLS Configuration
+      ssl:
+        protocols: ["TLSv1.2", "TLSv1.3"]
+        ciphers: "ECDHE+AESGCM:ECDHE+AES256"
+        certificates:
+          - /etc/ssl/tls.crt
+          - /etc/ssl/tls.key
+        
+      # Health Checks
+      health_checks:
+        endpoint: "/health"
+        timeout: 5s
+        success_threshold: 3
+        interval: 10s
+
+---
+  istio-gateway.yaml: |
+    # Istio Gateway Configuration
+    apiVersion: networking.istio.io/v1alpha3
+    kind: Gateway
+    metadata:
+      name: llm-verifier-gateway
+      namespace: llm-verifier
+    spec:
+      selector:
+        istio: ingressgateway
+      servers:
+      - port:
+          number: 443
+          name: https
+          tls:
+            mode: SIMPLE
+            credentialName: llm-verifier-credential
+      hosts:
+      - host: api.llm-verifier.com
+      tls:
+        secretName: llm-verifier-credential
+      gatewayClassName: istio-gateway-class
+    ---
+    
+    apiVersion: networking.istio.io/v1alpha3
+    kind: Gateway
+    metadata:
+      name: llm-verifier-gateway-internal
+      namespace: llm-verifier
+    spec:
+      selector:
+        matchLabels:
+          app: llm-verifier
+      servers:
+      - port:
+          number: 8080
+          name: http
+      hosts:
+      - host: api-internal.llm-verifier.com
+      gatewayClassName: istio-internal-class
+
+---
+  virtual-service.yaml: |
+    # Virtual Service Configuration
+    apiVersion: networking.istio.io/v1beta1
+    kind: VirtualService
+    metadata:
+      name: llm-verifier-vs
+      namespace: llm-verifier
+    spec:
+      hosts:
+      - "*"
+      gateways:
+      - llm-verifier-gateway
+      - llm-verifier-gateway-internal
+      http:
+        - match:
+          - uri:
+            prefix: /api/v1/
+        route:
+          - destination:
+            host: llm-verifier-api
+            port:
+              number: 8080
+        - match:
+          - uri:
+            prefix: /analytics/
+        route:
+          - destination:
+            host: llm-verifier-analytics-service
+            port:
+              number: 9091
+        - match:
+          - uri:
+            prefix: /ws/
+        route:
+          - destination:
+            host: llm-verifier-websocket-service
+            port:
+              number: 8080
+
+---
+
+  destination-rule.yaml: |
+    # Destination Rule Configuration
+    apiVersion: networking.istio.io/v1alpha3
+    kind: DestinationRule
+    metadata:
+      name: llm-verifier-destination-rules
+      namespace: llm-verifier
+    spec:
+      host: llm-verifier-api
+      subsets:
+      - name: v1
+        labels:
+          version: v1
+      trafficPolicy:
+        loadBalancing:
+          simple: {}
+      subsets:
+      - name: v2
+        labels:
+          version: v2
+      trafficPolicy:
+        loadBalancing:
+          simple: {}
+      trafficPolicy:
+        port:
+          - number: 8080
+          name: http
+      rules:
+      - match:
+        - gateways:
+          - llm-verifier-gateway
+          - llm-verifier-gateway-internal
+      - route:
+        - destination:
+          host: llm-verifier-api
+          subset: v1
+        weight: 90
+      - match:
+        - gateways:
+          - llm-verifier-gateway
+          - llm-verifier-gateway-internal
+        - route:
+          - destination:
+            host: llm-verifier-api
+            subset: v2
+        weight: 10
+      match:
+        - headers:
+          canary:
+            key: "x-canary"
+            values:
+            - "true"
+        - route:
+          - destination:
+            host: llm-verifier-api
+            subset: v2
+
+---
+
+  envoy-filters.yaml: |
+    # Envoy Filter Configuration
+    apiVersion: networking.istio.io/v1alpha3
+    kind: EnvoyFilter
+    metadata:
+      name: llm-verifier-ratelimit-filter
+      namespace: llm-verifier
+    spec:
+      configPatches:
+      - applyTo: HTTP_FILTER
+        patch:
+          operation: INSERT_BEFORE
+          value:
+            name: envoy.filters.http.local_ratelimit
+            typed_config:
+              descriptor_key: "global_ratelimit"
+              token_bucket:
+                tokens_per_second: 100
+                max_tokens: 1000
+              fill_interval: 1s
+                timeout: 3s
+              status_code: "429"
+
+---
+  authorization-policy.yaml: |
+    # Authorization Policy
+    apiVersion: security.istio.io/v1beta1
+    kind: AuthorizationPolicy
+    metadata:
+      name: llm-verifier-auth-policy
+      namespace: llm-verifier
+    spec:
+      selector:
+        matchLabels:
+          app: llm-verifier
+      action:
+        when:
+          - key: request.auth.claims
+          values:
+            "verified": "false"
+        method: DENY
+      rules:
+      - to:
+        - operation:
+            method: POST
+            path: /api/v1/verify
+      - when:
+        - key: request.auth.claims
+          values:
+            permission: "verify:models"
+      method: ALLOW
+      - from:
+        - source:
+          principals: ["cluster.local", "external"]
+        namespaces: ["istio-system", "llm-verifier"]
+      action:
+        method: ALLOW
+        principal:
+          jwt:
+            claims:
+              iss: "https://your-identity-provider.com"
+              sub: "llm-verifier"
+              aud: "api"
+              exp: "2025-01-01T00:00:00Z"
+      action:
+        when:
+          - key: request.auth.claims
+          values:
+            permission: "analytics:view"
+        method: ALLOW
+          principal:
+          jwt:
+            claims:
+              iss: "https://your-identity-provider.com"
+              sub: "llm-verifier"
+              aud: "analytics"
+              exp: "2025-01-01T00:00:00Z"
