@@ -1,9 +1,7 @@
 package analytics
 
 import (
-	"fmt"
 	"math"
-	"sort"
 	"time"
 
 	"llm-verifier/database"
@@ -31,12 +29,6 @@ type PerformanceTrend struct {
 	Forecast   []ForecastPoint `json:"forecast,omitempty"`
 }
 
-// TimeRange represents a time range for analysis
-type TimeRange struct {
-	Start time.Time `json:"start"`
-	End   time.Time `json:"end"`
-}
-
 // DataPoint represents a single data point
 type DataPoint struct {
 	Timestamp time.Time              `json:"timestamp"`
@@ -48,19 +40,17 @@ type DataPoint struct {
 type TrendDirection string
 
 const (
-	TrendIncreasing    TrendDirection = "increasing"
-	TrendDecreasing    TrendDirection = "decreasing"
-	TrendStable        TrendDirection = "stable"
-	TrendUnpredictable TrendDirection = "unpredictable"
+	TrendDirectionUpward   TrendDirection = "upward"
+	TrendDirectionDownward TrendDirection = "downward"
+	TrendDirectionStable   TrendDirection = "stable"
 )
 
-// Anomaly represents a detected anomaly
+// Anomaly represents an anomaly in the data
 type Anomaly struct {
-	Timestamp     time.Time `json:"timestamp"`
-	Value         float64   `json:"value"`
-	ExpectedValue float64   `json:"expected_value"`
-	Severity      string    `json:"severity"` // low, medium, high, critical
-	Description   string    `json:"description"`
+	Timestamp time.Time `json:"timestamp"`
+	Value     float64   `json:"value"`
+	Expected  float64   `json:"expected"`
+	Severity  string    `json:"severity"`
 }
 
 // ForecastPoint represents a forecast data point
@@ -70,12 +60,59 @@ type ForecastPoint struct {
 	Confidence float64   `json:"confidence"`
 }
 
-// AnalyzePerformanceTrend analyzes performance trends for a metric
-func (ta *TrendAnalyzer) AnalyzePerformanceTrend(metricName string, timeRange TimeRange, granularity time.Duration) (*PerformanceTrend, error) {
-	// Get metric data from monitoring system
-	// This is a simplified implementation - in reality, you'd query the monitoring system
+// UsagePatternAnalyzer analyzes usage patterns
+type UsagePatternAnalyzer struct {
+	db *database.Database
+}
 
-	// Generate sample data for demonstration
+// NewUsagePatternAnalyzer creates a new usage pattern analyzer
+func NewUsagePatternAnalyzer(db *database.Database) *UsagePatternAnalyzer {
+	return &UsagePatternAnalyzer{db: db}
+}
+
+// UsageAnalysis represents the result of usage pattern analysis
+type UsageAnalysis struct {
+	TimeRange       TimeRange          `json:"time_range"`
+	HourlyPatterns  map[int]float64    `json:"hourly_patterns"`  // Hour -> average usage
+	DailyPatterns   map[string]float64 `json:"daily_patterns"`   // Day -> average usage
+	ModelPopularity map[string]int     `json:"model_popularity"` // Model -> usage count
+	ErrorPatterns   map[string]int     `json:"error_patterns"`   // Error type -> count
+	Recommendations []string           `json:"recommendations"`
+}
+
+// CostOptimizationAnalyzer analyzes cost optimization opportunities
+type CostOptimizationAnalyzer struct {
+	db *database.Database
+}
+
+// NewCostOptimizationAnalyzer creates a new cost optimization analyzer
+func NewCostOptimizationAnalyzer(db *database.Database) *CostOptimizationAnalyzer {
+	return &CostOptimizationAnalyzer{db: db}
+}
+
+// CostAnalysis represents the result of cost optimization analysis
+type CostAnalysis struct {
+	TimeRange        TimeRange          `json:"time_range"`
+	TotalCost        float64            `json:"total_cost"`
+	CostByModel      map[string]float64 `json:"cost_by_model"`
+	CostByProvider   map[string]float64 `json:"cost_by_provider"`
+	CostByEndpoint   map[string]float64 `json:"cost_by_endpoint"`
+	Recommendations  []string           `json:"recommendations"`
+	PotentialSavings float64            `json:"potential_savings"`
+}
+
+// SpendingBreakdown represents a breakdown of spending
+type SpendingBreakdown struct {
+	ByModel     map[string]float64 `json:"by_model"`
+	ByProvider  map[string]float64 `json:"by_provider"`
+	ByEndpoint  map[string]float64 `json:"by_endpoint"`
+	ByTimeOfDay map[string]float64 `json:"by_time_of_day"`
+}
+
+// AnalyzePerformanceTrend analyzes performance trends for a specific metric
+func (ta *TrendAnalyzer) AnalyzePerformanceTrend(metricName string, timeRange TimeRange, granularity time.Duration) (*PerformanceTrend, error) {
+	// In a real implementation, you would query the database for actual data
+	// For now, we'll generate sample data
 	dataPoints := ta.generateSampleData(timeRange, granularity)
 
 	trend := &PerformanceTrend{
@@ -103,12 +140,12 @@ func (ta *TrendAnalyzer) AnalyzePerformanceTrend(metricName string, timeRange Ti
 func (ta *TrendAnalyzer) generateSampleData(timeRange TimeRange, granularity time.Duration) []DataPoint {
 	var points []DataPoint
 
-	current := timeRange.Start
+	current := timeRange.From
 	baseValue := 100.0
 	trend := 0.1 // Slight upward trend
 	noise := 5.0 // Random noise
 
-	for current.Before(timeRange.End) {
+	for current.Before(timeRange.To) {
 		// Add trend
 		value := baseValue + trend*float64(len(points))
 
@@ -118,14 +155,9 @@ func (ta *TrendAnalyzer) generateSampleData(timeRange TimeRange, granularity tim
 		// Add noise
 		noiseValue := (float64(time.Now().UnixNano()%1000)/1000.0 - 0.5) * noise
 
-		finalValue := value + seasonal + noiseValue
-
 		points = append(points, DataPoint{
 			Timestamp: current,
-			Value:     finalValue,
-			Metadata: map[string]interface{}{
-				"source": "synthetic",
-			},
+			Value:     value + seasonal + noiseValue,
 		})
 
 		current = current.Add(granularity)
@@ -135,207 +167,135 @@ func (ta *TrendAnalyzer) generateSampleData(timeRange TimeRange, granularity tim
 }
 
 // calculateTrend calculates the trend direction and slope
-func (ta *TrendAnalyzer) calculateTrend(points []DataPoint) (TrendDirection, float64) {
-	if len(points) < 2 {
-		return TrendStable, 0
+func (ta *TrendAnalyzer) calculateTrend(dataPoints []DataPoint) (TrendDirection, float64) {
+	if len(dataPoints) < 2 {
+		return TrendDirectionStable, 0.0
 	}
 
 	// Simple linear regression
-	n := float64(len(points))
-	sumX := 0.0
-	sumY := 0.0
-	sumXY := 0.0
-	sumXX := 0.0
+	n := float64(len(dataPoints))
+	sumX, sumY, sumXY, sumX2 := 0.0, 0.0, 0.0, 0.0
 
-	for i, point := range points {
+	for i, point := range dataPoints {
 		x := float64(i)
-		y := point.Value
-
 		sumX += x
-		sumY += y
-		sumXY += x * y
-		sumXX += x * x
+		sumY += point.Value
+		sumXY += x * point.Value
+		sumX2 += x * x
 	}
 
-	slope := (n*sumXY - sumX*sumY) / (n*sumXX - sumX*sumX)
+	slope := (n*sumXY - sumX*sumY) / (n*sumX2 - sumX*sumX)
 
-	// Determine direction
-	var direction TrendDirection
-	absSlope := math.Abs(slope)
-
-	if absSlope < 0.01 {
-		direction = TrendStable
-	} else if absSlope < 0.1 {
-		if slope > 0 {
-			direction = TrendIncreasing
-		} else {
-			direction = TrendDecreasing
-		}
-	} else {
-		if slope > 0 {
-			direction = TrendIncreasing
-		} else {
-			direction = TrendDecreasing
-		}
+	// Determine trend direction
+	direction := TrendDirectionStable
+	if slope > 0.1 {
+		direction = TrendDirectionUpward
+	} else if slope < -0.1 {
+		direction = TrendDirectionDownward
 	}
 
 	return direction, slope
 }
 
-// calculateConfidence calculates confidence in the trend analysis
-func (ta *TrendAnalyzer) calculateConfidence(points []DataPoint) float64 {
-	if len(points) < 3 {
-		return 0.5
+// calculateConfidence calculates confidence in the trend
+func (ta *TrendAnalyzer) calculateConfidence(dataPoints []DataPoint) float64 {
+	if len(dataPoints) < 2 {
+		return 0.0
 	}
 
-	// Calculate R-squared (coefficient of determination)
-	n := float64(len(points))
-	sumX := 0.0
-	sumY := 0.0
-	sumXY := 0.0
-	sumXX := 0.0
-	sumYY := 0.0
+	// Calculate correlation coefficient (simplified)
+	n := float64(len(dataPoints))
+	sumX, sumY, sumXY, sumX2, sumY2 := 0.0, 0.0, 0.0, 0.0, 0.0
 
-	for i, point := range points {
+	for i, point := range dataPoints {
 		x := float64(i)
-		y := point.Value
-
 		sumX += x
-		sumY += y
-		sumXY += x * y
-		sumXX += x * x
-		sumYY += y * y
+		sumY += point.Value
+		sumXY += x * point.Value
+		sumX2 += x * x
+		sumY2 += point.Value * point.Value
 	}
 
-	slope := (n*sumXY - sumX*sumY) / (n*sumXX - sumX*sumX)
-	intercept := (sumY - slope*sumX) / n
+	numerator := n*sumXY - sumX*sumY
+	denominator := math.Sqrt((n*sumX2 - sumX*sumX) * (n*sumY2 - sumY*sumY))
 
-	// Calculate R-squared
-	ssRes := 0.0
-	ssTot := 0.0
-
-	for i, point := range points {
-		x := float64(i)
-		y := point.Value
-		predicted := slope*x + intercept
-
-		ssRes += (y - predicted) * (y - predicted)
-		ssTot += (y - sumY/n) * (y - sumY/n)
+	if denominator == 0 {
+		return 0.0
 	}
 
-	rSquared := 1 - (ssRes / ssTot)
-	if rSquared < 0 {
-		rSquared = 0
-	}
-
-	return math.Sqrt(rSquared) // Return correlation coefficient
+	correlation := numerator / denominator
+	return math.Abs(correlation) // Convert to confidence
 }
 
 // detectAnomalies detects anomalies in the data
-func (ta *TrendAnalyzer) detectAnomalies(points []DataPoint) []Anomaly {
+func (ta *TrendAnalyzer) detectAnomalies(dataPoints []DataPoint) []Anomaly {
+	if len(dataPoints) < 10 {
+		return nil
+	}
+
 	var anomalies []Anomaly
 
-	if len(points) < 10 {
-		return anomalies
-	}
-
-	// Calculate rolling average and standard deviation
-	windowSize := 5
-	values := make([]float64, len(points))
-	for i, point := range points {
-		values[i] = point.Value
-	}
-
-	// Simple anomaly detection based on standard deviation
-	for i := windowSize; i < len(values); i++ {
-		window := values[i-windowSize : i]
-
-		// Calculate mean and std dev of window
-		sum := 0.0
-		for _, v := range window {
-			sum += v
+	// Calculate moving average and standard deviation
+	window := 10
+	for i := window; i < len(dataPoints); i++ {
+		var sum, sum2 float64
+		for j := i - window; j < i; j++ {
+			sum += dataPoints[j].Value
+			sum2 += dataPoints[j].Value * dataPoints[j].Value
 		}
-		mean := sum / float64(windowSize)
 
-		sumSq := 0.0
-		for _, v := range window {
-			sumSq += (v - mean) * (v - mean)
-		}
-		stdDev := math.Sqrt(sumSq / float64(windowSize))
+		mean := sum / float64(window)
+		variance := (sum2 / float64(window)) - (mean * mean)
+		stdDev := math.Sqrt(variance)
 
-		// Check if current value is an outlier
-		currentValue := values[i]
-		zScore := math.Abs(currentValue-mean) / stdDev
-
-		if zScore > 3.0 { // 3 standard deviations
-			severity := "low"
-			if zScore > 4.0 {
-				severity = "medium"
-			}
-			if zScore > 5.0 {
-				severity = "high"
-			}
-			if zScore > 6.0 {
-				severity = "critical"
+		// Check if current point is an anomaly (2 standard deviations away)
+		current := dataPoints[i]
+		if math.Abs(current.Value-mean) > 2*stdDev {
+			anomaly := Anomaly{
+				Timestamp: current.Timestamp,
+				Value:     current.Value,
+				Expected:  mean,
+				Severity:  "medium",
 			}
 
-			anomalies = append(anomalies, Anomaly{
-				Timestamp:     points[i].Timestamp,
-				Value:         currentValue,
-				ExpectedValue: mean,
-				Severity:      severity,
-				Description:   fmt.Sprintf("Value deviates by %.2f standard deviations", zScore),
-			})
+			if math.Abs(current.Value-mean) > 3*stdDev {
+				anomaly.Severity = "high"
+			}
+
+			anomalies = append(anomalies, anomaly)
 		}
 	}
 
 	return anomalies
 }
 
-// generateForecast generates a simple forecast
-func (ta *TrendAnalyzer) generateForecast(points []DataPoint, numPoints int) []ForecastPoint {
-	if len(points) < 2 {
+// generateForecast generates forecast points
+func (ta *TrendAnalyzer) generateForecast(dataPoints []DataPoint, points int) []ForecastPoint {
+	if len(dataPoints) < 2 {
 		return nil
 	}
 
-	// Use simple linear regression for forecasting
-	n := float64(len(points))
-	sumX := 0.0
-	sumY := 0.0
-	sumXY := 0.0
-	sumXX := 0.0
-
-	for i, point := range points {
-		x := float64(i)
-		y := point.Value
-
-		sumX += x
-		sumY += y
-		sumXY += x * y
-		sumXX += x * x
-	}
-
-	slope := (n*sumXY - sumX*sumY) / (n*sumXX - sumX*sumX)
-	intercept := (sumY - slope*sumX) / n
-
-	// Calculate confidence interval (simplified)
-	confidences := []float64{0.95, 0.90, 0.85, 0.80, 0.75, 0.70, 0.65, 0.60, 0.55, 0.50}
+	// Simple linear extrapolation
+	lastPoint := dataPoints[len(dataPoints)-1]
+	_, slope := ta.calculateTrend(dataPoints)
 
 	var forecast []ForecastPoint
-	lastTimestamp := points[len(points)-1].Timestamp
+	granularity := time.Hour // Default granularity
 
-	for i := 1; i <= numPoints; i++ {
-		x := float64(len(points) + i - 1)
-		predictedValue := slope*x + intercept
+	if len(dataPoints) >= 2 {
+		granularity = dataPoints[1].Timestamp.Sub(dataPoints[0].Timestamp)
+	}
 
-		confidence := 0.8
-		if i < len(confidences) {
-			confidence = confidences[i-1]
-		}
+	for i := 1; i <= points; i++ {
+		forecastTime := lastPoint.Timestamp.Add(time.Duration(i) * granularity)
+		forecastValue := lastPoint.Value + slope*float64(i)
+
+		// Decrease confidence for further ahead predictions
+		confidence := 1.0 - (float64(i)/float64(points))*0.5
 
 		forecast = append(forecast, ForecastPoint{
-			Timestamp:  lastTimestamp.Add(time.Duration(i) * time.Hour),
-			Value:      predictedValue,
+			Timestamp:  forecastTime,
+			Value:      forecastValue,
 			Confidence: confidence,
 		})
 	}
@@ -343,70 +303,35 @@ func (ta *TrendAnalyzer) generateForecast(points []DataPoint, numPoints int) []F
 	return forecast
 }
 
-// UsagePatternAnalyzer analyzes usage patterns
-type UsagePatternAnalyzer struct {
-	db *database.Database
-}
-
-// NewUsagePatternAnalyzer creates a new usage pattern analyzer
-func NewUsagePatternAnalyzer(db *database.Database) *UsagePatternAnalyzer {
-	return &UsagePatternAnalyzer{db: db}
-}
-
 // AnalyzeUsagePatterns analyzes usage patterns over time
 func (upa *UsagePatternAnalyzer) AnalyzeUsagePatterns(timeRange TimeRange) (*UsageAnalysis, error) {
 	analysis := &UsageAnalysis{
-		TimeRange: timeRange,
+		TimeRange:       timeRange,
+		HourlyPatterns:  upa.analyzeHourlyPatterns(timeRange),
+		DailyPatterns:   upa.analyzeDailyPatterns(timeRange),
+		ModelPopularity: upa.analyzeModelPopularity(timeRange),
+		ErrorPatterns:   upa.analyzeErrorPatterns(timeRange),
+		Recommendations: upa.generateUsageRecommendations(),
 	}
-
-	// Analyze hourly patterns
-	analysis.HourlyPatterns = upa.analyzeHourlyPatterns(timeRange)
-
-	// Analyze daily patterns
-	analysis.DailyPatterns = upa.analyzeDailyPatterns(timeRange)
-
-	// Analyze model popularity
-	analysis.ModelPopularity = upa.analyzeModelPopularity(timeRange)
-
-	// Analyze error patterns
-	analysis.ErrorPatterns = upa.analyzeErrorPatterns(timeRange)
-
-	// Generate recommendations
-	analysis.Recommendations = upa.generateRecommendations(analysis)
 
 	return analysis, nil
 }
 
-// UsageAnalysis represents usage pattern analysis
-type UsageAnalysis struct {
-	TimeRange       TimeRange          `json:"time_range"`
-	HourlyPatterns  map[int]float64    `json:"hourly_patterns"`  // Hour -> average usage
-	DailyPatterns   map[string]float64 `json:"daily_patterns"`   // Day -> average usage
-	ModelPopularity map[string]int     `json:"model_popularity"` // Model -> usage count
-	ErrorPatterns   map[string]int     `json:"error_patterns"`   // Error type -> count
-	Recommendations []string           `json:"recommendations"`
-}
-
-// analyzeHourlyPatterns analyzes usage by hour
+// analyzeHourlyPatterns analyzes usage by hour of day
 func (upa *UsagePatternAnalyzer) analyzeHourlyPatterns(timeRange TimeRange) map[int]float64 {
 	patterns := make(map[int]float64)
 
-	// Sample data - in real implementation, query database
+	// In a real implementation, query the database
+	// For now, generate sample patterns
 	for hour := 0; hour < 24; hour++ {
-		// Simulate typical usage patterns
-		baseUsage := 50.0
-		if hour >= 9 && hour <= 17 { // Business hours
-			baseUsage = 100.0
+		// Peak hours during business hours
+		if hour >= 9 && hour <= 17 {
+			patterns[hour] = 100.0 + (float64(hour%4) * 10)
+		} else if hour >= 18 && hour <= 22 {
+			patterns[hour] = 60.0 + (float64(hour%2) * 15)
+		} else {
+			patterns[hour] = 20.0 + (float64(hour%3) * 5)
 		}
-		if hour >= 12 && hour <= 13 { // Lunch time
-			baseUsage = 80.0
-		}
-		if hour >= 18 && hour <= 6 { // Off hours
-			baseUsage = 20.0
-		}
-
-		// Add some variation
-		patterns[hour] = baseUsage + (float64(hour%5) * 10)
 	}
 
 	return patterns
@@ -414,28 +339,35 @@ func (upa *UsagePatternAnalyzer) analyzeHourlyPatterns(timeRange TimeRange) map[
 
 // analyzeDailyPatterns analyzes usage by day of week
 func (upa *UsagePatternAnalyzer) analyzeDailyPatterns(timeRange TimeRange) map[string]float64 {
-	patterns := map[string]float64{
-		"Monday":    90.0,
-		"Tuesday":   95.0,
-		"Wednesday": 100.0,
-		"Thursday":  98.0,
-		"Friday":    85.0,
-		"Saturday":  40.0,
-		"Sunday":    35.0,
+	patterns := make(map[string]float64)
+
+	days := []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}
+
+	// Higher usage during weekdays
+	for i, day := range days {
+		if i < 5 { // Weekdays
+			patterns[day] = 90.0 + (float64(i) * 5)
+		} else { // Weekends
+			patterns[day] = 40.0 + (float64(i-5) * 10)
+		}
 	}
 
 	return patterns
 }
 
-// analyzeModelPopularity analyzes which models are most used
+// analyzeModelPopularity analyzes model popularity
 func (upa *UsagePatternAnalyzer) analyzeModelPopularity(timeRange TimeRange) map[string]int {
 	popularity := map[string]int{
-		"gpt-4":           150,
-		"gpt-3.5-turbo":   120,
-		"claude-3-sonnet": 100,
-		"gemini-pro":      80,
-		"claude-2":        60,
-		"other":           40,
+		"gpt-3.5-turbo":  450,
+		"gpt-4":          300,
+		"claude-3-opus":  200,
+		"gemini-pro":     150,
+		"llama-2":        100,
+		"codellama":      80,
+		"mistral":        60,
+		"phi-2":          40,
+		"qwen-turbo":     35,
+		"deepseek-coder": 30,
 	}
 
 	return popularity
@@ -444,245 +376,91 @@ func (upa *UsagePatternAnalyzer) analyzeModelPopularity(timeRange TimeRange) map
 // analyzeErrorPatterns analyzes error patterns
 func (upa *UsagePatternAnalyzer) analyzeErrorPatterns(timeRange TimeRange) map[string]int {
 	patterns := map[string]int{
-		"rate_limit_exceeded":  25,
-		"model_unavailable":    15,
-		"authentication_error": 10,
-		"timeout":              8,
-		"parsing_error":        5,
+		"timeout_error":        25,
+		"rate_limit_error":     18,
+		"authentication_error": 12,
+		"model_not_found":      8,
+		"invalid_request":      6,
+		"insufficient_quota":   4,
+		"content_filter":       3,
+		"network_error":        2,
+		"server_error":         1,
+		"unknown_error":        1,
 	}
 
 	return patterns
 }
 
-// generateRecommendations generates recommendations based on analysis
-func (upa *UsagePatternAnalyzer) generateRecommendations(analysis *UsageAnalysis) []string {
-	var recommendations []string
-
-	// Check peak hours
-	peakHour := 0
-	maxUsage := 0.0
-	for hour, usage := range analysis.HourlyPatterns {
-		if usage > maxUsage {
-			maxUsage = usage
-			peakHour = hour
-		}
+// generateUsageRecommendations generates recommendations based on usage patterns
+func (upa *UsagePatternAnalyzer) generateUsageRecommendations() []string {
+	return []string{
+		"Consider implementing rate limiting during peak hours (9 AM - 5 PM)",
+		"Optimize model selection based on task complexity to reduce costs",
+		"Implement caching for frequently repeated requests",
+		"Consider using smaller models for simple tasks during peak hours",
+		"Schedule batch processing during off-peak hours (10 PM - 6 AM)",
+		"Implement error retry logic for transient failures",
+		"Consider load balancing across multiple providers",
 	}
-
-	if peakHour >= 9 && peakHour <= 17 {
-		recommendations = append(recommendations,
-			fmt.Sprintf("Scale up resources during peak business hours (%d:00)", peakHour))
-	}
-
-	// Check model popularity
-	var popularModels []string
-	for model, count := range analysis.ModelPopularity {
-		if count > 100 {
-			popularModels = append(popularModels, model)
-		}
-	}
-
-	if len(popularModels) > 0 {
-		recommendations = append(recommendations,
-			fmt.Sprintf("Ensure high availability for popular models: %v", popularModels))
-	}
-
-	// Check error patterns
-	totalErrors := 0
-	for _, count := range analysis.ErrorPatterns {
-		totalErrors += count
-	}
-
-	if totalErrors > 20 {
-		recommendations = append(recommendations,
-			"Investigate and resolve high error rates to improve user experience")
-	}
-
-	// Add general recommendations
-	recommendations = append(recommendations,
-		"Consider implementing request queuing during peak hours",
-		"Monitor model performance metrics for early issue detection",
-		"Implement automatic scaling based on usage patterns")
-
-	return recommendations
-}
-
-// CostOptimizationAnalyzer analyzes cost optimization opportunities
-type CostOptimizationAnalyzer struct {
-	db *database.Database
-}
-
-// NewCostOptimizationAnalyzer creates a new cost optimization analyzer
-func NewCostOptimizationAnalyzer(db *database.Database) *CostOptimizationAnalyzer {
-	return &CostOptimizationAnalyzer{db: db}
 }
 
 // AnalyzeCostOptimization analyzes cost optimization opportunities
 func (coa *CostOptimizationAnalyzer) AnalyzeCostOptimization(timeRange TimeRange) (*CostAnalysis, error) {
+	spending := coa.analyzeCurrentSpending(timeRange)
+
 	analysis := &CostAnalysis{
-		TimeRange: timeRange,
+		TimeRange:        timeRange,
+		TotalCost:        spending.ByModel["gpt-4"]*0.03 + spending.ByModel["gpt-3.5-turbo"]*0.002 + spending.ByModel["claude-3-opus"]*0.015,
+		CostByModel:      spending.ByModel,
+		CostByProvider:   spending.ByProvider,
+		CostByEndpoint:   spending.ByEndpoint,
+		Recommendations:  coa.generateCostRecommendations(spending),
+		PotentialSavings: 0.25, // 25% potential savings
 	}
-
-	// Analyze current spending
-	analysis.CurrentSpending = coa.analyzeCurrentSpending(timeRange)
-
-	// Identify optimization opportunities
-	analysis.OptimizationOpportunities = coa.identifyOptimizationOpportunities()
-
-	// Generate recommendations
-	analysis.Recommendations = coa.generateCostRecommendations(analysis)
-
-	// Calculate potential savings
-	analysis.PotentialSavings = coa.calculatePotentialSavings(analysis)
 
 	return analysis, nil
 }
 
-// CostAnalysis represents cost analysis and optimization opportunities
-type CostAnalysis struct {
-	TimeRange                  TimeRange                 `json:"time_range"`
-	CurrentSpending            SpendingBreakdown         `json:"current_spending"`
-	OptimizationOpportunities  []OptimizationOpportunity `json:"optimization_opportunities"`
-	Recommendations            []string                  `json:"recommendations"`
-	PotentialSavings           float64                   `json:"potential_savings"`
-	PotentialSavingsPercentage float64                   `json:"potential_savings_percentage"`
-}
-
-// SpendingBreakdown represents spending breakdown by category
-type SpendingBreakdown struct {
-	ByProvider map[string]float64 `json:"by_provider"`
-	ByModel    map[string]float64 `json:"by_model"`
-	ByTime     map[string]float64 `json:"by_time"` // hourly breakdown
-	Total      float64            `json:"total"`
-}
-
-// OptimizationOpportunity represents a cost optimization opportunity
-type OptimizationOpportunity struct {
-	Type             string  `json:"type"` // model_switch, batch_processing, caching, etc.
-	Description      string  `json:"description"`
-	PotentialSavings float64 `json:"potential_savings"`
-	Difficulty       string  `json:"difficulty"` // low, medium, high
-	Impact           string  `json:"impact"`     // low, medium, high
-}
-
 // analyzeCurrentSpending analyzes current spending patterns
 func (coa *CostOptimizationAnalyzer) analyzeCurrentSpending(timeRange TimeRange) SpendingBreakdown {
-	breakdown := SpendingBreakdown{
-		ByProvider: make(map[string]float64),
-		ByModel:    make(map[string]float64),
-		ByTime:     make(map[string]float64),
-	}
-
-	// Sample data - in real implementation, query pricing and usage data
-	breakdown.ByProvider = map[string]float64{
-		"OpenAI":    1500.0,
-		"Anthropic": 800.0,
-		"Google":    400.0,
-		"Others":    200.0,
-	}
-
-	breakdown.ByModel = map[string]float64{
-		"gpt-4":           1200.0,
-		"claude-3-sonnet": 700.0,
-		"gpt-3.5-turbo":   600.0,
-		"gemini-pro":      300.0,
-		"others":          100.0,
-	}
-
-	// Hourly spending (simulate daily pattern)
-	for hour := 0; hour < 24; hour++ {
-		multiplier := 1.0
-		if hour >= 9 && hour <= 17 { // Business hours
-			multiplier = 2.0
-		}
-		breakdown.ByTime[fmt.Sprintf("%02d:00", hour)] = 75.0 * multiplier
-	}
-
-	// Calculate total
-	for _, amount := range breakdown.ByProvider {
-		breakdown.Total += amount
-	}
-
-	return breakdown
-}
-
-// identifyOptimizationOpportunities identifies cost optimization opportunities
-func (coa *CostOptimizationAnalyzer) identifyOptimizationOpportunities() []OptimizationOpportunity {
-	opportunities := []OptimizationOpportunity{
-		{
-			Type:             "model_switch",
-			Description:      "Switch from GPT-4 to GPT-3.5-turbo for non-critical tasks",
-			PotentialSavings: 500.0,
-			Difficulty:       "medium",
-			Impact:           "high",
+	return SpendingBreakdown{
+		ByModel: map[string]float64{
+			"gpt-4":         300.0,
+			"gpt-3.5-turbo": 450.0,
+			"claude-3-opus": 200.0,
+			"gemini-pro":    150.0,
+			"llama-2":       100.0,
 		},
-		{
-			Type:             "batch_processing",
-			Description:      "Implement batch processing for multiple similar requests",
-			PotentialSavings: 200.0,
-			Difficulty:       "high",
-			Impact:           "medium",
+		ByProvider: map[string]float64{
+			"openai":    750.0,
+			"anthropic": 200.0,
+			"google":    150.0,
+			"meta":      100.0,
 		},
-		{
-			Type:             "response_caching",
-			Description:      "Implement intelligent response caching for repeated queries",
-			PotentialSavings: 150.0,
-			Difficulty:       "medium",
-			Impact:           "high",
+		ByEndpoint: map[string]float64{
+			"/verify":    600.0,
+			"/compare":   300.0,
+			"/analyze":   200.0,
+			"/recommend": 100.0,
 		},
-		{
-			Type:             "usage_optimization",
-			Description:      "Optimize prompt length and reduce unnecessary tokens",
-			PotentialSavings: 100.0,
-			Difficulty:       "low",
-			Impact:           "medium",
-		},
-		{
-			Type:             "off_peak_scheduling",
-			Description:      "Schedule non-urgent tasks during off-peak hours",
-			PotentialSavings: 75.0,
-			Difficulty:       "low",
-			Impact:           "low",
+		ByTimeOfDay: map[string]float64{
+			"morning":   400.0,
+			"afternoon": 500.0,
+			"evening":   200.0,
+			"night":     100.0,
 		},
 	}
-
-	return opportunities
 }
 
 // generateCostRecommendations generates cost optimization recommendations
-func (coa *CostOptimizationAnalyzer) generateCostRecommendations(analysis *CostAnalysis) []string {
-	var recommendations []string
-
-	// Sort opportunities by potential savings
-	opportunities := analysis.OptimizationOpportunities
-	sort.Slice(opportunities, func(i, j int) bool {
-		return opportunities[i].PotentialSavings > opportunities[j].PotentialSavings
-	})
-
-	// Add top recommendations
-	for _, opp := range opportunities[:3] {
-		recommendations = append(recommendations,
-			fmt.Sprintf("%s: Potential savings $%.2f (%s difficulty, %s impact)",
-				opp.Description, opp.PotentialSavings, opp.Difficulty, opp.Impact))
+func (coa *CostOptimizationAnalyzer) generateCostRecommendations(spending SpendingBreakdown) []string {
+	return []string{
+		"Use GPT-3.5-turbo for simple tasks, save GPT-4 for complex reasoning",
+		"Implement response caching to reduce API calls",
+		"Consider using open-source models for non-critical tasks",
+		"Optimize prompt engineering to reduce token usage",
+		"Implement batch processing to take advantage of volume discounts",
+		"Use smaller models for initial drafts, larger models for refinement",
+		"Consider spot instances or reserved capacity for predictable workloads",
 	}
-
-	// Add general recommendations
-	recommendations = append(recommendations,
-		"Implement usage monitoring and set up spending alerts",
-		"Consider reserved instances or committed use discounts where available",
-		"Regularly review and optimize model selection based on task requirements",
-		"Implement request deduplication to avoid redundant API calls")
-
-	return recommendations
-}
-
-// calculatePotentialSavings calculates total potential savings
-func (coa *CostOptimizationAnalyzer) calculatePotentialSavings(analysis *CostAnalysis) float64 {
-	totalSavings := 0.0
-	for _, opp := range analysis.OptimizationOpportunities {
-		totalSavings += opp.PotentialSavings
-	}
-
-	analysis.PotentialSavingsPercentage = (totalSavings / analysis.CurrentSpending.Total) * 100
-
-	return totalSavings
 }
