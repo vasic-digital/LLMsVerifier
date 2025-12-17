@@ -14,20 +14,20 @@ import (
 
 // Task represents a unit of work to be executed
 type Task struct {
-	ID          string                 `json:"id"`
-	Type        string                 `json:"type"`
-	Priority    int                    `json:"priority"` // Higher number = higher priority
-	Data        map[string]interface{} `json:"data"`
-	CreatedAt   time.Time              `json:"created_at"`
-	Deadline    *time.Time             `json:"deadline,omitempty"`
-	MaxRetries  int                    `json:"max_retries"`
-	RetryCount  int                    `json:"retry_count"`
-	Status      string                 `json:"status"` // pending, running, completed, failed
-	Result      interface{}            `json:"result,omitempty"`
-	Error       string                 `json:"error,omitempty"`
-	AssignedTo  string                 `json:"assigned_to,omitempty"`
-	StartedAt   *time.Time             `json:"started_at,omitempty"`
-	CompletedAt *time.Time             `json:"completed_at,omitempty"`
+	ID          string         `json:"id"`
+	Type        string         `json:"type"`
+	Priority    int            `json:"priority"` // Higher number = higher priority
+	Data        map[string]any `json:"data"`
+	CreatedAt   time.Time      `json:"created_at"`
+	Deadline    *time.Time     `json:"deadline,omitempty"`
+	MaxRetries  int            `json:"max_retries"`
+	RetryCount  int            `json:"retry_count"`
+	Status      string         `json:"status"` // pending, running, completed, failed
+	Result      any            `json:"result,omitempty"`
+	Error       string         `json:"error,omitempty"`
+	AssignedTo  string         `json:"assigned_to,omitempty"`
+	StartedAt   *time.Time     `json:"started_at,omitempty"`
+	CompletedAt *time.Time     `json:"completed_at,omitempty"`
 }
 
 // Worker represents a worker agent
@@ -49,7 +49,7 @@ type WorkerPerformance struct {
 }
 
 // TaskHandler is a function that handles task execution
-type TaskHandler func(ctx context.Context, task *Task) (interface{}, error)
+type TaskHandler func(ctx context.Context, task *Task) (any, error)
 
 // Supervisor manages the worker pool and task distribution
 type Supervisor struct {
@@ -72,7 +72,7 @@ type Supervisor struct {
 // TaskResult represents the result of a task execution
 type TaskResult struct {
 	TaskID string
-	Result interface{}
+	Result any
 	Error  error
 }
 
@@ -633,7 +633,7 @@ func (s *Supervisor) checkWorkerHealth() {
 }
 
 // GetStats returns supervisor statistics
-func (s *Supervisor) GetStats() map[string]interface{} {
+func (s *Supervisor) GetStats() map[string]any {
 	activeWorkers := 0
 	idleWorkers := 0
 	busyWorkers := 0
@@ -670,7 +670,7 @@ func (s *Supervisor) GetStats() map[string]interface{} {
 		}
 	}
 
-	return map[string]interface{}{
+	return map[string]any{
 		"workers": map[string]int{
 			"total":   len(s.workers),
 			"active":  activeWorkers,
