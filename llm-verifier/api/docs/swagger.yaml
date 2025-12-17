@@ -94,6 +94,74 @@ definitions:
     - name
     - provider_id
     type: object
+  api.CreatePricingRequest:
+    properties:
+      cached_input_token_cost:
+        minimum: 0
+        type: number
+      currency:
+        maxLength: 3
+        minLength: 3
+        type: string
+      effective_from:
+        type: string
+      effective_to:
+        type: string
+      input_token_cost:
+        minimum: 0
+        type: number
+      model_id:
+        minimum: 1
+        type: integer
+      output_token_cost:
+        minimum: 0
+        type: number
+      pricing_model:
+        type: string
+      request_cost:
+        minimum: 0
+        type: number
+      storage_cost:
+        minimum: 0
+        type: number
+    required:
+    - currency
+    - input_token_cost
+    - model_id
+    - output_token_cost
+    - pricing_model
+    type: object
+  api.CreateScheduleRequest:
+    properties:
+      cron_expression:
+        type: string
+      description:
+        maxLength: 500
+        type: string
+      interval_seconds:
+        minimum: 60
+        type: integer
+      is_active:
+        type: boolean
+      max_runs:
+        minimum: 1
+        type: integer
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      schedule_type:
+        type: string
+      target_id:
+        minimum: 1
+        type: integer
+      target_type:
+        type: string
+    required:
+    - name
+    - schedule_type
+    - target_type
+    type: object
   api.LoginRequest:
     properties:
       password:
@@ -144,6 +212,35 @@ paths:
       summary: User login
       tags:
       - auth
+  /config/export:
+    post:
+      consumes:
+      - application/json
+      description: Exports system configuration in various formats for AI CLI tools
+      parameters:
+      - description: Export configuration
+        in: body
+        name: export
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Exported configuration
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Export configuration
+      tags:
+      - config
   /health:
     get:
       description: Returns the health status of the API
@@ -158,6 +255,33 @@ paths:
       summary: Health check endpoint
       tags:
       - system
+  /issues:
+    get:
+      description: Retrieves system issues and problems with optional filtering
+      parameters:
+      - description: Number of results per page
+        in: query
+        name: limit
+        type: integer
+      - description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      - description: Filter by issue type
+        in: query
+        name: issue_type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of issues
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get issues
+      tags:
+      - issues
   /models:
     get:
       description: Retrieves a list of all LLM models with pagination
@@ -233,6 +357,188 @@ paths:
       summary: Create model
       tags:
       - models
+  /notifications/channels:
+    get:
+      description: Returns the status and configuration of all available notification
+        channels
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Channel statuses
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get notification channels status
+      tags:
+      - notifications
+  /notifications/subscribers:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new notification subscriber for specified event types
+        and channels
+      parameters:
+      - description: Subscriber configuration
+        in: body
+        name: subscriber
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Subscriber created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create notification subscriber
+      tags:
+      - notifications
+  /notifications/test:
+    post:
+      consumes:
+      - application/json
+      description: Sends a test notification to specified channels for testing purposes
+      parameters:
+      - description: Test notification configuration
+        in: body
+        name: test
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Test notification sent
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Send test notification
+      tags:
+      - notifications
+  /pricing:
+    get:
+      description: Retrieves model pricing information with optional filtering
+      parameters:
+      - description: Number of results per page
+        in: query
+        name: limit
+        type: integer
+      - description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      - description: Filter by pricing model
+        in: query
+        name: pricing_model
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of pricing records
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get pricing information
+      tags:
+      - pricing
+    post:
+      consumes:
+      - application/json
+      description: Creates a new pricing record for a model
+      parameters:
+      - description: Pricing information
+        in: body
+        name: pricing
+        required: true
+        schema:
+          $ref: '#/definitions/api.CreatePricingRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created pricing record
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create pricing record
+      tags:
+      - pricing
+  /schedules:
+    get:
+      description: Retrieves scheduled jobs with optional filtering by type
+      parameters:
+      - description: Number of results per page
+        in: query
+        name: limit
+        type: integer
+      - description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      - description: Filter by schedule type
+        in: query
+        name: schedule_type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of schedules
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get schedules
+      tags:
+      - schedules
+    post:
+      consumes:
+      - application/json
+      description: Creates a new scheduled job for model verification or other tasks
+      parameters:
+      - description: Schedule configuration
+        in: body
+        name: schedule
+        required: true
+        schema:
+          $ref: '#/definitions/api.CreateScheduleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created schedule
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create schedule
+      tags:
+      - schedules
   /system/database-stats:
     get:
       description: Returns database performance and size statistics
