@@ -265,7 +265,7 @@ func (s *Server) getModels(c *gin.Context) {
 		return
 	}
 
-	filters := map[string]interface{}{
+	filters := map[string]any{
 		"limit":  limit,
 		"offset": offset,
 	}
@@ -671,7 +671,7 @@ func (s *Server) getProviders(c *gin.Context) {
 		return
 	}
 
-	filters := map[string]interface{}{
+	filters := map[string]any{
 		"limit":  limit,
 		"offset": offset,
 	}
@@ -840,7 +840,7 @@ func (s *Server) getVerificationResults(c *gin.Context) {
 		return
 	}
 
-	filters := map[string]interface{}{
+	filters := map[string]any{
 		"limit":  limit,
 		"offset": offset,
 	}
@@ -1242,14 +1242,14 @@ func (s *Server) generateReport(c *gin.Context) {
 		}
 	} else {
 		// Get all models
-		allModels, err := s.database.ListModels(map[string]interface{}{"limit": 1000})
+		allModels, err := s.database.ListModels(map[string]any{"limit": 1000})
 		if err == nil {
 			models = allModels
 		}
 	}
 
 	// Get verification results for the date range
-	filters := map[string]interface{}{
+	filters := map[string]any{
 		"start_date": startTime,
 		"end_date":   endTime,
 		"limit":      1000,
@@ -1262,7 +1262,7 @@ func (s *Server) generateReport(c *gin.Context) {
 	}
 
 	// Get issues
-	issues, err := s.database.ListIssues(map[string]interface{}{"limit": 1000})
+	issues, err := s.database.ListIssues(map[string]any{"limit": 1000})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve issues: " + err.Error()})
 		return
@@ -1402,8 +1402,9 @@ func compareModels(models []*database.Model, results []*database.VerificationRes
 }
 
 func getProviderNameForModel(model database.Model) string {
-	// This would need to fetch provider name from database
+	// TODO: Implement database lookup for provider name
 	// For now, return empty string
+	_ = model // Suppress unused parameter warning
 	return ""
 }
 
@@ -2065,7 +2066,7 @@ func (s *Server) getIssues(c *gin.Context) {
 		return
 	}
 
-	filters := map[string]interface{}{
+	filters := map[string]any{
 		"limit":  limit,
 		"offset": offset,
 	}
@@ -2278,7 +2279,7 @@ func (s *Server) getEvents(c *gin.Context) {
 		return
 	}
 
-	filters := map[string]interface{}{
+	filters := map[string]any{
 		"limit":  limit,
 		"offset": offset,
 	}
@@ -2384,7 +2385,7 @@ func (s *Server) createEvent(c *gin.Context) {
 			Type:      events.EventType(event.EventType),
 			Severity:  events.EventSeverity(event.Severity),
 			Message:   event.Message,
-			Data:      make(map[string]interface{}),
+			Data:      make(map[string]any),
 			Timestamp: event.CreatedAt,
 			Source:    "api",
 		}
@@ -2509,7 +2510,7 @@ func (s *Server) getSchedules(c *gin.Context) {
 		return
 	}
 
-	filters := map[string]interface{}{
+	filters := map[string]any{
 		"limit":  limit,
 		"offset": offset,
 	}
@@ -2704,7 +2705,7 @@ func (s *Server) getConfigExports(c *gin.Context) {
 		return
 	}
 
-	filters := map[string]interface{}{
+	filters := map[string]any{
 		"limit":  limit,
 		"offset": offset,
 	}
@@ -2931,7 +2932,7 @@ func (s *Server) getLogs(c *gin.Context) {
 		return
 	}
 
-	filters := map[string]interface{}{
+	filters := map[string]any{
 		"limit":  limit,
 		"offset": offset,
 	}
@@ -3061,19 +3062,19 @@ func (s *Server) exportAsYAML() (string, error) {
 // exportAsOpenCode exports configuration in OpenCode format
 func (s *Server) exportAsOpenCode() (string, error) {
 	// OpenCode format: JSON with specific structure for OpenCode AI assistant
-	opencodeConfig := map[string]interface{}{
+	opencodeConfig := map[string]any{
 		"name":    "LLM Verifier Configuration",
 		"version": "1.0",
-		"config": map[string]interface{}{
+		"config": map[string]any{
 			"llms": s.config.LLMs,
-			"global": map[string]interface{}{
+			"global": map[string]any{
 				"base_url":      s.config.Global.BaseURL,
 				"default_model": s.config.Global.DefaultModel,
 				"max_retries":   s.config.Global.MaxRetries,
 				"request_delay": s.config.Global.RequestDelay.String(),
 				"timeout":       s.config.Global.Timeout.String(),
 			},
-			"api": map[string]interface{}{
+			"api": map[string]any{
 				"port":        s.config.API.Port,
 				"rate_limit":  s.config.API.RateLimit,
 				"enable_cors": s.config.API.EnableCORS,
@@ -3094,16 +3095,16 @@ func (s *Server) exportAsOpenCode() (string, error) {
 // exportAsClaude exports configuration in Claude Code format
 func (s *Server) exportAsClaude() (string, error) {
 	// Claude Code format: Simplified JSON structure for Claude AI assistant
-	claudeConfig := map[string]interface{}{
-		"llm_verifier_config": map[string]interface{}{
+	claudeConfig := map[string]any{
+		"llm_verifier_config": map[string]any{
 			"llm_endpoints": s.config.LLMs,
-			"settings": map[string]interface{}{
+			"settings": map[string]any{
 				"concurrency":           s.config.Concurrency,
 				"timeout_seconds":       int(s.config.Timeout.Seconds()),
 				"api_port":              s.config.API.Port,
 				"rate_limit_per_minute": s.config.API.RateLimit,
 			},
-			"global": map[string]interface{}{
+			"global": map[string]any{
 				"default_model": s.config.Global.DefaultModel,
 				"max_retries":   s.config.Global.MaxRetries,
 			},
@@ -3121,23 +3122,23 @@ func (s *Server) exportAsClaude() (string, error) {
 // exportAsVSCode exports configuration in VS Code settings format
 func (s *Server) exportAsVSCode() (string, error) {
 	// VS Code format: JSON with VS Code settings structure
-	vscodeConfig := map[string]interface{}{
-		"llmVerifier": map[string]interface{}{
+	vscodeConfig := map[string]any{
+		"llmVerifier": map[string]any{
 			"llms":        s.config.LLMs,
 			"concurrency": s.config.Concurrency,
 			"timeout":     s.config.Timeout.String(),
 		},
-		"llmVerifier.api": map[string]interface{}{
+		"llmVerifier.api": map[string]any{
 			"port":       s.config.API.Port,
 			"rateLimit":  s.config.API.RateLimit,
 			"enableCors": s.config.API.EnableCORS,
 		},
-		"llmVerifier.global": map[string]interface{}{
+		"llmVerifier.global": map[string]any{
 			"defaultModel": s.config.Global.DefaultModel,
 			"maxRetries":   s.config.Global.MaxRetries,
 			"requestDelay": s.config.Global.RequestDelay.String(),
 		},
-		"[json]": map[string]interface{}{
+		"[json]": map[string]any{
 			"editor.defaultFormatter": "esbenp.prettier-vscode",
 		},
 	}
@@ -3166,7 +3167,7 @@ func (s *Server) getUsers(c *gin.Context) {
 		return
 	}
 
-	filters := map[string]interface{}{
+	filters := map[string]any{
 		"limit":  limit,
 		"offset": offset,
 	}
@@ -3384,7 +3385,7 @@ func (s *Server) getSystemInfo(c *gin.Context) {
 	}
 
 	// Build system info response
-	systemInfo := map[string]interface{}{
+	systemInfo := map[string]any{
 		"version":             "1.0.0",
 		"build_time":          "2024-01-01T00:00:00Z", // This should be set at build time
 		"go_version":          "1.21.0",
@@ -3393,7 +3394,7 @@ func (s *Server) getSystemInfo(c *gin.Context) {
 		"total_models":        totalModels,
 		"total_providers":     totalProviders,
 		"total_verifications": totalVerifications,
-		"system_stats": map[string]interface{}{
+		"system_stats": map[string]any{
 			"cpu_usage":    15.2, // Placeholder - in production, get actual stats
 			"memory_usage": 45.8, // Placeholder
 			"disk_usage":   23.1, // Placeholder
@@ -3427,46 +3428,6 @@ func (s *Server) getDatabaseStats(c *gin.Context) {
 	}
 
 	SendSuccess(c, http.StatusOK, stats, "")
-}
-
-// exportAIConfig exports models in AI CLI agent format
-func (s *Server) exportAIConfig(c *gin.Context) {
-	var request struct {
-		Format     string                     `json:"format" binding:"required"`
-		Options    *llmverifier.ExportOptions `json:"options"`
-		OutputPath string                     `json:"output_path,omitempty"`
-	}
-
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse request: " + err.Error()})
-		return
-	}
-
-	// Use default output path if not provided
-	if request.OutputPath == "" {
-		request.OutputPath = "./exports"
-	}
-
-	// Validate format
-	supportedFormats := []string{"opencode", "crush", "claude-code"}
-	if !contains(supportedFormats, request.Format) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Unsupported format. Supported: " + strings.Join(supportedFormats, ", ")})
-		return
-	}
-
-	// Export configuration using the server's config
-	// The ExportAIConfig function will create mock data internally for now
-	err := llmverifier.ExportAIConfig(s.config, request.Format, request.OutputPath, request.Options)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to export configuration: " + err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"message":     "Configuration exported successfully",
-		"format":      request.Format,
-		"output_path": request.OutputPath,
-	})
 }
 
 // contains checks if a string is in a slice

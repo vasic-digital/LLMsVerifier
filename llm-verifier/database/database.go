@@ -163,7 +163,7 @@ func copyTableData(sourceDB, destDB *sql.DB, tableName string) error {
 		var cid int
 		var name, ctype string
 		var notnull, pk int
-		var dfltValue interface{}
+		var dfltValue any
 		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dfltValue, &pk); err != nil {
 			rows.Close()
 			return err
@@ -191,8 +191,8 @@ func copyTableData(sourceDB, destDB *sql.DB, tableName string) error {
 	defer sourceRows.Close()
 
 	for sourceRows.Next() {
-		values := make([]interface{}, len(columns))
-		valuePtrs := make([]interface{}, len(columns))
+		values := make([]any, len(columns))
+		valuePtrs := make([]any, len(columns))
 		for i := range values {
 			valuePtrs[i] = &values[i]
 		}
@@ -733,17 +733,17 @@ type Provider struct {
 
 // User represents a system user
 type User struct {
-	ID           int64                  `json:"id"`
-	Username     string                 `json:"username"`
-	Email        string                 `json:"email"`
-	PasswordHash string                 `json:"-"` // Never expose password hash
-	FullName     string                 `json:"full_name"`
-	Role         string                 `json:"role"`
-	IsActive     bool                   `json:"is_active"`
-	LastLogin    *time.Time             `json:"last_login"`
-	CreatedAt    time.Time              `json:"created_at"`
-	UpdatedAt    time.Time              `json:"updated_at"`
-	Preferences  map[string]interface{} `json:"preferences"`
+	ID           int64          `json:"id"`
+	Username     string         `json:"username"`
+	Email        string         `json:"email"`
+	PasswordHash string         `json:"-"` // Never expose password hash
+	FullName     string         `json:"full_name"`
+	Role         string         `json:"role"`
+	IsActive     bool           `json:"is_active"`
+	LastLogin    *time.Time     `json:"last_login"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	Preferences  map[string]any `json:"preferences"`
 }
 
 // APIKey represents an API key for programmatic access
@@ -966,31 +966,6 @@ func scanNullableInt64(nullInt64 sql.NullInt64) *int64 {
 	return nil
 }
 
-// Helper function to scan nullable int
-func scanNullableInt(nullInt sql.NullInt32) *int {
-	if nullInt.Valid {
-		val := int(nullInt.Int32)
-		return &val
-	}
-	return nil
-}
-
-// Helper function to scan nullable float64
-func scanNullableFloat64(nullFloat sql.NullFloat64) *float64 {
-	if nullFloat.Valid {
-		return &nullFloat.Float64
-	}
-	return nil
-}
-
-// Helper function to scan nullable bool
-func scanNullableBool(nullBool sql.NullBool) *bool {
-	if nullBool.Valid {
-		return &nullBool.Bool
-	}
-	return nil
-}
-
 // Helper function to scan nullable bool from string
 func scanNullableBoolFromString(nullString sql.NullString) *bool {
 	if !nullString.Valid || nullString.String == "" {
@@ -1066,14 +1041,6 @@ func toNullString(s *string) sql.NullString {
 		return sql.NullString{String: *s, Valid: true}
 	}
 	return sql.NullString{Valid: false}
-}
-
-// toNullInt64 converts a *int64 to sql.NullInt64
-func toNullInt64(i *int64) sql.NullInt64 {
-	if i != nil {
-		return sql.NullInt64{Int64: *i, Valid: true}
-	}
-	return sql.NullInt64{Valid: false}
 }
 
 // toNullInt converts a *int to sql.NullInt32
@@ -1153,20 +1120,20 @@ type Issue struct {
 
 // Notification represents a sent notification and its status
 type Notification struct {
-	ID         int64                  `json:"id"`
-	Type       string                 `json:"type"`
-	Channel    string                 `json:"channel"`
-	Priority   string                 `json:"priority"`
-	Title      string                 `json:"title"`
-	Message    string                 `json:"message"`
-	Data       map[string]interface{} `json:"data"`
-	Recipient  string                 `json:"recipient"`
-	Sent       bool                   `json:"sent"`
-	Error      string                 `json:"error"`
-	RetryCount int                    `json:"retry_count"`
-	CreatedAt  time.Time              `json:"created_at"`
-	SentAt     *time.Time             `json:"sent_at"`
-	UpdatedAt  time.Time              `json:"updated_at"`
+	ID         int64          `json:"id"`
+	Type       string         `json:"type"`
+	Channel    string         `json:"channel"`
+	Priority   string         `json:"priority"`
+	Title      string         `json:"title"`
+	Message    string         `json:"message"`
+	Data       map[string]any `json:"data"`
+	Recipient  string         `json:"recipient"`
+	Sent       bool           `json:"sent"`
+	Error      string         `json:"error"`
+	RetryCount int            `json:"retry_count"`
+	CreatedAt  time.Time      `json:"created_at"`
+	SentAt     *time.Time     `json:"sent_at"`
+	UpdatedAt  time.Time      `json:"updated_at"`
 }
 
 // ==================== Transaction Helper Methods ====================
