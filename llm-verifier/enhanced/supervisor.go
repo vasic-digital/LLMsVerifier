@@ -9,44 +9,80 @@ import (
 	"sync"
 	"time"
 
-	"llm-verifier/enhanced/supervisor"
 	llmverifier "llm-verifier/llmverifier"
 )
 
+// Task represents a task to be executed
+type Task struct {
+	ID          string                 `json:"id"`
+	Type        string                 `json:"type"`
+	Priority    int                    `json:"priority"`
+	Data        map[string]interface{} `json:"data"`
+	CreatedAt   time.Time              `json:"created_at"`
+	StartedAt   *time.Time             `json:"started_at,omitempty"`
+	CompletedAt *time.Time             `json:"completed_at,omitempty"`
+	Status      string                 `json:"status"`
+	Result      *TaskResult            `json:"result,omitempty"`
+	Error       string                 `json:"error,omitempty"`
+	MaxRetries  int                    `json:"max_retries"`
+	RetryCount  int                    `json:"retry_count"`
+	AssignedTo  string                 `json:"assigned_to,omitempty"`
+}
+
+// TaskResult represents the result of a completed task
+type TaskResult struct {
+	TaskID      string                 `json:"task_id"`
+	WorkerID    string                 `json:"worker_id"`
+	Success     bool                   `json:"success"`
+	Data        map[string]interface{} `json:"data"`
+	Result      interface{}            `json:"result"`
+	Error       interface{}            `json:"error,omitempty"`
+	Duration    time.Duration          `json:"duration"`
+	CompletedAt time.Time              `json:"completed_at"`
+}
+
+// Worker represents a worker that can execute tasks
+type Worker struct {
+	ID            string                 `json:"id"`
+	Type          string                 `json:"type"`
+	Status        string                 `json:"status"`
+	CurrentTask   *Task                  `json:"current_task,omitempty"`
+	TasksDone     int                    `json:"tasks_done"`
+	LastActive    time.Time              `json:"last_active"`
+	StartTime     time.Time              `json:"start_time"`
+	Capabilities  []string               `json:"capabilities"`
+	LastHeartbeat time.Time              `json:"last_heartbeat"`
+	Performance   map[string]interface{} `json:"performance"`
+}
+
+// TaskHandler represents a function that can handle a specific type of task
+type TaskHandler func(ctx context.Context, task *Task) (interface{}, error)
+
 // Supervisor manages task decomposition and worker coordination
 type Supervisor struct {
-	workers      map[string]*supervisor.Worker
-	tasks        map[string]*supervisor.Task
-	taskQueue    chan *supervisor.Task
-	resultChan   chan *supervisor.TaskResult
+	workers      map[string]*Worker
+	tasks        map[string]*Task
+	taskQueue    chan *Task
+	resultChan   chan *TaskResult
 	stopCh       chan struct{}
 	verifier     *llmverifier.Verifier
-	taskHandlers map[string]supervisor.TaskHandler
+	taskHandlers map[string]TaskHandler
 	maxWorkers   int
 	mu           sync.RWMutex
 }
 
 // TaskResult represents the result of a completed task
-type TaskResult struct {
-	TaskID      string
-	WorkerID    string
-	Success     bool
-	Result      interface{}
-	Error       string
-	Duration    time.Duration
-	CompletedAt time.Time
-}
 
 // NewSupervisor creates a new supervisor instance
 func NewSupervisor(verifier *llmverifier.Verifier, maxWorkers int) *Supervisor {
 	s := &Supervisor{
-		workers:      make(map[string]*supervisor.Worker),
-		tasks:        make(map[string]*supervisor.Task),
-		taskQueue:    make(chan *supervisor.Task, 100), // Buffer for 100 tasks
-		resultChan:   make(chan *supervisor.TaskResult, 100),
+		workers:      make(map[string]*Worker),
+		tasks:        make(map[string]*Task),
+		taskQueue:    make(chan *Task, 100), // Buffer for 100 tasks
+		resultChan:   make(chan *TaskResult, 100),
 		stopCh:       make(chan struct{}),
 		verifier:     verifier,
-		taskHandlers: make(map[string]supervisor.TaskHandler),
+		taskHandlers: make(map[string]TaskHandler),
 		maxWorkers:   maxWorkers,
 	}
 
@@ -74,7 +110,7 @@ func (s *Supervisor) Start() error {
 
 // Stop gracefully shuts down the supervisor
 func (s *Supervisor) Stop() {
-	log.Println("Stopping supervisor...")
+	log.Println("Stopping ..")
 
 	close(s.stopCh)
 
@@ -89,12 +125,12 @@ func (s *Supervisor) Stop() {
 }
 
 // DecomposeTask breaks down a complex task into smaller subtasks
-func (s *Supervisor) DecomposeTask(taskDescription string, context map[string]interface{}) ([]*supervisor.Task, error) {
+func (s *Supervisor) DecomposeTask(taskDescription string, context map[string]interface{}) ([]*Task, error) {
 	// Simple rule-based decomposition (can be enhanced with LLM later)
-	var tasks []*supervisor.Task
+	var tasks []*Task
 
 	// Create a primary analysis task
-	task := &supervisor.Task{
+	task := &Task{
 		ID:         fmt.Sprintf("task_%d", time.Now().UnixNano()),
 		Type:       "analysis",
 		Priority:   5,
@@ -110,7 +146,7 @@ func (s *Supervisor) DecomposeTask(taskDescription string, context map[string]in
 	description := strings.ToLower(taskDescription)
 
 	if strings.Contains(description, "code") || strings.Contains(description, "review") {
-		subtask := &supervisor.Task{
+		subtask := &Task{
 			ID:         fmt.Sprintf("task_%d_sub1", time.Now().UnixNano()),
 			Type:       "generation",
 			Priority:   4,
@@ -123,7 +159,7 @@ func (s *Supervisor) DecomposeTask(taskDescription string, context map[string]in
 	}
 
 	if strings.Contains(description, "test") || strings.Contains(description, "validate") {
-		subtask := &supervisor.Task{
+		subtask := &Task{
 			ID:         fmt.Sprintf("task_%d_sub2", time.Now().UnixNano()),
 			Type:       "testing",
 			Priority:   3,
@@ -140,7 +176,7 @@ func (s *Supervisor) DecomposeTask(taskDescription string, context map[string]in
 }
 
 // SubmitTask submits a task for execution
-func (s *Supervisor) SubmitTask(task *supervisor.Task) error {
+func (s *Supervisor) SubmitTask(task *Task) error {
 	s.mu.Lock()
 	s.tasks[task.ID] = task
 	s.mu.Unlock()
@@ -155,7 +191,7 @@ func (s *Supervisor) SubmitTask(task *supervisor.Task) error {
 }
 
 // SubmitTasks submits multiple tasks for execution
-func (s *Supervisor) SubmitTasks(tasks []*supervisor.Task) error {
+func (s *Supervisor) SubmitTasks(tasks []*Task) error {
 	for _, task := range tasks {
 		if err := s.SubmitTask(task); err != nil {
 			return err
@@ -165,7 +201,7 @@ func (s *Supervisor) SubmitTasks(tasks []*supervisor.Task) error {
 }
 
 // GetTaskStatus returns the status of a task
-func (s *Supervisor) GetTaskStatus(taskID string) (*supervisor.Task, error) {
+func (s *Supervisor) GetTaskStatus(taskID string) (*Task, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -250,7 +286,7 @@ func (s *Supervisor) GetSystemStatus() map[string]interface{} {
 // registerDefaultHandlers registers built-in task handlers
 func (s *Supervisor) registerDefaultHandlers() {
 	// Analysis task handler
-	s.taskHandlers["analysis"] = func(ctx context.Context, task *supervisor.Task) (interface{}, error) {
+	s.taskHandlers["analysis"] = func(ctx context.Context, task *Task) (interface{}, error) {
 		description := task.Data["description"].(string)
 		log.Printf("Executing analysis task: %s", description)
 
@@ -264,7 +300,7 @@ func (s *Supervisor) registerDefaultHandlers() {
 	}
 
 	// Generation task handler
-	s.taskHandlers["generation"] = func(ctx context.Context, task *supervisor.Task) (interface{}, error) {
+	s.taskHandlers["generation"] = func(ctx context.Context, task *Task) (interface{}, error) {
 		description := task.Data["description"].(string)
 		log.Printf("Executing generation task: %s", description)
 
@@ -278,7 +314,7 @@ func (s *Supervisor) registerDefaultHandlers() {
 	}
 
 	// Testing task handler
-	s.taskHandlers["testing"] = func(ctx context.Context, task *supervisor.Task) (interface{}, error) {
+	s.taskHandlers["testing"] = func(ctx context.Context, task *Task) (interface{}, error) {
 		description := task.Data["description"].(string)
 		log.Printf("Executing testing task: %s", description)
 
@@ -292,7 +328,7 @@ func (s *Supervisor) registerDefaultHandlers() {
 	}
 
 	// General task handler (fallback)
-	s.taskHandlers["general"] = func(ctx context.Context, task *supervisor.Task) (interface{}, error) {
+	s.taskHandlers["general"] = func(ctx context.Context, task *Task) (interface{}, error) {
 		description := task.Data["description"].(string)
 		log.Printf("Executing general task: %s", description)
 
@@ -313,7 +349,7 @@ func (s *Supervisor) workerManager() {
 	// Create initial workers
 	for i := 0; i < s.maxWorkers; i++ {
 		workerID := fmt.Sprintf("worker_%d", i+1)
-		worker := &supervisor.Worker{
+		worker := &Worker{
 			ID:            workerID,
 			Capabilities:  []string{"analysis", "generation", "testing", "general"},
 			Status:        "idle",
@@ -329,7 +365,7 @@ func (s *Supervisor) workerManager() {
 }
 
 // workerLoop runs the worker's main loop
-func (s *Supervisor) workerLoop(worker *supervisor.Worker) {
+func (s *Supervisor) workerLoop(worker *Worker) {
 	log.Printf("Worker %s started", worker.ID)
 
 	for {
@@ -358,7 +394,7 @@ func (s *Supervisor) workerLoop(worker *supervisor.Worker) {
 }
 
 // executeTask executes a task on a worker
-func (s *Supervisor) executeTask(worker *supervisor.Worker, task *supervisor.Task) {
+func (s *Supervisor) executeTask(worker *Worker, task *Task) {
 	worker.Status = "busy"
 	worker.CurrentTask = task
 	task.Status = "running"
@@ -400,7 +436,7 @@ func (s *Supervisor) executeTask(worker *supervisor.Worker, task *supervisor.Tas
 
 	// Send result
 	select {
-	case s.resultChan <- &supervisor.TaskResult{
+	case s.resultChan <- &TaskResult{
 		TaskID: task.ID,
 		Result: result,
 		Error:  fmt.Errorf(task.Error),
@@ -455,11 +491,11 @@ func (s *Supervisor) taskDispatcher() {
 }
 
 // findBestWorker finds the best worker for a task
-func (s *Supervisor) findBestWorker(task *supervisor.Task) *supervisor.Worker {
+func (s *Supervisor) findBestWorker(task *Task) *Worker {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	var candidates []*supervisor.Worker
+	var candidates []*Worker
 
 	// Find workers that can handle this task type and are idle
 	for _, worker := range s.workers {
