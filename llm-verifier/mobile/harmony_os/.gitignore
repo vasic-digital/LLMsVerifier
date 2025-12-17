@@ -1,0 +1,75 @@
+# Build outputs
+build/
+dist/
+output/
+.libs/
+*.so
+*.a
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+.project
+.classpath
+.settings/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# HarmonyOS DevEco Studio
+.harmonyos/
+build-cache/
+.idea/
+.gradle/
+local.properties
+
+# Test outputs
+test-results/
+coverage/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Certificates and keys
+*.p12
+*.pfx
+*.jks
+*.key
+*.crt
+*.pem
+
+# Database files
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Backup files
+*.bak
+*.backup
+
+# Package files
+*.har
+*.hs
