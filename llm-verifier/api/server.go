@@ -43,6 +43,7 @@ import (
 	"llm-verifier/database"
 	"llm-verifier/enhanced"
 	"llm-verifier/events"
+	"llm-verifier/failover"
 	"llm-verifier/llmverifier"
 	"llm-verifier/monitoring"
 	"llm-verifier/notifications"
@@ -60,6 +61,7 @@ type Server struct {
 	notificationMgr *notifications.NotificationManager
 	scheduler       *scheduler.Scheduler
 	issueMgr        *enhanced.IssueManager
+	failoverMgr     *failover.FailoverManager
 	jwtSecret       []byte
 	startTime       time.Time
 }
@@ -100,6 +102,9 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	// Initialize issue manager
 	issueMgr := enhanced.NewIssueManager(db)
 
+	// Initialize failover manager
+	failoverMgr := failover.NewFailoverManager(db)
+
 	server := &Server{
 		router:          gin.Default(),
 		config:          cfg,
@@ -110,6 +115,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		notificationMgr: notificationMgr,
 		scheduler:       sched,
 		issueMgr:        issueMgr,
+		failoverMgr:     failoverMgr,
 		jwtSecret:       []byte(cfg.API.JWTSecret),
 		startTime:       time.Now(),
 	}
@@ -257,6 +263,13 @@ func (s *Server) setupRoutes() {
 		{
 			notifications.GET("/channels", s.getNotificationChannels)
 			notifications.POST("/test", s.testNotification)
+		}
+
+		// Failover
+		failover := v1.Group("/failover")
+		{
+			failover.GET("/status", s.getFailoverStatus)
+			failover.POST("/select/:model", s.selectProviderForModel)
 		}
 
 		// Schedules
@@ -731,6 +744,11 @@ func (s *Server) Shutdown() {
 	// Shutdown notification manager
 	if s.notificationMgr != nil {
 		s.notificationMgr.Shutdown()
+	}
+
+	// Shutdown failover manager
+	if s.failoverMgr != nil {
+		s.failoverMgr.Stop()
 	}
 
 	// Shutdown event bus
