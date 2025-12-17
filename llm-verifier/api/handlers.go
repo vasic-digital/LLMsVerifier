@@ -3149,6 +3149,222 @@ func (s *Server) exportAsVSCode() (string, error) {
 	return string(jsonBytes), nil
 }
 
+// getUsers retrieves all users
+func (s *Server) getUsers(c *gin.Context) {
+	limitStr := c.DefaultQuery("limit", "50")
+	offsetStr := c.DefaultQuery("offset", "0")
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit parameter"})
+		return
+	}
+
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid offset parameter"})
+		return
+	}
+
+	filters := map[string]interface{}{
+		"limit":  limit,
+		"offset": offset,
+	}
+
+	users, err := s.database.ListUsers(filters)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve users"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"users": users,
+		"pagination": gin.H{
+			"limit":  limit,
+			"offset": offset,
+		},
+	})
+}
+
+// getUserByID retrieves a specific user by ID
+func (s *Server) getUserByID(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	user, err := s.database.GetUser(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
+}
+
+// createUser creates a new user
+func (s *Server) createUser(c *gin.Context) {
+	var req CreateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
+		return
+	}
+
+	user := database.User{
+		Username:  req.Username,
+		Email:     req.Email,
+		Role:      req.Role,
+		IsActive:  req.IsActive,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	// Hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		return
+	}
+	user.PasswordHash = string(hashedPassword)
+
+	err = s.database.CreateUser(&user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, user)
+}
+
+// updateUser updates an existing user
+func (s *Server) updateUser(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	var req UpdateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
+		return
+	}
+
+	existingUser, err := s.database.GetUser(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Update fields
+	if req.Username != "" {
+		existingUser.Username = req.Username
+	}
+	if req.Email != "" {
+		existingUser.Email = req.Email
+	}
+	if req.Role != "" {
+		existingUser.Role = req.Role
+	}
+	if req.IsActive != nil {
+		existingUser.IsActive = *req.IsActive
+	}
+	existingUser.UpdatedAt = time.Now()
+
+	err = s.database.UpdateUser(existingUser)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, existingUser)
+}
+
+// deleteUser deletes a user
+func (s *Server) deleteUser(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	err = s.database.DeleteUser(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete user"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+// getCurrentUser retrieves the current authenticated user
+func (s *Server) getCurrentUser(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	id, ok := userID.(float64)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID type"})
+		return
+	}
+
+	user, err := s.database.GetUser(int64(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
+}
+
+// updateCurrentUser updates the current authenticated user
+func (s *Server) updateCurrentUser(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	id, ok := userID.(float64)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID type"})
+		return
+	}
+
+	var req UpdateCurrentUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
+		return
+	}
+
+	existingUser, err := s.database.GetUser(int64(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Update allowed fields
+	if req.Email != "" {
+		existingUser.Email = req.Email
+	}
+	existingUser.UpdatedAt = time.Now()
+
+	err = s.database.UpdateUser(existingUser)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, existingUser)
+}
+
 // getSystemInfo returns system information
 // @Summary Get system information
 // @Description Returns system version, statistics, and counts
@@ -3261,4 +3477,24 @@ func contains(slice []string, item string) bool {
 		}
 	}
 	return false
+}
+
+// Request/Response types for user operations
+type CreateUserRequest struct {
+	Username string `json:"username" binding:"required,min=3,max=50"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=8"`
+	Role     string `json:"role" binding:"required,oneof=admin user"`
+	IsActive bool   `json:"is_active"`
+}
+
+type UpdateUserRequest struct {
+	Username string `json:"username,omitempty" binding:"omitempty,min=3,max=50"`
+	Email    string `json:"email,omitempty" binding:"omitempty,email"`
+	Role     string `json:"role,omitempty" binding:"omitempty,oneof=admin user"`
+	IsActive *bool  `json:"is_active,omitempty"`
+}
+
+type UpdateCurrentUserRequest struct {
+	Email string `json:"email,omitempty" binding:"omitempty,email"`
 }

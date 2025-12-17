@@ -1,18 +1,53 @@
 # Git
 .git
 .gitignore
+.github/
 
 # Documentation
 *.md
 docs/
 README.md
+CHANGELOG.md
+CONTRIBUTING.md
+LICENSE
+NOTICE
+
+# Development files
+.env
+.env.local
+.env.*.local
+*.log
+*.tmp
+*.swp
+*~
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
 # Test files
 *_test.go
-test_*
+test-*
 tests/
+coverage.*
+*.out
 
 # Build artifacts
+bin/
+dist/
+build/
 *.exe
 *.exe~
 *.dll
@@ -23,36 +58,33 @@ llm-verifier
 llm-verifier-cli
 llm-verifier-test
 
+# Docker files
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+Jenkinsfile
+Makefile
+
 # Database files
 *.db
 *.db-shm
 *.db-wal
+*.sqlite
+*.sqlite3
 llm-verifier.db*
 
 # Logs
+logs/
 *.log
-
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Node modules (for desktop apps)
-node_modules/
-
-# Python files (if any)
-__pycache__/
-*.pyc
-*.pyo
 
 # Temporary files
 tmp/
 temp/
+cache/
 
 # Export files
 exports/
@@ -73,3 +105,46 @@ test.db*
 # Configuration files (will be mounted as volumes)
 config.yaml
 test-config.yaml
+config/production.yaml
+config/staging.yaml
+
+# Secrets and keys (NEVER include)
+secrets/
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+*.gpg
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Node modules (for desktop apps)
+node_modules/
+
+# Python files (if any)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# Coverage reports
+coverage.*
+*.cover
+
+# Debug files
+debug
+profile
+pprof
+*.prof
+
+# Vendor directory (if not using modules)
+vendor/
+
+# Local development overrides
+docker-compose.override.yml
+.env.override

@@ -1,0 +1,423 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  GO_VERSION: '1.21'
+  DOCKER_BUILDKIT: 1
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Security and quality checks
+  security:
+    name: Security & Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Run security scan with Gosec
+      uses: securecodewarrior/github-action-gosec@master
+      with:
+        args: './...'
+
+    - name: Run vulnerability scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Run Go vet
+      run: go vet ./...
+
+    - name: Run staticcheck
+      uses: dominikh/staticcheck-action@v1.3.0
+      with:
+        version: "2023.1.6"
+        install-go: false
+
+  # Unit tests
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Run tests with coverage
+      run: |
+        go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+        go tool cover -html=coverage.out -o coverage.html
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.out
+        flags: unittests
+        name: codecov-umbrella
+
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: coverage.html
+
+    - name: Generate test report
+      run: go test -v -json ./... > test-results.json
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results
+        path: test-results.json
+
+  # Integration tests
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [test]
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Build application
+      run: go build -o llm-verifier cmd/main.go
+
+    - name: Run integration tests
+      run: go test -v -tags=integration ./tests/integration/...
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db?sslmode=disable
+        REDIS_URL: redis://localhost:6379
+
+  # Build and push Docker images
+  build:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    needs: [security, test, integration]
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          BUILDKIT_INLINE_CACHE=1
+
+    - name: Generate SBOM
+      uses: anchore/sbom-action@v0
+      with:
+        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        format: spdx-json
+        output-file: ./sbom.spdx.json
+
+    - name: Upload SBOM
+      uses: actions/upload-artifact@v3
+      with:
+        name: sbom
+        path: ./sbom.spdx.json
+
+  # Performance tests
+  performance:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Run performance benchmarks
+      run: go test -bench=. -benchmem ./... > benchmarks.txt
+
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v3
+      with:
+        name: benchmarks
+        path: benchmarks.txt
+
+    - name: Run k6 load tests
+      uses: grafana/k6-action@v0.3.0
+      with:
+        filename: tests/performance/load-test.js
+        flags: --out json=results.json
+
+    - name: Upload k6 results
+      uses: actions/upload-artifact@v3
+      with:
+        name: k6-results
+        path: results.json
+
+  # Deploy to staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build, performance]
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Deploy to ECS
+      run: |
+        aws ecs update-service \
+          --cluster llm-verifier-staging \
+          --service llm-verifier-api \
+          --force-new-deployment \
+          --query 'service.deployments[0].id' \
+          --output text
+
+    - name: Wait for deployment
+      run: |
+        aws ecs wait services-stable \
+          --cluster llm-verifier-staging \
+          --services llm-verifier-api
+
+    - name: Run smoke tests
+      run: |
+        curl -f https://api-staging.llm-verifier.com/health
+
+  # Deploy to production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, performance]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    environment: production
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Deploy to ECS
+      run: |
+        aws ecs update-service \
+          --cluster llm-verifier-production \
+          --service llm-verifier-api \
+          --force-new-deployment \
+          --query 'service.deployments[0].id' \
+          --output text
+
+    - name: Wait for deployment
+      run: |
+        aws ecs wait services-stable \
+          --cluster llm-verifier-production \
+          --services llm-verifier-api
+
+    - name: Run smoke tests
+      run: |
+        curl -f https://api.llm-verifier.com/health
+
+    - name: Create GitHub release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          ## Changes
+          See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
+
+          ## Docker Images
+          - `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}`
+          - `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest`
+
+          ## Deployment
+          Successfully deployed to production environment.
+        draft: false
+        prerelease: false
+
+  # Rollback job
+  rollback:
+    name: Rollback Production
+    runs-on: ubuntu-latest
+    if: failure() && github.ref == 'refs/heads/main'
+    needs: [deploy-production]
+
+    steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Rollback ECS deployment
+      run: |
+        aws ecs update-service \
+          --cluster llm-verifier-production \
+          --service llm-verifier-api \
+          --task-definition $(aws ecs describe-services \
+            --cluster llm-verifier-production \
+            --services llm-verifier-api \
+            --query 'services[0].taskDefinition' \
+            --output text | head -n 1) \
+          --force-new-deployment
+
+    - name: Notify on rollback
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        text: "Production deployment failed and was rolled back"
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      if: always()
