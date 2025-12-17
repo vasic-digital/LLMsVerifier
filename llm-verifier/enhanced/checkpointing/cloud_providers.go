@@ -1,8 +1,15 @@
 package checkpointing
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 // AWS S3 Backup Provider
@@ -11,15 +18,30 @@ type S3BackupProvider struct {
 	region     string
 	accessKey  string
 	secretKey  string
+	client     *s3.Client
 }
 
 func NewS3BackupProvider(bucketName, region, accessKey, secretKey string) *S3BackupProvider {
-	return &S3BackupProvider{
+	provider := &S3BackupProvider{
 		bucketName: bucketName,
 		region:     region,
 		accessKey:  accessKey,
 		secretKey:  secretKey,
 	}
+
+	// Initialize S3 client
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(region),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")),
+	)
+	if err != nil {
+		// If client creation fails, we'll handle it in operations
+		fmt.Printf("Warning: Failed to create S3 client: %v\n", err)
+		return provider
+	}
+
+	provider.client = s3.NewFromConfig(cfg)
+	return provider
 }
 
 func (s3 *S3BackupProvider) Upload(ctx context.Context, key string, data []byte) error {
