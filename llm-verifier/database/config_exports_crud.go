@@ -144,7 +144,7 @@ func (d *Database) DeleteConfigExport(id int64) error {
 }
 
 // ListConfigExports retrieves config exports with optional filtering
-func (d *Database) ListConfigExports(filters map[string]interface{}) ([]*ConfigExport, error) {
+func (d *Database) ListConfigExports(filters map[string]any) ([]*ConfigExport, error) {
 	query := `
 		SELECT id, export_type, name, description, config_data, target_models,
 			target_providers, filters, is_verified, verification_notes, created_by,
@@ -153,7 +153,7 @@ func (d *Database) ListConfigExports(filters map[string]interface{}) ([]*ConfigE
 	`
 
 	var conditions []string
-	var args []interface{}
+	var args []any
 
 	// Add conditions based on filters
 	if exportType, ok := filters["export_type"]; ok {
@@ -261,7 +261,7 @@ func (d *Database) IncrementDownloadCount(id int64) error {
 
 // GetConfigExportsByType gets config exports filtered by type
 func (d *Database) GetConfigExportsByType(exportType string) ([]*ConfigExport, error) {
-	filters := map[string]interface{}{
+	filters := map[string]any{
 		"export_type": exportType,
 	}
 
@@ -270,7 +270,7 @@ func (d *Database) GetConfigExportsByType(exportType string) ([]*ConfigExport, e
 
 // GetVerifiedConfigExports gets all verified config exports
 func (d *Database) GetVerifiedConfigExports() ([]*ConfigExport, error) {
-	filters := map[string]interface{}{
+	filters := map[string]any{
 		"is_verified": true,
 	}
 

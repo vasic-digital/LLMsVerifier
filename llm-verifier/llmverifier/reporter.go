@@ -29,7 +29,7 @@ func (v *Verifier) GenerateMarkdownReport(results []VerificationResult, outputDi
 
 	// Generate summary
 	summary := v.generateSummary(results)
-	v.writeSummary(file, summary, results)
+	v.writeSummary(file, summary)
 
 	// Write individual model reports
 	for _, result := range results {
@@ -233,7 +233,7 @@ func (v *Verifier) generateCategoryRankings(results []VerificationResult) Catego
 }
 
 // writeSummary writes the summary section of the report
-func (v *Verifier) writeSummary(file *os.File, summary Summary, results []VerificationResult) {
+func (v *Verifier) writeSummary(file *os.File, summary Summary) {
 	fmt.Fprintf(file, "## Summary\n\n")
 	fmt.Fprintf(file, "- Total Models: %d\n", summary.TotalModels)
 	fmt.Fprintf(file, "- Available Models: %d\n", summary.AvailableModels)

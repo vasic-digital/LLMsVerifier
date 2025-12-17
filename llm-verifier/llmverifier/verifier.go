@@ -169,8 +169,6 @@ func (v *Verifier) verifySingleModel(client *LLMClient, modelName, endpoint stri
 	result.Availability.Exists = true
 
 	// Perform detailed verification including overload checking
-	ctx, cancel := context.WithTimeout(context.Background(), v.cfg.Timeout)
-	defer cancel()
 
 	// First, test basic responsiveness
 	singleResponseTime, isResponsive, responseErr := v.checkResponsiveness(client, modelName)
@@ -186,7 +184,7 @@ func (v *Verifier) verifySingleModel(client *LLMClient, modelName, endpoint stri
 	result.Availability.LastChecked = time.Now()
 
 	// Test for overload by sending multiple concurrent requests
-	isOverloaded, avgLatency, throughput := v.checkOverload(client, modelName, ctx)
+	isOverloaded, avgLatency, throughput := v.checkOverload(client, modelName)
 	result.Availability.Overloaded = isOverloaded
 	result.ResponseTime.AverageLatency = avgLatency
 	result.ResponseTime.Throughput = throughput
@@ -266,7 +264,7 @@ func (v *Verifier) checkResponsiveness(client *LLMClient, modelName string) (tim
 }
 
 // checkOverload tests if the model is overloaded by sending multiple concurrent requests
-func (v *Verifier) checkOverload(client *LLMClient, modelName string, ctx context.Context) (bool, time.Duration, float64) {
+func (v *Verifier) checkOverload(client *LLMClient, modelName string) (bool, time.Duration, float64) {
 	const numRequests = 5
 	const timeoutPerRequest = 30 * time.Second
 
@@ -547,7 +545,7 @@ func (v *Verifier) testCodeGeneration(client *LLMClient, modelName string, ctx c
 
 	// Check if response contains code-like content
 	responseText := resp.Choices[0].Message.Content
-	return containsCode(responseText, "python")
+	return containsCode(responseText)
 }
 
 // testCodeCompletion checks if the model can complete code
@@ -568,7 +566,7 @@ func (v *Verifier) testCodeCompletion(client *LLMClient, modelName string, ctx c
 	}
 
 	responseText := resp.Choices[0].Message.Content
-	return containsCode(responseText, "python") && strings.Contains(strings.ToLower(responseText), "bubble_sort")
+	return containsCode(responseText) && strings.Contains(strings.ToLower(responseText), "bubble_sort")
 }
 
 // testCodeExplanation checks if the model can explain code
@@ -886,7 +884,7 @@ func (v *Verifier) testBatchProcessing(client *LLMClient, modelName string) bool
 	}
 
 	// Check error message for batch processing support indication
-	if err != nil && (strings.Contains(err.Error(), "batch") || strings.Contains(err.Error(), "multiple")) {
+	if strings.Contains(err.Error(), "batch") || strings.Contains(err.Error(), "multiple") {
 		// Error message suggests batch processing might be supported but with different parameters
 		return true
 	}
@@ -1802,7 +1800,7 @@ func (v *Verifier) runSingleLanguageTest(client *LLMClient, modelName, language,
 	}
 
 	responseText := resp.Choices[0].Message.Content
-	return containsCode(responseText, language)
+	return containsCode(responseText)
 }
 
 // assessComplexityHandling evaluates how well the model handles complex coding tasks
@@ -2373,8 +2371,8 @@ func (v *Verifier) calculateValuePropositionScore(performance PerformanceScore) 
 	return score / 10
 }
 
-// containsCode checks if text contains code in a specific language
-func containsCode(text, language string) bool {
+// containsCode checks if text contains code
+func containsCode(text string) bool {
 	text = strings.ToLower(text)
 	return strings.Contains(text, "def ") ||
 		strings.Contains(text, "function") ||
@@ -2390,6 +2388,3 @@ func intPtr(i int) *int {
 }
 
 // Helper function to create a pointer to a float64
-func float64Ptr(f float64) *float64 {
-	return &f
-}
