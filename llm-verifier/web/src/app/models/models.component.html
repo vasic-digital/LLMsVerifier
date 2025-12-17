@@ -1,0 +1,126 @@
+<div class="models-container">
+  <div class="header">
+    <h1>Models Management</h1>
+    <div class="header-actions">
+      <button mat-raised-button color="primary" (click)="refreshData()" [disabled]="loading">
+        <mat-icon>refresh</mat-icon>
+        Refresh
+      </button>
+      <button mat-raised-button color="accent" (click)="createNewModel()">
+        <mat-icon>add</mat-icon>
+        Create Model
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading Indicator -->
+  <div *ngIf="loading" class="loading">
+    <mat-spinner></mat-spinner>
+    <p>Loading models...</p>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="error">
+    <mat-card class="error-card">
+      <mat-card-content>
+        <mat-icon class="error-icon">error</mat-icon>
+        <span>{{error}}</span>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Models List -->
+  <div *ngIf="!loading && !error && !showCreateForm && !showEditForm" class="models-section">
+    <div class="models-grid" *ngIf="models$ | async as models">
+      <mat-card *ngFor="let model of models" class="model-card">
+        <mat-card-header>
+          <mat-card-title>{{model.name}}</mat-card-title>
+          <mat-card-subtitle>{{model.model_id}}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="model-details">
+            <p><strong>Provider:</strong> 
+              <span *ngIf="providers$ | async as providers">
+                {{getProviderName(model.provider_id, providers)}}
+              </span>
+            </p>
+            <p><strong>Architecture:</strong> {{model.architecture || 'N/A'}}</p>
+            <p><strong>Parameters:</strong> 
+              <span *ngIf="model.parameter_count">
+                {{(model.parameter_count / 1000000000).toFixed(1)}}B
+              </span>
+              <span *ngIf="!model.parameter_count">N/A</span>
+            </p>
+            <p><strong>Context Window:</strong> 
+              <span *ngIf="model.context_window_tokens">
+                {{model.context_window_tokens.toLocaleString()}} tokens
+              </span>
+              <span *ngIf="!model.context_window_tokens">N/A</span>
+            </p>
+            <p><strong>Status:</strong> 
+              <span [ngClass]="getVerificationStatusClass(model.verification_status)">
+                {{model.verification_status}}
+              </span>
+            </p>
+            <p *ngIf="model.overall_score"><strong>Score:</strong> 
+              <span [ngClass]="getScoreClass(model.overall_score)">
+                {{model.overall_score.toFixed(1)}}
+              </span>
+            </p>
+            <p><strong>Created:</strong> {{formatDate(model.created_at)}}</p>
+            <p *ngIf="model.description"><strong>Description:</strong> {{model.description}}</p>
+          </div>
+        </mat-card-content>
+        <mat-card-actions>
+          <button mat-raised-button color="primary" (click)="selectModel(model)">
+            <mat-icon>edit</mat-icon>
+            Edit
+          </button>
+          <button mat-raised-button color="accent" (click)="verifyModel(model.id)">
+            <mat-icon>check_circle</mat-icon>
+            Verify
+          </button>
+          <button mat-button color="warn" (click)="deleteModel(model.id)">
+            <mat-icon>delete</mat-icon>
+            Delete
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="models && models.length === 0" class="empty-state">
+      <mat-card>
+        <mat-card-content>
+          <mat-icon class="empty-icon">inbox</mat-icon>
+          <h3>No Models Found</h3>
+          <p>Get started by creating your first model.</p>
+          <button mat-raised-button color="primary" (click)="createNewModel()">
+            <mat-icon>add</mat-icon>
+            Create Your First Model
+          </button>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+
+  <!-- Create/Edit Form -->
+  <div *ngIf="showCreateForm || showEditForm" class="form-section">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>
+          {{showCreateForm ? 'Create New Model' : 'Edit Model'}}
+          {{showEditForm && selectedModel ? ': ' + selectedModel.name : ''}}
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <app-model-form 
+          [model]="selectedModel"
+          [providers]="providers$ | async"
+          (saved)="showCreateForm ? onModelCreated($event) : onModelUpdated($event)"
+          (cancelled)="cancelForm()">
+        </app-model-form>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

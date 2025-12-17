@@ -1,0 +1,129 @@
+<div class="providers-container">
+  <div class="header">
+    <h1>Providers Management</h1>
+    <div class="header-actions">
+      <button mat-raised-button color="primary" (click)="refreshData()" [disabled]="loading">
+        <mat-icon>refresh</mat-icon>
+        Refresh
+      </button>
+      <button mat-raised-button color="accent" (click)="createNewProvider()">
+        <mat-icon>add</mat-icon>
+        Add Provider
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading Indicator -->
+  <div *ngIf="loading" class="loading">
+    <mat-spinner></mat-spinner>
+    <p>Loading providers...</p>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="error">
+    <mat-card class="error-card">
+      <mat-card-content>
+        <mat-icon class="error-icon">error</mat-icon>
+        <span>{{error}}</span>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Providers List -->
+  <div *ngIf="!loading && !error && !showCreateForm && !showEditForm" class="providers-section">
+    <div class="providers-grid" *ngIf="providers$ | async as providers">
+      <mat-card *ngFor="let provider of providers" class="provider-card">
+        <mat-card-header>
+          <mat-card-title>{{provider.name}}</mat-card-title>
+          <mat-card-subtitle>{{provider.endpoint}}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="provider-details">
+            <p><strong>Status:</strong> 
+              <span [ngClass]="getStatusClass(provider.status || 'active')">
+                {{provider.status || 'Active'}}
+              </span>
+            </p>
+            <p><strong>Reliability Score:</strong> 
+              <span [ngClass]="getReliabilityClass(provider.reliability_score || 0)">
+                {{(provider.reliability_score || 0).toFixed(1)}}
+              </span>
+            </p>
+            <p *ngIf="provider.average_response_time_ms"><strong>Avg Response Time:</strong> 
+              {{provider.average_response_time_ms}}ms
+            </p>
+            <p><strong>API Key:</strong> 
+              <span class="api-key-masked">
+                {{provider.api_key_encrypted ? '••••••••••••••••••••' : 'Not configured'}}
+              </span>
+            </p>
+            <p *ngIf="provider.description"><strong>Description:</strong> {{provider.description}}</p>
+            <p *ngIf="provider.website"><strong>Website:</strong> 
+              <a href="{{provider.website}}" target="_blank" rel="noopener noreferrer">
+                {{provider.website}}
+              </a>
+            </p>
+            <p *ngIf="provider.support_email"><strong>Support Email:</strong> 
+              <a href="mailto:{{provider.support_email}}">
+                {{provider.support_email}}
+              </a>
+            </p>
+            <p *ngIf="provider.documentation_url"><strong>Documentation:</strong> 
+              <a href="{{provider.documentation_url}}" target="_blank" rel="noopener noreferrer">
+                {{provider.documentation_url}}
+              </a>
+            </p>
+            <p><strong>Created:</strong> {{formatDate(provider.created_at)}}</p>
+            <p *ngIf="provider.updated_at && provider.updated_at !== provider.created_at">
+              <strong>Updated:</strong> {{formatDate(provider.updated_at)}}
+            </p>
+          </div>
+        </mat-card-content>
+        <mat-card-actions>
+          <button mat-raised-button color="primary" (click)="selectProvider(provider)">
+            <mat-icon>edit</mat-icon>
+            Edit
+          </button>
+          <button mat-raised-button color="warn" (click)="deleteProvider(provider.id)">
+            <mat-icon>delete</mat-icon>
+            Delete
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="providers && providers.length === 0" class="empty-state">
+      <mat-card>
+        <mat-card-content>
+          <mat-icon class="empty-icon">dns</mat-icon>
+          <h3>No Providers Found</h3>
+          <p>Get started by adding your first LLM provider.</p>
+          <button mat-raised-button color="primary" (click)="createNewProvider()">
+            <mat-icon>add</mat-icon>
+            Add Your First Provider
+          </button>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+
+  <!-- Create/Edit Form -->
+  <div *ngIf="showCreateForm || showEditForm" class="form-section">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>
+          {{showCreateForm ? 'Add New Provider' : 'Edit Provider'}}
+          {{showEditForm && selectedProvider ? ': ' + selectedProvider.name : ''}}
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <app-provider-form 
+          [provider]="selectedProvider"
+          (saved)="showCreateForm ? onProviderCreated($event) : onProviderUpdated($event)"
+          (cancelled)="cancelForm()">
+        </app-provider-form>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>
