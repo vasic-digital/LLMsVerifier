@@ -243,6 +243,7 @@ type Alert struct {
 	ID          string         `json:"id"`
 	Name        string         `json:"name"`
 	Description string         `json:"description"`
+	Message     string         `json:"message,omitempty"`
 	Metric      string         `json:"metric"`
 	Condition   AlertCondition `json:"condition"`
 	Threshold   float64        `json:"threshold"`
