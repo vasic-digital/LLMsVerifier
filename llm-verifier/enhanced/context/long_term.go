@@ -215,7 +215,7 @@ func (ltm *LongTermMemory) Clear() {
 }
 
 // GetMemoryStats returns statistics about the long-term memory
-func (ltm *LongTermMemory) GetMemoryStats() map[string]interface{} {
+func (ltm *LongTermMemory) GetMemoryStats() map[string]any {
 	ltm.mu.RLock()
 	defer ltm.mu.RUnlock()
 
@@ -241,7 +241,7 @@ func (ltm *LongTermMemory) GetMemoryStats() map[string]interface{} {
 		avgImportance = totalImportance / float64(len(ltm.summaries))
 	}
 
-	return map[string]interface{}{
+	return map[string]any{
 		"summary_count":      len(ltm.summaries),
 		"max_summaries":      ltm.maxSummaries,
 		"total_messages":     totalMessages,
