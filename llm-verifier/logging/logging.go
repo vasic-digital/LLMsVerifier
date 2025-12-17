@@ -26,17 +26,17 @@ const (
 
 // LogEntry represents a structured log entry
 type LogEntry struct {
-	ID            string                 `json:"id" db:"id"`
-	Level         LogLevel               `json:"level" db:"level"`
-	Message       string                 `json:"message"`
-	Timestamp     time.Time              `json:"timestamp"`
-	CorrelationID string                 `json:"correlation_id,omitempty"`
-	UserID        *string                `json:"user_id,omitempty"`
-	Component     string                 `json:"component,omitempty"`
-	Source        string                 `json:"source,omitempty"`
-	Error         string                 `json:"error,omitempty"`
-	Fields        map[string]interface{} `json:"fields,omitempty"`
-	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+	ID            string         `json:"id" db:"id"`
+	Level         LogLevel       `json:"level" db:"level"`
+	Message       string         `json:"message"`
+	Timestamp     time.Time      `json:"timestamp"`
+	CorrelationID string         `json:"correlation_id,omitempty"`
+	UserID        *string        `json:"user_id,omitempty"`
+	Component     string         `json:"component,omitempty"`
+	Source        string         `json:"source,omitempty"`
+	Error         string         `json:"error,omitempty"`
+	Fields        map[string]any `json:"fields,omitempty"`
+	Metadata      map[string]any `json:"metadata,omitempty"`
 }
 
 // Logger manages structured logging with multiple outputs
@@ -57,7 +57,7 @@ type Logger struct {
 }
 
 // NewLogger creates a new structured logger
-func NewLogger(db *database.Database, config map[string]interface{}) (*Logger, error) {
+func NewLogger(db *database.Database, config map[string]any) (*Logger, error) {
 	logger := &Logger{
 		db:         db,
 		bufferSize: 100,
@@ -122,7 +122,7 @@ func NewLogger(db *database.Database, config map[string]interface{}) (*Logger, e
 }
 
 // Log logs a message with the specified level
-func (l *Logger) Log(level LogLevel, message string, fields map[string]interface{}) {
+func (l *Logger) Log(level LogLevel, message string, fields map[string]any) {
 	entry := &LogEntry{
 		ID:        generateLogID(),
 		Timestamp: time.Now(),
@@ -150,22 +150,22 @@ func (l *Logger) Log(level LogLevel, message string, fields map[string]interface
 }
 
 // Debug logs a debug message
-func (l *Logger) Debug(message string, fields map[string]interface{}) {
+func (l *Logger) Debug(message string, fields map[string]any) {
 	l.Log(LogLevelDebug, message, fields)
 }
 
 // Info logs an info message
-func (l *Logger) Info(message string, fields map[string]interface{}) {
+func (l *Logger) Info(message string, fields map[string]any) {
 	l.Log(LogLevelInfo, message, fields)
 }
 
 // Warning logs a warning message
-func (l *Logger) Warning(message string, fields map[string]interface{}) {
+func (l *Logger) Warning(message string, fields map[string]any) {
 	l.Log(LogLevelWarning, message, fields)
 }
 
 // Error logs an error message
-func (l *Logger) Error(message string, fields map[string]interface{}) {
+func (l *Logger) Error(message string, fields map[string]any) {
 	l.Log(LogLevelError, message, fields)
 }
 
@@ -175,7 +175,7 @@ func (l *Logger) Fatal(message string, fields map[string]interface{}) {
 }
 
 // WithFields creates a logger with pre-set fields
-func (l *Logger) WithFields(fields map[string]interface{}) *ContextLogger {
+func (l *Logger) WithFields(fields map[string]any) *ContextLogger {
 	return &ContextLogger{
 		logger: l,
 		fields: fields,
@@ -183,15 +183,15 @@ func (l *Logger) WithFields(fields map[string]interface{}) *ContextLogger {
 }
 
 // QueryLogs queries logs with filters
-func (l *Logger) QueryLogs(filters map[string]interface{}, limit int, offset int) ([]*LogEntry, error) {
+func (l *Logger) QueryLogs(filters map[string]any, limit int, offset int) ([]*LogEntry, error) {
 	// This would query the database in a real implementation
 	// For now, return empty slice
 	return []*LogEntry{}, nil
 }
 
 // GetLogStats returns logging statistics
-func (l *Logger) GetLogStats() map[string]interface{} {
-	return map[string]interface{}{
+func (l *Logger) GetLogStats() map[string]any {
+	return map[string]any{
 		"total_entries": 0,
 		"entries_by_level": map[string]int{
 			"debug":   0,
@@ -385,12 +385,12 @@ func generateLogID() string {
 // ContextLogger provides logging with pre-set context fields
 type ContextLogger struct {
 	logger *Logger
-	fields map[string]interface{}
+	fields map[string]any
 }
 
 // Debug logs a debug message with context
-func (cl *ContextLogger) Debug(message string, extraFields map[string]interface{}) {
-	fields := make(map[string]interface{})
+func (cl *ContextLogger) Debug(message string, extraFields map[string]any) {
+	fields := make(map[string]any)
 	for k, v := range cl.fields {
 		fields[k] = v
 	}
@@ -401,8 +401,8 @@ func (cl *ContextLogger) Debug(message string, extraFields map[string]interface{
 }
 
 // Info logs an info message with context
-func (cl *ContextLogger) Info(message string, extraFields map[string]interface{}) {
-	fields := make(map[string]interface{})
+func (cl *ContextLogger) Info(message string, extraFields map[string]any) {
+	fields := make(map[string]any)
 	for k, v := range cl.fields {
 		fields[k] = v
 	}
@@ -413,8 +413,8 @@ func (cl *ContextLogger) Info(message string, extraFields map[string]interface{}
 }
 
 // Warning logs a warning message with context
-func (cl *ContextLogger) Warning(message string, extraFields map[string]interface{}) {
-	fields := make(map[string]interface{})
+func (cl *ContextLogger) Warning(message string, extraFields map[string]any) {
+	fields := make(map[string]any)
 	for k, v := range cl.fields {
 		fields[k] = v
 	}
@@ -425,8 +425,8 @@ func (cl *ContextLogger) Warning(message string, extraFields map[string]interfac
 }
 
 // Error logs an error message with context
-func (cl *ContextLogger) Error(message string, extraFields map[string]interface{}) {
-	fields := make(map[string]interface{})
+func (cl *ContextLogger) Error(message string, extraFields map[string]any) {
+	fields := make(map[string]any)
 	for k, v := range cl.fields {
 		fields[k] = v
 	}
@@ -437,8 +437,8 @@ func (cl *ContextLogger) Error(message string, extraFields map[string]interface{
 }
 
 // WithFields adds more context fields
-func (cl *ContextLogger) WithFields(fields map[string]interface{}) *ContextLogger {
-	newFields := make(map[string]interface{})
+func (cl *ContextLogger) WithFields(fields map[string]any) *ContextLogger {
+	newFields := make(map[string]any)
 	for k, v := range cl.fields {
 		newFields[k] = v
 	}
@@ -514,18 +514,18 @@ func (pm *PerformanceMonitor) RecordMetric(name string, duration time.Duration) 
 }
 
 // GetMetrics returns all performance metrics
-func (pm *PerformanceMonitor) GetMetrics() map[string]interface{} {
+func (pm *PerformanceMonitor) GetMetrics() map[string]any {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
 
-	metrics := make(map[string]interface{})
+	metrics := make(map[string]any)
 	for name, metric := range pm.metrics {
 		avgTime := time.Duration(0)
 		if metric.Count > 0 {
 			avgTime = metric.TotalTime / time.Duration(metric.Count)
 		}
 
-		metrics[name] = map[string]interface{}{
+		metrics[name] = map[string]any{
 			"count":        metric.Count,
 			"total_time":   metric.TotalTime.String(),
 			"avg_time":     avgTime.String(),
@@ -562,29 +562,29 @@ func NewLogAnalytics(logger *Logger) *LogAnalytics {
 }
 
 // AnalyzeErrors analyzes error patterns in logs
-func (la *LogAnalytics) AnalyzeErrors(hours int) map[string]interface{} {
+func (la *LogAnalytics) AnalyzeErrors(hours int) map[string]any {
 	// Placeholder implementation
-	return map[string]interface{}{
+	return map[string]any{
 		"total_errors": 0,
 		"error_types":  map[string]int{},
-		"error_trends": []interface{}{},
+		"error_trends": []any{},
 		"time_range":   fmt.Sprintf("last %d hours", hours),
 	}
 }
 
 // GetTopErrors returns the most frequent errors
-func (la *LogAnalytics) GetTopErrors(limit int) []map[string]interface{} {
+func (la *LogAnalytics) GetTopErrors(limit int) []map[string]any {
 	// Placeholder implementation
-	return []map[string]interface{}{}
+	return []map[string]any{}
 }
 
 // GenerateReport generates a comprehensive logging report
-func (la *LogAnalytics) GenerateReport(hours int) map[string]interface{} {
-	return map[string]interface{}{
+func (la *LogAnalytics) GenerateReport(hours int) map[string]any {
+	return map[string]any{
 		"period":         fmt.Sprintf("last %d hours", hours),
 		"total_logs":     0,
 		"error_analysis": la.AnalyzeErrors(hours),
-		"performance":    map[string]interface{}{},
+		"performance":    map[string]any{},
 		"recommendations": []string{
 			"Consider increasing log retention for better analysis",
 			"Monitor error rates and set up alerts",

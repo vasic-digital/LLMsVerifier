@@ -1702,7 +1702,7 @@ func (s *Server) exportConfig(c *gin.Context) {
 // getPricing retrieves pricing information with optional filtering
 func (s *Server) getPricing(c *gin.Context) {
 	// Build filters from query parameters
-	filters := make(map[string]interface{})
+	filters := make(map[string]any)
 
 	// Model ID filter
 	if modelIDStr := c.Query("model_id"); modelIDStr != "" {
@@ -1880,7 +1880,7 @@ func (s *Server) deletePricing(c *gin.Context) {
 // getLimits retrieves limits with optional filtering
 func (s *Server) getLimits(c *gin.Context) {
 	// Build filters from query parameters
-	filters := make(map[string]interface{})
+	filters := make(map[string]any)
 
 	// Model ID filter
 	if modelIDStr := c.Query("model_id"); modelIDStr != "" {
