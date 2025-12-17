@@ -39,15 +39,15 @@ const (
 
 // Event represents a system event
 type Event struct {
-	ID        string                 `json:"id" db:"id"`
-	Type      EventType              `json:"type" db:"type"`
-	Severity  EventSeverity          `json:"severity" db:"severity"`
-	Message   string                 `json:"message" db:"message"`
-	Data      map[string]interface{} `json:"data,omitempty" db:"data"`
-	Timestamp time.Time              `json:"timestamp" db:"timestamp"`
-	Source    string                 `json:"source" db:"source"`
-	UserID    *int64                 `json:"user_id,omitempty" db:"user_id"`
-	SessionID string                 `json:"session_id,omitempty" db:"session_id"`
+	ID        string         `json:"id" db:"id"`
+	Type      EventType      `json:"type" db:"type"`
+	Severity  EventSeverity  `json:"severity" db:"severity"`
+	Message   string         `json:"message" db:"message"`
+	Data      map[string]any `json:"data,omitempty" db:"data"`
+	Timestamp time.Time      `json:"timestamp" db:"timestamp"`
+	Source    string         `json:"source" db:"source"`
+	UserID    *int64         `json:"user_id,omitempty" db:"user_id"`
+	SessionID string         `json:"session_id,omitempty" db:"session_id"`
 }
 
 // Subscriber represents an event subscriber
@@ -61,7 +61,7 @@ type Subscriber interface {
 // WebSocketSubscriber handles WebSocket event delivery
 type WebSocketSubscriber struct {
 	ID     string
-	Conn   interface{} // WebSocket connection
+	Conn   any // WebSocket connection
 	Types  []EventType
 	Active bool
 	mu     sync.RWMutex
@@ -70,7 +70,7 @@ type WebSocketSubscriber struct {
 // GRPCSubscriber handles gRPC streaming event delivery
 type GRPCSubscriber struct {
 	ID     string
-	Stream interface{} // gRPC stream
+	Stream any // gRPC stream
 	Types  []EventType
 	Active bool
 	mu     sync.RWMutex
@@ -335,16 +335,16 @@ func NewEvent(eventType EventType, severity EventSeverity, message string, sourc
 		Type:      eventType,
 		Severity:  severity,
 		Message:   message,
-		Data:      make(map[string]interface{}),
+		Data:      make(map[string]any),
 		Timestamp: time.Now(),
 		Source:    source,
 	}
 }
 
 // WithData adds data to an event
-func (e Event) WithData(key string, value interface{}) Event {
+func (e Event) WithData(key string, value any) Event {
 	if e.Data == nil {
-		e.Data = make(map[string]interface{})
+		e.Data = make(map[string]any)
 	}
 	e.Data[key] = value
 	return e
