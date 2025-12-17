@@ -37,16 +37,24 @@ func TestIntegrationSuite(t *testing.T) {
 	t.Run("HealthChecks", TestHealthChecksIntegration)
 }
 
-// TestDatabaseConnection tests database connectivity and basic operations
-func TestDatabaseConnection(t *testing.T) {
+// TestDatabaseConnectionIntegration tests database connectivity and basic operations
+func TestDatabaseConnectionIntegration(t *testing.T) {
 	// Create test database
 	db, err := database.New(":memory:")
 	require.NoError(t, err)
 	defer db.Close()
 
 	// Run migrations
-	err = db.RunMigrations()
-	require.NoError(t, err)
+	migrationManager := database.NewMigrationManager(db)
+	migrationManager.SetupDefaultMigrations()
+
+	if err := migrationManager.InitializeMigrationTable(); err != nil {
+		t.Fatalf("Failed to initialize migration table: %v", err)
+	}
+
+	if err := migrationManager.MigrateUp(); err != nil {
+		t.Fatalf("Failed to run migrations: %v", err)
+	}
 
 	// Test basic operations
 	testUser := &database.User{
@@ -77,8 +85,16 @@ func TestAuthenticationFlow(t *testing.T) {
 	defer db.Close()
 
 	// Run migrations
-	err = db.RunMigrations()
-	require.NoError(t, err)
+	migrationManager := database.NewMigrationManager(db)
+	migrationManager.SetupDefaultMigrations()
+
+	if err := migrationManager.InitializeMigrationTable(); err != nil {
+		t.Fatalf("Failed to initialize migration table: %v", err)
+	}
+
+	if err := migrationManager.MigrateUp(); err != nil {
+		t.Fatalf("Failed to run migrations: %v", err)
+	}
 
 	// Create test user
 	testUser := &database.User{
@@ -145,8 +161,17 @@ func TestAPIEndpointsIntegration(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	err = db.RunMigrations()
-	require.NoError(t, err)
+	// Run migrations
+	migrationManager := database.NewMigrationManager(db)
+	migrationManager.SetupDefaultMigrations()
+
+	if err := migrationManager.InitializeMigrationTable(); err != nil {
+		t.Fatalf("Failed to initialize migration table: %v", err)
+	}
+
+	if err := migrationManager.MigrateUp(); err != nil {
+		t.Fatalf("Failed to run migrations: %v", err)
+	}
 
 	// Create admin user for testing
 	adminUser := &database.User{
@@ -457,8 +482,17 @@ func TestEndToEndWorkflow(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	err = db.RunMigrations()
-	require.NoError(t, err)
+	// Run migrations
+	migrationManager := database.NewMigrationManager(db)
+	migrationManager.SetupDefaultMigrations()
+
+	if err := migrationManager.InitializeMigrationTable(); err != nil {
+		t.Fatalf("Failed to initialize migration table: %v", err)
+	}
+
+	if err := migrationManager.MigrateUp(); err != nil {
+		t.Fatalf("Failed to run migrations: %v", err)
+	}
 
 	// Create test user
 	user := &database.User{
