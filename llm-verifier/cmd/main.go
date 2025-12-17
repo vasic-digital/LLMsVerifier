@@ -504,15 +504,45 @@ func validateCmd() *cobra.Command {
 // AI CLI export command
 func aiConfigCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "ai-config [format] [output_file]",
-		Short: "Export AI CLI agent configurations",
-		Long:  `Export models in AI CLI agent formats (opencode, crush, claude-code).`,
+		Use:   "ai-config",
+		Short: "Export and validate AI CLI agent configurations",
+		Long:  `Export models in AI CLI agent formats (opencode, crush, claude-code) and validate configurations.`,
+	}
+
+	// Single format export
+	exportCmd := &cobra.Command{
+		Use:   "export [format] [output_file]",
+		Short: "Export configuration for a specific AI CLI agent",
+		Long:  `Export models in a specific AI CLI agent format (opencode, crush, claude-code).`,
 		Args:  cobra.RangeArgs(1, 2),
 		Run: func(cmd *cobra.Command, args []string) {
 			runAIConfigExport(args)
 		},
 	}
 
+	// Bulk export
+	bulkCmd := &cobra.Command{
+		Use:   "bulk [output_directory]",
+		Short: "Export configurations for all AI CLI agents",
+		Long:  `Export configurations for all supported AI CLI agents (opencode, crush, claude-code) to the specified directory.`,
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			runAIBulkExport(args[0])
+		},
+	}
+
+	// Validate command
+	validateCmd := &cobra.Command{
+		Use:   "validate [config_file]",
+		Short: "Validate an exported AI CLI configuration",
+		Long:  `Validate the structure and content of an exported AI CLI configuration file.`,
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			runAIConfigValidate(args[0])
+		},
+	}
+
+	cmd.AddCommand(exportCmd, bulkCmd, validateCmd)
 	return cmd
 }
 
@@ -545,10 +575,21 @@ func runAIConfigExport(args []string) {
 		os.Exit(1)
 	}
 
-	// Load configuration from database or use mock data
-	// For now, use mock data since we don't have database integration yet
+	// Initialize database
+	db, err := database.New("llm-verifier.db")
+	if err != nil {
+		log.Fatalf("❌ Failed to initialize database: %v", err)
+	}
+	defer db.Close()
+
 	fmt.Printf("📤 Exporting AI CLI configuration for format: %s\n", format)
 	fmt.Printf("📄 Output file: %s\n", outputFile)
+
+	// Load configuration
+	cfg, err := llmverifier.LoadConfig(configFile)
+	if err != nil {
+		log.Fatalf("❌ Failed to load configuration: %v", err)
+	}
 
 	// Create export options
 	options := &llmverifier.ExportOptions{
@@ -558,7 +599,7 @@ func runAIConfigExport(args []string) {
 	}
 
 	// Export configuration
-	err := llmverifier.ExportAIConfig(nil, format, outputFile, options)
+	err = llmverifier.ExportAIConfig(db, cfg, format, outputFile, options)
 	if err != nil {
 		log.Fatalf("❌ Failed to export %s configuration: %v", format, err)
 	}
@@ -571,6 +612,66 @@ func runAIConfigExport(args []string) {
 	if err != nil {
 		log.Printf("❌ Validation failed: %v\n", err)
 		os.Exit(1)
+	}
+
+	fmt.Println("✅ Configuration validation passed")
+}
+
+func runAIBulkExport(outputDir string) {
+	// Initialize database
+	db, err := database.New("llm-verifier.db")
+	if err != nil {
+		log.Fatalf("❌ Failed to initialize database: %v", err)
+	}
+	defer db.Close()
+
+	// Load configuration
+	cfg, err := llmverifier.LoadConfig(configFile)
+	if err != nil {
+		log.Fatalf("❌ Failed to load configuration: %v", err)
+	}
+
+	fmt.Printf("📤 Exporting AI CLI configurations to directory: %s\n", outputDir)
+
+	// Create export options
+	options := &llmverifier.ExportOptions{
+		Top:           10,
+		MinScore:      70.0,
+		IncludeAPIKey: false,
+	}
+
+	// Create output directory
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		log.Fatalf("❌ Failed to create output directory: %v", err)
+	}
+
+	// Export all configurations
+	err = llmverifier.ExportBulkConfig(db, cfg, outputDir, options)
+	if err != nil {
+		log.Fatalf("❌ Failed to export configurations: %v", err)
+	}
+
+	fmt.Printf("✅ Successfully exported all AI CLI configurations to %s\n", outputDir)
+	fmt.Println("📄 Generated files:")
+	fmt.Println("  - export_opencode.json")
+	fmt.Println("  - export_crush.json")
+	fmt.Println("  - export_claude_code.json")
+	fmt.Println("  - export_summary.json")
+	fmt.Println("  - export_manifest.json")
+}
+
+func runAIConfigValidate(configPath string) {
+	fmt.Printf("🔍 Validating AI CLI configuration: %s\n", configPath)
+
+	// Check if file exists
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		log.Fatalf("❌ Configuration file does not exist: %s", configPath)
+	}
+
+	// Validate configuration
+	err := llmverifier.ValidateExportedConfig(configPath)
+	if err != nil {
+		log.Fatalf("❌ Validation failed: %v", err)
 	}
 
 	fmt.Println("✅ Configuration validation passed")
