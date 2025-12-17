@@ -1,0 +1,166 @@
+{
+  "info": {
+    "name": "LLM Verifier API",
+    "description": "Comprehensive API for LLM verification and management",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "User login",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Health check endpoint",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get models",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/models",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "models"
+          ],
+          "query": [
+            {
+              "key": "limit",
+              "value": "",
+              "description": "Number of results per page (default: 50)"
+            },
+            {
+              "key": "offset",
+              "value": "",
+              "description": "Offset for pagination (default: 0)"
+            },
+            {
+              "key": "provider",
+              "value": "",
+              "description": "Filter by provider name"
+            },
+            {
+              "key": "status",
+              "value": "",
+              "description": "Filter by model status"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Create model",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/models",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "models"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Get database statistics",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/system/database-stats",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "system",
+            "database-stats"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get system information",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/system/info",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "system",
+            "info"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

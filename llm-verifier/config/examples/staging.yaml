@@ -1,0 +1,189 @@
+# LLM Verifier Staging Configuration
+# This configuration is for staging/testing environments
+
+profile: "staging"
+global:
+  log_level: "info"
+  log_file: "/var/log/llm-verifier/staging.log"
+  log_max_size: 100  # MB
+  log_max_backups: 10
+  log_max_age: 30     # days
+
+database:
+  path: "/data/llm-verifier-staging.db"
+  max_open_conns: 25
+  max_idle_conns: 10
+  conn_max_lifetime: "1h"
+  conn_max_idle_time: "30m"
+  encryption_key: "${DATABASE_ENCRYPTION_KEY}"
+
+llms:
+  # Use real API keys but with rate limits for staging
+  - name: "openai-gpt4"
+    provider: "openai"
+    api_key: "${OPENAI_API_KEY}"
+    model: "gpt-4"
+    enabled: true
+    timeout: "30s"
+    max_retries: 3
+    rate_limit: 100  # requests per minute
+
+  - name: "anthropic-claude"
+    provider: "anthropic"
+    api_key: "${ANTHROPIC_API_KEY}"
+    model: "claude-3-sonnet-20240229"
+    enabled: true
+    timeout: "30s"
+    max_retries: 3
+    rate_limit: 50
+
+  - name: "google-gemini"
+    provider: "google"
+    api_key: "${GOOGLE_API_KEY}"
+    model: "gemini-pro"
+    enabled: true
+    timeout: "30s"
+    max_retries: 3
+    rate_limit: 30
+
+api:
+  port: 8080
+  host: "0.0.0.0"
+  jwt_secret: "${JWT_SECRET}"
+  jwt_expiry: "12h"
+  enable_cors: true
+  rate_limit: 500  # Moderate rate limiting for staging
+  burst_limit: 1000
+  rate_limit_window: 60
+  trusted_proxies: ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+  cors_origins: ["https://staging.llm-verifier.com", "https://app.staging.llm-verifier.com"]
+
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+  critical_metrics:
+    enabled: true
+    ttft_threshold: 3.0
+    latency_threshold: 5.0
+    error_rate_threshold: 0.05
+
+scheduler:
+  enabled: true
+  max_workers: 10
+  task_timeout: "10m"
+  retry_attempts: 3
+  retry_delay: "30s"
+
+notifications:
+  enabled: true
+  slack:
+    enabled: true
+    webhook_url: "${SLACK_STAGING_WEBHOOK}"
+    channel: "#llm-verifier-staging"
+  email:
+    enabled: true
+    smtp_host: "smtp.staging.company.com"
+    smtp_port: 587
+    username: "${SMTP_USERNAME}"
+    password: "${SMTP_PASSWORD}"
+    default_recipient: "staging-alerts@company.com"
+  telegram:
+    enabled: false
+
+context:
+  enabled: true
+  short_term:
+    max_messages: 100
+    window_duration: "2h"
+  long_term:
+    enabled: true
+    max_summaries: 500
+    summarization_threshold: 20
+
+vector:
+  enabled: true
+  provider: "in_memory"  # Use in-memory for staging (consider Redis for production)
+  dimension: 1536
+  similarity_threshold: 0.1
+
+failover:
+  enabled: true
+  circuit_breaker:
+    failure_threshold: 5
+    recovery_timeout: "1m"
+    success_threshold: 3
+  latency_router:
+    enabled: true
+    sample_size: 20
+  weighted_router:
+    enabled: true
+    cost_weight: 0.7
+    premium_weight: 0.3
+
+enhanced:
+  pricing_detector:
+    enabled: true
+    cache_ttl: "2h"
+  limits_detector:
+    enabled: true
+    cache_ttl: "1h"
+  issues_manager:
+    enabled: true
+    auto_detection: true
+  analytics:
+    enabled: true
+    trends:
+      enabled: true
+      granularity: "30m"
+    recommendations:
+      enabled: true
+      min_score: 10.0
+
+enterprise:
+  ldap:
+    enabled: true
+    host: "ldap.staging.company.com"
+    port: 389
+    use_ssl: false
+    base_dn: "dc=staging,dc=company,dc=com"
+    bind_user: "cn=llm-verifier,ou=service-accounts,dc=staging,dc=company,dc=com"
+    bind_password: "${LDAP_BIND_PASSWORD}"
+    user_filter: "(&(objectClass=user)(sAMAccountName=%s))"
+    group_filter: "(&(objectClass=group)(member=%s))"
+    attributes: ["sAMAccountName", "mail", "displayName", "memberOf"]
+
+  sso:
+    enabled: false  # Enable in production
+
+  monitoring:
+    enabled: true
+    splunk:
+      host: "splunk-staging.company.com"
+      port: 8088
+      token: "${SPLUNK_STAGING_TOKEN}"
+      index: "llm_verifier_staging"
+      source: "llm-verifier"
+      sourcetype: "json"
+    datadog:
+      api_key: "${DD_STAGING_API_KEY}"
+      app_key: "${DD_STAGING_APP_KEY}"
+      service_name: "llm-verifier-staging"
+      environment: "staging"
+
+  security:
+    enabled: true
+    password_min_length: 12
+    session_timeout: "4h"
+    require_mfa: false  # Enable in production
+    audit_log_enabled: true
+
+# Staging-specific settings
+staging:
+  test_mode: true
+  data_retention_days: 90
+  backup_enabled: true
+  backup_schedule: "0 2 * * *"  # Daily at 2 AM
+  maintenance_window: "sunday 02:00-04:00"

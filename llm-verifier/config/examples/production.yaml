@@ -1,0 +1,272 @@
+# LLM Verifier Production Configuration
+# This configuration is optimized for production environments
+
+profile: "production"
+global:
+  log_level: "warn"
+  log_file: "/var/log/llm-verifier/production.log"
+  log_max_size: 500  # MB
+  log_max_backups: 30
+  log_max_age: 90     # days
+  log_compress: true
+
+database:
+  path: "/data/llm-verifier.db"
+  max_open_conns: 100
+  max_idle_conns: 25
+  conn_max_lifetime: "2h"
+  conn_max_idle_time: "1h"
+  encryption_key: "${DATABASE_ENCRYPTION_KEY}"
+
+llms:
+  # Production LLM configurations with production keys
+  - name: "openai-gpt4-turbo"
+    provider: "openai"
+    api_key: "${OPENAI_PROD_API_KEY}"
+    model: "gpt-4-turbo-preview"
+    enabled: true
+    timeout: "60s"
+    max_retries: 5
+    rate_limit: 200  # requests per minute
+
+  - name: "anthropic-claude-opus"
+    provider: "anthropic"
+    api_key: "${ANTHROPIC_PROD_API_KEY}"
+    model: "claude-3-opus-20240229"
+    enabled: true
+    timeout: "60s"
+    max_retries: 5
+    rate_limit: 100
+
+  - name: "openai-gpt4"
+    provider: "openai"
+    api_key: "${OPENAI_PROD_API_KEY}"
+    model: "gpt-4"
+    enabled: true
+    timeout: "60s"
+    max_retries: 5
+    rate_limit: 50
+
+  - name: "anthropic-claude-sonnet"
+    provider: "anthropic"
+    api_key: "${ANTHROPIC_PROD_API_KEY}"
+    model: "claude-3-sonnet-20240229"
+    enabled: true
+    timeout: "60s"
+    max_retries: 5
+    rate_limit: 100
+
+  - name: "google-gemini-pro"
+    provider: "google"
+    api_key: "${GOOGLE_PROD_API_KEY}"
+    model: "gemini-pro"
+    enabled: true
+    timeout: "45s"
+    max_retries: 3
+    rate_limit: 60
+
+  - name: "cohere-command"
+    provider: "cohere"
+    api_key: "${COHERE_PROD_API_KEY}"
+    model: "command"
+    enabled: true
+    timeout: "45s"
+    max_retries: 3
+    rate_limit: 100
+
+api:
+  port: 8080
+  host: "0.0.0.0"
+  jwt_secret: "${JWT_PROD_SECRET}"
+  jwt_expiry: "8h"
+  enable_cors: false  # Disable CORS in production
+  rate_limit: 1000   # Production rate limits
+  burst_limit: 2000
+  rate_limit_window: 60
+  trusted_proxies: ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+  enable_gzip: true
+  read_timeout: "30s"
+  write_timeout: "30s"
+  max_request_size: "10MB"
+
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+    basic_auth_enabled: true
+    basic_auth_username: "${PROMETHEUS_USERNAME}"
+    basic_auth_password: "${PROMETHEUS_PASSWORD}"
+  critical_metrics:
+    enabled: true
+    ttft_threshold: 2.0  # Stricter in production
+    latency_threshold: 3.0
+    error_rate_threshold: 0.01
+
+scheduler:
+  enabled: true
+  max_workers: 50
+  task_timeout: "30m"
+  retry_attempts: 5
+  retry_delay: "1m"
+  queue_size: 10000
+
+notifications:
+  enabled: true
+  slack:
+    enabled: true
+    webhook_url: "${SLACK_PROD_WEBHOOK}"
+    channel: "#llm-verifier-alerts"
+  email:
+    enabled: true
+    smtp_host: "smtp.company.com"
+    smtp_port: 587
+    username: "${SMTP_PROD_USERNAME}"
+    password: "${SMTP_PROD_PASSWORD}"
+    default_recipient: "production-alerts@company.com"
+    tls_enabled: true
+  telegram:
+    enabled: false
+
+context:
+  enabled: true
+  short_term:
+    max_messages: 200
+    window_duration: "4h"
+  long_term:
+    enabled: true
+    max_summaries: 10000
+    summarization_threshold: 50
+
+vector:
+  enabled: true
+  provider: "redis"  # Use Redis in production
+  redis_url: "${REDIS_URL}"
+  dimension: 1536
+  similarity_threshold: 0.1
+  cache_ttl: "24h"
+
+failover:
+  enabled: true
+  circuit_breaker:
+    failure_threshold: 10  # Higher threshold in production
+    recovery_timeout: "5m"
+    success_threshold: 5
+  latency_router:
+    enabled: true
+    sample_size: 100
+  weighted_router:
+    enabled: true
+    cost_weight: 0.8   # Favor cost-effectiveness more in production
+    premium_weight: 0.2
+
+enhanced:
+  pricing_detector:
+    enabled: true
+    cache_ttl: "24h"
+  limits_detector:
+    enabled: true
+    cache_ttl: "6h"
+  issues_manager:
+    enabled: true
+    auto_detection: true
+    severity_threshold: "medium"  # Only alert on medium+ severity
+  analytics:
+    enabled: true
+    trends:
+      enabled: true
+      granularity: "1h"
+    recommendations:
+      enabled: true
+      min_score: 20.0  # Higher quality threshold in production
+
+enterprise:
+  ldap:
+    enabled: true
+    host: "ldap.company.com"
+    port: 636
+    use_ssl: true
+    base_dn: "dc=company,dc=com"
+    bind_user: "cn=llm-verifier-prod,ou=service-accounts,dc=company,dc=com"
+    bind_password: "${LDAP_PROD_BIND_PASSWORD}"
+    user_filter: "(&(objectClass=user)(sAMAccountName=%s)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))"
+    group_filter: "(&(objectClass=group)(member=%s))"
+    attributes: ["sAMAccountName", "mail", "displayName", "memberOf", "userAccountControl"]
+    connection_timeout: "10s"
+    search_timeout: "30s"
+
+  sso:
+    enabled: true
+    provider: "saml"
+    saml:
+      entity_id: "llm-verifier-prod"
+      sso_url: "https://sso.company.com/saml/sso"
+      slo_url: "https://sso.company.com/saml/slo"
+      certificate: "/secrets/saml-cert.pem"
+      private_key: "/secrets/saml-key.pem"
+      idp_metadata_url: "https://sso.company.com/saml/metadata"
+      allowed_groups: ["LLM-Users", "LLM-Admins"]
+      required_attributes: ["email", "displayName"]
+      session_timeout: "8h"
+      max_clock_skew: "5m"
+
+  monitoring:
+    enabled: true
+    splunk:
+      host: "splunk.company.com"
+      port: 8088
+      token: "${SPLUNK_PROD_TOKEN}"
+      index: "llm_verifier_production"
+      source: "llm-verifier-prod"
+      sourcetype: "json"
+      batch_size: 100
+      flush_interval: "10s"
+    datadog:
+      api_key: "${DD_PROD_API_KEY}"
+      app_key: "${DD_PROD_APP_KEY}"
+      service_name: "llm-verifier"
+      environment: "production"
+      tags: ["team:ai", "service:llm-verifier", "env:prod"]
+    newrelic:
+      license_key: "${NEW_RELIC_LICENSE_KEY}"
+      app_name: "LLM Verifier Production"
+      labels: "team:ai;service:llm-verifier"
+    elk:
+      elasticsearch_url: "https://elasticsearch.company.com:9200"
+      index_name: "llm-verifier-prod"
+      username: "${ELK_USERNAME}"
+      password: "${ELK_PASSWORD}"
+      tls_enabled: true
+      bulk_size: 50
+      flush_interval: "30s"
+
+  security:
+    enabled: true
+    password_min_length: 16
+    session_timeout: "2h"
+    require_mfa: true
+    audit_log_enabled: true
+    audit_log_path: "/var/log/llm-verifier/audit.log"
+    ip_whitelist_enabled: true
+    ip_whitelist: ["10.0.0.0/8", "company-office-ips"]
+    rate_limit_by_ip: true
+    brute_force_protection: true
+    max_login_attempts: 5
+    lockout_duration: "30m"
+
+# Production-specific settings
+production:
+  maintenance_mode: false
+  data_retention_days: 365
+  backup_enabled: true
+  backup_schedule: "0 1 * * *"  # Daily at 1 AM
+  backup_retention_days: 30
+  maintenance_window: "sunday 01:00-03:00"
+  health_check_enabled: true
+  health_check_interval: "30s"
+  metrics_enabled: true
+  tracing_enabled: true
+  tracing_sample_rate: 0.1  # 10% sampling
+  log_sensitive_data: false
+  enable_pprof: false  # Enable only for debugging
