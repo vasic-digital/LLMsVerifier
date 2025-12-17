@@ -79,7 +79,7 @@ func TestDatabaseConnectionIntegration(t *testing.T) {
 
 // TestAuthenticationFlow tests the complete authentication process
 func TestAuthenticationFlow(t *testing.T) {
-	// Setup test server
+	// Setup test database
 	db, err := database.New(":memory:")
 	require.NoError(t, err)
 	defer db.Close()
@@ -91,6 +91,32 @@ func TestAuthenticationFlow(t *testing.T) {
 	if err := migrationManager.InitializeMigrationTable(); err != nil {
 		t.Fatalf("Failed to initialize migration table: %v", err)
 	}
+
+	if err := migrationManager.MigrateUp(); err != nil {
+		t.Fatalf("Failed to run migrations: %v", err)
+	}
+
+	// Create test config
+	cfg := &config.Config{
+		Profile: "test",
+		Global: config.GlobalConfig{
+			LogLevel: "debug",
+			LogFile:  "",
+		},
+		Database: config.DatabaseConfig{
+			Path: ":memory:",
+		},
+		API: config.APIConfig{
+			JWTSecret:  "test-secret-key",
+			RateLimit:  100,
+			BurstLimit: 200,
+		},
+	}
+
+	// Create a proper server instance
+	server, err := api.NewServer(cfg)
+	require.NoError(t, err)
+	require.NotNil(t, server)
 
 	if err := migrationManager.MigrateUp(); err != nil {
 		t.Fatalf("Failed to run migrations: %v", err)
