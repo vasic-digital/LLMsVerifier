@@ -446,10 +446,7 @@ func (s *Server) rateLimitMiddleware() gin.HandlerFunc {
 		}
 
 		// Set rate limit headers for successful requests
-		remaining := rateLimit - cli.requests
-		if remaining < 0 {
-			remaining = 0
-		}
+		remaining := max(0, rateLimit-cli.requests)
 
 		c.Header("X-RateLimit-Limit", fmt.Sprintf("%d", rateLimit))
 		c.Header("X-RateLimit-Remaining", fmt.Sprintf("%d", remaining))
