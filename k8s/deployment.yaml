@@ -1,0 +1,320 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llm-verifier
+  namespace: llm-verifier
+  labels:
+    app: llm-verifier
+    version: v1.0.0
+    component: api
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: llm-verifier
+      component: api
+  template:
+    metadata:
+      labels:
+        app: llm-verifier
+        version: v1.0.0
+        component: api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+        prometheus.io/scheme: "http"
+    spec:
+      serviceAccountName: llm-verifier
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: llm-verifier
+        image: llm-verifier:latest
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        - name: metrics
+          containerPort: 9090
+          protocol: TCP
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: CONFIG_PATH
+          value: "/app/config/production.yaml"
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: llm-verifier-secrets
+              key: db-host
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: llm-verifier-config
+              key: db-port
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: llm-verifier-secrets
+              key: db-name
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: llm-verifier-secrets
+              key: db-user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: llm-verifier-secrets
+              key: db-password
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: llm-verifier-secrets
+              key: jwt-secret
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: llm-verifier-secrets
+              key: openai-api-key
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: llm-verifier-secrets
+              key: redis-password
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+          readOnly: true
+        - name: ssl
+          mountPath: /app/ssl
+          readOnly: true
+        - name: logs
+          mountPath: /app/logs
+        - name: data
+          mountPath: /app/data
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+          successThreshold: 1
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: config
+        configMap:
+          name: llm-verifier-config
+      - name: ssl
+        secret:
+          secretName: llm-verifier-ssl
+          optional: true
+      - name: logs
+        emptyDir: {}
+      - name: data
+        persistentVolumeClaim:
+          claimName: llm-verifier-data
+      imagePullSecrets:
+      - name: registry-secret
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      nodeSelector:
+        kubernetes.io/os: linux
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - llm-verifier
+              topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llm-verifier-service
+  namespace: llm-verifier
+  labels:
+    app: llm-verifier
+    component: api
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: metrics
+    protocol: TCP
+  selector:
+    app: llm-verifier
+    component: api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llm-verifier-service-external
+  namespace: llm-verifier
+  labels:
+    app: llm-verifier
+    component: api
+spec:
+  type: LoadBalancer
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+    protocol: TCP
+  - name: https
+    port: 443
+    targetPort: http
+    protocol: TCP
+  selector:
+    app: llm-verifier
+    component: api
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: llm-verifier-ingress
+  namespace: llm-verifier
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "30"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+spec:
+  tls:
+  - hosts:
+    - api.llm-verifier.com
+    secretName: llm-verifier-tls
+  rules:
+  - host: api.llm-verifier.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: llm-verifier-service
+            port:
+              number: 80
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llm-verifier-config
+  namespace: llm-verifier
+  labels:
+    app: llm-verifier
+data:
+  production.yaml: |
+    environment: production
+    debug: false
+    log_level: info
+    server:
+      host: 0.0.0.0
+      port: 8080
+      read_timeout: 30s
+      write_timeout: 30s
+      idle_timeout: 60s
+      tls:
+        enabled: true
+        cert_file: /app/ssl/tls.crt
+        key_file: /app/ssl/tls.key
+    performance:
+      max_workers: 50
+      worker_timeout: 5m
+      queue_size: 1000
+      enable_profiling: false
+      enable_metrics: true
+      memory_limit: 2147483648
+      cpu_quota: 2
+    monitoring:
+      enabled: true
+      prometheus:
+        enabled: true
+        port: 9090
+        path: /metrics
+        namespace: llm_verifier
+      tracing:
+        enabled: true
+        provider: jaeger
+        endpoint: http://jaeger:14268/api/traces
+        service: llm-verifier
+      logging:
+        level: info
+        format: json
+        output: file
+        max_size: 100
+        max_backups: 10
+        max_age: 30
+        compress: true
+    enterprise:
+      rbac:
+        enabled: true
+        default_role: user
+        admin_role: admin
+        super_admin_role: super_admin
+      multi_tenant:
+        enabled: true
+        default_tenant: default
+        tenant_header: X-Tenant-ID
+        isolation_mode: strict
+      audit_logging:
+        enabled: true
+        storage: database
+        retention: 2160h
+        compression: true
+  db-port: "5432"
