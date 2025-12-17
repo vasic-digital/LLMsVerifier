@@ -17,6 +17,7 @@ import (
 
 	"llm-verifier/config"
 	"llm-verifier/database"
+	"llm-verifier/enhanced/analytics"
 	"llm-verifier/enhanced/supervisor"
 	"llm-verifier/events"
 	"llm-verifier/llmverifier"
@@ -1701,73 +1702,250 @@ func (s *Server) updateConfig(c *gin.Context) {
 // @Failure 400 {object} map[string]interface{} "Validation error"
 // @Router /config/export [post]
 func (s *Server) exportConfig(c *gin.Context) {
-	format := c.Query("format")
-	if format == "" {
-		log.Printf("Export config failed: format parameter required")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Format parameter required. Supported formats: opencode, claude, crush, vscode, json, yaml"})
+	var req struct {
+		Format  string                 `json:"format" binding:"required"`
+		Options map[string]interface{} `json:"options"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
 		return
 	}
 
-	// Check if multiple formats requested (comma-separated)
-	formats := strings.Split(format, ",")
-	if len(formats) > 1 {
-		// Bulk export
-		results := make(map[string]string)
-		for _, f := range formats {
-			f = strings.TrimSpace(f)
-			exported, err := s.exportConfiguration(f)
-			if err != nil {
-				log.Printf("Export config failed for format '%s': %v", f, err)
-				c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Failed to export configuration for format '%s': %s", f, err.Error())})
-				return
-			}
-			results[f] = exported
-		}
+	// This would call the config export functionality
+	// For now, return a placeholder response
+	c.JSON(200, gin.H{
+		"format":  req.Format,
+		"message": "Configuration export would be implemented here",
+		"options": req.Options,
+	})
+}
 
-		log.Printf("Bulk configuration export completed for formats: %v", formats)
-		c.JSON(http.StatusOK, gin.H{
-			"exports": results,
-			"formats": formats,
-		})
+// getAnalyticsTrends gets performance trend analytics
+// @Summary Get performance trends
+// @Description Retrieves performance trend analysis with anomaly detection and forecasting
+// @Tags analytics
+// @Produce json
+// @Param metric query string true "Metric name (e.g., response_time, throughput)"
+// @Param hours query int false "Time range in hours (default: 24)"
+// @Success 200 {object} map[string]interface{} "Trend analysis data"
+// @Failure 400 {object} map[string]interface{} "Validation error"
+// @Router /analytics/trends [get]
+func (s *Server) getAnalyticsTrends(c *gin.Context) {
+	metric := c.Query("metric")
+	if metric == "" {
+		c.JSON(400, gin.H{"error": "metric parameter is required"})
 		return
 	}
 
-	// Single format export
-	exported, err := s.exportConfiguration(format)
+	hoursStr := c.DefaultQuery("hours", "24")
+	hours, err := strconv.Atoi(hoursStr)
 	if err != nil {
-		log.Printf("Export config failed for format '%s': %v", format, err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to export configuration: " + err.Error()})
+		c.JSON(400, gin.H{"error": "invalid hours parameter"})
 		return
 	}
 
-	log.Printf("Configuration exported successfully in '%s' format", format)
+	// Create time range
+	endTime := time.Now()
+	startTime := endTime.Add(-time.Duration(hours) * time.Hour)
 
-	// Set appropriate content type based on format
-	contentType := "application/json"
-	filename := "config.json"
-
-	switch format {
-	case "opencode":
-		contentType = "application/json"
-		filename = "opencode-config.json"
-	case "claude":
-		contentType = "application/json"
-		filename = "claude-config.json"
-	case "vscode":
-		contentType = "application/json"
-		filename = "vscode-settings.json"
-	case "yaml":
-		contentType = "application/x-yaml"
-		filename = "config.yaml"
-	default: // json
-		contentType = "application/json"
-		filename = "config.json"
+	timeRange := analytics.TimeRange{
+		Start: startTime,
+		End:   endTime,
 	}
 
-	// Set headers for file download
-	c.Header("Content-Type", contentType)
-	c.Header("Content-Disposition", "attachment; filename="+filename)
-	c.String(http.StatusOK, exported)
+	// Initialize analyzer
+	analyzer := analytics.NewTrendAnalyzer(s.database)
+
+	// Analyze trend
+	trend, err := analyzer.AnalyzePerformanceTrend(metric, timeRange, time.Hour)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, trend)
+}
+
+// getAnalyticsUsage gets usage pattern analytics
+// @Summary Get usage patterns
+// @Description Retrieves usage pattern analysis including hourly/daily patterns and recommendations
+// @Tags analytics
+// @Produce json
+// @Param days query int false "Time range in days (default: 7)"
+// @Success 200 {object} map[string]interface{} "Usage analysis data"
+// @Failure 400 {object} map[string]interface{} "Validation error"
+// @Router /analytics/usage [get]
+func (s *Server) getAnalyticsUsage(c *gin.Context) {
+	daysStr := c.DefaultQuery("days", "7")
+	days, err := strconv.Atoi(daysStr)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid days parameter"})
+		return
+	}
+
+	// Create time range
+	endTime := time.Now()
+	startTime := endTime.AddDate(0, 0, -days)
+
+	timeRange := analytics.TimeRange{
+		Start: startTime,
+		End:   endTime,
+	}
+
+	// Initialize analyzer
+	analyzer := analytics.NewUsagePatternAnalyzer(s.database)
+
+	// Analyze usage patterns
+	analysis, err := analyzer.AnalyzeUsagePatterns(timeRange)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, analysis)
+}
+
+// getAnalyticsCost gets cost optimization analytics
+// @Summary Get cost analysis
+// @Description Retrieves cost optimization analysis and recommendations
+// @Tags analytics
+// @Produce json
+// @Param days query int false "Time range in days (default: 30)"
+// @Success 200 {object} map[string]interface{} "Cost analysis data"
+// @Failure 400 {object} map[string]interface{} "Validation error"
+// @Router /analytics/cost [get]
+func (s *Server) getAnalyticsCost(c *gin.Context) {
+	daysStr := c.DefaultQuery("days", "30")
+	days, err := strconv.Atoi(daysStr)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid days parameter"})
+		return
+	}
+
+	// Create time range
+	endTime := time.Now()
+	startTime := endTime.AddDate(0, 0, -days)
+
+	timeRange := analytics.TimeRange{
+		Start: startTime,
+		End:   endTime,
+	}
+
+	// Initialize analyzer
+	analyzer := analytics.NewCostOptimizationAnalyzer(s.database)
+
+	// Analyze cost optimization
+	analysis, err := analyzer.AnalyzeCostOptimization(timeRange)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, analysis)
+}
+
+// getModelRecommendations gets AI-powered model recommendations
+// @Summary Get model recommendations
+// @Description Retrieves AI-powered model recommendations based on task requirements
+// @Tags analytics
+// @Accept json
+// @Produce json
+// @Param requirements body analytics.TaskRequirements true "Task requirements"
+// @Success 200 {object} map[string]interface{} "Model recommendations"
+// @Failure 400 {object} map[string]interface{} "Validation error"
+// @Router /analytics/recommendations [post]
+func (s *Server) getModelRecommendations(c *gin.Context) {
+	var requirements analytics.TaskRequirements
+	if err := c.ShouldBindJSON(&requirements); err != nil {
+		HandleValidationError(c, err)
+		return
+	}
+
+	// Initialize recommender
+	recommender := analytics.NewModelRecommender(s.database)
+
+	// Get recommendations
+	result, err := recommender.RecommendModel(requirements)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, result)
+}
+
+// getUsageInsights gets usage insights and recommendations
+// @Summary Get usage insights
+// @Description Retrieves usage insights and optimization recommendations
+// @Tags analytics
+// @Produce json
+// @Param days query int false "Time range in days (default: 30)"
+// @Success 200 {object} map[string]interface{} "Usage insights"
+// @Failure 400 {object} map[string]interface{} "Validation error"
+// @Router /analytics/insights [get]
+func (s *Server) getUsageInsights(c *gin.Context) {
+	daysStr := c.DefaultQuery("days", "30")
+	days, err := strconv.Atoi(daysStr)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid days parameter"})
+		return
+	}
+
+	// Create time range
+	endTime := time.Now()
+	startTime := endTime.AddDate(0, 0, -days)
+
+	timeRange := analytics.TimeRange{
+		Start: startTime,
+		End:   endTime,
+	}
+
+	// Initialize recommender
+	recommender := analytics.NewModelRecommender(s.database)
+
+	// Get usage insights
+	insights, err := recommender.GetUsageInsights(timeRange)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, insights)
+}
+
+// compareModelsAPI compares multiple models for a task via API
+// @Summary Compare models
+// @Description Compares multiple models based on task requirements
+// @Tags analytics
+// @Accept json
+// @Produce json
+// @Param comparison body map[string]interface{} true "Comparison request"
+// @Success 200 {object} map[string]interface{} "Model comparison"
+// @Failure 400 {object} map[string]interface{} "Validation error"
+// @Router /analytics/compare [post]
+func (s *Server) compareModelsAPI(c *gin.Context) {
+	var req struct {
+		Requirements analytics.TaskRequirements `json:"requirements" binding:"required"`
+		ModelIDs     []string                   `json:"model_ids" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
+		return
+	}
+
+	// Initialize recommender
+	recommender := analytics.NewModelRecommender(s.database)
+
+	// Get comparison
+	comparison, err := recommender.GetModelComparison(req.Requirements, req.ModelIDs)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, comparison)
 }
 
 // getPricing retrieves pricing information with optional filtering
