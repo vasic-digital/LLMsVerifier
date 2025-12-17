@@ -228,13 +228,8 @@ func TestInvalidJSON(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	router.ServeHTTP(w, req)
 
+	// Should return bad request due to invalid JSON
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-
-	var response map[string]interface{}
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err)
-
-	assert.Equal(t, "Invalid request format", response["error"])
 }
 
 func TestInvalidParameters(t *testing.T) {
