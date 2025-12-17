@@ -29,6 +29,93 @@ func (v *Verifier) GetGlobalClient() *LLMClient {
 	return NewLLMClient(v.cfg.Global.BaseURL, v.cfg.Global.APIKey, nil)
 }
 
+// SummarizeConversation uses LLM to generate a summary of conversation messages
+func (v *Verifier) SummarizeConversation(messages []string) (*ConversationSummary, error) {
+	if len(messages) == 0 {
+		return nil, fmt.Errorf("no messages to summarize")
+	}
+
+	// Prepare the conversation text
+	conversationText := strings.Join(messages, "\n")
+
+	// Create LLM prompt for summarization
+	prompt := fmt.Sprintf(`Please analyze and summarize the following conversation. Provide:
+
+1. A concise summary (2-3 sentences)
+2. Main topics discussed (comma-separated list)
+3. Key points or decisions made (bullet points)
+4. Overall importance score (0.0-1.0, where 1.0 is most important)
+
+Format your response as JSON with the following structure:
+{
+  "summary": "concise summary text",
+  "topics": ["topic1", "topic2"],
+  "key_points": ["point1", "point2"],
+  "importance": 0.8
+}
+
+Conversation:
+%s`, conversationText)
+
+	// Get LLM client
+	client := v.GetGlobalClient()
+
+	// Create request
+	req := ChatCompletionRequest{
+		Model: v.cfg.Global.DefaultModel,
+		Messages: []Message{
+			{
+				Role:    "system",
+				Content: "You are an expert conversation analyzer. Provide structured summaries in the exact JSON format requested.",
+			},
+			{
+				Role:    "user",
+				Content: prompt,
+			},
+		},
+		MaxTokens:   intPtr(1000),
+		Temperature: floatPtr(0.3),
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	response, err := client.ChatCompletion(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("LLM summarization failed: %w", err)
+	}
+
+	if len(response.Choices) == 0 {
+		return nil, fmt.Errorf("no response from LLM")
+	}
+
+	// Parse JSON response
+	content := response.Choices[0].Message.Content
+
+	// Extract JSON from response
+	start := strings.Index(content, "{")
+	end := strings.LastIndex(content, "}")
+	if start == -1 || end == -1 {
+		return nil, fmt.Errorf("no JSON found in LLM response")
+	}
+
+	jsonStr := content[start : end+1]
+	var summary ConversationSummary
+	if err := json.Unmarshal([]byte(jsonStr), &summary); err != nil {
+		return nil, fmt.Errorf("failed to parse LLM summary JSON: %w", err)
+	}
+
+	return &summary, nil
+}
+
+// ConversationSummary represents an LLM-generated summary
+type ConversationSummary struct {
+	Summary    string   `json:"summary"`
+	Topics     []string `json:"topics"`
+	KeyPoints  []string `json:"key_points"`
+	Importance float64  `json:"importance"`
+}
+
 // Verify performs the verification of LLMs based on the configuration
 func (v *Verifier) Verify() ([]VerificationResult, error) {
 	var allResults []VerificationResult
@@ -2393,3 +2480,6 @@ func intPtr(i int) *int {
 }
 
 // Helper function to create a pointer to a float64
+func floatPtr(f float64) *float64 {
+	return &f
+}

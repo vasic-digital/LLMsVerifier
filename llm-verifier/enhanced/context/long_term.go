@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"llm-verifier/llmverifier"
+	llmverifier "llm-verifier/llmverifier"
 )
 
 // Summary represents a compressed summary of conversation content
@@ -90,18 +90,27 @@ func (ltm *LongTermMemory) createSummary(messages []*Message) (*Summary, error) 
 		}
 	}
 
-	conversationText := strings.Join(messageTexts, "\n")
+	// Use LLM to generate intelligent summary
+	llmSummary, err := ltm.verifier.SummarizeConversation(messageTexts)
+	if err != nil {
+		// Fallback to basic summary if LLM fails
+		fmt.Printf("LLM summarization failed, using fallback: %v\n", err)
+		conversationText := strings.Join(messageTexts, "\n")
+		llmSummary = &llmverifier.ConversationSummary{
+			Summary:    "Conversation summary: " + conversationText[:min(200, len(conversationText))],
+			Topics:     []string{"general", "discussion"},
+			KeyPoints:  []string{"Key point 1", "Key point 2"},
+			Importance: 0.5,
+		}
+	}
 
-	// TODO: Use LLM to generate summary from conversation text
-	// For now, create a basic summary
-
-	// This would normally call the LLM, but for now we'll create a mock summary
+	// Create summary with LLM-generated content
 	summary := &Summary{
 		ID:           fmt.Sprintf("summary_%d", time.Now().UnixNano()),
-		Content:      "Conversation summary: " + conversationText[:min(200, len(conversationText))],
-		Topics:       []string{"general", "discussion"},
-		KeyPoints:    []string{"Key point 1", "Key point 2"},
-		Importance:   0.5,
+		Content:      llmSummary.Summary,
+		Topics:       llmSummary.Topics,
+		KeyPoints:    llmSummary.KeyPoints,
+		Importance:   llmSummary.Importance,
 		StartTime:    startTime,
 		EndTime:      endTime,
 		MessageCount: len(messages),
