@@ -19,6 +19,7 @@ import (
 	"llm-verifier/database"
 	"llm-verifier/events"
 	"llm-verifier/llmverifier"
+	"llm-verifier/notifications"
 )
 
 // healthCheck handles health check requests
@@ -438,8 +439,8 @@ func (s *Server) verifyModel(c *gin.Context) {
 		if len(results) > 0 {
 			result := results[0] // Take first result
 
-			// Save verification result to database
-			err = s.database.CreateVerificationResult(&database.VerificationResult{
+			// Create verification result struct
+			verificationResult := &database.VerificationResult{
 				ModelID:                  id,
 				VerificationType:         "comprehensive",
 				StartedAt:                result.Timestamp,
@@ -491,7 +492,10 @@ func (s *Server) verifyModel(c *gin.Context) {
 				ReliabilityScore:         result.PerformanceScores.Reliability,
 				FeatureRichnessScore:     result.PerformanceScores.FeatureRichness,
 				ValuePropositionScore:    result.PerformanceScores.ValueProposition,
-			})
+			}
+
+			// Save verification result to database
+			err = s.database.CreateVerificationResult(verificationResult)
 			if err != nil {
 				// Publish database error event
 				s.eventBus.Publish(events.NewEvent(
@@ -510,6 +514,22 @@ func (s *Server) verifyModel(c *gin.Context) {
 				fmt.Sprintf("Verification completed for model %s with score %.2f", model.Name, result.PerformanceScores.OverallScore),
 				"verifier",
 			).WithData("model_id", id).WithData("model_name", model.Name).WithData("overall_score", result.PerformanceScores.OverallScore))
+
+			// Auto-detect issues based on verification result
+			latencyMs := int(result.Availability.Latency.Milliseconds())
+			if err := s.issueMgr.AutoDetectIssues(&database.VerificationResult{
+				ID:                     verificationResult.ID,
+				ModelID:                id,
+				OverallScore:           result.PerformanceScores.OverallScore,
+				LatencyMs:              &latencyMs,
+				ModelExists:            &result.Availability.Exists,
+				Responsive:             &result.Availability.Responsive,
+				Overloaded:             &result.Availability.Overloaded,
+				CodeCapabilityScore:    result.PerformanceScores.CodeCapability,
+				SupportsCodeGeneration: result.FeatureDetection.CodeGeneration,
+			}); err != nil {
+				log.Printf("Failed to auto-detect issues for model %s: %v", model.Name, err)
+			}
 		}
 	}()
 
@@ -2710,6 +2730,110 @@ func (s *Server) createNotificationSubscriber(c *gin.Context) {
 		"channels":    req.Channels,
 		"event_types": req.EventTypes,
 		"active":      true,
+	})
+}
+
+// getNotificationChannels returns the status of all notification channels
+func (s *Server) getNotificationChannels(c *gin.Context) {
+	channels := map[string]gin.H{
+		"slack": {
+			"enabled":    s.config.Notifications.Slack.Enabled,
+			"configured": s.config.Notifications.Slack.WebhookURL != "",
+		},
+		"email": {
+			"enabled": s.config.Notifications.Email.Enabled,
+			"configured": s.config.Notifications.Email.SMTPHost != "" &&
+				s.config.Notifications.Email.Username != "" &&
+				s.config.Notifications.Email.DefaultRecipient != "",
+		},
+		"telegram": {
+			"enabled": s.config.Notifications.Telegram.Enabled,
+			"configured": s.config.Notifications.Telegram.BotToken != "" &&
+				s.config.Notifications.Telegram.ChatID != "",
+		},
+		"matrix": {
+			"enabled": s.config.Notifications.Matrix.Enabled,
+			"configured": s.config.Notifications.Matrix.HomeserverURL != "" &&
+				s.config.Notifications.Matrix.AccessToken != "" &&
+				s.config.Notifications.Matrix.RoomID != "",
+		},
+		"whatsapp": {
+			"enabled": s.config.Notifications.WhatsApp.Enabled,
+			"configured": s.config.Notifications.WhatsApp.APIKey != "" &&
+				s.config.Notifications.WhatsApp.PhoneNumberID != "" &&
+				s.config.Notifications.WhatsApp.DefaultRecipient != "",
+		},
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"channels": channels,
+		"total_enabled": func() int {
+			count := 0
+			for _, ch := range channels {
+				if ch["enabled"].(bool) {
+					count++
+				}
+			}
+			return count
+		}(),
+	})
+}
+
+// testNotification sends a test notification to specified channels
+func (s *Server) testNotification(c *gin.Context) {
+	var req struct {
+		Channels []string `json:"channels" binding:"required"`
+		Message  string   `json:"message"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
+		return
+	}
+
+	if req.Message == "" {
+		req.Message = "This is a test notification from LLM Verifier"
+	}
+
+	// Convert string channels to NotificationChannel types
+	var channels []notifications.NotificationChannel
+	for _, ch := range req.Channels {
+		switch ch {
+		case "slack":
+			channels = append(channels, notifications.ChannelSlack)
+		case "email":
+			channels = append(channels, notifications.ChannelEmail)
+		case "telegram":
+			channels = append(channels, notifications.ChannelTelegram)
+		case "matrix":
+			channels = append(channels, notifications.ChannelMatrix)
+		case "whatsapp":
+			channels = append(channels, notifications.ChannelWhatsApp)
+		default:
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Unknown channel: " + ch})
+			return
+		}
+	}
+
+	// Create test event
+	testEvent := events.NewEvent(
+		events.EventTypeErrorOccurred,
+		events.EventSeverityInfo,
+		req.Message,
+		"test",
+	)
+
+	// Send test notification
+	err := s.notificationMgr.SendEventNotification(testEvent, channels)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send test notification: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":    "Test notification sent successfully",
+		"channels":   req.Channels,
+		"test_event": testEvent,
 	})
 }
 
