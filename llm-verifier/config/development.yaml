@@ -1,0 +1,133 @@
+# Development Configuration
+environment: development
+debug: true
+log_level: debug
+
+server:
+  host: 127.0.0.1
+  port: 8080
+  read_timeout: 60s
+  write_timeout: 60s
+  idle_timeout: 120s
+  tls:
+    enabled: false
+    cert_file: ""
+    key_file: ""
+
+database:
+  driver: sqlite
+  host: ""
+  port: 0
+  database: ./test.db
+  username: ""
+  password: ""
+  ssl_mode: disable
+  max_connections: 10
+  max_idle_time: 5m
+  conn_max_lifetime: 1h
+
+security:
+  jwt_secret: dev-secret-change-in-production
+  token_expiry: 24h
+  refresh_token_expiry: 168h # 7 days
+  max_login_attempts: 20
+  lockout_duration: 5m
+  session_timeout: 2h
+  require_https: false
+  rate_limiting:
+    enabled: false
+    requests: 1000
+    window: 1m
+  cors:
+    enabled: true
+    allowed_origins:
+      - "http://localhost:3000"
+      - "http://localhost:8080"
+      - "http://127.0.0.1:3000"
+      - "http://127.0.0.1:8080"
+    allowed_methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+      - PATCH
+    allowed_headers:
+      - Authorization
+      - Content-Type
+      - X-Tenant-ID
+      - X-Debug
+    exposed_headers:
+      - X-Total-Count
+      - X-Debug-Info
+    allow_credentials: true
+    max_age: 86400
+
+performance:
+  max_workers: 5
+  worker_timeout: 10m
+  queue_size: 100
+  enable_profiling: true
+  enable_metrics: true
+  memory_limit: 536870912 # 512MB
+  cpu_quota: 1
+
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    port: 9090
+    path: /metrics
+    namespace: llm_verifier_dev
+  tracing:
+    enabled: false
+    provider: jaeger
+    endpoint: http://localhost:14268/api/traces
+    service: llm-verifier-dev
+  logging:
+    level: debug
+    format: text
+    output: stdout
+    max_size: 10
+    max_backups: 3
+    max_age: 7
+    compress: false
+
+providers:
+  default_provider: openai
+  openai:
+    api_key: ${OPENAI_API_KEY:your-openai-key}
+    base_url: https://api.openai.com/v1
+    timeout: 60s
+    max_tokens: 4096
+    temperature: 0.7
+  local:
+    enabled: true
+    models:
+      - name: "llama-2-7b"
+        endpoint: "http://localhost:8081/v1"
+        timeout: 60s
+      - name: "mistral-7b"
+        endpoint: "http://localhost:8082/v1"
+        timeout: 60s
+
+enterprise:
+  rbac:
+    enabled: true
+    default_role: admin
+    admin_role: admin
+    super_admin_role: super_admin
+  multi_tenant:
+    enabled: false
+    default_tenant: dev
+    tenant_header: X-Tenant-ID
+    isolation_mode: none
+  ldap:
+    enabled: false
+  saml:
+    enabled: false
+  audit_logging:
+    enabled: true
+    storage: file
+    retention: 24h # 1 day
+    compression: false
