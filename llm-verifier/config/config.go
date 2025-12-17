@@ -113,13 +113,13 @@ type LLMConfig struct {
 
 // GlobalConfig holds global configuration options
 type GlobalConfig struct {
-	BaseURL      string                 `mapstructure:"base_url"`      // Base URL for the API
-	APIKey       string                 `mapstructure:"api_key"`       // Global API key
-	DefaultModel string                 `mapstructure:"default_model"` // Default model name
-	MaxRetries   int                    `mapstructure:"max_retries"`   // Maximum number of retries for failed requests
-	RequestDelay time.Duration          `mapstructure:"request_delay"` // Delay between requests
-	Timeout      time.Duration          `mapstructure:"timeout"`       // Request timeout
-	CustomParams map[string]interface{} `mapstructure:"custom_params"` // Custom parameters for API calls
+	BaseURL      string         `mapstructure:"base_url"`      // Base URL for the API
+	APIKey       string         `mapstructure:"api_key"`       // Global API key
+	DefaultModel string         `mapstructure:"default_model"` // Default model name
+	MaxRetries   int            `mapstructure:"max_retries"`   // Maximum number of retries for failed requests
+	RequestDelay time.Duration  `mapstructure:"request_delay"` // Delay between requests
+	Timeout      time.Duration  `mapstructure:"timeout"`       // Request timeout
+	CustomParams map[string]any `mapstructure:"custom_params"` // Custom parameters for API calls
 }
 
 // DatabaseConfig holds database configuration options
