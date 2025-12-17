@@ -176,7 +176,7 @@ func TestEnterpriseManager(t *testing.T) {
 	}
 
 	// Create enterprise manager (would use real supervisor in practice)
-	manager := NewEnterpriseManager(config, nil)
+	manager := NewEnterpriseManager(config)
 
 	if manager == nil {
 		t.Fatal("Failed to create enterprise manager")

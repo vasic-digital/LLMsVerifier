@@ -63,7 +63,7 @@ type Subscriber interface {
 // WebSocketSubscriber handles WebSocket event delivery
 type WebSocketSubscriber struct {
 	ID     string
-	Conn   interface{} // WebSocket connection (gorilla/websocket.Conn)
+	Conn   any // WebSocket connection (gorilla/websocket.Conn)
 	Types  []EventType
 	Active bool
 	mu     sync.RWMutex

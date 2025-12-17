@@ -9,8 +9,8 @@ import (
 	"llm-verifier/enhanced/enterprise"
 )
 
-// TestSystemConfiguration performs system-level configuration tests
-func TestSystemConfiguration(t *testing.T) {
+// TestSystemConfigurationIntegration performs system-level configuration integration tests
+func TestSystemConfigurationIntegration(t *testing.T) {
 	t.Run("Analytics Configuration", func(t *testing.T) {
 		// Test analytics engine configuration
 		t.Log("Testing analytics engine configuration")
@@ -82,10 +82,9 @@ func TestSystemConfiguration(t *testing.T) {
 				TwoFactorAuth: false,
 			},
 			LDAP: enterprise.LDAPConfig{
-				Host:         "localhost",
-				Port:         389,
+				URL:          "ldap://localhost:389",
 				BaseDN:       "dc=example,dc=com",
-				BindUser:     "cn=admin,dc=example,dc=com",
+				BindDN:       "cn=admin,dc=example,dc=com",
 				BindPassword: "password",
 			},
 			SAML: enterprise.SAMLConfig{
@@ -121,8 +120,8 @@ func TestSystemConfiguration(t *testing.T) {
 	})
 }
 
-// TestComponentCompatibility tests component compatibility
-func TestComponentCompatibility(t *testing.T) {
+// TestComponentCompatibilityIntegration tests component compatibility integration
+func TestComponentCompatibilityIntegration(t *testing.T) {
 	t.Run("Configuration Synchronization", func(t *testing.T) {
 		// Test that different component configurations are compatible
 		t.Log("Testing configuration synchronization")

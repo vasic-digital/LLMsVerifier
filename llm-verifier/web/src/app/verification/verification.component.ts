@@ -16,6 +16,7 @@ export class VerificationComponent implements OnInit {
   error: string | null = null;
   selectedResult: VerificationResult | null = null;
   showDetails = false;
+  showFilters = false;
   
   // Filters
   filters = {
