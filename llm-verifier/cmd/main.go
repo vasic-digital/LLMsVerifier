@@ -48,7 +48,8 @@ func main() {
 
 	// Export subcommands
 	rootCmd.AddCommand(aiConfigCmd())
-	// rootCmd.AddCommand(modelsCmd()) // TODO: Implement modelsCmd
+	// Models commands
+	rootCmd.AddCommand(modelsCmd())
 	// Providers commands
 	rootCmd.AddCommand(providersCmd())
 	// Verification results commands
@@ -337,7 +338,7 @@ func modelsCmd() *cobra.Command {
 		Long:  `List, create, update, delete, and verify LLM models.`,
 	}
 
-	_ = &cobra.Command{
+	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all models",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -346,47 +347,76 @@ func modelsCmd() *cobra.Command {
 				log.Fatalf("Failed to create client: %v", err)
 			}
 
-			if len(args) == 0 {
-				log.Fatalf("Batch file path required")
-			}
-
-			data, err := os.ReadFile(args[0])
+			models, err := c.GetModels()
 			if err != nil {
-				log.Fatalf("Failed to read batch file: %v", err)
+				log.Fatalf("Failed to fetch models: %v", err)
 			}
 
-			var models []map[string]interface{}
-			if err := json.Unmarshal(data, &models); err != nil {
-				log.Fatalf("Failed to parse batch file: %v", err)
+			if len(models) == 0 {
+				fmt.Println("No models found.")
+				return
 			}
 
-			fmt.Printf("Starting batch verification of %d models...\n", len(models))
-
-			results := make([]map[string]interface{}, 0, len(models))
+			fmt.Printf("Found %d models:\n\n", len(models))
 			for i, model := range models {
-				fmt.Printf("Verifying model %d/%d: %v\n", i+1, len(models), model["name"])
-
-				result, err := c.VerifyModel(fmt.Sprintf("%v", model["id"]))
-				if err != nil {
-					fmt.Printf("Error verifying model %v: %v\n", model["name"], err)
-					continue
-				}
-
-				results = append(results, result)
+				fmt.Printf("%d. Name: %v\n", i+1, model["name"])
+				fmt.Printf("   Provider: %v\n", model["provider_name"])
+				fmt.Printf("   Status: %v\n", model["verification_status"])
+				fmt.Printf("   Score: %.2f\n\n", model["overall_score"])
 			}
-
-			fmt.Printf("Batch verification completed. %d models verified successfully.\n", len(results))
-
-			// Save results
-			outputFile := "batch_results.json"
-			data, _ = json.MarshalIndent(results, "", "  ")
-			if err := os.WriteFile(outputFile, data, 0644); err != nil {
-				log.Fatalf("Failed to save results: %v", err)
-			}
-
-			fmt.Printf("Results saved to %s\n", outputFile)
 		},
 	}
+
+	getCmd := &cobra.Command{
+		Use:   "get [model-id]",
+		Short: "Get model details",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			modelID := args[0]
+			model, err := c.GetModel(modelID)
+			if err != nil {
+				log.Fatalf("Failed to fetch model: %v", err)
+			}
+
+			fmt.Printf("Model Details:\n")
+			fmt.Printf("ID: %v\n", model["id"])
+			fmt.Printf("Name: %v\n", model["name"])
+			fmt.Printf("Provider: %v\n", model["provider_name"])
+			fmt.Printf("Status: %v\n", model["verification_status"])
+			fmt.Printf("Score: %.2f\n", model["overall_score"])
+			fmt.Printf("Description: %v\n", model["description"])
+		},
+	}
+
+	verifyCmd := &cobra.Command{
+		Use:   "verify [model-id]",
+		Short: "Trigger verification for a model",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			modelID := args[0]
+			result, err := c.VerifyModel(modelID)
+			if err != nil {
+				log.Fatalf("Failed to verify model: %v", err)
+			}
+
+			fmt.Printf("Verification started for model %s\n", modelID)
+			fmt.Printf("Status: %v\n", result["status"])
+		},
+	}
+
+	cmd.AddCommand(listCmd)
+	cmd.AddCommand(getCmd)
+	cmd.AddCommand(verifyCmd)
 
 	return cmd
 }
