@@ -1,0 +1,178 @@
+<form [formGroup]="providerForm" (ngSubmit)="onSubmit()" class="provider-form">
+  <div class="form-header">
+    <h3>{{isEditing ? 'Edit Provider' : 'Add New Provider'}}</h3>
+    <div class="form-actions">
+      <button type="button" mat-button (click)="onCancel()">
+        <mat-icon>close</mat-icon>
+        Cancel
+      </button>
+    </div>
+  </div>
+
+  <div class="form-content">
+    <!-- Basic Information -->
+    <mat-expansion-panel [expanded]="true" class="form-section">
+      <mat-expansion-panel-header>
+        <mat-panel-title>Basic Information</mat-panel-title>
+      </mat-expansion-panel-header>
+      <mat-expansion-panel-content>
+        <div class="form-grid">
+          <!-- Name -->
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Provider Name *</mat-label>
+            <input matInput formControlName="name" placeholder="e.g., OpenAI, Anthropic, Google">
+            <mat-error *ngIf="providerForm.get('name')?.touched && providerForm.get('name')?.invalid">
+              {{getErrorMessage('name')}}
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Endpoint -->
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>API Endpoint *</mat-label>
+            <input matInput formControlName="endpoint" 
+                   placeholder="e.g., https://api.openai.com/v1">
+            <mat-hint>Must start with http:// or https://</mat-hint>
+            <mat-error *ngIf="providerForm.get('endpoint')?.touched && providerForm.get('endpoint')?.invalid">
+              {{getErrorMessage('endpoint')}}
+            </mat-error>
+          </mat-form-field>
+
+          <!-- API Key -->
+          <mat-form-field appearance="outline" class="form-field full-width">
+            <mat-label>API Key *</mat-label>
+            <input matInput formControlName="api_key_encrypted" 
+                   placeholder="Enter your API key (will be encrypted)">
+            <mat-hint>The API key will be encrypted for security</mat-hint>
+            <mat-error *ngIf="providerForm.get('api_key_encrypted')?.touched && providerForm.get('api_key_encrypted')?.invalid">
+              {{getErrorMessage('api_key_encrypted')}}
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Description -->
+          <mat-form-field appearance="outline" class="form-field full-width">
+            <mat-label>Description</mat-label>
+            <textarea matInput formControlName="description" 
+                      placeholder="Describe the LLM provider..." rows="3">
+            </textarea>
+            <mat-error *ngIf="providerForm.get('description')?.touched && providerForm.get('description')?.invalid">
+              {{getErrorMessage('description')}}
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </mat-expansion-panel-content>
+    </mat-expansion-panel>
+
+    <!-- Support Information -->
+    <mat-expansion-panel class="form-section">
+      <mat-expansion-panel-header>
+        <mat-panel-title>Support Information</mat-panel-title>
+      </mat-expansion-panel-header>
+      <mat-expansion-panel-content>
+        <div class="form-grid">
+          <!-- Website -->
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Website</mat-label>
+            <input matInput formControlName="website" 
+                   placeholder="e.g., https://openai.com">
+            <mat-hint>Must start with http:// or https://</mat-hint>
+            <mat-error *ngIf="providerForm.get('website')?.touched && providerForm.get('website')?.invalid">
+              {{getErrorMessage('website')}}
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Support Email -->
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Support Email</mat-label>
+            <input matInput formControlName="support_email" 
+                   placeholder="support@example.com">
+            <mat-error *ngIf="providerForm.get('support_email')?.touched && providerForm.get('support_email')?.invalid">
+              {{getErrorMessage('support_email')}}
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Documentation URL -->
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Documentation URL</mat-label>
+            <input matInput formControlName="documentation_url" 
+                   placeholder="https://docs.example.com">
+            <mat-hint>Must start with http:// or https://</mat-hint>
+            <mat-error *ngIf="providerForm.get('documentation_url')?.touched && providerForm.get('documentation_url')?.invalid">
+              {{getErrorMessage('documentation_url')}}
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </mat-expansion-panel-content>
+    </mat-expansion-panel>
+
+    <!-- Performance & Status -->
+    <mat-expansion-panel class="form-section">
+      <mat-expansion-panel-header>
+        <mat-panel-title>Performance & Status</mat-panel-title>
+      </mat-expansion-panel-header>
+      <mat-expansion-panel-content>
+        <div class="form-grid">
+          <!-- Active Status -->
+          <mat-checkbox formControlName="is_active">
+            Provider is Active
+            <mat-hint>Uncheck to temporarily disable this provider</mat-hint>
+          </mat-checkbox>
+
+          <!-- Reliability Score -->
+          <mat-form-field appearance="outline">
+            <mat-label>Reliability Score</mat-label>
+            <input matInput type="number" formControlName="reliability_score" min="0" max="100">
+            <mat-hint>0-100 (higher is better)</mat-hint>
+            <mat-error *ngIf="providerForm.get('reliability_score')?.touched && providerForm.get('reliability_score')?.invalid">
+              {{getErrorMessage('reliability_score')}}
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Average Response Time -->
+          <mat-form-field appearance="outline">
+            <mat-label>Average Response Time (ms)</mat-label>
+            <input matInput type="number" formControlName="average_response_time_ms" min="0">
+            <mat-hint>In milliseconds (e.g., 250 for 250ms)</mat-hint>
+            <mat-error *ngIf="providerForm.get('average_response_time_ms')?.touched && providerForm.get('average_response_time_ms')?.invalid">
+              {{getErrorMessage('average_response_time_ms')}}
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </mat-expansion-panel-content>
+    </mat-expansion-panel>
+
+    <!-- Test Connection -->
+    <mat-expansion-panel class="form-section">
+      <mat-expansion-panel-header>
+        <mat-panel-title>Test Connection</mat-panel-title>
+      </mat-expansion-panel-header>
+      <mat-expansion-panel-content>
+        <div class="test-section">
+          <p>Test the connection to the provider's API using the credentials provided above.</p>
+          <button mat-raised-button color="primary" 
+                  (click)="testConnection()" 
+                  [disabled]="loading">
+            <mat-icon *ngIf="loading">loop</mat-icon>
+            {{loading ? 'Testing...' : 'Test Connection'}}
+          </button>
+        </div>
+      </mat-expansion-panel-content>
+    </mat-expansion-panel>
+  </div>
+
+  <!-- Form Actions -->
+  <div class="form-footer">
+    <div class="error-message" *ngIf="error">
+      <mat-icon class="error-icon">error</mat-icon>
+      {{error}}
+    </div>
+    <div class="action-buttons">
+      <button type="button" mat-button (click)="onCancel()">
+        Cancel
+      </button>
+      <button type="submit" mat-raised-button color="primary" [disabled]="providerForm.invalid || loading">
+        <mat-icon *ngIf="loading">loop</mat-icon>
+        {{loading ? 'Saving...' : (isEditing ? 'Update Provider' : 'Add Provider')}}
+      </button>
+    </div>
+  </div>
+</form>

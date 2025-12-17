@@ -241,6 +241,7 @@ func (s *Server) setupRoutes() {
 			exports.PUT("/:id", s.updateConfigExport)
 			exports.DELETE("/:id", s.deleteConfigExport)
 			exports.GET("/download/:id", s.downloadConfigExport)
+			exports.POST("/:id/verify", s.verifyConfigExport)
 		}
 
 		// Logs

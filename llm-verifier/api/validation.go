@@ -147,7 +147,7 @@ func validateTargetType(fl validator.FieldLevel) bool {
 
 func validateExportType(fl validator.FieldLevel) bool {
 	value := fl.Field().String()
-	validTypes := []string{"json", "yaml", "csv", "html", "pdf"}
+	validTypes := []string{"json", "yaml", "csv", "html", "pdf", "opencode", "claude", "crush", "vscode"}
 	for _, t := range validTypes {
 		if value == t {
 			return true

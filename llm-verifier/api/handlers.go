@@ -1657,11 +1657,35 @@ func (s *Server) exportConfig(c *gin.Context) {
 	format := c.Query("format")
 	if format == "" {
 		log.Printf("Export config failed: format parameter required")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Format parameter required. Supported formats: opencode, claude, vscode, json, yaml"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Format parameter required. Supported formats: opencode, claude, crush, vscode, json, yaml"})
 		return
 	}
 
-	// Export configuration based on format
+	// Check if multiple formats requested (comma-separated)
+	formats := strings.Split(format, ",")
+	if len(formats) > 1 {
+		// Bulk export
+		results := make(map[string]string)
+		for _, f := range formats {
+			f = strings.TrimSpace(f)
+			exported, err := s.exportConfiguration(f)
+			if err != nil {
+				log.Printf("Export config failed for format '%s': %v", f, err)
+				c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Failed to export configuration for format '%s': %s", f, err.Error())})
+				return
+			}
+			results[f] = exported
+		}
+
+		log.Printf("Bulk configuration export completed for formats: %v", formats)
+		c.JSON(http.StatusOK, gin.H{
+			"exports": results,
+			"formats": formats,
+		})
+		return
+	}
+
+	// Single format export
 	exported, err := s.exportConfiguration(format)
 	if err != nil {
 		log.Printf("Export config failed for format '%s': %v", format, err)
@@ -2909,6 +2933,44 @@ func (s *Server) downloadConfigExport(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", []byte(configExport.ConfigData))
 }
 
+// verifyConfigExport verifies a config export configuration
+func (s *Server) verifyConfigExport(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid config export ID"})
+		return
+	}
+
+	configExport, err := s.database.GetConfigExport(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Config export not found"})
+		return
+	}
+
+	// Verify the configuration
+	isValid, message := s.verifyConfiguration(configExport.ExportType, configExport.ConfigData)
+
+	// Update the verification status
+	configExport.IsVerified = isValid
+	configExport.VerificationNotes = &message
+	configExport.UpdatedAt = time.Now()
+
+	err = s.database.UpdateConfigExport(configExport)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update config export verification status"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":                 configExport.ID,
+		"export_type":        configExport.ExportType,
+		"is_verified":        configExport.IsVerified,
+		"verification_notes": configExport.VerificationNotes,
+		"updated_at":         configExport.UpdatedAt,
+	})
+}
+
 // getLogs retrieves logs with optional filtering
 func (s *Server) getLogs(c *gin.Context) {
 	limitStr := c.DefaultQuery("limit", "50")
@@ -3035,10 +3097,32 @@ func (s *Server) exportConfiguration(format string) (string, error) {
 		return s.exportAsOpenCode()
 	case "claude":
 		return s.exportAsClaude()
+	case "crush":
+		return s.exportAsCrush()
 	case "vscode":
 		return s.exportAsVSCode()
 	default:
 		return "", fmt.Errorf("unsupported export format: %s", format)
+	}
+}
+
+// verifyConfiguration verifies that an exported configuration is valid for the specified format
+func (s *Server) verifyConfiguration(format, configData string) (bool, string) {
+	switch format {
+	case "json":
+		return s.verifyJSONConfiguration(configData)
+	case "yaml":
+		return s.verifyYAMLConfiguration(configData)
+	case "opencode":
+		return s.verifyOpenCodeConfiguration(configData)
+	case "claude":
+		return s.verifyClaudeConfiguration(configData)
+	case "crush":
+		return s.verifyCrushConfiguration(configData)
+	case "vscode":
+		return s.verifyVSCodeConfiguration(configData)
+	default:
+		return false, "Unsupported format for verification"
 	}
 }
 
@@ -3120,6 +3204,161 @@ func (s *Server) exportAsClaude() (string, error) {
 		return "", fmt.Errorf("failed to marshal Claude config: %w", err)
 	}
 	return string(jsonBytes), nil
+}
+
+// exportAsCrush exports configuration in Crush format
+func (s *Server) exportAsCrush() (string, error) {
+	// Crush format: JSON with MCP and LLM configuration structure
+	// Based on Crush's configuration schema at https://charm.land/crush.json
+	crushConfig := map[string]any{
+		"$schema": "https://charm.land/crush.json",
+		"mcp": map[string]any{
+			"llm-verifier": map[string]any{
+				"type":    "http",
+				"command": "http://localhost:" + s.config.API.Port + "/api/v1",
+				"headers": map[string]string{
+					"Content-Type": "application/json",
+				},
+			},
+		},
+		"llm": map[string]any{
+			"endpoints": s.config.LLMs,
+			"settings": map[string]any{
+				"concurrency":           s.config.Concurrency,
+				"timeout_seconds":       int(s.config.Timeout.Seconds()),
+				"default_model":         s.config.Global.DefaultModel,
+				"max_retries":           s.config.Global.MaxRetries,
+				"request_delay_seconds": s.config.Global.RequestDelay.Seconds(),
+			},
+		},
+		"description": "LLM Verifier configuration for Crush AI assistant integration",
+	}
+
+	jsonBytes, err := json.MarshalIndent(crushConfig, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal Crush config: %w", err)
+	}
+	return string(jsonBytes), nil
+}
+
+// verifyJSONConfiguration validates JSON configuration format
+func (s *Server) verifyJSONConfiguration(configData string) (bool, string) {
+	var data map[string]any
+	if err := json.Unmarshal([]byte(configData), &data); err != nil {
+		return false, "Invalid JSON format: " + err.Error()
+	}
+	return true, "Valid JSON configuration"
+}
+
+// verifyYAMLConfiguration validates YAML configuration format
+func (s *Server) verifyYAMLConfiguration(configData string) (bool, string) {
+	var data map[string]any
+	if err := yaml.Unmarshal([]byte(configData), &data); err != nil {
+		return false, "Invalid YAML format: " + err.Error()
+	}
+	return true, "Valid YAML configuration"
+}
+
+// verifyOpenCodeConfiguration validates OpenCode configuration format
+func (s *Server) verifyOpenCodeConfiguration(configData string) (bool, string) {
+	var data map[string]any
+	if err := json.Unmarshal([]byte(configData), &data); err != nil {
+		return false, "Invalid JSON format: " + err.Error()
+	}
+
+	// Check required fields
+	requiredFields := []string{"name", "version", "config"}
+	for _, field := range requiredFields {
+		if _, exists := data[field]; !exists {
+			return false, "Missing required field: " + field
+		}
+	}
+
+	// Check config structure
+	config, ok := data["config"].(map[string]any)
+	if !ok {
+		return false, "Config field must be an object"
+	}
+
+	if _, exists := config["llms"]; !exists {
+		return false, "Config must contain llms field"
+	}
+
+	return true, "Valid OpenCode configuration"
+}
+
+// verifyClaudeConfiguration validates Claude Code configuration format
+func (s *Server) verifyClaudeConfiguration(configData string) (bool, string) {
+	var data map[string]any
+	if err := json.Unmarshal([]byte(configData), &data); err != nil {
+		return false, "Invalid JSON format: " + err.Error()
+	}
+
+	// Check required fields
+	if _, exists := data["llm_verifier_config"]; !exists {
+		return false, "Missing required field: llm_verifier_config"
+	}
+
+	config, ok := data["llm_verifier_config"].(map[string]any)
+	if !ok {
+		return false, "llm_verifier_config field must be an object"
+	}
+
+	if _, exists := config["llm_endpoints"]; !exists {
+		return false, "Config must contain llm_endpoints field"
+	}
+
+	return true, "Valid Claude Code configuration"
+}
+
+// verifyCrushConfiguration validates Crush configuration format
+func (s *Server) verifyCrushConfiguration(configData string) (bool, string) {
+	var data map[string]any
+	if err := json.Unmarshal([]byte(configData), &data); err != nil {
+		return false, "Invalid JSON format: " + err.Error()
+	}
+
+	// Check schema
+	if schema, exists := data["$schema"]; !exists || schema != "https://charm.land/crush.json" {
+		return false, "Missing or invalid $schema field"
+	}
+
+	// Check MCP configuration
+	mcp, ok := data["mcp"].(map[string]any)
+	if !ok {
+		return false, "Missing or invalid mcp field"
+	}
+
+	if _, exists := mcp["llm-verifier"]; !exists {
+		return false, "MCP configuration must contain llm-verifier"
+	}
+
+	// Check LLM configuration
+	llm, ok := data["llm"].(map[string]any)
+	if !ok {
+		return false, "Missing or invalid llm field"
+	}
+
+	if _, exists := llm["endpoints"]; !exists {
+		return false, "LLM configuration must contain endpoints field"
+	}
+
+	return true, "Valid Crush configuration"
+}
+
+// verifyVSCodeConfiguration validates VS Code configuration format
+func (s *Server) verifyVSCodeConfiguration(configData string) (bool, string) {
+	var data map[string]any
+	if err := json.Unmarshal([]byte(configData), &data); err != nil {
+		return false, "Invalid JSON format: " + err.Error()
+	}
+
+	// Check for llmVerifier configuration
+	if _, exists := data["llmVerifier"]; !exists {
+		return false, "Missing required field: llmVerifier"
+	}
+
+	return true, "Valid VS Code configuration"
 }
 
 // exportAsVSCode exports configuration in VS Code settings format
