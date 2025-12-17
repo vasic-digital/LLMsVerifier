@@ -89,7 +89,7 @@ func (d *Database) GetEvent(id int64) (*Event, error) {
 }
 
 // ListEvents retrieves events with optional filtering
-func (d *Database) ListEvents(filters map[string]interface{}) ([]*Event, error) {
+func (d *Database) ListEvents(filters map[string]any) ([]*Event, error) {
 	query := `
 		SELECT id, event_type, severity, title, message, details, model_id,
 			provider_id, verification_result_id, issue_id, created_at
@@ -97,7 +97,7 @@ func (d *Database) ListEvents(filters map[string]interface{}) ([]*Event, error) 
 	`
 
 	var conditions []string
-	var args []interface{}
+	var args []any
 
 	// Add conditions based on filters
 	if eventType, ok := filters["event_type"]; ok {
@@ -235,7 +235,7 @@ func (d *Database) DeleteEvent(id int64) error {
 
 // GetEventsByType gets events filtered by type
 func (d *Database) GetEventsByType(eventType string, limit int) ([]*Event, error) {
-	filters := map[string]interface{}{
+	filters := map[string]any{
 		"event_type": eventType,
 		"limit":      limit,
 	}
@@ -245,7 +245,7 @@ func (d *Database) GetEventsByType(eventType string, limit int) ([]*Event, error
 
 // GetRecentEvents gets recent events across all types
 func (d *Database) GetRecentEvents(limit int) ([]*Event, error) {
-	filters := map[string]interface{}{
+	filters := map[string]any{
 		"limit": limit,
 	}
 
