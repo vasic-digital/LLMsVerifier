@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"llm-verifier/database"
 )
 
@@ -62,7 +63,7 @@ type Subscriber interface {
 // WebSocketSubscriber handles WebSocket event delivery
 type WebSocketSubscriber struct {
 	ID     string
-	Conn   any // WebSocket connection
+	Conn   interface{} // WebSocket connection (gorilla/websocket.Conn)
 	Types  []EventType
 	Active bool
 	mu     sync.RWMutex
@@ -233,13 +234,24 @@ func (ws *WebSocketSubscriber) HandleEvent(event Event) error {
 	}
 
 	// Send event via WebSocket
-	// This is a placeholder - actual WebSocket sending would go here
-	eventJSON, err := json.Marshal(event)
-	if err != nil {
-		return err
+	conn, ok := ws.Conn.(*websocket.Conn)
+	if !ok {
+		return fmt.Errorf("invalid WebSocket connection type")
 	}
 
-	log.Printf("WebSocket subscriber %s received event: %s", ws.ID, string(eventJSON))
+	eventJSON, err := json.Marshal(event)
+	if err != nil {
+		return fmt.Errorf("failed to marshal event: %w", err)
+	}
+
+	err = conn.WriteMessage(websocket.TextMessage, eventJSON)
+	if err != nil {
+		// Mark as inactive on write error
+		ws.Active = false
+		return fmt.Errorf("failed to send event via WebSocket: %w", err)
+	}
+
+	log.Printf("WebSocket subscriber %s sent event: %s", ws.ID, string(eventJSON))
 	return nil
 }
 
