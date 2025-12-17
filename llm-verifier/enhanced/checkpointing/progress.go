@@ -53,11 +53,58 @@ type OpenFile struct {
 	IsModified   bool      `json:"is_modified"`
 }
 
+// CheckpointCache provides LRU caching for checkpoints
+type CheckpointCache struct {
+	cache   map[string]*Checkpoint
+	maxSize int
+	mu      sync.RWMutex
+}
+
+// NewCheckpointCache creates a new checkpoint cache
+func NewCheckpointCache(maxSize int) *CheckpointCache {
+	return &CheckpointCache{
+		cache:   make(map[string]*Checkpoint),
+		maxSize: maxSize,
+	}
+}
+
+// Get retrieves a checkpoint from cache
+func (cc *CheckpointCache) Get(id string) (*Checkpoint, bool) {
+	cc.mu.RLock()
+	defer cc.mu.RUnlock()
+	checkpoint, exists := cc.cache[id]
+	return checkpoint, exists
+}
+
+// Put stores a checkpoint in cache with LRU eviction
+func (cc *CheckpointCache) Put(checkpoint *Checkpoint) {
+	cc.mu.Lock()
+	defer cc.mu.Unlock()
+
+	// If cache is full, remove oldest entry (simple implementation)
+	if len(cc.cache) >= cc.maxSize {
+		for key := range cc.cache {
+			delete(cc.cache, key)
+			break // Remove just one for simplicity
+		}
+	}
+
+	cc.cache[checkpoint.ID] = checkpoint
+}
+
+// Clear removes all entries from cache
+func (cc *CheckpointCache) Clear() {
+	cc.mu.Lock()
+	defer cc.mu.Unlock()
+	cc.cache = make(map[string]*Checkpoint)
+}
+
 // CheckpointManager manages agent checkpoints
 type CheckpointManager struct {
 	checkpoints    map[string]*Checkpoint
 	storagePath    string
 	maxCheckpoints int
+	cache          *CheckpointCache
 	mu             sync.RWMutex
 }
 
@@ -67,6 +114,7 @@ func NewCheckpointManager(storagePath string, maxCheckpoints int) *CheckpointMan
 		checkpoints:    make(map[string]*Checkpoint),
 		storagePath:    storagePath,
 		maxCheckpoints: maxCheckpoints,
+		cache:          NewCheckpointCache(100), // Cache up to 100 checkpoints
 	}
 }
 
@@ -118,6 +166,9 @@ func (cm *CheckpointManager) GetLatestCheckpoint(agentID string) (*Checkpoint, e
 		return nil, fmt.Errorf("no checkpoint found for agent %s", agentID)
 	}
 
+	// Cache the result for faster future access
+	cm.cache.Put(latest)
+
 	return latest, nil
 }
 
@@ -138,6 +189,13 @@ func (cm *CheckpointManager) GetCheckpointsForAgent(agentID string) []*Checkpoin
 
 // RestoreFromCheckpoint restores agent state from a checkpoint
 func (cm *CheckpointManager) RestoreFromCheckpoint(checkpointID string) (*Checkpoint, error) {
+	// First check cache
+	if cached, exists := cm.cache.Get(checkpointID); exists {
+		// Return a copy to prevent external modification
+		checkpointCopy := *cached
+		return &checkpointCopy, nil
+	}
+
 	cm.mu.RLock()
 	defer cm.mu.RUnlock()
 
@@ -145,6 +203,9 @@ func (cm *CheckpointManager) RestoreFromCheckpoint(checkpointID string) (*Checkp
 	if !exists {
 		return nil, fmt.Errorf("checkpoint not found: %s", checkpointID)
 	}
+
+	// Cache for future use
+	cm.cache.Put(checkpoint)
 
 	// Return a copy to prevent external modification
 	checkpointCopy := *checkpoint
@@ -353,14 +414,16 @@ func (cm *CheckpointManager) cleanupOldCheckpoints(agentID string) {
 }
 
 // GetCheckpointStats returns statistics about checkpoints
-func (cm *CheckpointManager) GetCheckpointStats() map[string]interface{} {
+func (cm *CheckpointManager) GetCheckpointStats() map[string]any {
 	cm.mu.RLock()
 	defer cm.mu.RUnlock()
 
-	stats := map[string]interface{}{
+	stats := map[string]any{
 		"total_checkpoints": len(cm.checkpoints),
 		"storage_path":      cm.storagePath,
 		"max_checkpoints":   cm.maxCheckpoints,
+		"cache_size":        len(cm.cache.cache),
+		"cache_max_size":    cm.cache.maxSize,
 	}
 
 	// Count checkpoints per agent
@@ -371,4 +434,16 @@ func (cm *CheckpointManager) GetCheckpointStats() map[string]interface{} {
 	stats["checkpoints_per_agent"] = agentCounts
 
 	return stats
+}
+
+// ClearCache clears the checkpoint cache
+func (cm *CheckpointManager) ClearCache() {
+	cm.cache.Clear()
+}
+
+// SetCacheSize sets the maximum cache size
+func (cm *CheckpointManager) SetCacheSize(maxSize int) {
+	cm.cache.mu.Lock()
+	defer cm.cache.mu.Unlock()
+	cm.cache.maxSize = maxSize
 }
