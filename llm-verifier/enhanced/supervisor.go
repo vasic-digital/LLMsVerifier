@@ -354,6 +354,11 @@ func (s *Supervisor) workerManager() {
 			Capabilities:  []string{"analysis", "generation", "testing", "general"},
 			Status:        "idle",
 			LastHeartbeat: time.Now(),
+			Performance: map[string]interface{}{
+				"TasksCompleted": 0,
+				"TasksFailed":    0,
+				"SuccessRate":    0.0,
+			},
 		}
 		s.workers[workerID] = worker
 
@@ -431,7 +436,11 @@ func (s *Supervisor) executeTask(worker *Worker, task *Task) {
 		}
 	} else {
 		task.Status = "completed"
-		task.Result = result
+		if taskResult, ok := result.(*TaskResult); ok {
+			task.Result = taskResult
+		} else {
+			task.Result = &TaskResult{Result: result}
+		}
 	}
 
 	// Send result
@@ -451,14 +460,16 @@ func (s *Supervisor) executeTask(worker *Worker, task *Task) {
 
 	// Update performance metrics
 	if err == nil {
-		worker.Performance.TasksCompleted++
+		worker.Performance["TasksCompleted"] = worker.Performance["TasksCompleted"].(int) + 1
 	} else {
-		worker.Performance.TasksFailed++
+		worker.Performance["TasksFailed"] = worker.Performance["TasksFailed"].(int) + 1
 	}
 
-	totalTasks := worker.Performance.TasksCompleted + worker.Performance.TasksFailed
+	tasksCompleted := worker.Performance["TasksCompleted"].(int)
+	tasksFailed := worker.Performance["TasksFailed"].(int)
+	totalTasks := tasksCompleted + tasksFailed
 	if totalTasks > 0 {
-		worker.Performance.SuccessRate = float64(worker.Performance.TasksCompleted) / float64(totalTasks)
+		worker.Performance["SuccessRate"] = float64(tasksCompleted) / float64(totalTasks)
 	}
 
 	log.Printf("Worker %s completed task %s (success: %v)", worker.ID, task.ID, err == nil)
@@ -519,12 +530,16 @@ func (s *Supervisor) findBestWorker(task *Task) *Worker {
 		wi, wj := candidates[i], candidates[j]
 
 		// Higher success rate first
-		if wi.Performance.SuccessRate != wj.Performance.SuccessRate {
-			return wi.Performance.SuccessRate > wj.Performance.SuccessRate
+		wiSuccessRate := wi.Performance["SuccessRate"].(float64)
+		wjSuccessRate := wj.Performance["SuccessRate"].(float64)
+		if wiSuccessRate != wjSuccessRate {
+			return wiSuccessRate > wjSuccessRate
 		}
 
 		// Higher completion count first
-		return wi.Performance.TasksCompleted > wj.Performance.TasksCompleted
+		wiTasksCompleted := wi.Performance["TasksCompleted"].(int)
+		wjTasksCompleted := wj.Performance["TasksCompleted"].(int)
+		return wiTasksCompleted > wjTasksCompleted
 	})
 
 	return candidates[0]

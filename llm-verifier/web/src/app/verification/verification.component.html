@@ -1,0 +1,253 @@
+<div class="verification-container">
+  <div class="header">
+    <h2>Verification Results</h2>
+    <div class="actions">
+      <button class="btn btn-primary" (click)="refreshData()">
+        <i class="icon-refresh"></i> Refresh
+      </button>
+      <button class="btn btn-secondary" (click)="showFilters = !showFilters">
+        <i class="icon-filter"></i> Filters
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters Panel -->
+  <div class="filters-panel" *ngIf="showFilters">
+    <h3>Filters</h3>
+    <div class="filter-grid">
+      <div class="filter-field">
+        <label for="model-filter">Model:</label>
+        <select id="model-filter" [(ngModel)]="filters.model_id" (change)="applyFilters()">
+          <option value="">All Models</option>
+          <option *ngFor="let model of models$ | async" [value]="model.id">{{ model.name }}</option>
+        </select>
+      </div>
+      
+      <div class="filter-field">
+        <label for="status-filter">Status:</label>
+        <select id="status-filter" [(ngModel)]="filters.status" (change)="applyFilters()">
+          <option value="">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="running">Running</option>
+          <option value="completed">Completed</option>
+          <option value="failed">Failed</option>
+        </select>
+      </div>
+      
+      <div class="filter-actions">
+        <button class="btn btn-primary" (click)="applyFilters()">Apply</button>
+        <button class="btn btn-secondary" (click)="resetFilters()">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading verification results...</p>
+  </div>
+
+  <!-- Error State -->
+  <div class="error" *ngIf="error">
+    <div class="error-message">
+      <i class="icon-error"></i>
+      <span>{{ error }}</span>
+      <button class="btn btn-primary" (click)="refreshData()">Retry</button>
+    </div>
+  </div>
+
+  <!-- Results List -->
+  <div class="results-list" *ngIf="!loading && !error">
+    <div class="results-header">
+      <h3>Verification Results</h3>
+      <span class="results-count">Showing results</span>
+    </div>
+
+    <div class="results-grid">
+      <div class="result-card" *ngFor="let result of verificationResults$ | async" 
+           [class.selected]="selectedResult?.id === result.id"
+           (click)="showResultDetails(result)">
+        
+        <div class="result-header">
+          <h4>{{ getModelName(result.model_id, (models$ | async) || []) }}</h4>
+          <span class="status-badge" [ngClass]="getStatusClass(result.status)">
+            {{ result.status }}
+          </span>
+        </div>
+
+        <div class="result-scores">
+          <div class="score-item">
+            <span class="score-label">Overall</span>
+            <span class="score-value" [ngClass]="getScoreClass(result.overall_score)">
+              {{ result.overall_score.toFixed(1) }}
+            </span>
+          </div>
+          <div class="score-item">
+            <span class="score-label">Code</span>
+            <span class="score-value" [ngClass]="getScoreClass(result.code_capability_score)">
+              {{ result.code_capability_score.toFixed(1) }}
+            </span>
+          </div>
+          <div class="score-item">
+            <span class="score-label">Speed</span>
+            <span class="score-value" [ngClass]="getScoreClass(result.responsiveness_score)">
+              {{ result.responsiveness_score.toFixed(1) }}
+            </span>
+          </div>
+        </div>
+
+        <div class="result-meta">
+          <span class="duration">{{ getDuration(result.started_at, result.completed_at) }}</span>
+          <span class="date">{{ formatDate(result.started_at) }}</span>
+        </div>
+
+        <div class="result-actions">
+          <button class="btn btn-sm btn-secondary" (click)="reverifyResult(result); $event.stopPropagation()">
+            <i class="icon-refresh"></i> Re-verify
+          </button>
+          <button class="btn btn-sm btn-danger" (click)="deleteResult(result.id); $event.stopPropagation()">
+            <i class="icon-delete"></i> Delete
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Load More -->
+    <div class="load-more" *ngIf="verificationResults$ | async as results">
+      <button class="btn btn-secondary" (click)="loadMore()" 
+              [disabled]="loading || results.length < filters.limit">
+        Load More
+      </button>
+    </div>
+  </div>
+
+  <!-- Details Modal -->
+  <div class="modal-overlay" *ngIf="showDetails" (click)="closeDetails()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Verification Details</h3>
+        <button class="btn-close" (click)="closeDetails()">&times;</button>
+      </div>
+
+      <div class="modal-body" *ngIf="selectedResult">
+        <div class="detail-section">
+          <h4>Model Information</h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <label>Model:</label>
+              <span>{{ getModelName(selectedResult.model_id, (models$ | async) || []) }}</span>
+            </div>
+            <div class="detail-item">
+              <label>Status:</label>
+              <span class="status-badge" [ngClass]="getStatusClass(selectedResult.status)">
+                {{ selectedResult.status }}
+              </span>
+            </div>
+            <div class="detail-item">
+              <label>Started:</label>
+              <span>{{ formatDate(selectedResult.started_at) }}</span>
+            </div>
+            <div class="detail-item" *ngIf="selectedResult.completed_at">
+              <label>Completed:</label>
+              <span>{{ formatDate(selectedResult.completed_at) }}</span>
+            </div>
+            <div class="detail-item">
+              <label>Duration:</label>
+              <span>{{ getDuration(selectedResult.started_at, selectedResult.completed_at) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Performance Scores</h4>
+          <div class="scores-grid">
+            <div class="score-detail">
+              <div class="score-header">
+                <span class="score-label">Overall Score</span>
+                <span class="score-value large" [ngClass]="getScoreClass(selectedResult.overall_score)">
+                  {{ selectedResult.overall_score.toFixed(1) }}
+                </span>
+              </div>
+              <div class="score-bar">
+                <div class="score-fill" [style.width.%]="selectedResult.overall_score"
+                     [ngClass]="getScoreClass(selectedResult.overall_score)"></div>
+              </div>
+            </div>
+
+            <div class="score-detail">
+              <div class="score-header">
+                <span class="score-label">Code Capability</span>
+                <span class="score-value" [ngClass]="getScoreClass(selectedResult.code_capability_score)">
+                  {{ selectedResult.code_capability_score.toFixed(1) }}
+                </span>
+              </div>
+              <div class="score-bar">
+                <div class="score-fill" [style.width.%]="selectedResult.code_capability_score"
+                     [ngClass]="getScoreClass(selectedResult.code_capability_score)"></div>
+              </div>
+            </div>
+
+            <div class="score-detail">
+              <div class="score-header">
+                <span class="score-label">Responsiveness</span>
+                <span class="score-value" [ngClass]="getScoreClass(selectedResult.responsiveness_score)">
+                  {{ selectedResult.responsiveness_score.toFixed(1) }}
+                </span>
+              </div>
+              <div class="score-bar">
+                <div class="score-fill" [style.width.%]="selectedResult.responsiveness_score"
+                     [ngClass]="getScoreClass(selectedResult.responsiveness_score)"></div>
+              </div>
+            </div>
+
+            <div class="score-detail">
+              <div class="score-header">
+                <span class="score-label">Reliability</span>
+                <span class="score-value" [ngClass]="getScoreClass(selectedResult.reliability_score)">
+                  {{ selectedResult.reliability_score.toFixed(1) }}
+                </span>
+              </div>
+              <div class="score-bar">
+                <div class="score-fill" [style.width.%]="selectedResult.reliability_score"
+                     [ngClass]="getScoreClass(selectedResult.reliability_score)"></div>
+              </div>
+            </div>
+
+            <div class="score-detail">
+              <div class="score-header">
+                <span class="score-label">Feature Richness</span>
+                <span class="score-value" [ngClass]="getScoreClass(selectedResult.feature_richness_score)">
+                  {{ selectedResult.feature_richness_score.toFixed(1) }}
+                </span>
+              </div>
+              <div class="score-bar">
+                <div class="score-fill" [style.width.%]="selectedResult.feature_richness_score"
+                     [ngClass]="getScoreClass(selectedResult.feature_richness_score)"></div>
+              </div>
+            </div>
+
+            <div class="score-detail">
+              <div class="score-header">
+                <span class="score-label">Value Proposition</span>
+                <span class="score-value" [ngClass]="getScoreClass(selectedResult.value_proposition_score)">
+                  {{ selectedResult.value_proposition_score.toFixed(1) }}
+                </span>
+              </div>
+              <div class="score-bar">
+                <div class="score-fill" [style.width.%]="selectedResult.value_proposition_score"
+                     [ngClass]="getScoreClass(selectedResult.value_proposition_score)"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-primary" (click)="reverifyResult(selectedResult)">
+            <i class="icon-refresh"></i> Re-verify Model
+          </button>
+          <button class="btn btn-secondary" (click)="closeDetails()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -968,14 +968,13 @@ func scanNullableInt64(nullInt64 sql.NullInt64) *int64 {
 
 // Helper function to scan nullable bool from string
 func scanNullableBoolFromString(nullString sql.NullString) *bool {
-	if !nullString.Valid || nullString.String == "" {
+	switch nullString.String {
+	case "":
 		return nil
-	}
-
-	if nullString.String == "true" || nullString.String == "1" {
+	case "true", "1":
 		val := true
 		return &val
-	} else if nullString.String == "false" || nullString.String == "0" {
+	case "false", "0":
 		val := false
 		return &val
 	}
@@ -1049,14 +1048,6 @@ func toNullInt(i *int) sql.NullInt32 {
 		return sql.NullInt32{Int32: int32(*i), Valid: true}
 	}
 	return sql.NullInt32{Valid: false}
-}
-
-// toNullFloat64 converts a *float64 to sql.NullFloat64
-func toNullFloat64(f *float64) sql.NullFloat64 {
-	if f != nil {
-		return sql.NullFloat64{Float64: *f, Valid: true}
-	}
-	return sql.NullFloat64{Valid: false}
 }
 
 // toNullBool converts a *bool to sql.NullBool
