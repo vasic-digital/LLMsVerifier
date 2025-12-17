@@ -1691,6 +1691,15 @@ func (s *Server) updateConfig(c *gin.Context) {
 }
 
 // exportConfig exports configuration for external tools
+// @Summary Export configuration
+// @Description Exports system configuration in various formats for AI CLI tools
+// @Tags config
+// @Accept json
+// @Produce json
+// @Param export body map[string]interface{} true "Export configuration"
+// @Success 200 {object} map[string]interface{} "Exported configuration"
+// @Failure 400 {object} map[string]interface{} "Validation error"
+// @Router /config/export [post]
 func (s *Server) exportConfig(c *gin.Context) {
 	format := c.Query("format")
 	if format == "" {
@@ -1762,6 +1771,15 @@ func (s *Server) exportConfig(c *gin.Context) {
 }
 
 // getPricing retrieves pricing information with optional filtering
+// @Summary Get pricing information
+// @Description Retrieves model pricing information with optional filtering
+// @Tags pricing
+// @Produce json
+// @Param limit query int false "Number of results per page"
+// @Param offset query int false "Offset for pagination"
+// @Param pricing_model query string false "Filter by pricing model"
+// @Success 200 {object} map[string]interface{} "List of pricing records"
+// @Router /pricing [get]
 func (s *Server) getPricing(c *gin.Context) {
 	// Build filters from query parameters
 	filters := make(map[string]any)
@@ -1826,6 +1844,15 @@ func (s *Server) getPricingByID(c *gin.Context) {
 }
 
 // createPricing creates a new pricing record
+// @Summary Create pricing record
+// @Description Creates a new pricing record for a model
+// @Tags pricing
+// @Accept json
+// @Produce json
+// @Param pricing body CreatePricingRequest true "Pricing information"
+// @Success 201 {object} map[string]interface{} "Created pricing record"
+// @Failure 400 {object} map[string]interface{} "Validation error"
+// @Router /pricing [post]
 func (s *Server) createPricing(c *gin.Context) {
 	var req CreatePricingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -2111,6 +2138,15 @@ func (s *Server) deleteLimit(c *gin.Context) {
 }
 
 // getIssues retrieves issues with optional filtering
+// @Summary Get issues
+// @Description Retrieves system issues and problems with optional filtering
+// @Tags issues
+// @Produce json
+// @Param limit query int false "Number of results per page"
+// @Param offset query int false "Offset for pagination"
+// @Param issue_type query string false "Filter by issue type"
+// @Success 200 {object} map[string]interface{} "List of issues"
+// @Router /issues [get]
 func (s *Server) getIssues(c *gin.Context) {
 	limitStr := c.DefaultQuery("limit", "50")
 	offsetStr := c.DefaultQuery("offset", "0")
@@ -2673,6 +2709,15 @@ func (s *Server) getEventSubscribers(c *gin.Context) {
 }
 
 // createNotificationSubscriber creates a new notification subscriber
+// @Summary Create notification subscriber
+// @Description Creates a new notification subscriber for specified event types and channels
+// @Tags notifications
+// @Accept json
+// @Produce json
+// @Param subscriber body map[string]interface{} true "Subscriber configuration"
+// @Success 201 {object} map[string]interface{} "Subscriber created"
+// @Failure 400 {object} map[string]interface{} "Validation error"
+// @Router /notifications/subscribers [post]
 func (s *Server) createNotificationSubscriber(c *gin.Context) {
 	var req struct {
 		Channels   []string `json:"channels" binding:"required"`
@@ -2735,6 +2780,12 @@ func (s *Server) createNotificationSubscriber(c *gin.Context) {
 }
 
 // getNotificationChannels returns the status of all notification channels
+// @Summary Get notification channels status
+// @Description Returns the status and configuration of all available notification channels
+// @Tags notifications
+// @Produce json
+// @Success 200 {object} map[string]interface{} "Channel statuses"
+// @Router /notifications/channels [get]
 func (s *Server) getNotificationChannels(c *gin.Context) {
 	channels := map[string]gin.H{
 		"slack": {
@@ -2781,6 +2832,15 @@ func (s *Server) getNotificationChannels(c *gin.Context) {
 }
 
 // testNotification sends a test notification to specified channels
+// @Summary Send test notification
+// @Description Sends a test notification to specified channels for testing purposes
+// @Tags notifications
+// @Accept json
+// @Produce json
+// @Param test body map[string]interface{} true "Test notification configuration"
+// @Success 200 {object} map[string]interface{} "Test notification sent"
+// @Failure 400 {object} map[string]interface{} "Validation error"
+// @Router /notifications/test [post]
 func (s *Server) testNotification(c *gin.Context) {
 	var req struct {
 		Channels []string `json:"channels" binding:"required"`
@@ -3052,6 +3112,15 @@ func (s *Server) getSupervisorStatus(c *gin.Context) {
 }
 
 // getSchedules retrieves schedules with optional filtering
+// @Summary Get schedules
+// @Description Retrieves scheduled jobs with optional filtering by type
+// @Tags schedules
+// @Produce json
+// @Param limit query int false "Number of results per page"
+// @Param offset query int false "Offset for pagination"
+// @Param schedule_type query string false "Filter by schedule type"
+// @Success 200 {object} map[string]interface{} "List of schedules"
+// @Router /schedules [get]
 func (s *Server) getSchedules(c *gin.Context) {
 	limitStr := c.DefaultQuery("limit", "50")
 	offsetStr := c.DefaultQuery("offset", "0")
@@ -3137,6 +3206,15 @@ func (s *Server) getScheduleByID(c *gin.Context) {
 }
 
 // createSchedule creates a new schedule
+// @Summary Create schedule
+// @Description Creates a new scheduled job for model verification or other tasks
+// @Tags schedules
+// @Accept json
+// @Produce json
+// @Param schedule body CreateScheduleRequest true "Schedule configuration"
+// @Success 201 {object} map[string]interface{} "Created schedule"
+// @Failure 400 {object} map[string]interface{} "Validation error"
+// @Router /schedules [post]
 func (s *Server) createSchedule(c *gin.Context) {
 	var req CreateScheduleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

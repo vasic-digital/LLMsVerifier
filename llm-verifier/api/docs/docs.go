@@ -64,6 +64,49 @@ const docTemplate = `{
                 }
             }
         },
+        "/config/export": {
+            "post": {
+                "description": "Exports system configuration in various formats for AI CLI tools",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "config"
+                ],
+                "summary": "Export configuration",
+                "parameters": [
+                    {
+                        "description": "Export configuration",
+                        "name": "export",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Exported configuration",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Returns the health status of the API",
@@ -77,6 +120,47 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "Health status",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/issues": {
+            "get": {
+                "description": "Retrieves system issues and problems with optional filtering",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "issues"
+                ],
+                "summary": "Get issues",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Number of results per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset for pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by issue type",
+                        "name": "issue_type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of issues",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -190,6 +274,275 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Forbidden (admin only)",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/channels": {
+            "get": {
+                "description": "Returns the status and configuration of all available notification channels",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Get notification channels status",
+                "responses": {
+                    "200": {
+                        "description": "Channel statuses",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/subscribers": {
+            "post": {
+                "description": "Creates a new notification subscriber for specified event types and channels",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Create notification subscriber",
+                "parameters": [
+                    {
+                        "description": "Subscriber configuration",
+                        "name": "subscriber",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Subscriber created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/test": {
+            "post": {
+                "description": "Sends a test notification to specified channels for testing purposes",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Send test notification",
+                "parameters": [
+                    {
+                        "description": "Test notification configuration",
+                        "name": "test",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Test notification sent",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/pricing": {
+            "get": {
+                "description": "Retrieves model pricing information with optional filtering",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "pricing"
+                ],
+                "summary": "Get pricing information",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Number of results per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset for pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by pricing model",
+                        "name": "pricing_model",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of pricing records",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Creates a new pricing record for a model",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "pricing"
+                ],
+                "summary": "Create pricing record",
+                "parameters": [
+                    {
+                        "description": "Pricing information",
+                        "name": "pricing",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.CreatePricingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created pricing record",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/schedules": {
+            "get": {
+                "description": "Retrieves scheduled jobs with optional filtering by type",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "schedules"
+                ],
+                "summary": "Get schedules",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Number of results per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset for pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by schedule type",
+                        "name": "schedule_type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of schedules",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Creates a new scheduled job for model verification or other tasks",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "schedules"
+                ],
+                "summary": "Create schedule",
+                "parameters": [
+                    {
+                        "description": "Schedule configuration",
+                        "name": "schedule",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.CreateScheduleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created schedule",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -375,6 +728,99 @@ const docTemplate = `{
                 "version": {
                     "type": "string",
                     "maxLength": 50
+                }
+            }
+        },
+        "api.CreatePricingRequest": {
+            "type": "object",
+            "required": [
+                "currency",
+                "input_token_cost",
+                "model_id",
+                "output_token_cost",
+                "pricing_model"
+            ],
+            "properties": {
+                "cached_input_token_cost": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "currency": {
+                    "type": "string",
+                    "maxLength": 3,
+                    "minLength": 3
+                },
+                "effective_from": {
+                    "type": "string"
+                },
+                "effective_to": {
+                    "type": "string"
+                },
+                "input_token_cost": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "model_id": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "output_token_cost": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "pricing_model": {
+                    "type": "string"
+                },
+                "request_cost": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "storage_cost": {
+                    "type": "number",
+                    "minimum": 0
+                }
+            }
+        },
+        "api.CreateScheduleRequest": {
+            "type": "object",
+            "required": [
+                "name",
+                "schedule_type",
+                "target_type"
+            ],
+            "properties": {
+                "cron_expression": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "interval_seconds": {
+                    "type": "integer",
+                    "minimum": 60
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "max_runs": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "schedule_type": {
+                    "type": "string"
+                },
+                "target_id": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "target_type": {
+                    "type": "string"
                 }
             }
         },

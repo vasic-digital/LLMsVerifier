@@ -6,8 +6,9 @@ This guide covers deploying LLM Verifier in production environments.
 
 - Go 1.21+ or Docker
 - SQLite 3.x (if not using container)
-- 2GB RAM minimum, 4GB recommended
-- 10GB storage minimum, 50GB recommended
+- 4GB RAM minimum, 8GB recommended (for supervisor system)
+- 20GB storage minimum, 100GB recommended (for backups and logs)
+- Cloud provider credentials (optional, for backup functionality)
 
 ## Environment Setup
 
@@ -22,10 +23,25 @@ export LLM_VERIFIER_API_JWT_SECRET=$(openssl rand -base64 32)
 # Optional: Database path
 export LLM_VERIFIER_DATABASE_PATH="/app/data/llm-verifier.db"
 
-# Optional: API configuration  
+# Optional: API configuration
 export LLM_VERIFIER_API_PORT="8080"
 export LLM_VERIFIER_API_RATE_LIMIT="1000"
 export LLM_VERIFIER_PROFILE="prod"
+
+# Optional: Cloud backup configuration (if using cloud backup)
+export AWS_ACCESS_KEY_ID="your-aws-key"
+export AWS_SECRET_ACCESS_KEY="your-aws-secret"
+export AWS_REGION="us-east-1"
+export GCP_SERVICE_ACCOUNT_JSON="path/to/service-account.json"
+export AZURE_STORAGE_KEY="your-azure-key"
+
+# Optional: Supervisor system configuration
+export LLM_VERIFIER_SUPERVISOR_ENABLED="true"
+export LLM_VERIFIER_SUPERVISOR_MAX_WORKERS="5"
+
+# Optional: Context management configuration
+export LLM_VERIFIER_CONTEXT_LONG_TERM_ENABLED="true"
+export LLM_VERIFIER_CONTEXT_SUMMARIZATION_ENABLED="true"
 ```
 
 ### 2. Create Required Directories
@@ -40,6 +56,16 @@ chmod 755 /app/data
 sudo mkdir -p /app/logs
 sudo chown $USER:$USER /app/logs
 chmod 755 /app/logs
+
+# Create backups directory (if using local backups)
+sudo mkdir -p /app/backups
+sudo chown $USER:$USER /app/backups
+chmod 755 /app/backups
+
+# Create context storage directory (for LLM context management)
+sudo mkdir -p /app/context
+sudo chown $USER:$USER /app/context
+chmod 755 /app/context
 ```
 
 ## Deployment Options
@@ -419,6 +445,174 @@ export LLM_VERIFIER_DATABASE_PATH="/app/data/llm-verifier.db?cache=shared&mode=r
 
 ### Load Balancing
 Use multiple replicas with load balancer for high availability.
+
+## Advanced Features Deployment
+
+### Supervisor System Configuration
+
+The supervisor system provides intelligent task breakdown and parallel processing. Configure it for production use:
+
+```yaml
+# Supervisor configuration
+supervisor:
+  enabled: true
+  max_workers: 10  # Scale based on CPU cores
+  task_timeout: "30m"
+  retry_attempts: 3
+
+  # Database connection pooling for worker efficiency
+  database:
+    max_open_conns: 25
+    max_idle_conns: 5
+    conn_max_lifetime: "1h"
+
+  # Quality assurance
+  quality_checks:
+    enabled: true
+    validation_required: true
+    human_review_threshold: 0.9
+```
+
+**Resource Requirements**:
+- Additional 2-4GB RAM for supervisor workers
+- CPU cores should be 2x number of max_workers
+- Database connections: max_workers + buffer
+
+### Context Management Deployment
+
+For long-term context management with LLM summarization:
+
+```yaml
+# Context management configuration
+context:
+  long_term:
+    enabled: true
+    max_age: "168h"  # 7 days
+    summarization_interval: "1h"
+    compression_threshold: 0.8
+
+  summarization:
+    enabled: true
+    provider: "anthropic"  # Dedicated summarization model
+    model: "claude-3-haiku-20240307"
+    batch_size: 10
+    quality_preservation: true
+
+  storage:
+    type: "file"  # or "redis", "postgresql"
+    path: "/app/context"
+    max_size: "10GB"
+    compression: true
+```
+
+**Storage Requirements**:
+- 1-5GB for context storage depending on usage
+- SSD storage recommended for performance
+- Backup context data separately from main database
+
+### Cloud Backup Integration
+
+Configure automated backups to cloud storage:
+
+```yaml
+# Cloud backup configuration
+backup:
+  enabled: true
+  provider: "aws"
+  bucket: "llm-verifier-prod-backups"
+  region: "us-east-1"
+  prefix: "automated/"
+
+  schedule: "0 */4 * * *"  # Every 4 hours
+  compression: true
+  encryption: true
+
+  include:
+    database: true
+    configurations: true
+    context: true  # Include context data
+    reports: true
+
+  retention:
+    days: 30
+    max_backups: 50
+```
+
+**Cloud Provider Permissions**:
+- **AWS**: `s3:PutObject`, `s3:GetObject`, `s3:ListBucket`, `s3:DeleteObject`
+- **GCP**: `Storage Object Admin` role
+- **Azure**: `Storage Blob Data Contributor` role
+
+### Vector Database Integration
+
+For advanced RAG (Retrieval-Augmented Generation) capabilities:
+
+```yaml
+# Vector database configuration
+vector:
+  enabled: true
+  provider: "cognee"  # or "pinecone", "weaviate", "qdrant"
+  endpoint: "http://localhost:8000"
+  api_key: "${COGNEE_API_KEY}"
+
+  # Indexing configuration
+  index:
+    name: "llm-verifier-knowledge"
+    dimension: 1536  # Match your embedding model
+    metric: "cosine"
+
+  # Embedding configuration
+  embedding:
+    provider: "openai"
+    model: "text-embedding-3-large"
+    batch_size: 100
+
+  # Retrieval settings
+  retrieval:
+    top_k: 5
+    score_threshold: 0.7
+    rerank: true
+```
+
+**Additional Dependencies**:
+- Vector database server (if using self-hosted)
+- Embedding model API access
+- Additional storage for vector indexes (5-20GB)
+
+### Failover and Circuit Breaker Configuration
+
+For production resilience:
+
+```yaml
+# Failover configuration
+failover:
+  enabled: true
+  circuit_breaker:
+    failure_threshold: 5
+    recovery_timeout: "30s"
+    monitoring_period: "1m"
+
+  latency_routing:
+    enabled: true
+    max_latency: "5s"
+    measurement_window: "5m"
+
+  health_checking:
+    interval: "30s"
+    timeout: "10s"
+    unhealthy_threshold: 3
+    healthy_threshold: 2
+
+  weighted_routing:
+    cost_weight: 0.7
+    performance_weight: 0.3
+    update_interval: "5m"
+```
+
+**Monitoring Requirements**:
+- External health check endpoints
+- Metrics collection for latency and error rates
+- Alerting on circuit breaker state changes
 
 ## Troubleshooting
 
