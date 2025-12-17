@@ -286,7 +286,7 @@ func (nm *NotificationManager) sendEmailNotification(notif Notification) error {
 		nm.config.Notifications.Email.SMTPHost,
 		nm.config.Notifications.Email.SMTPPort)
 
-	msg := []byte(fmt.Sprintf("To: %s\r\nSubject: %s\r\n\r\n%s", recipient, subject, body))
+	msg := fmt.Appendf(nil, "To: %s\r\nSubject: %s\r\n\r\n%s", recipient, subject, body)
 
 	err := smtp.SendMail(addr, auth, nm.config.Notifications.Email.Username,
 		[]string{recipient}, msg)

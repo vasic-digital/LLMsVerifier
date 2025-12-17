@@ -3433,16 +3433,6 @@ func (s *Server) getDatabaseStats(c *gin.Context) {
 	SendSuccess(c, http.StatusOK, stats, "")
 }
 
-// contains checks if a string is in a slice
-func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
-}
-
 // Request/Response types for user operations
 type CreateUserRequest struct {
 	Username string `json:"username" binding:"required,min=3,max=50"`
