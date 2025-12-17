@@ -24,6 +24,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
+import { WebSocketService } from './websocket.service';
 
 @NgModule({
   declarations: [
@@ -54,7 +55,7 @@ import { AppComponent } from './app.component';
     MatExpansionModule,
     MatCheckboxModule
   ],
-  providers: [],
+  providers: [WebSocketService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
