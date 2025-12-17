@@ -128,6 +128,18 @@ notifications:
     tls_enabled: true
   telegram:
     enabled: false
+    bot_token: "${TELEGRAM_PROD_BOT_TOKEN}"
+    chat_id: "${TELEGRAM_PROD_CHAT_ID}"
+  matrix:
+    enabled: false
+    homeserver_url: "${MATRIX_PROD_HOMESERVER}"
+    access_token: "${MATRIX_PROD_ACCESS_TOKEN}"
+    room_id: "${MATRIX_PROD_ROOM_ID}"
+  whatsapp:
+    enabled: false
+    phone_number_id: "${WHATSAPP_PROD_PHONE_NUMBER_ID}"
+    api_key: "${WHATSAPP_PROD_API_KEY}"
+    default_recipient: "${WHATSAPP_PROD_DEFAULT_RECIPIENT}"
 
 context:
   enabled: true
