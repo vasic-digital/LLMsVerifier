@@ -165,10 +165,45 @@
             <p><strong>API Version:</strong> v1.0.0</p>
             <p><strong>Status:</strong> <span class="status-online">Online</span></p>
             <p><strong>Database:</strong> <span class="status-connected">Connected</span></p>
-            <p><strong>WebSocket:</strong> <span class="status-ready">Ready</span></p>
+            <p><strong>WebSocket:</strong> 
+              <span [class]="isWebSocketConnected ? 'status-connected' : 'status-disconnected'">
+                {{isWebSocketConnected ? 'Connected' : 'Disconnected'}}
+              </span>
+            </p>
           </mat-card-content>
         </mat-card>
       </div>
+    </div>
+
+    <!-- Real-time Events -->
+    <div class="events-section">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Real-time Events</mat-card-title>
+          <button mat-icon-button (click)="webSocketService.disconnect()" *ngIf="isWebSocketConnected">
+            <mat-icon>link_off</mat-icon>
+          </button>
+          <button mat-icon-button (click)="setupWebSocket()" *ngIf="!isWebSocketConnected">
+            <mat-icon>link</mat-icon>
+          </button>
+        </mat-card-header>
+        <mat-card-content>
+          <div *ngIf="recentEvents.length === 0" class="no-events">
+            <p>No recent events</p>
+          </div>
+          <div class="events-list" *ngIf="recentEvents.length > 0">
+            <div class="event-item" 
+                 *ngFor="let event of recentEvents" 
+                 [class]="'event-' + event.severity">
+              <div class="event-header">
+                <span class="event-type">{{event.type}}</span>
+                <span class="event-time">{{formatDate(event.timestamp)}}</span>
+              </div>
+              <div class="event-message">{{event.message}}</div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
     </div>
   </div>
 </div>

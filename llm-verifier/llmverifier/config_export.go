@@ -1231,16 +1231,27 @@ func fetchVerificationResults(db *database.Database, options *ExportOptions) ([]
 
 		result := VerificationResult{
 			ModelInfo: ModelInfo{
-				ID:                model.Name,
-				Description:       model.Description,
-				Endpoint:          provider.Endpoint,
-				Tags:              model.Tags,
-				MaxOutputTokens:   int(*model.MaxOutputTokens),
-				ContextWindow:     ContextWindow{TotalMaxTokens: int(*model.ContextWindowTokens)},
+				ID:          model.ModelID,
+				Description: model.Description,
+				Endpoint:    provider.Endpoint,
+				Tags:        model.Tags,
+				MaxOutputTokens: func() int {
+					if model.MaxOutputTokens != nil {
+						return *model.MaxOutputTokens
+					}
+					return 0
+				}(),
+				ContextWindow: ContextWindow{TotalMaxTokens: func() int {
+					if model.ContextWindowTokens != nil {
+						return *model.ContextWindowTokens
+					}
+					return 0
+				}()},
 				SupportsVision:    model.SupportsVision,
 				SupportsAudio:     model.SupportsAudio,
 				SupportsVideo:     model.SupportsVideo,
 				SupportsReasoning: model.SupportsReasoning,
+				LanguageSupport:   model.LanguageSupport,
 			},
 			PerformanceScores: PerformanceScore{
 				OverallScore:     dbResult.OverallScore,
@@ -1270,12 +1281,15 @@ func fetchVerificationResults(db *database.Database, options *ExportOptions) ([]
 				StructuredOutput: dbResult.SupportsStructuredOutput,
 				Reasoning:        dbResult.SupportsReasoning,
 				ParallelToolUse:  dbResult.SupportsParallelToolUse,
+				MaxParallelCalls: dbResult.MaxParallelCalls,
+				BatchProcessing:  dbResult.SupportsBatchProcessing,
 			},
 			CodeCapabilities: CodeCapabilityResult{
 				LanguageSupport:    model.LanguageSupport,
 				CodeDebugging:      dbResult.CodeDebugging,
 				CodeOptimization:   dbResult.CodeOptimization,
 				TestGeneration:     dbResult.TestGeneration,
+				Documentation:      dbResult.DocumentationGeneration,
 				Refactoring:        dbResult.Refactoring,
 				ErrorResolution:    dbResult.ErrorResolution,
 				Architecture:       dbResult.ArchitectureDesign,
@@ -1283,7 +1297,7 @@ func fetchVerificationResults(db *database.Database, options *ExportOptions) ([]
 				PatternRecognition: dbResult.PatternRecognition,
 				DebuggingAccuracy:  dbResult.DebuggingAccuracy,
 				ComplexityHandling: ComplexityMetrics{
-					MaxHandledDepth:   int(dbResult.MaxHandledDepth),
+					MaxHandledDepth:   dbResult.MaxHandledDepth,
 					CodeQuality:       dbResult.CodeQualityScore,
 					LogicCorrectness:  dbResult.LogicCorrectnessScore,
 					RuntimeEfficiency: dbResult.RuntimeEfficiencyScore,
@@ -1299,15 +1313,35 @@ func fetchVerificationResults(db *database.Database, options *ExportOptions) ([]
 }
 
 // parseJSONField parses JSON string fields, returns empty slice if invalid
-func parseJSONField(jsonStr *string) []string {
-	if jsonStr == nil || *jsonStr == "" {
+func parseJSONField(jsonStr interface{}) []string {
+	if jsonStr == nil {
 		return []string{}
 	}
-	var result []string
-	if err := json.Unmarshal([]byte(*jsonStr), &result); err != nil {
+
+	switch v := jsonStr.(type) {
+	case []string:
+		return v
+	case string:
+		if v == "" {
+			return []string{}
+		}
+		var result []string
+		if err := json.Unmarshal([]byte(v), &result); err != nil {
+			return []string{}
+		}
+		return result
+	case *string:
+		if v == nil || *v == "" {
+			return []string{}
+		}
+		var result []string
+		if err := json.Unmarshal([]byte(*v), &result); err != nil {
+			return []string{}
+		}
+		return result
+	default:
 		return []string{}
 	}
-	return result
 }
 
 // createMockVerificationResults creates mock verification results for testing
