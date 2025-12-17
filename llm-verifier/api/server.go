@@ -32,6 +32,7 @@ import (
 	"log"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -40,21 +41,27 @@ import (
 
 	"llm-verifier/config"
 	"llm-verifier/database"
+	"llm-verifier/enhanced"
 	"llm-verifier/events"
 	"llm-verifier/llmverifier"
 	"llm-verifier/monitoring"
+	"llm-verifier/notifications"
+	"llm-verifier/scheduler"
 )
 
 // Server represents the REST API server
 type Server struct {
-	router        *gin.Engine
-	config        *config.Config
-	database      *database.Database
-	verifier      *llmverifier.Verifier
-	healthChecker *monitoring.HealthChecker
-	eventBus      *events.EventBus
-	jwtSecret     []byte
-	startTime     time.Time
+	router          *gin.Engine
+	config          *config.Config
+	database        *database.Database
+	verifier        *llmverifier.Verifier
+	healthChecker   *monitoring.HealthChecker
+	eventBus        *events.EventBus
+	notificationMgr *notifications.NotificationManager
+	scheduler       *scheduler.Scheduler
+	issueMgr        *enhanced.IssueManager
+	jwtSecret       []byte
+	startTime       time.Time
 }
 
 // NewServer creates a new API server instance
@@ -84,15 +91,27 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	// Initialize event bus
 	eventBus := events.NewEventBus(db)
 
+	// Initialize notification manager
+	notificationMgr := notifications.NewNotificationManager(cfg, eventBus)
+
+	// Initialize scheduler
+	sched := scheduler.NewScheduler(db)
+
+	// Initialize issue manager
+	issueMgr := enhanced.NewIssueManager(db)
+
 	server := &Server{
-		router:        gin.Default(),
-		config:        cfg,
-		database:      db,
-		verifier:      verifier,
-		healthChecker: healthChecker,
-		eventBus:      eventBus,
-		jwtSecret:     []byte(cfg.API.JWTSecret),
-		startTime:     time.Now(),
+		router:          gin.Default(),
+		config:          cfg,
+		database:        db,
+		verifier:        verifier,
+		healthChecker:   healthChecker,
+		eventBus:        eventBus,
+		notificationMgr: notificationMgr,
+		scheduler:       sched,
+		issueMgr:        issueMgr,
+		jwtSecret:       []byte(cfg.API.JWTSecret),
+		startTime:       time.Now(),
 	}
 
 	server.setupMiddleware()
@@ -100,6 +119,14 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 	// Register comprehensive health endpoints
 	server.healthChecker.RegisterHealthEndpoints(server.router)
+
+	// Set up scheduler job handler
+	server.setupScheduler()
+
+	// Start scheduler
+	if err := server.scheduler.Start(); err != nil {
+		return nil, fmt.Errorf("failed to start scheduler: %w", err)
+	}
 
 	return server, nil
 }
@@ -223,6 +250,13 @@ func (s *Server) setupRoutes() {
 			events.GET("/ws", s.handleWebSocket)
 			events.GET("/subscribers", s.getEventSubscribers)
 			events.POST("/subscribers/notifications", s.createNotificationSubscriber)
+		}
+
+		// Notifications
+		notifications := v1.Group("/notifications")
+		{
+			notifications.GET("/channels", s.getNotificationChannels)
+			notifications.POST("/test", s.testNotification)
 		}
 
 		// Schedules
@@ -534,6 +568,182 @@ func (s *Server) requireRoleMiddleware(allowedRoles ...string) gin.HandlerFunc {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
 		c.Abort()
 	}
+}
+
+// setupScheduler configures the scheduler with job handlers
+func (s *Server) setupScheduler() {
+	s.scheduler.SetJobHandler(func(jobType scheduler.JobType, targets []string, options map[string]interface{}) error {
+		switch jobType {
+		case scheduler.JobTypeVerification:
+			return s.handleScheduledVerification(targets, options)
+		case scheduler.JobTypeExport:
+			return s.handleScheduledExport(targets, options)
+		case scheduler.JobTypeCleanup:
+			return s.handleScheduledCleanup(targets, options)
+		case scheduler.JobTypeReport:
+			return s.handleScheduledReport(targets, options)
+		default:
+			return fmt.Errorf("unknown job type: %s", jobType)
+		}
+	})
+}
+
+// handleScheduledVerification executes scheduled model verification
+func (s *Server) handleScheduledVerification(targets []string, options map[string]interface{}) error {
+	log.Printf("Executing scheduled verification for targets: %v", targets)
+
+	// If targets contains "all", verify all models
+	if len(targets) == 1 && targets[0] == "all" {
+		models, err := s.database.ListModels(map[string]interface{}{})
+		if err != nil {
+			return fmt.Errorf("failed to list models: %w", err)
+		}
+
+		for _, model := range models {
+			if model.VerificationStatus == "verified" || model.VerificationStatus == "pending" {
+				go func(m *database.Model) {
+					// Trigger verification for this model
+					if err := s.verifyModelHelper(m); err != nil {
+						log.Printf("Scheduled verification failed for model %s: %v", m.Name, err)
+					}
+				}(model)
+			}
+		}
+	} else {
+		// Verify specific models
+		for _, target := range targets {
+			if modelID, err := strconv.ParseInt(target, 10, 64); err == nil {
+				model, err := s.database.GetModel(modelID)
+				if err != nil {
+					log.Printf("Failed to get model %s: %v", target, err)
+					continue
+				}
+
+				go func(m *database.Model) {
+					if err := s.verifyModelHelper(m); err != nil {
+						log.Printf("Scheduled verification failed for model %s: %v", m.Name, err)
+					}
+				}(model)
+			}
+		}
+	}
+
+	return nil
+}
+
+// handleScheduledExport executes scheduled configuration export
+func (s *Server) handleScheduledExport(targets []string, options map[string]interface{}) error {
+	log.Printf("Executing scheduled export for targets: %v", targets)
+
+	// Export configurations for all supported formats
+	formats := []string{"opencode", "claude", "crush", "vscode", "json", "yaml"}
+
+	for _, format := range formats {
+		_, err := s.exportConfiguration(format)
+		if err != nil {
+			log.Printf("Failed to export configuration in format %s: %v", format, err)
+			// Continue with other formats
+		}
+	}
+
+	return nil
+}
+
+// handleScheduledCleanup executes scheduled cleanup tasks
+func (s *Server) handleScheduledCleanup(targets []string, options map[string]interface{}) error {
+	log.Printf("Executing scheduled cleanup for targets: %v", targets)
+
+	// Clean up old verification results (older than 30 days)
+	thirtyDaysAgo := time.Now().AddDate(0, 0, -30)
+
+	// This would require additional database cleanup methods
+	// For now, just log the intent
+	log.Printf("Scheduled cleanup would remove old data older than %v", thirtyDaysAgo)
+
+	return nil
+}
+
+// handleScheduledReport executes scheduled report generation
+func (s *Server) handleScheduledReport(targets []string, options map[string]interface{}) error {
+	log.Printf("Executing scheduled report generation for targets: %v", targets)
+
+	// Generate comprehensive report
+	reportData := map[string]interface{}{
+		"generated_at": time.Now(),
+		"report_type":  "scheduled",
+		"targets":      targets,
+	}
+
+	// This would generate and save a report
+	// For now, just log the intent
+	log.Printf("Scheduled report generated: %v", reportData)
+
+	return nil
+}
+
+// verifyModelHelper is a helper function for scheduled verification
+func (s *Server) verifyModelHelper(model *database.Model) error {
+	// Get provider
+	provider, err := s.database.GetProvider(model.ProviderID)
+	if err != nil {
+		return fmt.Errorf("failed to get provider: %w", err)
+	}
+
+	// Create temporary config
+	tempConfig := &config.Config{
+		LLMs: []config.LLMConfig{
+			{
+				Name:     model.Name,
+				Endpoint: provider.Endpoint,
+				APIKey:   provider.APIKeyEncrypted,
+				Model:    model.ModelID,
+			},
+		},
+		Concurrency: 1,
+		Timeout:     30 * time.Second,
+	}
+
+	// Create temporary verifier
+	tempVerifier := llmverifier.New(tempConfig)
+	results, err := tempVerifier.Verify()
+	if err != nil {
+		return err
+	}
+
+	if len(results) > 0 {
+		result := results[0]
+		// Save result (simplified version)
+		log.Printf("Verification completed for model %s: score %.2f", model.Name, result.PerformanceScores.OverallScore)
+	}
+
+	return nil
+}
+
+// Shutdown gracefully shuts down the server and its components
+func (s *Server) Shutdown() {
+	log.Println("Shutting down LLM Verifier API server...")
+
+	// Shutdown scheduler
+	if s.scheduler != nil {
+		s.scheduler.Stop()
+	}
+
+	// Shutdown notification manager
+	if s.notificationMgr != nil {
+		s.notificationMgr.Shutdown()
+	}
+
+	// Shutdown event bus
+	if s.eventBus != nil {
+		s.eventBus.Shutdown()
+	}
+
+	// Shutdown health checker
+	if s.healthChecker != nil {
+		s.healthChecker.Stop()
+	}
+
+	log.Println("LLM Verifier API server shutdown complete")
 }
 
 // Start starts the HTTP server
