@@ -1292,7 +1292,7 @@ func (s *Server) generateReport(c *gin.Context) {
 			return
 		}
 		report["comparison"] = gin.H{
-			"models_comparison": compareModels(models, verificationResults),
+			"models_comparison": s.compareModels(models, verificationResults),
 		}
 	}
 
@@ -1353,7 +1353,7 @@ func calculateVerificationSuccessRate(results []*database.VerificationResult) fl
 	return float64(successful) / float64(len(results)) * 100.0
 }
 
-func compareModels(models []*database.Model, results []*database.VerificationResult) []gin.H {
+func (s *Server) compareModels(models []*database.Model, results []*database.VerificationResult) []gin.H {
 	var comparisons []gin.H
 
 	// Group results by model
@@ -1389,7 +1389,7 @@ func compareModels(models []*database.Model, results []*database.VerificationRes
 		comparisons = append(comparisons, gin.H{
 			"model_id":               model.ID,
 			"model_name":             model.Name,
-			"provider_name":          getProviderNameForModel(*model),
+			"provider_name":          s.getProviderNameForModel(*model),
 			"overall_score":          model.OverallScore,
 			"verification_count":     len(modelResults),
 			"avg_verification_score": avgOverallScore,
@@ -1401,11 +1401,14 @@ func compareModels(models []*database.Model, results []*database.VerificationRes
 	return comparisons
 }
 
-func getProviderNameForModel(model database.Model) string {
-	// TODO: Implement database lookup for provider name
-	// For now, return empty string
-	_ = model // Suppress unused parameter warning
-	return ""
+func (s *Server) getProviderNameForModel(model database.Model) string {
+	// Look up provider by ID
+	provider, err := s.database.GetProvider(model.ProviderID)
+	if err != nil {
+		// If lookup fails, return a fallback name
+		return fmt.Sprintf("Provider-%d", model.ProviderID)
+	}
+	return provider.Name
 }
 
 // downloadReport downloads a generated report
