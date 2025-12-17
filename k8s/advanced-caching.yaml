@@ -1,0 +1,245 @@
+# Advanced Caching and CDN Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llm-verifier-cache-config
+  namespace: llm-verifier
+data:
+  redis-cluster-config.yaml: |
+    # Redis Cluster Configuration
+    cluster:
+      enabled: true
+      redis_nodes:
+        - host: redis-cluster-1
+          port: 6379
+        password: ${REDIS_CLUSTER_PASSWORD}
+        role: master
+        memory: "2Gi"
+        maxmemory_policy: "allkeys-lru"
+      - host: redis-cluster-2
+          port: 6379
+          password: ${REDIS_CLUSTER_PASSWORD}
+          role: replica
+          memory: "2Gi"
+          maxmemory_policy: "allkeys-lru"
+        - host: redis-cluster-3
+          port: 6379
+          password: ${REDIS_CLUSTER_PASSWORD}
+          role: replica
+          memory: "2Gi"
+          maxmemory_policy: "allkeys-lru"
+      
+      timeout: 5s
+      max_retries: 3
+      retry_delay: 1s
+      
+      # Key Space Configuration
+      key_space: "llm-verifier:"
+        namespace: "llm-verifier"
+        separator: ":"
+      
+      # Eviction Policy
+      eviction_policy: "allkeys-lru"
+      maxmemory_policy: "allkeys-lru"
+      
+      # Persistence Configuration
+      save: 300
+      stop-writes-on-bgsave: false
+      rdbcompression: "snappy"
+      rdbchecksum: true
+      appendonly: no
+      appendfsync: "everysec"
+      no-appendfsync-on-rename: no
+      
+      # Security Configuration
+      requirepass: ${REDIS_CLUSTER_PASSWORD}
+      rename-commands: []
+      auth_users: []
+      acls: []
+      
+      # Cluster Configuration
+      cluster_node_timeout: 5s
+      cluster_bus_timeout: 30s
+      cluster_info_timeout: 10s
+      
+      # Slow Log Configuration
+      slowlog_log_slower_time: 10
+      slowlog_max_len: 128
+      
+      # Client Configuration
+      tcp_keepalive: 300
+      tcp_user_timeout: 60
+      maxclients: 10000
+      
+      # Memory Configuration
+      maxmemory-policy: "allkeys-lru"
+      maxmemory-samples: 5
+      
+      # Metrics Configuration
+      stat_export_enabled: true
+      command_stats_enabled: true
+      
+      # Pub/Sub Configuration
+      pubsub_notify_keyspace_events: "__keyevent@0:__:"
+      pubsub_notify_keyspace_keyspace: "__keyspace@0:__:"
+
+  cdn-config.yaml: |
+    # CDN Configuration
+    enabled: true
+    primary_cdn: "https://cdn.llm-verifier.com"
+    secondary_cdn: "https://backup-cdn.llm-verifier.com"
+    
+    # Cache Configuration
+    cache_ttl:
+      api_responses: 300
+      static_assets: 86400      # 24 hours
+      model_responses: 1800      # 30 minutes
+      authentication_tokens: 1800   # 30 minutes
+      
+    # Security Configuration
+    signed_url_expiration: 300
+    encryption_key: ${CDN_ENCRYPTION_KEY}
+    
+    # Performance Configuration
+      cache_hit_ratio: 0.8
+      bandwidth_optimization: true
+      compression_enabled: true
+      http2_enabled: true
+      
+    # Cache Invalidation Rules
+    invalidate_on:
+      - deployment: true
+      - config_change: true
+      - time_based: true
+      tags: ["user_specific", "tenant_specific"]
+    
+    # Fallback Configuration
+      fallback_to_origin: true
+      fallback_timeout: 5s
+      stale_while_revalidate: true
+      cache_status_codes: [404, 500, 502, 503]
+
+  cache-service.yaml: |
+    # Cache Service Configuration
+    image: "ghcr.io/llm-verifier/cache-service:latest"
+    replicas: 3
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 0
+        maxSurge: 1
+    
+    environment:
+      - name: REDIS_CLUSTER_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: llm-verifier-secrets
+            key: redis-cluster-password
+      - name: CDN_ENCRYPTION_KEY
+        valueFrom:
+          secretKeyRef:
+            name: llm-verifier-secrets
+            key: cdn-encryption-key
+    
+    ports:
+    - containerPort: 8080
+      name: http
+    - name: metrics
+      name: grpc
+    
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: http
+      initialDelaySeconds: 15
+      periodSeconds: 10
+      timeoutSeconds: 5
+      successThreshold: 1
+      failureThreshold: 3
+    
+    readinessProbe:
+      httpGet:
+        path: /ready
+        port: http
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 3
+      successThreshold: 1
+      failureThreshold: 3
+    
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "500m"
+      limits:
+        memory: "2Gi"
+        cpu: "1000m"
+    
+    # Configuration
+    env:
+      - name: LOG_LEVEL
+        value: "info"
+      - name: REDIS_CLUSTER_URL
+        value: "redis://redis-cluster-1:6379,redis-cluster-2:6379,redis-cluster-3:6379"
+      - name: PRIMARY_CDN
+        value: "https://cdn.llm-verifier.com"
+      - name: BACKUP_CDN
+        value: "https://backup-cdn.llm-verifier.com"
+
+---
+  cache-manager-config.yaml: |
+    # Cache Manager Configuration
+    enabled: true
+    
+    # Tier Configuration
+    tiers:
+      l1:
+        memory_limit: "1Gi"
+        ttl: 300
+        compression: "none"
+        eviction: "allkeys-lru"
+      l2:
+        memory_limit: "5Gi"
+        ttl: 1800
+        compression: "snappy"
+        eviction: "allkeys-lru"
+      l3:
+        memory_limit: "10Gi"
+        ttl: 3600
+        compression: "snappy"
+        eviction: "allkeys-lru"
+    
+    # Key Configuration
+    key_prefix: "llm-cache:"
+    
+    # Cache Invalidation
+    automatic_invalidation:
+      enabled: true
+      time_based_ttl: true
+      event_driven: true
+      
+    # Monitoring
+      metrics_enabled: true
+      alerting_enabled: true
+      performance_alerts:
+        hit_rate_low_threshold: 0.7
+        hit_rate_high_threshold: 0.95
+        error_rate_high_threshold: 0.05
+      latency_p95_threshold: 100ms
+        memory_usage_high_threshold: 0.85
+
+    # Configuration Management
+      hot_reload:
+        enabled: true
+        config_watch: true
+        version_check: true
+      
+    # Security
+      authentication:
+        enabled: true
+        token_validation: true
+        encryption: true
+      access_control:
+          enabled: true
+          ip_whitelist: []
+          rate_limiting: true
