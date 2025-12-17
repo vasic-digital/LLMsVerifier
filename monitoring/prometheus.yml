@@ -1,0 +1,73 @@
+# Prometheus Configuration for LLM Verifier
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - "alert_rules.yml"
+
+# Scrape configurations
+scrape_configs:
+  # LLM Verifier application metrics
+  - job_name: 'llm-verifier'
+    static_configs:
+      - targets: ['llm-verifier-service:9090']
+    metrics_path: /metrics
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    scheme: http
+    honor_labels: true
+
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # PostgreSQL metrics
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  # Redis metrics
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  # Nginx metrics
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx-exporter:9113']
+
+  # Node metrics
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+# Remote write configuration (optional)
+remote_write:
+  - url: "http://remote-prometheus:9090/api/v1/write"
+    queue_config:
+      max_samples_per_send: 1000
+      max_shards: 200
+      capacity: 2500
+
+# Storage configuration
+storage:
+  tsdb:
+    path: /prometheus
+    retention.time: 200h
+    retention.size: 10GB
+
+# Web configuration
+web:
+  enable_lifecycle: true
+  page_title: "LLM Verifier - Prometheus"
+  external_url: http://prometheus.llm-verifier.com
