@@ -17,6 +17,7 @@ import (
 
 	"llm-verifier/config"
 	"llm-verifier/database"
+	"llm-verifier/enhanced/supervisor"
 	"llm-verifier/events"
 	"llm-verifier/llmverifier"
 	"llm-verifier/notifications"
@@ -2963,6 +2964,91 @@ func (s *Server) endConversation(c *gin.Context) {
 func (s *Server) getContextStats(c *gin.Context) {
 	stats := s.contextMgr.GetConversationStats()
 	c.JSON(http.StatusOK, stats)
+}
+
+// decomposeTask decomposes a complex task into subtasks
+func (s *Server) decomposeTask(c *gin.Context) {
+	var req struct {
+		Description string                 `json:"description" binding:"required"`
+		Context     map[string]interface{} `json:"context,omitempty"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		HandleValidationError(c, err)
+		return
+	}
+
+	tasks, err := s.supervisor.DecomposeTask(req.Description, req.Context)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"tasks": tasks,
+		"count": len(tasks),
+	})
+}
+
+// submitTask submits a task for execution
+func (s *Server) submitTask(c *gin.Context) {
+	var task supervisor.Task
+	if err := c.ShouldBindJSON(&task); err != nil {
+		HandleValidationError(c, err)
+		return
+	}
+
+	// Generate task ID if not provided
+	if task.ID == "" {
+		task.ID = fmt.Sprintf("task_%d", time.Now().UnixNano())
+	}
+
+	// Set defaults
+	if task.CreatedAt.IsZero() {
+		task.CreatedAt = time.Now()
+	}
+	if task.MaxRetries == 0 {
+		task.MaxRetries = 3
+	}
+	if task.Status == "" {
+		task.Status = "pending"
+	}
+
+	err := s.supervisor.SubmitTask(&task)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusAccepted, gin.H{
+		"task_id": task.ID,
+		"status":  "submitted",
+	})
+}
+
+// getTaskStatus returns the status of a task
+func (s *Server) getTaskStatus(c *gin.Context) {
+	taskID := c.Param("id")
+
+	task, err := s.supervisor.GetTaskStatus(taskID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, task)
+}
+
+// getWorkerStatus returns the status of all workers
+func (s *Server) getWorkerStatus(c *gin.Context) {
+	status := s.supervisor.GetWorkerStatus()
+	c.JSON(http.StatusOK, status)
+}
+
+// getSupervisorStatus returns overall supervisor status
+func (s *Server) getSupervisorStatus(c *gin.Context) {
+	status := s.supervisor.GetSystemStatus()
+	c.JSON(http.StatusOK, status)
 }
 
 // getSchedules retrieves schedules with optional filtering

@@ -63,6 +63,7 @@ type Server struct {
 	issueMgr        *enhanced.IssueManager
 	failoverMgr     *failover.FailoverManager
 	contextMgr      *enhanced.ContextManager
+	supervisor      *enhanced.Supervisor
 	jwtSecret       []byte
 	startTime       time.Time
 }
@@ -109,6 +110,10 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	// Initialize context manager
 	contextMgr := enhanced.NewContextManager(verifier)
 
+	// Initialize supervisor with worker pool
+	supervisor := enhanced.NewSupervisor(verifier, 5) // 5 workers
+	supervisor.Start()
+
 	server := &Server{
 		router:          gin.Default(),
 		config:          cfg,
@@ -121,6 +126,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		issueMgr:        issueMgr,
 		failoverMgr:     failoverMgr,
 		contextMgr:      contextMgr,
+		supervisor:      supervisor,
 		jwtSecret:       []byte(cfg.API.JWTSecret),
 		startTime:       time.Now(),
 	}
@@ -285,6 +291,16 @@ func (s *Server) setupRoutes() {
 			context.GET("/conversations/:id", s.getConversationContext)
 			context.DELETE("/conversations/:id", s.endConversation)
 			context.GET("/stats", s.getContextStats)
+		}
+
+		// Supervisor
+		supervisor := v1.Group("/supervisor")
+		{
+			supervisor.POST("/tasks/decompose", s.decomposeTask)
+			supervisor.POST("/tasks", s.submitTask)
+			supervisor.GET("/tasks/:id", s.getTaskStatus)
+			supervisor.GET("/workers", s.getWorkerStatus)
+			supervisor.GET("/status", s.getSupervisorStatus)
 		}
 
 		// Schedules
@@ -774,6 +790,11 @@ func (s *Server) Shutdown() {
 	// Shutdown health checker
 	if s.healthChecker != nil {
 		s.healthChecker.Stop()
+	}
+
+	// Shutdown supervisor
+	if s.supervisor != nil {
+		s.supervisor.Stop()
 	}
 
 	log.Println("LLM Verifier API server shutdown complete")
