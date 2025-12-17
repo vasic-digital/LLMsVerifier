@@ -31,6 +31,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -521,11 +522,9 @@ func (s *Server) requireRoleMiddleware(allowedRoles ...string) gin.HandlerFunc {
 		}
 
 		// Check if user role is in allowed roles
-		for _, allowedRole := range allowedRoles {
-			if roleStr == allowedRole {
-				c.Next()
-				return
-			}
+		if slices.Contains(allowedRoles, roleStr) {
+			c.Next()
+			return
 		}
 
 		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
