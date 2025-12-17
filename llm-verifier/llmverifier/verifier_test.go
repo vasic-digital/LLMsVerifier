@@ -1,7 +1,6 @@
 package llmverifier
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -453,9 +452,7 @@ func TestVerifier_checkOverload(t *testing.T) {
 	verifier := New(cfg)
 
 	client := NewLLMClient("https://api.example.com/v1", "test-key", nil)
-	ctx := context.Background()
-
-	overloaded, avgLatency, throughput := verifier.checkOverload(client, "test-model", ctx)
+	overloaded, avgLatency, throughput := verifier.checkOverload(client, "test-model")
 
 	// Should return false for overload since we can't make real requests
 	if overloaded {
