@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io"
 
+	"cloud.google.com/go/storage"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"google.golang.org/api/option"
 )
 
 // AWS S3 Backup Provider
@@ -186,25 +188,48 @@ type GCSBackupProvider struct {
 	bucketName  string
 	projectID   string
 	credentials string // JSON credentials
+	client      *storage.Client
+	bucket      *storage.BucketHandle
 }
 
 func NewGCSBackupProvider(bucketName, projectID, credentials string) *GCSBackupProvider {
-	return &GCSBackupProvider{
+	provider := &GCSBackupProvider{
 		bucketName:  bucketName,
 		projectID:   projectID,
 		credentials: credentials,
 	}
+
+	// Initialize GCS client
+	ctx := context.Background()
+	var client *storage.Client
+	var err error
+
+	if credentials != "" {
+		// Use service account credentials
+		client, err = storage.NewClient(ctx, option.WithCredentialsJSON([]byte(credentials)))
+	} else {
+		// Use default credentials (for GCE/GKE environments)
+		client, err = storage.NewClient(ctx)
+	}
+
+	if err != nil {
+		// If client creation fails, we'll handle it in operations
+		fmt.Printf("Warning: Failed to create GCS client: %v\n", err)
+		return provider
+	}
+
+	provider.client = client
+	provider.bucket = client.Bucket(bucketName)
+
+	return provider
 }
 
-func (gcs *GCSBackupProvider) Upload(ctx context.Context, key string, data []byte) error {
-	// Google Cloud Storage upload implementation would go here
-	fmt.Printf("GCS: Uploading %d bytes to %s/%s\n", len(data), gcs.bucketName, key)
-
+func (p *GCSBackupProvider) Upload(ctx context.Context, key string, data []byte) error {
 	// Validate inputs
-	if gcs.bucketName == "" {
+	if p.bucketName == "" {
 		return fmt.Errorf("bucket name is required")
 	}
-	if gcs.projectID == "" {
+	if p.projectID == "" {
 		return fmt.Errorf("project ID is required")
 	}
 	if key == "" {
@@ -214,19 +239,88 @@ func (gcs *GCSBackupProvider) Upload(ctx context.Context, key string, data []byt
 		return fmt.Errorf("data cannot be empty")
 	}
 
-	// TODO: Implement actual Google Cloud Storage upload
-	// This would involve:
-	// 1. Creating a GCS client with credentials
-	// 2. Using the storage package to upload objects
-	// 3. Handling authentication and errors
+	// Initialize client if not already done
+	if p.client == nil {
+		var client *storage.Client
+		var err error
 
+		if p.credentials != "" {
+			// Use service account credentials
+			client, err = storage.NewClient(ctx, option.WithCredentialsJSON([]byte(p.credentials)))
+		} else {
+			// Use default credentials
+			client, err = storage.NewClient(ctx)
+		}
+
+		if err != nil {
+			return fmt.Errorf("failed to create GCS client: %w", err)
+		}
+
+		p.client = client
+		p.bucket = client.Bucket(p.bucketName)
+	}
+
+	// Upload to GCS
+	obj := p.bucket.Object(key)
+	writer := obj.NewWriter(ctx)
+
+	if _, err := writer.Write(data); err != nil {
+		return fmt.Errorf("failed to write to GCS: %w", err)
+	}
+
+	if err := writer.Close(); err != nil {
+		return fmt.Errorf("failed to close GCS writer: %w", err)
+	}
+
+	fmt.Printf("GCS: Successfully uploaded %d bytes to %s/%s\n", len(data), p.bucketName, key)
 	return nil
 }
 
-func (gcs *GCSBackupProvider) Download(ctx context.Context, key string) ([]byte, error) {
-	// Google Cloud Storage download implementation would go here
-	fmt.Printf("GCS: Downloading from %s/%s\n", gcs.bucketName, key)
-	return []byte("placeholder data"), nil
+func (p *GCSBackupProvider) Download(ctx context.Context, key string) ([]byte, error) {
+	// Validate inputs
+	if p.bucketName == "" {
+		return nil, fmt.Errorf("bucket name is required")
+	}
+	if key == "" {
+		return nil, fmt.Errorf("key is required")
+	}
+
+	// Initialize client if not already done
+	if p.client == nil {
+		var client *storage.Client
+		var err error
+
+		if p.credentials != "" {
+			// Use service account credentials
+			client, err = storage.NewClient(ctx, option.WithCredentialsJSON([]byte(p.credentials)))
+		} else {
+			// Use default credentials
+			client, err = storage.NewClient(ctx)
+		}
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to create GCS client: %w", err)
+		}
+
+		p.client = client
+		p.bucket = client.Bucket(p.bucketName)
+	}
+
+	// Download from GCS
+	obj := p.bucket.Object(key)
+	reader, err := obj.NewReader(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GCS reader: %w", err)
+	}
+	defer reader.Close()
+
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read from GCS: %w", err)
+	}
+
+	fmt.Printf("GCS: Successfully downloaded %d bytes from %s/%s\n", len(data), p.bucketName, key)
+	return data, nil
 }
 
 func (gcs *GCSBackupProvider) List(ctx context.Context, prefix string) ([]string, error) {
@@ -251,17 +345,41 @@ func (gcs *GCSBackupProvider) GetProviderName() string {
 	return "Google Cloud Storage"
 }
 
-func (gcs *GCSBackupProvider) HealthCheck(ctx context.Context) error {
+func (p *GCSBackupProvider) HealthCheck(ctx context.Context) error {
 	// Validate configuration
-	if gcs.bucketName == "" {
+	if p.bucketName == "" {
 		return fmt.Errorf("bucket name not configured")
 	}
-	if gcs.projectID == "" {
+	if p.projectID == "" {
 		return fmt.Errorf("project ID not configured")
 	}
 
-	// TODO: Implement actual GCS health check
-	// This would involve testing connectivity and permissions
+	// Initialize client if not already done
+	if p.client == nil {
+		var client *storage.Client
+		var err error
+
+		if p.credentials != "" {
+			// Use service account credentials
+			client, err = storage.NewClient(ctx, option.WithCredentialsJSON([]byte(p.credentials)))
+		} else {
+			// Use default credentials
+			client, err = storage.NewClient(ctx)
+		}
+
+		if err != nil {
+			return fmt.Errorf("failed to create GCS client: %w", err)
+		}
+
+		p.client = client
+		p.bucket = client.Bucket(p.bucketName)
+	}
+
+	// Test connectivity by checking if bucket exists
+	_, err := p.bucket.Attrs(ctx)
+	if err != nil {
+		return fmt.Errorf("GCS health check failed: %w", err)
+	}
 
 	return nil
 }
