@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"slices"
 	"sync"
 	"time"
 
@@ -187,12 +188,7 @@ func (eb *EventBus) Shutdown() {
 // Helper methods
 
 func (eb *EventBus) shouldReceiveEvent(subscriber Subscriber, event Event) bool {
-	for _, eventType := range subscriber.GetTypes() {
-		if eventType == event.Type {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(subscriber.GetTypes(), event.Type)
 }
 
 func (eb *EventBus) storeEvent(event Event) error {
