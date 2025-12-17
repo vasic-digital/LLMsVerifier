@@ -2837,6 +2837,45 @@ func (s *Server) testNotification(c *gin.Context) {
 	})
 }
 
+// getFailoverStatus returns the status of the failover system
+func (s *Server) getFailoverStatus(c *gin.Context) {
+	status := s.failoverMgr.GetProviderStatus()
+
+	c.JSON(http.StatusOK, gin.H{
+		"failover_status": status,
+		"total_providers": len(status),
+		"healthy_providers": func() int {
+			count := 0
+			for _, provider := range status {
+				if provider.(map[string]interface{})["healthy"].(bool) {
+					count++
+				}
+			}
+			return count
+		}(),
+	})
+}
+
+// selectProviderForModel manually selects a provider for a model using failover logic
+func (s *Server) selectProviderForModel(c *gin.Context) {
+	modelID := c.Param("model")
+
+	provider, err := s.failoverMgr.SelectProvider(modelID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"model_id": modelID,
+		"provider": gin.H{
+			"id":       provider.ID,
+			"name":     provider.Name,
+			"endpoint": provider.Endpoint,
+		},
+	})
+}
+
 // getSchedules retrieves schedules with optional filtering
 func (s *Server) getSchedules(c *gin.Context) {
 	limitStr := c.DefaultQuery("limit", "50")
