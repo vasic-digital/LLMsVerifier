@@ -28,12 +28,12 @@ type LongTermMemory struct {
 	summaries              []*Summary
 	maxSummaries           int
 	summarizationThreshold int // Number of messages before creating a summary
-	verifier               *llmverifier.Verifier
+	verifier               VerifierInterface
 	mu                     sync.RWMutex
 }
 
 // NewLongTermMemory creates a new long-term memory system
-func NewLongTermMemory(maxSummaries int, summarizationThreshold int, verifier *llmverifier.Verifier) *LongTermMemory {
+func NewLongTermMemory(maxSummaries int, summarizationThreshold int, verifier VerifierInterface) *LongTermMemory {
 	return &LongTermMemory{
 		summaries:              make([]*Summary, 0),
 		maxSummaries:           maxSummaries,
