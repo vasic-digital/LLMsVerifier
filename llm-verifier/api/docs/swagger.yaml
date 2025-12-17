@@ -1,4 +1,27 @@
 definitions:
+  analytics.TaskRequirements:
+    properties:
+      budget_limit:
+        description: Maximum cost per request
+        type: number
+      complexity:
+        description: simple, medium, complex
+        type: string
+      context_length:
+        description: Required context window
+        type: integer
+      required_features:
+        description: json_mode, function_calling, etc.
+        items:
+          type: string
+        type: array
+      speed_requirement:
+        description: fast, normal, quality_first
+        type: string
+      task_type:
+        description: coding, writing, analysis, etc.
+        type: string
+    type: object
   api.CreateModelRequest:
     properties:
       architecture:
@@ -179,6 +202,166 @@ definitions:
 info:
   contact: {}
 paths:
+  /analytics/compare:
+    post:
+      consumes:
+      - application/json
+      description: Compares multiple models based on task requirements
+      parameters:
+      - description: Comparison request
+        in: body
+        name: comparison
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Model comparison
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Compare models
+      tags:
+      - analytics
+  /analytics/cost:
+    get:
+      description: Retrieves cost optimization analysis and recommendations
+      parameters:
+      - description: 'Time range in days (default: 30)'
+        in: query
+        name: days
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Cost analysis data
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get cost analysis
+      tags:
+      - analytics
+  /analytics/insights:
+    get:
+      description: Retrieves usage insights and optimization recommendations
+      parameters:
+      - description: 'Time range in days (default: 30)'
+        in: query
+        name: days
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Usage insights
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get usage insights
+      tags:
+      - analytics
+  /analytics/recommendations:
+    post:
+      consumes:
+      - application/json
+      description: Retrieves AI-powered model recommendations based on task requirements
+      parameters:
+      - description: Task requirements
+        in: body
+        name: requirements
+        required: true
+        schema:
+          $ref: '#/definitions/analytics.TaskRequirements'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Model recommendations
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get model recommendations
+      tags:
+      - analytics
+  /analytics/trends:
+    get:
+      description: Retrieves performance trend analysis with anomaly detection and
+        forecasting
+      parameters:
+      - description: Metric name (e.g., response_time, throughput)
+        in: query
+        name: metric
+        required: true
+        type: string
+      - description: 'Time range in hours (default: 24)'
+        in: query
+        name: hours
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Trend analysis data
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get performance trends
+      tags:
+      - analytics
+  /analytics/usage:
+    get:
+      description: Retrieves usage pattern analysis including hourly/daily patterns
+        and recommendations
+      parameters:
+      - description: 'Time range in days (default: 7)'
+        in: query
+        name: days
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Usage analysis data
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Validation error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get usage patterns
+      tags:
+      - analytics
   /auth/login:
     post:
       consumes:

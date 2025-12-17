@@ -325,6 +325,17 @@ func (s *Server) setupRoutes() {
 			exports.POST("/:id/verify", s.verifyConfigExport)
 		}
 
+		// Analytics
+		analytics := v1.Group("/analytics")
+		{
+			analytics.GET("/trends", s.getAnalyticsTrends)
+			analytics.GET("/usage", s.getAnalyticsUsage)
+			analytics.GET("/cost", s.getAnalyticsCost)
+			analytics.POST("/recommendations", s.getModelRecommendations)
+			analytics.GET("/insights", s.getUsageInsights)
+			analytics.POST("/compare", s.compareModelsAPI)
+		}
+
 		// Logs
 		logs := v1.Group("/logs")
 		{
