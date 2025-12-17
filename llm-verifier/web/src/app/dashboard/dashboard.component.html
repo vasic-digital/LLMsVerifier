@@ -1,64 +1,174 @@
 <div class="dashboard-container">
-  <h1>{{title}}</h1>
+  <div class="header">
+    <h1>{{title}}</h1>
+    <button mat-raised-button color="primary" (click)="refreshData()" [disabled]="loading">
+      <mat-icon>refresh</mat-icon>
+      Refresh
+    </button>
+  </div>
 
-  <div class="stats-grid">
-    <mat-card>
-      <mat-card-header>
-        <mat-card-title>System Status</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <p>LLM Verifier is running successfully</p>
-        <p>REST API: <strong>Available</strong></p>
-        <p>Database: <strong>Connected</strong></p>
-        <p>WebSocket: <strong>Ready</strong></p>
-      </mat-card-content>
-    </mat-card>
+  <!-- Loading Indicator -->
+  <div *ngIf="loading" class="loading">
+    <mat-spinner></mat-spinner>
+    <p>Loading dashboard data...</p>
+  </div>
 
-    <mat-card>
-      <mat-card-header>
-        <mat-card-title>Quick Actions</mat-card-title>
-      </mat-card-header>
+  <!-- Error Message -->
+  <div *ngIf="error" class="error">
+    <mat-card class="error-card">
       <mat-card-content>
-        <button mat-raised-button color="primary" (click)="refreshData()">
-          Refresh Dashboard
-        </button>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card>
-      <mat-card-header>
-        <mat-card-title>Navigation</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <ul>
-          <li><a routerLink="/models">Models Management</a></li>
-          <li><a routerLink="/providers">Provider Configuration</a></li>
-          <li><a routerLink="/verification">Verification Results</a></li>
-        </ul>
+        <mat-icon class="error-icon">error</mat-icon>
+        <span>{{error}}</span>
       </mat-card-content>
     </mat-card>
   </div>
 
-  <div class="info-section">
-    <h2>LLM Verifier Dashboard</h2>
-    <p>Welcome to the LLM Verifier web interface. This dashboard provides an overview of your LLM verification system.</p>
+  <!-- Dashboard Content -->
+  <div *ngIf="!loading && !error">
+    <!-- Stats Overview -->
+    <div class="stats-grid" *ngIf="dashboardStats$ | async as stats">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Total Models</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="stat-value">{{stats.totalModels}}</div>
+        </mat-card-content>
+      </mat-card>
 
-    <h3>Available Features:</h3>
-    <ul>
-      <li><strong>REST API:</strong> Complete HTTP API for programmatic access</li>
-      <li><strong>CLI Tool:</strong> Command-line interface for all operations</li>
-      <li><strong>TUI:</strong> Interactive terminal user interface</li>
-      <li><strong>Real-time Monitoring:</strong> Health checks and performance metrics</li>
-      <li><strong>Multi-Provider Support:</strong> OpenAI, Anthropic, Google, Cohere, Azure</li>
-      <li><strong>Enterprise Security:</strong> RBAC, audit trails, encrypted storage</li>
-    </ul>
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Verified Models</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="stat-value">{{stats.verifiedModels}}</div>
+        </mat-card-content>
+      </mat-card>
 
-    <h3>Getting Started:</h3>
-    <ol>
-      <li>Configure your LLM API keys in the configuration file</li>
-      <li>Start the verification server: <code>./llm-verifier server --port 8080</code></li>
-      <li>Use the CLI or API to manage models and run verifications</li>
-      <li>Monitor results through the web interface or API</li>
-    </ol>
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Pending Models</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="stat-value">{{stats.pendingModels}}</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Average Score</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="stat-value" [ngClass]="getScoreClass(stats.averageScore)">
+            {{stats.averageScore?.toFixed(1) || '0.0'}}
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Total Providers</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="stat-value">{{stats.totalProviders}}</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Last Verification</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="stat-value">{{formatDate(stats.lastVerification)}}</div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Recent Models -->
+    <div class="section">
+      <h2>Recent Models</h2>
+      <div class="models-grid" *ngIf="models$ | async as models">
+        <mat-card *ngFor="let model of models" class="model-card">
+          <mat-card-header>
+            <mat-card-title>{{model.name}}</mat-card-title>
+            <mat-card-subtitle>{{model.model_id}}</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <p><strong>Provider:</strong> {{model.provider_id}}</p>
+            <p><strong>Status:</strong> 
+              <span [ngClass]="getVerificationStatusClass(model.verification_status)">
+                {{model.verification_status}}
+              </span>
+            </p>
+            <p *ngIf="model.overall_score"><strong>Score:</strong> 
+              <span [ngClass]="getScoreClass(model.overall_score)">
+                {{model.overall_score.toFixed(1)}}
+              </span>
+            </p>
+            <p><strong>Created:</strong> {{formatDate(model.created_at)}}</p>
+          </mat-card-content>
+          <mat-card-actions>
+            <button mat-raised-button color="primary" (click)="verifyModel(model.id)">
+              Verify
+            </button>
+            <button mat-button color="warn" (click)="deleteModel(model.id)">
+              Delete
+            </button>
+          </mat-card-actions>
+        </mat-card>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="section">
+      <h2>Recent Activity</h2>
+      <mat-card *ngIf="dashboardStats$ | async as stats">
+        <mat-card-content>
+          <div class="activity-list">
+            <div *ngFor="let activity of stats.recentActivity" class="activity-item">
+              <mat-icon [ngClass]="activity.type">
+                {{activity.type === 'success' ? 'check_circle' : activity.type === 'error' ? 'error' : 'loop'}}
+              </mat-icon>
+              <div class="activity-content">
+                <div class="activity-message">{{activity.message}}</div>
+                <div class="activity-time">{{formatDate(activity.timestamp)}}</div>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="section">
+      <h2>Quick Actions</h2>
+      <div class="actions-grid">
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>Navigation</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <nav>
+              <a mat-button routerLink="/models">Models Management</a>
+              <a mat-button routerLink="/providers">Provider Configuration</a>
+              <a mat-button routerLink="/verification">Verification Results</a>
+              <a mat-button routerLink="/reports">Reports</a>
+            </nav>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>System Info</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <p><strong>API Version:</strong> v1.0.0</p>
+            <p><strong>Status:</strong> <span class="status-online">Online</span></p>
+            <p><strong>Database:</strong> <span class="status-connected">Connected</span></p>
+            <p><strong>WebSocket:</strong> <span class="status-ready">Ready</span></p>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
   </div>
 </div>

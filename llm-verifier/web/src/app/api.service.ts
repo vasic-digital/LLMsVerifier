@@ -123,6 +123,14 @@ export class ApiService {
     return this.http.delete<void>(`${this.baseUrl}/api/v1/models/${id}`);
   }
 
+  deleteProvider(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/api/v1/providers/${id}`);
+  }
+
+  deleteVerificationResult(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/api/v1/verification-results/${id}`);
+  }
+
   verifyModel(modelId: string): Observable<VerificationResult> {
     return this.http.post<VerificationResult>(`${this.baseUrl}/api/v1/models/${modelId}/verify`, {
       model_id: modelId
