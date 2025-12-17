@@ -1,13 +1,14 @@
-import { Component, OnInit } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Observable, Subscription } from 'rxjs';
 import { ApiService, DashboardStats, Model, Provider, VerificationResult } from '../api.service';
+import { WebSocketService, RealtimeEvent } from '../websocket.service';
 
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   title = 'LLM Verifier Dashboard';
   dashboardStats$: Observable<DashboardStats>;
   models$: Observable<Model[]>;
@@ -16,11 +17,80 @@ export class DashboardComponent implements OnInit {
   
   loading = true;
   error: string | null = null;
+  isWebSocketConnected = false;
+  recentEvents: RealtimeEvent[] = [];
+  
+  private subscriptions: Subscription[] = [];
 
-  constructor(private apiService: ApiService) {}
+  constructor(
+    private apiService: ApiService,
+    private webSocketService: WebSocketService
+  ) {}
 
   ngOnInit(): void {
     this.loadData();
+    this.setupWebSocket();
+  }
+
+  ngOnDestroy(): void {
+    this.cleanup();
+  }
+
+  private setupWebSocket(): void {
+    // Connect to WebSocket for real-time updates
+    const wsUrl = this.getWebSocketUrl();
+    this.webSocketService.connect(wsUrl);
+
+    // Subscribe to connection status
+    const connectionSub = this.webSocketService.connected$.subscribe(connected => {
+      this.isWebSocketConnected = connected;
+    });
+
+    // Subscribe to real-time events
+    const eventSub = this.webSocketService.events$.subscribe(event => {
+      this.handleRealtimeEvent(event);
+    });
+
+    this.subscriptions.push(connectionSub, eventSub);
+  }
+
+  private getWebSocketUrl(): string {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    return `${protocol}//${host}/api/v1/ws`;
+  }
+
+  private handleRealtimeEvent(event: RealtimeEvent): void {
+    // Add to recent events (keep last 10)
+    this.recentEvents.unshift(event);
+    if (this.recentEvents.length > 10) {
+      this.recentEvents = this.recentEvents.slice(0, 10);
+    }
+
+    // Handle specific event types
+    switch (event.type) {
+      case 'model.verified':
+      case 'verification.completed':
+        // Refresh dashboard data when verification completes
+        this.loadData();
+        break;
+      case 'model.verification.failed':
+        // Show notification for failed verification
+        this.error = `Verification failed: ${event.message}`;
+        setTimeout(() => this.error = null, 5000);
+        break;
+      case 'system.health.changed':
+        // Refresh system status
+        this.loadData();
+        break;
+    }
+  }
+
+  private cleanup(): void {
+    // Cleanup WebSocket and subscriptions
+    this.webSocketService.disconnect();
+    this.subscriptions.forEach(sub => sub.unsubscribe());
+    this.subscriptions = [];
   }
 
   loadData(): void {
