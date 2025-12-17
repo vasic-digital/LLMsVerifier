@@ -1,7 +1,6 @@
 package logging
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -25,16 +24,21 @@ const (
 	LogLevelFatal   LogLevel = "fatal"
 )
 
-
-	Level     LogLevel               `json:"level" db:"level"`
-	Message      string                 `json:"message"`
-	Timestamp   time.Time              `json:"timestamp"`
+// LogEntry represents a structured log entry
+type LogEntry struct {
+	ID            string                 `json:"id" db:"id"`
+	Level         LogLevel               `json:"level" db:"level"`
+	Message       string                 `json:"message"`
+	Timestamp     time.Time              `json:"timestamp"`
 	CorrelationID string                 `json:"correlation_id,omitempty"`
-	UserID      *string                `json:"user_id,omitempty"`
-	Component    string                 `json:"component,omitempty"`
-	Error       string                 `json:"error,omitempty"`
-	Metadata     map[string]interface{} `json:"metadata,omitempty"`
+	UserID        *string                `json:"user_id,omitempty"`
+	Component     string                 `json:"component,omitempty"`
+	Source        string                 `json:"source,omitempty"`
+	Error         string                 `json:"error,omitempty"`
+	Fields        map[string]interface{} `json:"fields,omitempty"`
+	Metadata      map[string]interface{} `json:"metadata,omitempty"`
 }
+
 // Logger manages structured logging with multiple outputs
 type Logger struct {
 	db           *database.Database
@@ -124,6 +128,7 @@ func (l *Logger) Log(level LogLevel, message string, fields map[string]interface
 		Timestamp: time.Now(),
 		Level:     level,
 		Message:   message,
+		Source:    "app",
 		Fields:    fields,
 	}
 

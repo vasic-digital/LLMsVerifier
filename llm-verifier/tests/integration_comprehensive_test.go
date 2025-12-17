@@ -100,8 +100,9 @@ func TestAuthenticationFlow(t *testing.T) {
 	cfg := &config.Config{
 		Profile: "test",
 		Global: config.GlobalConfig{
-			LogLevel: "debug",
-			LogFile:  "",
+			DefaultModel: "test-model",
+			MaxRetries:   3,
+			Timeout:      30 * time.Second,
 		},
 		Database: config.DatabaseConfig{
 			Path: ":memory:",

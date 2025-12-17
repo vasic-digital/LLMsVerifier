@@ -1,0 +1,145 @@
+# LLM Verifier Development Configuration
+# This configuration is optimized for local development
+
+profile: "development"
+global:
+  log_level: "debug"
+  log_file: "/tmp/llm-verifier-dev.log"
+  log_max_size: 10  # MB
+  log_max_backups: 3
+  log_max_age: 7     # days
+
+database:
+  path: ":memory:"  # Use in-memory database for development
+  max_open_conns: 10
+  max_idle_conns: 5
+  conn_max_lifetime: "1h"
+  conn_max_idle_time: "30m"
+  # No encryption in development for simplicity
+  # encryption_key: "dev-encryption-key-12345"
+
+llms:
+  # Mock providers for development
+  - name: "mock-gpt4"
+    provider: "openai"
+    api_key: "sk-mock-key-for-development"
+    model: "gpt-4"
+    enabled: true
+    timeout: "10s"
+    max_retries: 2
+
+  - name: "mock-claude"
+    provider: "anthropic"
+    api_key: "sk-ant-mock-key-for-development"
+    model: "claude-3-sonnet-20240229"
+    enabled: true
+    timeout: "10s"
+    max_retries: 2
+
+api:
+  port: 8080
+  host: "0.0.0.0"
+  jwt_secret: "dev-jwt-secret-change-in-production"
+  jwt_expiry: "24h"
+  enable_cors: true
+  rate_limit: 1000  # Higher limit for development
+  burst_limit: 2000
+  rate_limit_window: 60  # seconds
+  trusted_proxies: []
+  cors_origins: ["http://localhost:3000", "http://localhost:8080"]
+
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+  critical_metrics:
+    enabled: true
+    ttft_threshold: 3.0
+    latency_threshold: 5.0
+    error_rate_threshold: 0.05
+
+scheduler:
+  enabled: true
+  max_workers: 5
+  task_timeout: "5m"
+  retry_attempts: 3
+  retry_delay: "10s"
+
+notifications:
+  enabled: true
+  slack:
+    enabled: false  # Disable in development
+  email:
+    enabled: false
+  telegram:
+    enabled: false
+
+context:
+  enabled: true
+  short_term:
+    max_messages: 50
+    window_duration: "1h"
+  long_term:
+    enabled: true
+    max_summaries: 100
+    summarization_threshold: 10
+
+vector:
+  enabled: true
+  provider: "in_memory"  # Use in-memory for development
+  dimension: 1536
+  similarity_threshold: 0.1
+
+failover:
+  enabled: true
+  circuit_breaker:
+    failure_threshold: 3    # Lower threshold for development
+    recovery_timeout: "30s"
+    success_threshold: 2
+  latency_router:
+    enabled: true
+    sample_size: 10
+  weighted_router:
+    enabled: true
+    cost_weight: 0.7
+    premium_weight: 0.3
+
+enhanced:
+  pricing_detector:
+    enabled: true
+    cache_ttl: "1h"
+  limits_detector:
+    enabled: true
+    cache_ttl: "30m"
+  issues_manager:
+    enabled: true
+    auto_detection: true
+  analytics:
+    enabled: true
+    trends:
+      enabled: true
+      granularity: "15m"
+    recommendations:
+      enabled: true
+      min_score: 10.0
+
+enterprise:
+  ldap:
+    enabled: false  # Disable LDAP in development
+  sso:
+    enabled: false
+  monitoring:
+    enabled: false  # Use local monitoring
+  security:
+    enabled: true
+    password_min_length: 8
+    session_timeout: "8h"
+
+# Development-specific settings
+development:
+  debug_mode: true
+  mock_responses: true
+  skip_auth: false
+  verbose_logging: true
