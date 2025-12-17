@@ -1,8 +1,11 @@
 package enterprise
 
 import (
+	"crypto/tls"
 	"fmt"
 	"log"
+
+	"github.com/go-ldap/ldap/v3"
 )
 
 // LDAPConfig holds LDAP configuration
@@ -16,61 +19,6 @@ type LDAPConfig struct {
 	UserFilter   string   `json:"user_filter"`
 	GroupFilter  string   `json:"group_filter"`
 	Attributes   []string `json:"attributes"`
-}
-
-// MockLDAPConn represents a mock LDAP connection
-type MockLDAPConn struct{}
-
-// Close closes the mock connection
-func (conn *MockLDAPConn) Close() {}
-
-// Bind performs a mock bind operation
-func (conn *MockLDAPConn) Bind(userDN, password string) error {
-	// Mock authentication - accept demo credentials
-	if (userDN == "demo" || userDN == "cn=demo,ou=users,dc=example,dc=com") && password == "demo" {
-		return nil
-	}
-	if (userDN == "admin" || userDN == "cn=admin,ou=users,dc=example,dc=com") && password == "admin" {
-		return nil
-	}
-	return fmt.Errorf("authentication failed")
-}
-
-// Search performs a mock search
-func (conn *MockLDAPConn) Search(request interface{}) (*MockSearchResult, error) {
-	// Mock search results
-	return &MockSearchResult{
-		Entries: []*MockEntry{
-			{
-				DN: "cn=demo,ou=users,dc=example,dc=com",
-				Attributes: map[string][]string{
-					"sAMAccountName": {"demo"},
-					"mail":           {"demo@example.com"},
-					"displayName":    {"Demo User"},
-					"memberOf":       {"cn=users,ou=groups,dc=example,dc=com"},
-				},
-			},
-		},
-	}, nil
-}
-
-// MockSearchResult represents mock LDAP search results
-type MockSearchResult struct {
-	Entries []*MockEntry
-}
-
-// MockEntry represents a mock LDAP entry
-type MockEntry struct {
-	DN         string
-	Attributes map[string][]string
-}
-
-// GetAttributeValue gets an attribute value
-func (entry *MockEntry) GetAttributeValue(attr string) string {
-	if values, exists := entry.Attributes[attr]; exists && len(values) > 0 {
-		return values[0]
-	}
-	return ""
 }
 
 // LDAPAuthenticator provides LDAP authentication
@@ -120,47 +68,115 @@ func (la *LDAPAuthenticator) Authenticate(username, password string) (*LDAPUser,
 }
 
 // connect establishes a connection to the LDAP server
-func (la *LDAPAuthenticator) connect() (*MockLDAPConn, error) {
-	// TODO: Implement actual LDAP connection using github.com/go-ldap/ldap/v3
-	// For now, return a mock connection
-	log.Printf("LDAP connection to %s:%d (mock implementation)", la.config.Host, la.config.Port)
-	return &MockLDAPConn{}, nil
+func (la *LDAPAuthenticator) connect() (*ldap.Conn, error) {
+	var l *ldap.Conn
+	var err error
+
+	address := fmt.Sprintf("%s:%d", la.config.Host, la.config.Port)
+
+	if la.config.UseSSL {
+		// Use LDAPS
+		l, err = ldap.DialTLS("tcp", address, &tls.Config{InsecureSkipVerify: true})
+	} else {
+		// Use LDAP with StartTLS
+		l, err = ldap.Dial("tcp", address)
+		if err != nil {
+			return nil, fmt.Errorf("failed to connect to LDAP server: %w", err)
+		}
+
+		// Start TLS if not using LDAPS
+		err = l.StartTLS(&tls.Config{InsecureSkipVerify: true})
+		if err != nil {
+			l.Close()
+			return nil, fmt.Errorf("failed to start TLS: %w", err)
+		}
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to LDAP server: %w", err)
+	}
+
+	log.Printf("LDAP connection established to %s:%d", la.config.Host, la.config.Port)
+	return l, nil
 }
 
 // findUserDN finds the DN for a username
-func (la *LDAPAuthenticator) findUserDN(conn *MockLDAPConn, username string) (string, error) {
-	// Mock user DN resolution
-	if username == "demo" {
-		return "cn=demo,ou=users,dc=example,dc=com", nil
+func (la *LDAPAuthenticator) findUserDN(conn *ldap.Conn, username string) (string, error) {
+	// Bind with service account if configured
+	if la.config.BindUser != "" && la.config.BindPassword != "" {
+		err := conn.Bind(la.config.BindUser, la.config.BindPassword)
+		if err != nil {
+			return "", fmt.Errorf("failed to bind with service account: %w", err)
+		}
 	}
-	if username == "admin" {
-		return "cn=admin,ou=users,dc=example,dc=com", nil
+
+	// Search for the user
+	searchRequest := ldap.NewSearchRequest(
+		la.config.BaseDN,
+		ldap.ScopeWholeSubtree,
+		ldap.NeverDerefAliases,
+		0,     // SizeLimit
+		0,     // TimeLimit
+		false, // TypesOnly
+		fmt.Sprintf(la.config.UserFilter, username), // Filter
+		la.config.Attributes,                        // Attributes
+		nil,                                         // Controls
+	)
+
+	searchResult, err := conn.Search(searchRequest)
+	if err != nil {
+		return "", fmt.Errorf("LDAP search failed: %w", err)
 	}
-	return "", fmt.Errorf("user not found")
+
+	if len(searchResult.Entries) == 0 {
+		return "", fmt.Errorf("user not found: %s", username)
+	}
+
+	if len(searchResult.Entries) > 1 {
+		return "", fmt.Errorf("multiple users found for: %s", username)
+	}
+
+	return searchResult.Entries[0].DN, nil
 }
 
 // getUserDetails retrieves user details from LDAP
-func (la *LDAPAuthenticator) getUserDetails(conn *MockLDAPConn, userDN string) (*LDAPUser, error) {
-	// Mock user details
-	var user *LDAPUser
-	if userDN == "cn=demo,ou=users,dc=example,dc=com" {
-		user = &LDAPUser{
-			DN:       userDN,
-			Username: "demo",
-			Email:    "demo@example.com",
-			FullName: "Demo User",
-			Groups:   []string{"users"},
-		}
-	} else if userDN == "cn=admin,ou=users,dc=example,dc=com" {
-		user = &LDAPUser{
-			DN:       userDN,
-			Username: "admin",
-			Email:    "admin@example.com",
-			FullName: "Admin User",
-			Groups:   []string{"users", "admins"},
-		}
-	} else {
+func (la *LDAPAuthenticator) getUserDetails(conn *ldap.Conn, userDN string) (*LDAPUser, error) {
+	// Search for user details
+	searchRequest := ldap.NewSearchRequest(
+		userDN,
+		ldap.ScopeBaseObject,
+		ldap.NeverDerefAliases,
+		0,                                        // SizeLimit
+		0,                                        // TimeLimit
+		false,                                    // TypesOnly
+		"(objectClass=*)",                        // Filter
+		append(la.config.Attributes, "memberOf"), // Attributes
+		nil,                                      // Controls
+	)
+
+	searchResult, err := conn.Search(searchRequest)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user details: %w", err)
+	}
+
+	if len(searchResult.Entries) == 0 {
 		return nil, fmt.Errorf("user details not found")
+	}
+
+	entry := searchResult.Entries[0]
+
+	// Extract user information
+	user := &LDAPUser{
+		DN:       entry.DN,
+		Username: entry.GetAttributeValue("sAMAccountName"),
+		Email:    entry.GetAttributeValue("mail"),
+		FullName: entry.GetAttributeValue("displayName"),
+		Groups:   entry.GetAttributeValues("memberOf"),
+	}
+
+	// Fallback to cn if username is empty
+	if user.Username == "" {
+		user.Username = entry.GetAttributeValue("cn")
 	}
 
 	return user, nil
@@ -199,6 +215,14 @@ func (la *LDAPAuthenticator) ValidateConnection() error {
 	}
 	defer conn.Close()
 
-	log.Printf("LDAP connection validation successful (mock)")
+	// Test bind with service account if configured
+	if la.config.BindUser != "" && la.config.BindPassword != "" {
+		err = conn.Bind(la.config.BindUser, la.config.BindPassword)
+		if err != nil {
+			return fmt.Errorf("failed to bind with service account: %w", err)
+		}
+	}
+
+	log.Printf("LDAP connection validation successful")
 	return nil
 }
