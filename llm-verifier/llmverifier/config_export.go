@@ -25,17 +25,17 @@ type AIConfig struct {
 
 // AIModel represents a model in AI CLI configuration
 type AIModel struct {
-	ID           string                 `json:"id"`
-	Name         string                 `json:"name"`
-	Provider     string                 `json:"provider"`
-	Endpoint     string                 `json:"endpoint"`
-	APIKey       string                 `json:"api_key,omitempty"`
-	Capabilities []string               `json:"capabilities"`
-	Score        float64                `json:"score"`
-	Category     string                 `json:"category"`
-	Tags         []string               `json:"tags"`
-	Description  string                 `json:"description,omitempty"`
-	Settings     map[string]interface{} `json:"settings,omitempty"`
+	ID           string         `json:"id"`
+	Name         string         `json:"name"`
+	Provider     string         `json:"provider"`
+	Endpoint     string         `json:"endpoint"`
+	APIKey       string         `json:"api_key,omitempty"`
+	Capabilities []string       `json:"capabilities"`
+	Score        float64        `json:"score"`
+	Category     string         `json:"category"`
+	Tags         []string       `json:"tags"`
+	Description  string         `json:"description,omitempty"`
+	Settings     map[string]any `json:"settings,omitempty"`
 }
 
 // Preferences contains user preferences for AI tools
@@ -180,7 +180,7 @@ func createOpenCodeConfig(results []VerificationResult, options *ExportOptions) 
 			Category:     category,
 			Tags:         result.ModelInfo.Tags,
 			Description:  result.ModelInfo.Description,
-			Settings: map[string]interface{}{
+			Settings: map[string]any{
 				"max_tokens":         result.ModelInfo.MaxOutputTokens,
 				"context_window":     result.ModelInfo.ContextWindow.TotalMaxTokens,
 				"supports_vision":    result.ModelInfo.SupportsVision,
@@ -280,7 +280,7 @@ func createCrushConfig(results []VerificationResult, options *ExportOptions) (*A
 			Category:     category,
 			Tags:         result.ModelInfo.Tags,
 			Description:  result.ModelInfo.Description,
-			Settings: map[string]interface{}{
+			Settings: map[string]any{
 				"max_tokens":        result.ModelInfo.MaxOutputTokens,
 				"context_window":    result.ModelInfo.ContextWindow.TotalMaxTokens,
 				"temperature":       0.3, // Crush prefers lower temperature for coding
@@ -373,7 +373,7 @@ func createClaudeCode(results []VerificationResult, options *ExportOptions) (*AI
 			Category:     category,
 			Tags:         result.ModelInfo.Tags,
 			Description:  result.ModelInfo.Description,
-			Settings: map[string]interface{}{
+			Settings: map[string]any{
 				"max_tokens":         result.ModelInfo.MaxOutputTokens,
 				"context_window":     result.ModelInfo.ContextWindow.TotalMaxTokens,
 				"temperature":        0.5, // Claude Code prefers moderate temperature
@@ -743,7 +743,7 @@ func ValidateExportedConfig(configPath string) error {
 		return fmt.Errorf("failed to read exported config: %w", err)
 	}
 
-	var config map[string]interface{}
+	var config map[string]any
 	if err := json.Unmarshal(data, &config); err != nil {
 		return fmt.Errorf("failed to parse exported config: %w", err)
 	}
@@ -762,7 +762,7 @@ func ValidateExportedConfig(configPath string) error {
 	}
 
 	// Validate models array
-	models, ok := config["models"].([]interface{})
+	models, ok := config["models"].([]any)
 	if !ok {
 		return fmt.Errorf("models field must be an array")
 	}
@@ -773,7 +773,7 @@ func ValidateExportedConfig(configPath string) error {
 
 	// Validate each model
 	for i, model := range models {
-		modelMap, ok := model.(map[string]interface{})
+		modelMap, ok := model.(map[string]any)
 		if !ok {
 			return fmt.Errorf("model %d must be an object", i)
 		}

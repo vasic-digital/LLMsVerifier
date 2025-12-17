@@ -416,15 +416,15 @@ func validateAPIConfig(api *config.APIConfig) error {
 func validateLLMConfig(llm *config.LLMConfig, index int) error {
 	// Validate name
 	if strings.TrimSpace(llm.Name) == "" {
-		return fmt.Errorf("LLM name cannot be empty")
+		return fmt.Errorf("LLM[%d] name cannot be empty", index)
 	}
 
 	// Validate endpoint
 	if llm.Endpoint == "" {
-		return fmt.Errorf("LLM endpoint cannot be empty")
+		return fmt.Errorf("LLM[%d] endpoint cannot be empty", index)
 	}
 	if !strings.HasPrefix(llm.Endpoint, "http") {
-		return fmt.Errorf("LLM endpoint must start with http:// or https://")
+		return fmt.Errorf("LLM[%d] endpoint must start with http:// or https://", index)
 	}
 
 	// Validate API key (required for most providers)
