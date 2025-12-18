@@ -233,6 +233,53 @@ function setupIpcHandlers(): void {
       return { success: false, error: (error as Error).message };
     }
   });
+
+  // Verification management
+  ipcMain.handle('start-verification', async () => {
+    try {
+      // Send HTTP request to backend to start verification
+      const response = await fetch(`http://${config.backendHost}:${config.backendPort}/api/v1/verification/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          models: ['all'], // Start verification for all models
+          priority: 'normal',
+        }),
+      });
+      
+      if (response.ok) {
+        return { success: true, data: await response.json() };
+      } else {
+        return { success: false, error: 'Failed to start verification' };
+      }
+    } catch (error) {
+      console.error('Failed to start verification:', error);
+      return { success: false, error: (error as Error).message };
+    }
+  });
+
+  ipcMain.handle('stop-verification', async () => {
+    try {
+      // Send HTTP request to backend to stop verification
+      const response = await fetch(`http://${config.backendHost}:${config.backendPort}/api/v1/verification/stop`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        return { success: true, data: await response.json() };
+      } else {
+        return { success: false, error: 'Failed to stop verification' };
+      }
+    } catch (error) {
+      console.error('Failed to stop verification:', error);
+      return { success: false, error: (error as Error).message };
+    }
+  });
 }
 
 // Create application menu
