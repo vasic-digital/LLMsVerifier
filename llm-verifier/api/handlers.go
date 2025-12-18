@@ -17,6 +17,7 @@ import (
 
 	"llm-verifier/config"
 	"llm-verifier/database"
+	"llm-verifier/enhanced"
 	"llm-verifier/enhanced/analytics"
 	"llm-verifier/events"
 	"llm-verifier/llmverifier"
@@ -122,9 +123,9 @@ func (s *Server) login(c *gin.Context) {
 		"token":      tokenString,
 		"expires_in": 86400,
 		"user": gin.H{
-			"id":       1,
-			"username": credentials.Username,
-			"role":     "admin",
+			"id":       user.ID,
+			"username": user.Username,
+			"role":     user.Role,
 		},
 	})
 }
@@ -3229,26 +3230,38 @@ func (s *Server) decomposeTask(c *gin.Context) {
 
 // submitTask submits a task for execution
 func (s *Server) submitTask(c *gin.Context) {
-	// TODO: Fix supervisor.Task reference
-	c.JSON(http.StatusNotImplemented, gin.H{"error": "Task submission not yet implemented"})
-	return
-	/*
-		var task Task
-		if err := c.ShouldBindJSON(&task); err != nil {
-			HandleValidationError(c, err)
-			return
-		}
+	var task enhanced.Task
+	if err := c.ShouldBindJSON(&task); err != nil {
+		HandleValidationError(c, err)
+		return
+	}
 
-		// Generate task ID if not provided
-		if task.ID == "" {
-			task.ID = fmt.Sprintf("task_%d", time.Now().UnixNano())
-		}
+	// Generate task ID if not provided
+	if task.ID == "" {
+		task.ID = fmt.Sprintf("task_%d", time.Now().UnixNano())
+	}
 
-		// Set defaults
-		if task.CreatedAt.IsZero() {
-			task.CreatedAt = time.Now()
-		}
-	*/
+	// Set defaults
+	if task.CreatedAt.IsZero() {
+		task.CreatedAt = time.Now()
+	}
+	if task.Status == "" {
+		task.Status = "pending"
+	}
+	if task.MaxRetries == 0 {
+		task.MaxRetries = 3
+	}
+
+	err := s.supervisor.SubmitTask(&task)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"task_id": task.ID,
+		"status":  "submitted",
+	})
 }
 
 // getTaskStatus returns the status of a task

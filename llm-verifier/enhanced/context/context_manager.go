@@ -16,6 +16,18 @@ type VerifierInterface interface {
 	SummarizeConversation(messages []string) (*llmverifier.ConversationSummary, error)
 }
 
+// ContextManagerInterface defines the interface for context managers
+type ContextManagerInterface interface {
+	AddMessage(role, content string, metadata map[string]interface{}) error
+	GetContext(query string, maxMessages int) ([]*Message, []*Summary, error)
+	GetFullContext() ([]*Message, []*Summary)
+	SearchContext(query string, includeSummaries bool) ([]*Message, []*Summary)
+	GetStats() ContextStats
+	ClearContext() error
+	ExportContext() ([]byte, error)
+	ImportContext(data []byte) error
+}
+
 // ContextType represents the type of context storage
 type ContextType int
 

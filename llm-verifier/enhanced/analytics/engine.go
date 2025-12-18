@@ -97,7 +97,7 @@ type AnalyticsResult struct {
 type AnalyticsEngine struct {
 	metrics    []AnalyticsMetric
 	timeSeries map[string]*TimeSeries
-	contextMgr *enhancedContext.ContextManager
+	contextMgr enhancedContext.ContextManagerInterface
 	verifier   enhancedContext.VerifierInterface
 	mu         sync.RWMutex
 	config     AnalyticsConfig
@@ -121,7 +121,7 @@ type MetricProcessor interface {
 }
 
 // NewAnalyticsEngine creates a new analytics engine
-func NewAnalyticsEngine(config AnalyticsConfig, contextMgr *enhancedContext.ContextManager, verifier enhancedContext.VerifierInterface) *AnalyticsEngine {
+func NewAnalyticsEngine(config AnalyticsConfig, contextMgr enhancedContext.ContextManagerInterface, verifier enhancedContext.VerifierInterface) *AnalyticsEngine {
 	return &AnalyticsEngine{
 		metrics:    make([]AnalyticsMetric, 0),
 		timeSeries: make(map[string]*TimeSeries),
