@@ -104,10 +104,9 @@ func TestSystemValidation(t *testing.T) {
 				TwoFactorAuth: false,
 			},
 			LDAP: enterprise.LDAPConfig{
-				Host:         "localhost",
-				Port:         389,
+				URL:          "ldap://localhost:389",
 				BaseDN:       "dc=example,dc=com",
-				BindUser:     "cn=admin,dc=example,dc=com",
+				BindDN:       "cn=admin,dc=example,dc=com",
 				BindPassword: "password",
 			},
 			SAML: enterprise.SAMLConfig{
