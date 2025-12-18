@@ -2,9 +2,7 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
