@@ -64,14 +64,26 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleStartVerification = () => {
-    // TODO: Implement verification start
-    console.log('Starting verification...');
+  const handleStartVerification = async () => {
+    try {
+      await window.electronAPI.startVerification();
+      setSystemStats(prev => prev ? { ...prev, activeJobs: prev.activeJobs + 1 } : null);
+      setTimeout(loadDashboardData, 1000);
+      console.log('Verification started successfully');
+    } catch (error) {
+      console.error('Failed to start verification:', error);
+    }
   };
 
-  const handleStopVerification = () => {
-    // TODO: Implement verification stop
-    console.log('Stopping verification...');
+  const handleStopVerification = async () => {
+    try {
+      await window.electronAPI.stopVerification();
+      setSystemStats(prev => prev ? { ...prev, activeJobs: Math.max(0, prev.activeJobs - 1) } : null);
+      setTimeout(loadDashboardData, 1000);
+      console.log('Verification stopped successfully');
+    } catch (error) {
+      console.error('Failed to stop verification:', error);
+    }
   };
 
   const handleStartBackend = async () => {

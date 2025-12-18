@@ -60,7 +60,7 @@
         </mat-card-header>
         <mat-card-content>
           <div class="stat-value" [ngClass]="getScoreClass(stats.averageScore)">
-            {{stats.averageScore?.toFixed(1) || '0.0'}}
+            {{stats.averageScore.toFixed(1) || '0.0'}}
           </div>
         </mat-card-content>
       </mat-card>
