@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llm-verifier
+  namespace: llm-verifier
+  labels:
+    app: llm-verifier
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: llm-verifier
+  template:
+    metadata:
+      labels:
+        app: llm-verifier
+    spec:
+      containers:
+      - name: llm-verifier
+        image: ghcr.io/vasic-digital/llm-verifier:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: LLM_VERIFIER_API_PORT
+          value: "8080"
+        - name: LLM_VERIFIER_PROFILE
+          value: "production"
+        - name: LLM_VERIFIER_DATABASE_PATH
+          value: "/data/llm-verifier.db"
+        - name: LLM_VERIFIER_API_JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: llm-verifier-secrets
+              key: jwt-secret
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: llm-verifier-data
+      restartPolicy: Always

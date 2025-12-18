@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: llm-verifier
+  labels:
+    name: llm-verifier
+    app: llm-verifier
