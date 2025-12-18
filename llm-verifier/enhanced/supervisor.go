@@ -448,7 +448,7 @@ func (s *Supervisor) executeTask(worker *Worker, task *Task) {
 	case s.resultChan <- &TaskResult{
 		TaskID: task.ID,
 		Result: result,
-		Error:  fmt.Errorf(task.Error),
+		Error:  fmt.Errorf("%s", task.Error),
 	}:
 	default:
 		log.Printf("Result channel full, dropping result for task %s", task.ID)
