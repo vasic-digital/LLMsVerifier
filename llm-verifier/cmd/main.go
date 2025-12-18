@@ -366,6 +366,45 @@ func modelsCmd() *cobra.Command {
 			}
 		},
 	}
+	listCmd.Flags().String("filter", "", "Filter models by provider name")
+	listCmd.Flags().String("format", "table", "Output format (table, json)")
+	listCmd.Flags().Int("limit", 0, "Limit number of results (0 for unlimited)")
+
+	createCmd := &cobra.Command{
+		Use:   "create [name] [provider]",
+		Short: "Create a new model",
+		Args:  cobra.MinimumNArgs(2),
+		Run: func(cmd *cobra.Command, args []string) {
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			name := args[0]
+			provider := args[1]
+			description, _ := cmd.Flags().GetString("description")
+			version, _ := cmd.Flags().GetString("version")
+
+			model := map[string]interface{}{
+				"name":        name,
+				"provider":    provider,
+				"description": description,
+				"version":     version,
+			}
+
+			result, err := c.CreateModel(model)
+			if err != nil {
+				log.Fatalf("Failed to create model: %v", err)
+			}
+
+			fmt.Printf("Model created successfully\n")
+			fmt.Printf("ID: %v\n", result["id"])
+			fmt.Printf("Name: %v\n", result["name"])
+			fmt.Printf("Provider: %v\n", result["provider"])
+		},
+	}
+	createCmd.Flags().String("description", "", "Model description")
+	createCmd.Flags().String("version", "1.0", "Model version")
 
 	getCmd := &cobra.Command{
 		Use:   "get [model-id]",
@@ -415,6 +454,7 @@ func modelsCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(listCmd)
+	cmd.AddCommand(createCmd)
 	cmd.AddCommand(getCmd)
 	cmd.AddCommand(verifyCmd)
 
@@ -1011,6 +1051,35 @@ func providersCmd() *cobra.Command {
 			}
 		},
 	}
+	listCmd.Flags().String("filter", "", "Filter providers by name")
+	listCmd.Flags().String("format", "table", "Output format (table, json)")
+	listCmd.Flags().Int("limit", 0, "Limit number of results (0 for unlimited)")
+
+	getCmd := &cobra.Command{
+		Use:   "get [provider-id]",
+		Short: "Get provider details",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			providerID := args[0]
+			provider, err := c.GetProvider(providerID)
+			if err != nil {
+				log.Fatalf("Failed to fetch provider: %v", err)
+			}
+
+			fmt.Printf("Provider Details:\n")
+			fmt.Printf("ID: %v\n", provider["id"])
+			fmt.Printf("Name: %v\n", provider["name"])
+			fmt.Printf("Status: %v\n", provider["status"])
+			fmt.Printf("Model Count: %v\n", provider["model_count"])
+			fmt.Printf("Average Score: %.2f\n", provider["avg_score"])
+			fmt.Printf("Description: %v\n", provider["description"])
+		},
+	}
 
 	statusCmd := &cobra.Command{
 		Use:   "status [provider-name]",
@@ -1055,6 +1124,7 @@ func providersCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(listCmd)
+	cmd.AddCommand(getCmd)
 	cmd.AddCommand(statusCmd)
 
 	return cmd
@@ -1096,6 +1166,36 @@ func resultsCmd() *cobra.Command {
 			}
 		},
 	}
+	listCmd.Flags().String("filter", "", "Filter results by model name")
+	listCmd.Flags().String("format", "table", "Output format (table, json)")
+	listCmd.Flags().Int("limit", 0, "Limit number of results (0 for unlimited)")
+
+	getCmd := &cobra.Command{
+		Use:   "get [result-id]",
+		Short: "Get verification result details",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			resultID := args[0]
+			result, err := c.GetVerificationResult(resultID)
+			if err != nil {
+				log.Fatalf("Failed to fetch verification result: %v", err)
+			}
+
+			fmt.Printf("Verification Result Details:\n")
+			fmt.Printf("ID: %v\n", result["id"])
+			fmt.Printf("Model: %v\n", result["model_name"])
+			fmt.Printf("Score: %.2f\n", result["score"])
+			fmt.Printf("Status: %v\n", result["status"])
+			fmt.Printf("Created: %v\n", result["created_at"])
+			fmt.Printf("Duration: %v\n", result["duration"])
+			fmt.Printf("Error Message: %v\n", result["error_message"])
+		},
+	}
 
 	exportCmd := &cobra.Command{
 		Use:   "export [format] [output-file]",
@@ -1127,6 +1227,7 @@ func resultsCmd() *cobra.Command {
 		},
 	}
 	cmd.AddCommand(listCmd)
+	cmd.AddCommand(getCmd)
 	cmd.AddCommand(exportCmd)
 
 	return cmd
@@ -1222,8 +1323,28 @@ func limitsCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List rate limits",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Rate limits listing not yet implemented")
-			fmt.Println("Default limits: 100 requests/minute")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			limits, err := c.GetLimits()
+			if err != nil {
+				log.Fatalf("Failed to fetch rate limits: %v", err)
+			}
+
+			if len(limits) == 0 {
+				fmt.Println("No rate limits configured. Default limits: 100 requests/minute")
+				return
+			}
+
+			fmt.Printf("Found %d rate limits:\n\n", len(limits))
+			for i, limit := range limits {
+				fmt.Printf("%d. Type: %v\n", i+1, limit["type"])
+				fmt.Printf("   Limit: %v\n", limit["limit"])
+				fmt.Printf("   Window: %v\n", limit["window"])
+				fmt.Printf("   Remaining: %v\n\n", limit["remaining"])
+			}
 		},
 	}
 	cmd.AddCommand(listCmd)
@@ -1242,8 +1363,29 @@ func issuesCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List issues",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Issues listing not yet implemented")
-			fmt.Println("Use API to track verification issues")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			issues, err := c.GetIssues()
+			if err != nil {
+				log.Fatalf("Failed to fetch issues: %v", err)
+			}
+
+			if len(issues) == 0 {
+				fmt.Println("No issues found")
+				return
+			}
+
+			fmt.Printf("Found %d issues:\n\n", len(issues))
+			for i, issue := range issues {
+				fmt.Printf("%d. ID: %v\n", i+1, issue["id"])
+				fmt.Printf("   Type: %v\n", issue["type"])
+				fmt.Printf("   Severity: %v\n", issue["severity"])
+				fmt.Printf("   Status: %v\n", issue["status"])
+				fmt.Printf("   Description: %v\n\n", issue["description"])
+			}
 		},
 	}
 	cmd.AddCommand(listCmd)
@@ -1262,8 +1404,29 @@ func eventsCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List events",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Events listing not yet implemented")
-			fmt.Println("Use API to view system events")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			events, err := c.GetEvents()
+			if err != nil {
+				log.Fatalf("Failed to fetch events: %v", err)
+			}
+
+			if len(events) == 0 {
+				fmt.Println("No events found")
+				return
+			}
+
+			fmt.Printf("Found %d events:\n\n", len(events))
+			for i, event := range events {
+				fmt.Printf("%d. ID: %v\n", i+1, event["id"])
+				fmt.Printf("   Type: %v\n", event["type"])
+				fmt.Printf("   Severity: %v\n", event["severity"])
+				fmt.Printf("   Timestamp: %v\n", event["timestamp"])
+				fmt.Printf("   Message: %v\n\n", event["message"])
+			}
 		},
 	}
 	cmd.AddCommand(listCmd)
@@ -1282,8 +1445,29 @@ func schedulesCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List schedules",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Schedules listing not yet implemented")
-			fmt.Println("Use API to configure job schedules")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			schedules, err := c.GetSchedules()
+			if err != nil {
+				log.Fatalf("Failed to fetch schedules: %v", err)
+			}
+
+			if len(schedules) == 0 {
+				fmt.Println("No schedules found")
+				return
+			}
+
+			fmt.Printf("Found %d schedules:\n\n", len(schedules))
+			for i, schedule := range schedules {
+				fmt.Printf("%d. ID: %v\n", i+1, schedule["id"])
+				fmt.Printf("   Type: %v\n", schedule["type"])
+				fmt.Printf("   Frequency: %v\n", schedule["frequency"])
+				fmt.Printf("   Status: %v\n", schedule["status"])
+				fmt.Printf("   Next Run: %v\n\n", schedule["next_run"])
+			}
 		},
 	}
 	cmd.AddCommand(listCmd)
@@ -1302,8 +1486,29 @@ func exportsCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List exports",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Exports listing not yet implemented")
-			fmt.Println("Use API to export data")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			exports, err := c.GetConfigExports()
+			if err != nil {
+				log.Fatalf("Failed to fetch exports: %v", err)
+			}
+
+			if len(exports) == 0 {
+				fmt.Println("No exports found")
+				return
+			}
+
+			fmt.Printf("Found %d exports:\n\n", len(exports))
+			for i, export := range exports {
+				fmt.Printf("%d. ID: %v\n", i+1, export["id"])
+				fmt.Printf("   Format: %v\n", export["format"])
+				fmt.Printf("   Status: %v\n", export["status"])
+				fmt.Printf("   Created: %v\n", export["created_at"])
+				fmt.Printf("   Size: %v\n\n", export["size"])
+			}
 		},
 	}
 	cmd.AddCommand(listCmd)
@@ -1322,8 +1527,28 @@ func logsCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List logs",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Logs listing not yet implemented")
-			fmt.Println("Check log files or use API for detailed logs")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			logs, err := c.GetLogs()
+			if err != nil {
+				log.Fatalf("Failed to fetch logs: %v", err)
+			}
+
+			if len(logs) == 0 {
+				fmt.Println("No logs found")
+				return
+			}
+
+			fmt.Printf("Found %d log entries:\n\n", len(logs))
+			for i, logEntry := range logs {
+				fmt.Printf("%d. Level: %v\n", i+1, logEntry["level"])
+				fmt.Printf("   Message: %v\n", logEntry["message"])
+				fmt.Printf("   Timestamp: %v\n", logEntry["timestamp"])
+				fmt.Printf("   Component: %v\n\n", logEntry["component"])
+			}
 		},
 	}
 	cmd.AddCommand(listCmd)
@@ -1342,8 +1567,20 @@ func configCmd() *cobra.Command {
 		Use:   "list",
 		Short: "Show configuration",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Configuration listing not yet implemented")
-			fmt.Println("Check config.yaml or use API for settings")
+			c, err := getClient()
+			if err != nil {
+				log.Fatalf("Failed to create client: %v", err)
+			}
+
+			config, err := c.GetConfig()
+			if err != nil {
+				log.Fatalf("Failed to fetch configuration: %v", err)
+			}
+
+			fmt.Printf("System Configuration:\n\n")
+			for key, value := range config {
+				fmt.Printf("%-20s: %v\n", key, value)
+			}
 		},
 	}
 	cmd.AddCommand(listCmd)
