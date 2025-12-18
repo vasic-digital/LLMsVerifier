@@ -166,6 +166,10 @@ func (rbac *RBACManager) CreateUser(user *User) error {
 	rbac.mu.Lock()
 	defer rbac.mu.Unlock()
 
+	if user.ID == "" {
+		return fmt.Errorf("user ID is required")
+	}
+
 	if _, exists := rbac.users[user.ID]; exists {
 		return fmt.Errorf("user already exists: %s", user.ID)
 	}
@@ -369,6 +373,11 @@ func (rbac *RBACManager) GetAuditLog(limit int) []AuditEntry {
 
 // logAudit adds an entry to the audit log
 func (rbac *RBACManager) logAudit(userID, action, resource, ipAddress string, success bool, details map[string]interface{}) {
+	// Set default IP address if not provided
+	if ipAddress == "" {
+		ipAddress = "0.0.0.0"
+	}
+	
 	entry := AuditEntry{
 		ID:        fmt.Sprintf("audit_%d", time.Now().UnixNano()),
 		UserID:    userID,

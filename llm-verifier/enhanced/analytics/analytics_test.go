@@ -131,8 +131,8 @@ func TestMetricProcessors(t *testing.T) {
 
 	// Derivative should be (60-50)/10 = 1.0
 	expectedDerivative := 1.0
-	if processed2.Value != expectedDerivative {
-		t.Errorf("Expected derivative %.2f, got %.2f", expectedDerivative, processed2.Value)
+	if diff := processed2.Value - expectedDerivative; diff < -0.001 || diff > 0.001 {
+		t.Errorf("Expected derivative %.2f, got %.2f (diff: %g)", expectedDerivative, processed2.Value, diff)
 	}
 }
 

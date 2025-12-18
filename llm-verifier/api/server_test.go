@@ -26,6 +26,7 @@ func TestNewServer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create server: %v", err)
 	}
+	defer server.Shutdown()
 
 	if server == nil {
 		t.Fatal("Server should not be nil")
@@ -54,6 +55,7 @@ func TestServerHealthCheck(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create server: %v", err)
 	}
+	defer server.Shutdown()
 
 	// Create a test request
 	req := httptest.NewRequest("GET", "/health", nil)
@@ -94,6 +96,7 @@ func TestServerRoutes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create server: %v", err)
 	}
+	defer server.Shutdown()
 
 	// Test that essential routes are registered
 	testRoutes := []struct {
@@ -139,6 +142,7 @@ func TestServerStart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create server: %v", err)
 	}
+	defer server.Shutdown()
 
 	// Test that Start doesn't panic with invalid port
 	// We can't actually start the server in a test without blocking,
