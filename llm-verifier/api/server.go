@@ -28,6 +28,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -53,6 +54,7 @@ import (
 // Server represents the REST API server
 type Server struct {
 	router          *gin.Engine
+	httpServer      *http.Server
 	config          *config.Config
 	database        *database.Database
 	verifier        *llmverifier.Verifier
@@ -808,13 +810,44 @@ func (s *Server) Shutdown() {
 		s.supervisor.Stop()
 	}
 
+	// Shutdown HTTP server
+	if s.httpServer != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		s.httpServer.Shutdown(ctx)
+	}
+
 	log.Println("LLM Verifier API server shutdown complete")
 }
 
 // Start starts the HTTP server
 func (s *Server) Start(port string) error {
 	log.Printf("Starting LLM Verifier API server on port %s", port)
-	return s.router.Run(":" + port)
+	
+	// Create HTTP server
+	s.httpServer = &http.Server{
+		Addr:    ":" + port,
+		Handler: s.router,
+	}
+	
+	// Start server in background goroutine
+	errChan := make(chan error, 1)
+	go func() {
+		if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			errChan <- err
+		} else {
+			close(errChan)
+		}
+	}()
+	
+	// Wait a short time to detect startup errors
+	select {
+	case err := <-errChan:
+		return err
+	case <-time.After(100 * time.Millisecond):
+		// Server started successfully
+		return nil
+	}
 }
 
 // Router returns the Gin router for testing

@@ -1,12 +1,12 @@
-name: CI/CD Pipeline (DISABLED)
+name: CI/CD Pipeline
 
 on:
-  workflow_dispatch: # Manual trigger only
+  workflow_dispatch: # Manual trigger
   push:
-    branches: [ disabled ] # Never triggers
-    tags: [ 'disabled' ] # Never triggers
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
   pull_request:
-    branches: [ disabled ] # Never triggers
+    branches: [ main, develop ]
 
 env:
   GO_VERSION: '1.21'

@@ -1,7 +1,7 @@
 package database
 
 import (
-	"database/sql"
+	"strings"
 	"testing"
 )
 
@@ -175,8 +175,8 @@ func TestDeleteUser(t *testing.T) {
 		t.Error("Expected error when retrieving deleted user")
 	}
 
-	if err != sql.ErrNoRows {
-		t.Errorf("Expected sql.ErrNoRows, got %v", err)
+	if err == nil || !strings.Contains(err.Error(), "user not found") {
+		t.Errorf("Expected error containing 'user not found', got %v", err)
 	}
 }
 
