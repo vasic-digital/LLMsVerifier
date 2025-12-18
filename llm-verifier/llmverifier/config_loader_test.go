@@ -336,7 +336,7 @@ llms:
     api_key: "test-key"
 `,
 			expectError: true,
-			errorMsg:    "LLM endpoint must start with http:// or https://",
+			errorMsg:    "configuration validation failed: LLM config 0 validation failed: LLM[0] endpoint must start with http:// or https://",
 		},
 		{
 			name: "missing LLM API key for remote endpoint",

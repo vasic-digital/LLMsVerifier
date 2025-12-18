@@ -318,123 +318,115 @@ func TestPrometheusExporter(t *testing.T) {
 	}
 }
 
+
 func TestAnalyticsEngineBasic(t *testing.T) {
-	// Skip this test for now due to type issues
-	t.Skip("Skipping test due to type compatibility issues")
+	mockContextMgr := &mockContextManager{}
+	mockVerifier := &mockVerifier{}
 
-	/*
-		// Create a mock context manager and verifier
-		mockContextMgr := &mockContextManager{}
-		mockVerifier := &mockVerifier{}
+	config := AnalyticsConfig{
+		RetentionPeriod:   24 * time.Hour,
+		MaxTimeSeriesSize: 100,
+		BatchSize:         10,
+		FlushInterval:     time.Minute,
+		EnablePredictions:  false,
+	}
 
-		config := AnalyticsConfig{
-			RetentionPeriod:   24 * time.Hour,
-			MaxTimeSeriesSize: 100,
-			BatchSize:         10,
-			FlushInterval:     time.Minute,
-			EnablePredictions:  false,
-		}
+	engine := NewAnalyticsEngine(config, mockContextMgr, mockVerifier)
 
-		engine := NewAnalyticsEngine(config, mockContextMgr, mockVerifier)
+	// Test recording metrics
+	err := engine.RecordMetric("test_counter", MetricTypeCounter, 1.0,
+		map[string]string{"env": "test"}, nil)
+	if err != nil {
+		t.Fatalf("Failed to record metric: %v", err)
+	}
 
-		// Test recording metrics
-		err := engine.RecordMetric("test_counter", MetricTypeCounter, 1.0,
-			map[string]string{"env": "test"}, nil)
-		if err != nil {
-			t.Fatalf("Failed to record metric: %v", err)
-		}
+	err = engine.RecordMetric("test_gauge", MetricTypeGauge, 75.5,
+		map[string]string{"env": "test"}, nil)
+	if err != nil {
+		t.Fatalf("Failed to record metric: %v", err)
+	}
 
-		err = engine.RecordMetric("test_gauge", MetricTypeGauge, 75.5,
-			map[string]string{"env": "test"}, nil)
-		if err != nil {
-			t.Fatalf("Failed to record metric: %v", err)
-		}
+	// Test getting summary
+	summary := engine.GetMetricsSummary(nil)
+	if totalMetrics, ok := summary["total_metrics"].(int); !ok || totalMetrics != 2 {
+		t.Errorf("Expected 2 total metrics, got %v", summary["total_metrics"])
+	}
 
-		// Test getting summary
-		summary := engine.GetMetricsSummary(nil)
-		if totalMetrics, ok := summary["total_metrics"].(int); !ok || totalMetrics != 2 {
-			t.Errorf("Expected 2 total metrics, got %v", summary["total_metrics"])
-		}
+	// Test basic query
+	query := AnalyticsQuery{
+		MetricNames: []string{"test_counter"},
+		Aggregation: AggregationSum,
+	}
 
-		// Test basic query
-		query := AnalyticsQuery{
-			MetricNames: []string{"test_counter"},
-			Aggregation: AggregationSum,
-		}
+	result, err := engine.Query(nil, query)
+	if err != nil {
+		t.Fatalf("Query failed: %v", err)
+	}
 
-		result, err := engine.Query(nil, query)
-		if err != nil {
-			t.Fatalf("Query failed: %v", err)
-		}
+	if len(result.TimeSeries) != 1 {
+		t.Errorf("Expected 1 time series, got %d", len(result.TimeSeries))
+	}
 
-		if len(result.TimeSeries) != 1 {
-			t.Errorf("Expected 1 time series, got %d", len(result.TimeSeries))
-		}
-
-		if result.TimeSeries[0].Name != "test_counter" {
-			t.Errorf("Expected time series name 'test_counter', got '%s'", result.TimeSeries[0].Name)
-		}
-	*/
+	if result.TimeSeries[0].Name != "test_counter" {
+		t.Errorf("Expected time series name 'test_counter', got '%s'", result.TimeSeries[0].Name)
+	}
 }
 
+
 func TestAnalyticsEngineWithProcessors(t *testing.T) {
-	// Skip this test for now due to type issues
-	t.Skip("Skipping test due to type compatibility issues")
 
-	/*
-		mockContextMgr := &mockContextManager{}
-		mockVerifier := &mockVerifier{}
+	mockContextMgr := &mockContextManager{}
+	mockVerifier := &mockVerifier{}
 
-		config := AnalyticsConfig{
-			RetentionPeriod:   24 * time.Hour,
-			MaxTimeSeriesSize: 100,
-			BatchSize:         10,
-			FlushInterval:     time.Minute,
-			EnablePredictions: false,
+	config := AnalyticsConfig{
+		RetentionPeriod:   24 * time.Hour,
+		MaxTimeSeriesSize: 100,
+		BatchSize:         10,
+		FlushInterval:     time.Minute,
+		EnablePredictions: false,
+	}
+
+	engine := NewAnalyticsEngine(config, mockContextMgr, mockVerifier)
+
+	// Add processors
+	engine.AddProcessor(NewAnomalyDetector(2.0, 5))
+	engine.AddProcessor(NewRateCalculator())
+	engine.AddProcessor(NewMovingAverageCalculator())
+
+	// Record metrics that should trigger processing
+	for i := 0; i < 10; i++ {
+		value := 100.0
+		if i == 8 { // One anomalous value
+			value = 500.0
 		}
 
-		engine := NewAnalyticsEngine(config, mockContextMgr, mockVerifier)
-
-		// Add processors
-		engine.AddProcessor(NewAnomalyDetector(2.0, 5))
-		engine.AddProcessor(NewRateCalculator())
-		engine.AddProcessor(NewMovingAverageCalculator())
-
-		// Record metrics that should trigger processing
-		for i := 0; i < 10; i++ {
-			value := 100.0
-			if i == 8 { // One anomalous value
-				value = 500.0
-			}
-
-			err := engine.RecordMetric("test_metric", MetricTypeGauge, value,
-				map[string]string{"env": "test"}, nil)
-			if err != nil {
-				t.Fatalf("Failed to record metric %d: %v", i, err)
-			}
-		}
-
-		// Check if metrics were processed
-		summary := engine.GetMetricsSummary(nil)
-		if totalMetrics, ok := summary["total_metrics"].(int); !ok || totalMetrics != 10 {
-			t.Errorf("Expected 10 total metrics after processing, got %v", summary["total_metrics"])
-		}
-
-		// Query for processed metrics
-		query := AnalyticsQuery{
-			MetricNames: []string{"test_metric"},
-			Aggregation: AggregationAvg,
-		}
-
-		result, err := engine.Query(nil, query)
+		err := engine.RecordMetric("test_metric", MetricTypeGauge, value,
+			map[string]string{"env": "test"}, nil)
 		if err != nil {
-			t.Fatalf("Query failed: %v", err)
+			t.Fatalf("Failed to record metric %d: %v", i, err)
 		}
+	}
 
-		if len(result.TimeSeries) != 1 {
-			t.Errorf("Expected 1 time series, got %d", len(result.TimeSeries))
-		}
-	*/
+	// Check if metrics were processed
+	summary := engine.GetMetricsSummary(nil)
+	if totalMetrics, ok := summary["total_metrics"].(int); !ok || totalMetrics != 10 {
+		t.Errorf("Expected 10 total metrics after processing, got %v", summary["total_metrics"])
+	}
+
+	// Query for processed metrics
+	query := AnalyticsQuery{
+		MetricNames: []string{"test_metric"},
+		Aggregation: AggregationAvg,
+	}
+
+	result, err := engine.Query(nil, query)
+	if err != nil {
+		t.Fatalf("Query failed: %v", err)
+	}
+
+	if len(result.TimeSeries) != 1 {
+		t.Errorf("Expected 1 time series, got %d", len(result.TimeSeries))
+	}
 }
 
 // Helper types and functions for testing
