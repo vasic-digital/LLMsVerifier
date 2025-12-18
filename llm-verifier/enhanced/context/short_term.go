@@ -88,7 +88,7 @@ func (c *Conversation) GetRecentMessages(limit int) []*Message {
 	allMessages := c.GetMessages()
 	count := len(allMessages)
 
-	if count <= limit {
+	if limit <= 0 || count <= limit {
 		return allMessages
 	}
 

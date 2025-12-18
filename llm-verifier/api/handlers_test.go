@@ -28,6 +28,7 @@ func TestHealthCheckHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create server: %v", err)
 	}
+	defer server.Shutdown()
 
 	req, _ := http.NewRequest("GET", "/health", nil)
 	w := httptest.NewRecorder()
@@ -56,6 +57,7 @@ func TestRefreshTokenHandler_BasicValidation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create server: %v", err)
 	}
+	defer server.Shutdown()
 
 	tests := []struct {
 		name          string

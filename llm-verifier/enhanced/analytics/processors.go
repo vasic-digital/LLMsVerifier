@@ -30,13 +30,7 @@ func (ad *AnomalyDetector) Process(metric AnalyticsMetric) AnalyticsMetric {
 	ad.mu.Lock()
 	defer ad.mu.Unlock()
 
-	// Add to historical data
-	ad.historical = append(ad.historical, metric.Value)
-	if len(ad.historical) > ad.windowSize {
-		ad.historical = ad.historical[1:]
-	}
-
-	// Detect anomaly if we have enough data
+	// Detect anomaly if we have enough previous data
 	if len(ad.historical) >= ad.windowSize {
 		mean, std := ad.calculateStats()
 		zScore := math.Abs((metric.Value - mean) / std)
@@ -48,6 +42,12 @@ func (ad *AnomalyDetector) Process(metric AnalyticsMetric) AnalyticsMetric {
 			metric.Tags["anomaly"] = "true"
 			metric.Tags["z_score"] = fmt.Sprintf("%.2f", zScore)
 		}
+	}
+
+	// Add to historical data
+	ad.historical = append(ad.historical, metric.Value)
+	if len(ad.historical) > ad.windowSize {
+		ad.historical = ad.historical[1:]
 	}
 
 	return metric
