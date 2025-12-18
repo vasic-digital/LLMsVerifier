@@ -20,7 +20,7 @@ class SettingsScreen extends StatelessWidget {
               builder: (context, auth, _) => Text(auth.username ?? 'Not logged in'),
             ),
             onTap: () {
-              // TODO: Implement profile editing
+              _showProfileDialog(context);
             },
           ),
           const Divider(),
@@ -98,6 +98,64 @@ class SettingsScreen extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showProfileDialog(BuildContext context) {
+    final authProvider = context.read<AuthProvider>();
+    final usernameController = TextEditingController(text: authProvider.username);
+    final emailController = TextEditingController(text: authProvider.email);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Profile'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: usernameController,
+              decoration: const InputDecoration(
+                labelText: 'Username',
+                prefixIcon: Icon(Icons.person),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                prefixIcon: Icon(Icons.email),
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (usernameController.text.isNotEmpty && 
+                  emailController.text.isNotEmpty) {
+                await authProvider.updateProfile(
+                  usernameController.text.trim(),
+                  emailController.text.trim(),
+                );
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Profile updated successfully')),
+                  );
+                }
+              }
+            },
+            child: const Text('Save'),
           ),
         ],
       ),

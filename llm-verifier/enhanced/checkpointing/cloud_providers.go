@@ -33,7 +33,7 @@ func NewS3BackupProvider(bucketName, region, accessKey, secretKey string) *S3Bac
 	}
 
 	// Initialize S3 client
-	cfg, err := config.LoadDefaultConfig(context.TODO(),
+	cfg, err := config.LoadDefaultConfig(context.Background(),
 		config.WithRegion(region),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")),
 	)

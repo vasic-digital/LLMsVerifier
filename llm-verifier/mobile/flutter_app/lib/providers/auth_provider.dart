@@ -9,6 +9,7 @@ class AuthProvider with ChangeNotifier {
   bool _isAuthenticated = false;
   String? _token;
   String? _username;
+  String? _email;
   bool _isLoading = false;
 
   AuthProvider() : _apiService = ApiService(baseUrl: 'http://localhost:8080') {
@@ -18,16 +19,19 @@ class AuthProvider with ChangeNotifier {
   bool get isAuthenticated => _isAuthenticated;
   String? get token => _token;
   String? get username => _username;
+  String? get email => _email;
   bool get isLoading => _isLoading;
 
   Future<void> _loadStoredAuth() async {
     try {
       final storedToken = await _storage.read(key: 'auth_token');
       final storedUsername = await _storage.read(key: 'username');
+      final storedEmail = await _storage.read(key: 'email');
 
       if (storedToken != null && storedUsername != null) {
         _token = storedToken;
         _username = storedUsername;
+        _email = storedEmail;
         _isAuthenticated = true;
         notifyListeners();
       }
@@ -51,6 +55,7 @@ class AuthProvider with ChangeNotifier {
       // Store securely
       await _storage.write(key: 'auth_token', value: token);
       await _storage.write(key: 'username', value: username);
+      await _storage.write(key: 'email', value: '');
 
       notifyListeners();
     } catch (e) {
@@ -70,9 +75,11 @@ class AuthProvider with ChangeNotifier {
       // Clear stored credentials
       await _storage.delete(key: 'auth_token');
       await _storage.delete(key: 'username');
+      await _storage.delete(key: 'email');
 
       _token = null;
       _username = null;
+      _email = null;
       _isAuthenticated = false;
 
       notifyListeners();
@@ -86,5 +93,27 @@ class AuthProvider with ChangeNotifier {
 
   ApiService getApiService() {
     return ApiService(baseUrl: 'http://localhost:8080', authToken: _token);
+  }
+
+  Future<void> updateProfile(String newUsername, String newEmail) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // Update local state
+      _username = newUsername;
+      _email = newEmail;
+
+      // Store securely
+      await _storage.write(key: 'username', value: newUsername);
+      await _storage.write(key: 'email', value: newEmail);
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error updating profile: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }

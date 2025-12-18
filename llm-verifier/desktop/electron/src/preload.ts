@@ -20,6 +20,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadConfig: () => ipcRenderer.invoke('load-config'),
   saveConfig: (config: any) => ipcRenderer.invoke('save-config', config),
 
+  // Verification management
+  startVerification: () => ipcRenderer.invoke('start-verification'),
+  stopVerification: () => ipcRenderer.invoke('stop-verification'),
+
   // Menu actions
   onMenuAction: (callback: (action: string) => void) => {
     ipcRenderer.on('menu-action', (event, action) => callback(action));
