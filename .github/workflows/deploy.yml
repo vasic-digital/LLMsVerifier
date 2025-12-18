@@ -1,12 +1,12 @@
-name: CI/CD Pipeline for LLM Verifier (DISABLED)
+name: CI/CD Pipeline for LLM Verifier
 
 on:
-  workflow_dispatch: # Manual trigger only
+  workflow_dispatch: # Manual trigger
   push:
     branches:
-      - disabled
-      - disabled
-      - disabled
+      - main
+      - develop
+      - release/*
   pull_request:
     branches:
       - main
