@@ -82,10 +82,9 @@ func TestWorkingComponents(t *testing.T) {
 				TwoFactorAuth: false,
 			},
 			LDAP: enterprise.LDAPConfig{
-				Host:         "localhost",
-				Port:         389,
+				URL:          "ldap://localhost:389",
 				BaseDN:       "dc=example,dc=com",
-				BindUser:     "cn=admin,dc=example,dc=com",
+				BindDN:       "cn=admin,dc=example,dc=com",
 				BindPassword: "password",
 			},
 			SAML: enterprise.SAMLConfig{
@@ -122,7 +121,7 @@ func TestWorkingComponents(t *testing.T) {
 }
 
 // TestComponentIntegration tests component integration without problematic supervisor
-func TestComponentIntegration(t *testing.T) {
+func TestWorkingComponentIntegration(t *testing.T) {
 	t.Run("Configuration Compatibility", func(t *testing.T) {
 		// Test that different component configurations are compatible
 		t.Log("Testing configuration compatibility")
