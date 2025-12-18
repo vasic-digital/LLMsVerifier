@@ -9,6 +9,9 @@ This guide covers deploying LLM Verifier in production environments.
 - 4GB RAM minimum, 8GB recommended (for supervisor system)
 - 20GB storage minimum, 100GB recommended (for backups and logs)
 - Cloud provider credentials (optional, for backup functionality)
+- Node.js 18+ (for web frontend development)
+- Flutter SDK 3.x (for mobile app development)
+- Electron (for desktop application)
 
 ## Environment Setup
 
