@@ -4390,6 +4390,91 @@ func (s *Server) disablePlugin(c *gin.Context) {
 	})
 }
 
+// getCacheStats returns cache statistics
+// @Summary Get cache statistics
+// @Description Get statistics about the AI assistant cache
+// @Tags assistant
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Router /assistant/cache/stats [get]
+func (s *Server) getCacheStats(c *gin.Context) {
+	if s.aiAssistant == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "AI assistant not available"})
+		return
+	}
+
+	stats := s.aiAssistant.GetCacheStats()
+	c.JSON(http.StatusOK, gin.H{
+		"cache_stats": stats,
+	})
+}
+
+// enableCache enables caching
+// @Summary Enable cache
+// @Description Enable caching for AI assistant responses
+// @Tags assistant
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Router /assistant/cache/enable [post]
+func (s *Server) enableCache(c *gin.Context) {
+	if s.aiAssistant == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "AI assistant not available"})
+		return
+	}
+
+	s.aiAssistant.EnableCache()
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Cache enabled successfully",
+	})
+}
+
+// disableCache disables caching
+// @Summary Disable cache
+// @Description Disable caching for AI assistant responses
+// @Tags assistant
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Router /assistant/cache/disable [post]
+func (s *Server) disableCache(c *gin.Context) {
+	if s.aiAssistant == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "AI assistant not available"})
+		return
+	}
+
+	s.aiAssistant.DisableCache()
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Cache disabled successfully",
+	})
+}
+
+// clearCache clears the cache
+// @Summary Clear cache
+// @Description Clear all cached AI assistant responses
+// @Tags assistant
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Router /assistant/cache/clear [post]
+func (s *Server) clearCache(c *gin.Context) {
+	if s.aiAssistant == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "AI assistant not available"})
+		return
+	}
+
+	err := s.aiAssistant.ClearCache()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Cache cleared successfully",
+	})
+}
+
 // getUserByID retrieves a specific user by ID
 func (s *Server) getUserByID(c *gin.Context) {
 	idStr := c.Param("id")
