@@ -66,6 +66,7 @@ type Server struct {
 	failoverMgr     *failover.FailoverManager
 	contextMgr      *enhanced.ContextManager
 	supervisor      *enhanced.Supervisor
+	aiAssistant     *enhanced.AIAssistant
 	jwtSecret       []byte
 	startTime       time.Time
 }
@@ -116,6 +117,20 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	supervisor := enhanced.NewSupervisor(verifier, 5) // 5 workers
 	supervisor.Start()
 
+	// Initialize AI assistant
+	supervisorConfig := &enhanced.SupervisorConfig{
+		MaxConcurrentJobs:   10,
+		JobTimeout:          5 * time.Minute,
+		HealthCheckInterval: 30 * time.Second,
+		RetryAttempts:       3,
+		RetryBackoff:        1 * time.Minute,
+		EnableAutoScaling:   true,
+		EnablePredictions:   true,
+		HighLoadThreshold:   0.8,
+		LowLoadThreshold:    0.3,
+	}
+	aiAssistant := enhanced.NewAIAssistant(db, supervisorConfig, verifier)
+
 	server := &Server{
 		router:          gin.Default(),
 		config:          cfg,
@@ -129,6 +144,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		failoverMgr:     failoverMgr,
 		contextMgr:      contextMgr,
 		supervisor:      supervisor,
+		aiAssistant:     aiAssistant,
 		jwtSecret:       []byte(cfg.API.JWTSecret),
 		startTime:       time.Now(),
 	}
@@ -276,6 +292,12 @@ func (s *Server) setupRoutes() {
 		{
 			notifications.GET("/channels", s.getNotificationChannels)
 			notifications.POST("/test", s.testNotification)
+		}
+
+		// AI Assistant
+		assistant := v1.Group("/assistant")
+		{
+			assistant.POST("/chat", s.chatWithAssistant)
 		}
 
 		// Failover
@@ -823,13 +845,13 @@ func (s *Server) Shutdown() {
 // Start starts the HTTP server
 func (s *Server) Start(port string) error {
 	log.Printf("Starting LLM Verifier API server on port %s", port)
-	
+
 	// Create HTTP server
 	s.httpServer = &http.Server{
 		Addr:    ":" + port,
 		Handler: s.router,
 	}
-	
+
 	// Start server in background goroutine
 	errChan := make(chan error, 1)
 	go func() {
@@ -839,7 +861,7 @@ func (s *Server) Start(port string) error {
 			close(errChan)
 		}
 	}()
-	
+
 	// Wait a short time to detect startup errors
 	select {
 	case err := <-errChan:
