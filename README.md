@@ -37,23 +37,21 @@
 ## 📖 Documentation
 
 ### User Guides
-- [Getting Started Guide](docs/getting-started.md)
-- [Configuration Guide](docs/configuration.md)
-- [API Documentation](docs/api.md)
-- [Deployment Guide](docs/deployment.md)
-- [Security Guide](docs/security.md)
+- [Complete User Guide](llm-verifier/docs/COMPLETE_USER_MANUAL.md)
+- [User Manual](llm-verifier/docs/USER_MANUAL.md)
+- [API Documentation](llm-verifier/docs/API_DOCUMENTATION.md)
+- [Deployment Guide](llm-verifier/docs/DEPLOYMENT_GUIDE.md)
+- [Environment Variables](llm-verifier/docs/ENVIRONMENT_VARIABLES.md)
 
 ### Developer Documentation
-- [Architecture Overview](docs/architecture.md)
-- [API Reference](docs/api-reference.md)
-- [Database Schema](docs/database-schema.md)
-- [Contributing Guide](docs/contributing.md)
+- [Architecture Overview](docs/ARCHITECTURE_OVERVIEW.md)
+- [System Documentation](docs/COMPLETE_SYSTEM_DOCUMENTATION.md)
+- [API Changelog](llm-verifier/docs/CHANGELOG.md)
 
-### Enterprise Features
-- [LDAP Integration](docs/ldap-integration.md)
-- [SSO Configuration](docs/sso-configuration.md)
-- [Monitoring Setup](docs/monitoring-setup.md)
-- [High Availability](docs/high-availability.md)
+### Deployment Guides
+- [Docker Deployment](llm-verifier/docs/deployment/docker.md)
+- [Kubernetes Deployment](llm-verifier/docs/deployment/kubernetes.md)
+- [AWS Deployment](llm-verifier/docs/deployment/aws.md)
 
 ## 🚀 Quick Start
 
@@ -87,7 +85,7 @@ cd LLMsVerifier/llm-verifier
 go mod download
 
 # Configure environment
-cp config.example.yaml config.yaml
+cp llm-verifier/config.yaml.example config.yaml
 # Edit config.yaml with your settings
 
 # Run the application
@@ -384,25 +382,25 @@ spec:
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](docs/contributing.md) for details.
+We welcome contributions! Please see our documentation for details on how to contribute to the project.
 
 ### Development Setup
 ```bash
-# Fork and clone
-git clone https://github.com/your-username/LLMsVerifier.git
-cd LLMsVerifier
+# Clone and set up
+git clone https://github.com/vasic-digital/LLMsVerifier.git
+cd LLMsVerifier/llm-verifier
 
-# Set up development environment
-make setup-dev
+# Install dependencies
+go mod download
 
 # Run tests
-make test
+go test ./...
 
-# Build all components
-make build-all
+# Build application
+go build -o llm-verifier cmd/main.go
 
-# Start development servers
-make dev
+# Run application
+./llm-verifier
 ```
 
 ### Code Quality
@@ -423,10 +421,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Documentation**: [docs/](docs/)
+- **Documentation**: [llm-verifier/docs/](llm-verifier/docs/)
 - **Issues**: [GitHub Issues](https://github.com/vasic-digital/LLMsVerifier/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/vasic-digital/LLMsVerifier/discussions)
-- **Email**: support@llm-verifier.com
 
 ---
 
