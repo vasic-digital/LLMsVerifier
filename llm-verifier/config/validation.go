@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -22,6 +23,11 @@ func setDefaults(cfg *Config) {
 	// Set default timeout if not specified
 	if cfg.Global.Timeout <= 0 {
 		cfg.Global.Timeout = 30 * time.Second
+	}
+	
+	// Set default top-level timeout if not specified
+	if cfg.Timeout <= 0 {
+		cfg.Timeout = 30 * time.Second
 	}
 
 	// Set default retry count
@@ -68,6 +74,9 @@ func setDefaults(cfg *Config) {
 	if cfg.Logging.Format == "" {
 		cfg.Logging.Format = "json"
 	}
+	if cfg.Logging.Output == "" {
+		cfg.Logging.Output = "stdout"
+	}
 }
 
 // ValidationResult contains the result of configuration validation
@@ -102,6 +111,9 @@ func ValidateConfig(cfg *Config) *ValidationResult {
 
 	// Validate monitoring config
 	result.merge(validateMonitoringConfig(&cfg.Monitoring))
+	
+	// Validate logging config
+	result.merge(validateLoggingConfig(&cfg.Logging))
 
 	return result
 }
@@ -180,18 +192,26 @@ func validateAPIConfig(api *APIConfig) *ValidationResult {
 	// Validate port
 	if api.Port == "" {
 		result.addError("api.port", "API port cannot be empty")
+	} else {
+		// Parse and validate port number
+		portNum, err := strconv.Atoi(api.Port)
+		if err != nil {
+			result.addError("api.port", "port must be a valid number")
+		} else if portNum < 1 || portNum > 65535 {
+			result.addError("api.port", "port must be between 1 and 65535")
+		}
 	}
 
 	// Validate JWT secret
 	if api.JWTSecret == "" {
 		result.addError("api.jwt_secret", "JWT secret cannot be empty")
-	} else if len(api.JWTSecret) < 32 {
-		result.addError("api.jwt_secret", "JWT secret should be at least 32 characters long")
+	} else if len(api.JWTSecret) < 16 {
+		result.addError("api.jwt_secret", "jwt_secret must be at least 16 characters")
 	}
 
 	// Validate rate limits
-	if api.RateLimit <= 0 {
-		result.addError("api.rate_limit", "rate limit must be greater than 0")
+	if api.RateLimit < 0 {
+		result.addError("api.rate_limit", "rate_limit must be non-negative")
 	}
 
 	return result
@@ -301,3 +321,46 @@ func ValidateAndFixConfig(cfg *Config) *ValidationResult {
 
 	return result
 }
+
+
+// validateLoggingConfig validates logging configuration
+func validateLoggingConfig(logging *LoggingConfig) *ValidationResult {
+	result := &ValidationResult{Valid: true, Errors: make([]ValidationError, 0)}
+	
+	// Only validate if fields are set
+	if logging.Level != "" {
+		validLevels := []string{"debug", "info", "warn", "error"}
+		if !contains(validLevels, logging.Level) {
+			result.addError("logging.level", "level must be one of: debug, info, warn, error")
+		}
+	}
+	
+	if logging.Format != "" {
+		validFormats := []string{"json", "text"}
+		if !contains(validFormats, logging.Format) {
+			result.addError("logging.format", "format must be one of: json, text")
+		}
+	}
+	
+	if logging.Output != "" {
+		validOutputs := []string{"stdout", "stderr", "file"}
+		if !contains(validOutputs, logging.Output) {
+			result.addError("logging.output", "output must be one of: stdout, stderr, file")
+		}
+	}
+	
+	if logging.Output == "file" && logging.FilePath == "" {
+		result.addError("logging.file_path", "file_path is required when output is file")
+	}
+	
+	if logging.MaxSize < 0 {
+		result.addError("logging.max_size", "max_size must be positive")
+	}
+	
+	if logging.MaxAge < 0 {
+		result.addError("logging.max_age", "max_age must be non-negative")
+	}
+	
+	return result
+}
+
