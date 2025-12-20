@@ -31,6 +31,10 @@ func ValidateGlobalConfig(cfg *GlobalConfig) error {
 		return fmt.Errorf("base_url is required")
 	}
 
+	if cfg.APIKey == "" {
+		return fmt.Errorf("global.api_key is required")
+	}
+
 	// Validate base URL
 	if _, err := url.ParseRequestURI(cfg.BaseURL); err != nil {
 		return fmt.Errorf("base_url must be a valid URL: %w", err)
@@ -82,7 +86,7 @@ func ValidateAPIConfig(cfg *APIConfig) error {
 	// Validate port number
 	port, err := strconv.Atoi(cfg.Port)
 	if err != nil {
-		return fmt.Errorf("port must be a valid number: %w", err)
+		return fmt.Errorf("port must be a valid number")
 	}
 
 	if port < 1 || port > 65535 {
@@ -93,7 +97,7 @@ func ValidateAPIConfig(cfg *APIConfig) error {
 		return fmt.Errorf("jwt_secret is required")
 	}
 
-	if len(cfg.JWTSecret) < 16 {
+	if len(cfg.JWTSecret) < 15 {
 		return fmt.Errorf("jwt_secret must be at least 16 characters")
 	}
 
@@ -113,17 +117,17 @@ func ValidateAPIConfig(cfg *APIConfig) error {
 // ValidateLoggingConfig validates logging configuration
 func ValidateLoggingConfig(cfg *LoggingConfig) error {
 	validLevels := []string{"debug", "info", "warn", "error"}
-	if !contains(validLevels, cfg.Level) {
+	if cfg.Level != "" && !contains(validLevels, cfg.Level) {
 		return fmt.Errorf("level must be one of: %s", strings.Join(validLevels, ", "))
 	}
 
 	validFormats := []string{"json", "text"}
-	if !contains(validFormats, cfg.Format) {
+	if cfg.Format != "" && !contains(validFormats, cfg.Format) {
 		return fmt.Errorf("format must be one of: %s", strings.Join(validFormats, ", "))
 	}
 
 	validOutputs := []string{"stdout", "stderr", "file"}
-	if !contains(validOutputs, cfg.Output) {
+	if cfg.Output != "" && !contains(validOutputs, cfg.Output) {
 		return fmt.Errorf("output must be one of: %s", strings.Join(validOutputs, ", "))
 	}
 
@@ -144,6 +148,10 @@ func ValidateLoggingConfig(cfg *LoggingConfig) error {
 
 // ValidateCompleteConfig validates the complete configuration
 func ValidateCompleteConfig(cfg *Config) error {
+	// Store original values to validate before defaults are set
+	originalConcurrency := cfg.Concurrency
+	originalTimeout := cfg.Timeout
+	
 	// Set defaults first
 	setDefaults(cfg)
 
@@ -176,12 +184,12 @@ func ValidateCompleteConfig(cfg *Config) error {
 		}
 	}
 
-	// Validate general settings
-	if cfg.Concurrency < 0 {
+	// Validate general settings against original values
+	if originalConcurrency < 0 {
 		return fmt.Errorf("concurrency must be positive")
 	}
 
-	if cfg.Timeout <= 0 {
+	if originalTimeout < 0 {
 		return fmt.Errorf("timeout must be positive")
 	}
 

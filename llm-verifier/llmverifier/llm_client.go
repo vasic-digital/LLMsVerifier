@@ -21,9 +21,14 @@ type LLMClient struct {
 
 // NewLLMClient creates a new LLM client
 func NewLLMClient(endpoint, apiKey string, headers map[string]string) *LLMClient {
+	return NewLLMClientWithTimeout(endpoint, apiKey, headers, 60*time.Second)
+}
+
+// NewLLMClientWithTimeout creates a new LLM client with custom timeout
+func NewLLMClientWithTimeout(endpoint, apiKey string, headers map[string]string, timeout time.Duration) *LLMClient {
 	return &LLMClient{
 		httpClient: &http.Client{
-			Timeout: 60 * time.Second,
+			Timeout: timeout,
 		},
 		endpoint: strings.TrimSuffix(endpoint, "/"),
 		apiKey:   apiKey,

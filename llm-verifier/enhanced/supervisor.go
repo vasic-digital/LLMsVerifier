@@ -1109,6 +1109,7 @@ func (ai *AIAssistant) generateAnalysisResponse(message string) (string, error) 
 		total, passed, float64(passed)/float64(total)*100,
 		failed, float64(failed)/float64(total)*100,
 		avgScore,
+		fmt.Sprintf("%.1f", float64(passed)/float64(total)*100),
 		ai.getSuccessRateMessage(float64(passed)/float64(total)),
 		ai.getScoreMessage(avgScore),
 		failed,
