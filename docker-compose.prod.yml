@@ -8,9 +8,9 @@ services:
       target: production  # Use distroless for production
       args:
         BUILDKIT_INLINE_CACHE: 1
-      cache_from:
-        - llm-verifier:latest
-    image: llm-verifier:${TAG:-latest}
+        cache_from:
+          - llm-verifier:latest
+    image: llm-verifier:${TAG:-v1.0.0}
     container_name: llm-verifier-prod
     restart: unless-stopped
     ports:
