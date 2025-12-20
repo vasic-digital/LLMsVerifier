@@ -4220,6 +4220,47 @@ func (s *Server) getUsers(c *gin.Context) {
 	})
 }
 
+// chatWithAssistant handles AI assistant chat requests
+// @Summary Chat with AI assistant
+// @Description Send a message to the AI assistant and get a response
+// @Tags assistant
+// @Accept json
+// @Produce json
+// @Param message body map[string]string true "Chat message"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /assistant/chat [post]
+func (s *Server) chatWithAssistant(c *gin.Context) {
+	var req struct {
+		Message string `json:"message" binding:"required"`
+		UserID  string `json:"user_id,omitempty"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
+		return
+	}
+
+	// Use default user ID if not provided
+	userID := req.UserID
+	if userID == "" {
+		userID = "default_user"
+	}
+
+	// Process message with AI assistant
+	response, err := s.aiAssistant.ProcessMessage(userID, req.Message)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process message"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"response": response,
+		"user_id":  userID,
+	})
+}
+
 // getUserByID retrieves a specific user by ID
 func (s *Server) getUserByID(c *gin.Context) {
 	idStr := c.Param("id")
