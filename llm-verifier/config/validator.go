@@ -144,6 +144,9 @@ func ValidateLoggingConfig(cfg *LoggingConfig) error {
 
 // ValidateCompleteConfig validates the complete configuration
 func ValidateCompleteConfig(cfg *Config) error {
+	// Set defaults first
+	setDefaults(cfg)
+
 	// Validate global config
 	if err := ValidateGlobalConfig(&cfg.Global); err != nil {
 		return fmt.Errorf("global.%s", err.Error())

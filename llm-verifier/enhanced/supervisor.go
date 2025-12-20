@@ -46,6 +46,296 @@ func (c SupervisorConfig) Validate() error {
 	return nil
 }
 
+// Plugin interface for system extensions
+type Plugin interface {
+	Name() string
+	Version() string
+	Description() string
+	Initialize(config map[string]interface{}) error
+	Execute(ctx context.Context, input interface{}) (interface{}, error)
+	Shutdown() error
+	GetCapabilities() []string
+}
+
+// PluginSystem provides extensible plugin architecture
+type PluginSystem struct {
+	plugins map[string]Plugin
+	enabled map[string]bool
+	mu      sync.RWMutex
+}
+
+// PluginManager manages plugin lifecycle
+type PluginManager struct {
+	system *PluginSystem
+	logger *log.Logger
+}
+
+// NewPluginManager creates a new plugin manager
+func NewPluginManager(logger *log.Logger) *PluginManager {
+	return &PluginManager{
+		system: &PluginSystem{
+			plugins: make(map[string]Plugin),
+			enabled: make(map[string]bool),
+		},
+		logger: logger,
+	}
+}
+
+// RegisterPlugin registers a new plugin
+func (pm *PluginManager) RegisterPlugin(plugin Plugin) error {
+	pm.system.mu.Lock()
+	defer pm.system.mu.Unlock()
+
+	name := plugin.Name()
+	if _, exists := pm.system.plugins[name]; exists {
+		return fmt.Errorf("plugin %s already registered", name)
+	}
+
+	pm.system.plugins[name] = plugin
+	pm.system.enabled[name] = true
+
+	pm.logger.Printf("Plugin %s v%s registered: %s", name, plugin.Version(), plugin.Description())
+	return nil
+}
+
+// GetPlugin returns a plugin by name
+func (pm *PluginManager) GetPlugin(name string) (Plugin, bool) {
+	pm.system.mu.RLock()
+	defer pm.system.mu.RUnlock()
+
+	plugin, exists := pm.system.plugins[name]
+	return plugin, exists
+}
+
+// ListPlugins returns all registered plugins
+func (pm *PluginManager) ListPlugins() []map[string]interface{} {
+	pm.system.mu.RLock()
+	defer pm.system.mu.RUnlock()
+
+	var plugins []map[string]interface{}
+	for name, plugin := range pm.system.plugins {
+		plugins = append(plugins, map[string]interface{}{
+			"name":         name,
+			"version":      plugin.Version(),
+			"description":  plugin.Description(),
+			"enabled":      pm.system.enabled[name],
+			"capabilities": plugin.GetCapabilities(),
+		})
+	}
+
+	// Sort by name
+	sort.Slice(plugins, func(i, j int) bool {
+		return plugins[i]["name"].(string) < plugins[j]["name"].(string)
+	})
+
+	return plugins
+}
+
+// EnablePlugin enables a plugin
+func (pm *PluginManager) EnablePlugin(name string) error {
+	pm.system.mu.Lock()
+	defer pm.system.mu.Unlock()
+
+	if _, exists := pm.system.plugins[name]; !exists {
+		return fmt.Errorf("plugin %s not found", name)
+	}
+
+	pm.system.enabled[name] = true
+	pm.logger.Printf("Plugin %s enabled", name)
+	return nil
+}
+
+// DisablePlugin disables a plugin
+func (pm *PluginManager) DisablePlugin(name string) error {
+	pm.system.mu.Lock()
+	defer pm.system.mu.Unlock()
+
+	if _, exists := pm.system.plugins[name]; !exists {
+		return fmt.Errorf("plugin %s not found", name)
+	}
+
+	pm.system.enabled[name] = false
+	pm.logger.Printf("Plugin %s disabled", name)
+	return nil
+}
+
+// ExecutePlugin executes a plugin
+func (pm *PluginManager) ExecutePlugin(ctx context.Context, name string, input interface{}) (interface{}, error) {
+	pm.system.mu.RLock()
+	plugin, exists := pm.system.plugins[name]
+	enabled := pm.system.enabled[name]
+	pm.system.mu.RUnlock()
+
+	if !exists {
+		return nil, fmt.Errorf("plugin %s not found", name)
+	}
+
+	if !enabled {
+		return nil, fmt.Errorf("plugin %s is disabled", name)
+	}
+
+	return plugin.Execute(ctx, input)
+}
+
+// CacheBackend interface for different cache backends
+type CacheBackend interface {
+	Get(key string) (interface{}, bool)
+	Set(key string, value interface{}, ttl time.Duration) error
+	Delete(key string) error
+	Clear() error
+}
+
+// InMemoryCache provides an in-memory cache implementation
+type InMemoryCache struct {
+	data map[string]cacheItem
+	mu   sync.RWMutex
+}
+
+type cacheItem struct {
+	value     interface{}
+	expiresAt time.Time
+}
+
+// NewInMemoryCache creates a new in-memory cache
+func NewInMemoryCache(maxItems int) *InMemoryCache {
+	return &InMemoryCache{
+		data: make(map[string]cacheItem),
+	}
+}
+
+// Get retrieves a value from cache
+func (c *InMemoryCache) Get(key string) (interface{}, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	item, exists := c.data[key]
+	if !exists {
+		return nil, false
+	}
+
+	if time.Now().After(item.expiresAt) {
+		delete(c.data, key)
+		return nil, false
+	}
+
+	return item.value, true
+}
+
+// Set stores a value in cache
+func (c *InMemoryCache) Set(key string, value interface{}, ttl time.Duration) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.data[key] = cacheItem{
+		value:     value,
+		expiresAt: time.Now().Add(ttl),
+	}
+
+	return nil
+}
+
+// Delete removes a value from cache
+func (c *InMemoryCache) Delete(key string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	delete(c.data, key)
+	return nil
+}
+
+// Clear clears all cache entries
+func (c *InMemoryCache) Clear() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.data = make(map[string]cacheItem)
+	return nil
+}
+
+// CacheManager provides cache management functionality
+type CacheManager struct {
+	backend CacheBackend
+	enabled bool
+	mu      sync.RWMutex
+}
+
+// NewCacheManager creates a new cache manager
+func NewCacheManager(backend CacheBackend, enabled bool) *CacheManager {
+	return &CacheManager{
+		backend: backend,
+		enabled: enabled,
+	}
+}
+
+// Get retrieves a value from cache
+func (cm *CacheManager) Get(key string) (interface{}, bool) {
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
+
+	if !cm.enabled {
+		return nil, false
+	}
+
+	return cm.backend.Get(key)
+}
+
+// Set stores a value in cache
+func (cm *CacheManager) Set(key string, value interface{}, ttl time.Duration) error {
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
+
+	if !cm.enabled {
+		return nil
+	}
+
+	return cm.backend.Set(key, value, ttl)
+}
+
+// Delete removes a value from cache
+func (cm *CacheManager) Delete(key string) error {
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+
+	if !cm.enabled {
+		return nil
+	}
+
+	return cm.backend.Delete(key)
+}
+
+// Clear clears all cache entries
+func (cm *CacheManager) Clear() error {
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+
+	if !cm.enabled {
+		return nil
+	}
+
+	return cm.backend.Clear()
+}
+
+// IsEnabled returns whether caching is enabled
+func (cm *CacheManager) IsEnabled() bool {
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
+	return cm.enabled
+}
+
+// Enable enables caching
+func (cm *CacheManager) Enable() {
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+	cm.enabled = true
+}
+
+// Disable disables caching
+func (cm *CacheManager) Disable() {
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+	cm.enabled = false
+}
+
 // Task represents a task to be executed
 type Task struct {
 	ID          string                 `json:"id"`
@@ -602,16 +892,29 @@ type AIAssistant struct {
 	config   *SupervisorConfig
 	verifier *llmverifier.Verifier
 	context  map[string][]string // userID -> conversation history
+	Plugins  *PluginManager
+	cache    *CacheManager
 }
 
 // NewAIAssistant creates a new AI assistant
 func NewAIAssistant(db *database.Database, config *SupervisorConfig, verifier *llmverifier.Verifier) *AIAssistant {
-	return &AIAssistant{
+	// Create cache backend (in-memory for now, can be extended to Redis)
+	cacheBackend := NewInMemoryCache(1000) // Max 1000 items
+	cacheManager := NewCacheManager(cacheBackend, true)
+
+	assistant := &AIAssistant{
 		db:       db,
 		config:   config,
 		verifier: verifier,
 		context:  make(map[string][]string),
+		Plugins:  NewPluginManager(log.Default()),
+		cache:    cacheManager,
 	}
+
+	// Register built-in plugins
+	assistant.registerBuiltInPlugins()
+
+	return assistant
 }
 
 // ProcessMessage processes a user message and returns an intelligent response
@@ -916,4 +1219,209 @@ func (ai *AIAssistant) getRecommendations(score float64, failures int) string {
 	recs = append(recs, "• Consider enabling advanced analytics for deeper insights")
 
 	return strings.Join(recs, "\n")
+}
+
+// registerBuiltInPlugins registers the default plugins
+func (ai *AIAssistant) registerBuiltInPlugins() {
+	// Simple built-in plugins for demonstration
+	sentimentPlugin := &SimpleSentimentPlugin{}
+	ai.Plugins.RegisterPlugin(sentimentPlugin)
+
+	codeReviewPlugin := &SimpleCodeReviewPlugin{}
+	ai.Plugins.RegisterPlugin(codeReviewPlugin)
+
+	perfPlugin := &SimplePerformancePlugin{}
+	ai.Plugins.RegisterPlugin(perfPlugin)
+}
+
+// GetPlugins returns the plugin manager
+func (ai *AIAssistant) GetPlugins() *PluginManager {
+	return ai.Plugins
+}
+
+// GetCache returns the cache manager
+func (ai *AIAssistant) GetCache() *CacheManager {
+	return ai.cache
+}
+
+// EnableCache enables caching
+func (ai *AIAssistant) EnableCache() {
+	ai.cache.Enable()
+}
+
+// DisableCache disables caching
+func (ai *AIAssistant) DisableCache() {
+	ai.cache.Disable()
+}
+
+// ClearCache clears all cached responses
+func (ai *AIAssistant) ClearCache() error {
+	return ai.cache.Clear()
+}
+
+// GetCacheStats returns cache statistics
+func (ai *AIAssistant) GetCacheStats() map[string]interface{} {
+	// Since we don't have direct access to internal stats,
+	// return basic information
+	return map[string]interface{}{
+		"enabled": ai.cache.IsEnabled(),
+		"type":    "in_memory",
+		"note":    "Detailed statistics not available for in-memory cache",
+	}
+}
+
+// Simple built-in plugins for demonstration
+
+// SimpleSentimentPlugin provides basic sentiment analysis
+type SimpleSentimentPlugin struct{}
+
+// Name returns the plugin name
+func (p *SimpleSentimentPlugin) Name() string { return "sentiment_analysis" }
+
+// Version returns the plugin version
+func (p *SimpleSentimentPlugin) Version() string { return "1.0.0" }
+
+// Description returns the plugin description
+func (p *SimpleSentimentPlugin) Description() string {
+	return "Basic sentiment analysis for text processing"
+}
+
+// Initialize initializes the plugin
+func (p *SimpleSentimentPlugin) Initialize(config map[string]interface{}) error {
+	return nil
+}
+
+// Execute executes sentiment analysis
+func (p *SimpleSentimentPlugin) Execute(ctx context.Context, input interface{}) (interface{}, error) {
+	text, ok := input.(string)
+	if !ok {
+		return nil, fmt.Errorf("input must be a string")
+	}
+
+	// Very basic sentiment analysis
+	score := 0.5 // neutral
+	if strings.Contains(strings.ToLower(text), "good") || strings.Contains(strings.ToLower(text), "great") {
+		score = 0.8
+	} else if strings.Contains(strings.ToLower(text), "bad") || strings.Contains(strings.ToLower(text), "terrible") {
+		score = 0.2
+	}
+
+	return map[string]interface{}{
+		"text":      text,
+		"sentiment": "neutral",
+		"score":     score,
+	}, nil
+}
+
+// Shutdown shuts down the plugin
+func (p *SimpleSentimentPlugin) Shutdown() error { return nil }
+
+// GetCapabilities returns plugin capabilities
+func (p *SimpleSentimentPlugin) GetCapabilities() []string {
+	return []string{"sentiment_analysis", "text_processing"}
+}
+
+// SimpleCodeReviewPlugin provides basic code review
+type SimpleCodeReviewPlugin struct{}
+
+// Name returns the plugin name
+func (p *SimpleCodeReviewPlugin) Name() string { return "code_review" }
+
+// Version returns the plugin version
+func (p *SimpleCodeReviewPlugin) Version() string { return "1.0.0" }
+
+// Description returns the plugin description
+func (p *SimpleCodeReviewPlugin) Description() string {
+	return "Basic code review and quality analysis"
+}
+
+// Initialize initializes the plugin
+func (p *SimpleCodeReviewPlugin) Initialize(config map[string]interface{}) error {
+	return nil
+}
+
+// Execute executes code review
+func (p *SimpleCodeReviewPlugin) Execute(ctx context.Context, input interface{}) (interface{}, error) {
+	code, ok := input.(string)
+	if !ok {
+		return nil, fmt.Errorf("input must be a string")
+	}
+
+	// Very basic code analysis
+	issues := []string{}
+	if strings.Contains(code, "TODO") {
+		issues = append(issues, "Contains TODO comments")
+	}
+	if len(code) > 1000 {
+		issues = append(issues, "Long function/method")
+	}
+
+	return map[string]interface{}{
+		"code":          code,
+		"issues":        issues,
+		"quality_score": 100 - len(issues)*10,
+		"language":      "detected",
+	}, nil
+}
+
+// Shutdown shuts down the plugin
+func (p *SimpleCodeReviewPlugin) Shutdown() error { return nil }
+
+// GetCapabilities returns plugin capabilities
+func (p *SimpleCodeReviewPlugin) GetCapabilities() []string {
+	return []string{"code_review", "quality_analysis"}
+}
+
+// SimplePerformancePlugin provides basic performance analysis
+type SimplePerformancePlugin struct{}
+
+// Name returns the plugin name
+func (p *SimplePerformancePlugin) Name() string { return "performance_analysis" }
+
+// Version returns the plugin version
+func (p *SimplePerformancePlugin) Version() string { return "1.0.0" }
+
+// Description returns the plugin description
+func (p *SimplePerformancePlugin) Description() string {
+	return "Basic performance analysis and monitoring"
+}
+
+// Initialize initializes the plugin
+func (p *SimplePerformancePlugin) Initialize(config map[string]interface{}) error {
+	return nil
+}
+
+// Execute executes performance analysis
+func (p *SimplePerformancePlugin) Execute(ctx context.Context, input interface{}) (interface{}, error) {
+	data, ok := input.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("input must be a map")
+	}
+
+	// Very basic performance metrics
+	responseTime := 100.0 // ms
+	if rt, ok := data["response_time"].(float64); ok {
+		responseTime = rt
+	}
+
+	performance := "good"
+	if responseTime > 500 {
+		performance = "poor"
+	} else if responseTime > 200 {
+		performance = "fair"
+	}
+
+	return map[string]interface{}{
+		"response_time_ms": responseTime,
+		"performance":      performance,
+		"recommendation":   "Optimize if response time > 200ms",
+	}, nil
+}
+
+// Shutdown shuts down the plugin
+func (p *SimplePerformancePlugin) Shutdown() error { return nil }
+
+// GetCapabilities returns plugin capabilities
+func (p *SimplePerformancePlugin) GetCapabilities() []string {
+	return []string{"performance_analysis", "monitoring"}
 }

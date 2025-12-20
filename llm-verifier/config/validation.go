@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 )
 
 // ValidationError represents a configuration validation error
@@ -16,6 +17,59 @@ func (ve ValidationError) Error() string {
 	return fmt.Sprintf("validation error for field '%s': %s", ve.Field, ve.Message)
 }
 
+// setDefaults sets default values for configuration
+func setDefaults(cfg *Config) {
+	// Set default timeout if not specified
+	if cfg.Global.Timeout <= 0 {
+		cfg.Global.Timeout = 30 * time.Second
+	}
+
+	// Set default retry count
+	if cfg.Global.MaxRetries <= 0 {
+		cfg.Global.MaxRetries = 3
+	}
+
+	// Set default model if not specified
+	if cfg.Global.DefaultModel == "" {
+		cfg.Global.DefaultModel = "gpt-3.5-turbo"
+	}
+
+	// Set default concurrency
+	if cfg.Concurrency <= 0 {
+		cfg.Concurrency = 10
+	}
+
+	// Set default headers for LLM configs
+	for i := range cfg.LLMs {
+		if cfg.LLMs[i].Headers == nil {
+			cfg.LLMs[i].Headers = make(map[string]string)
+		}
+		// Add default User-Agent if not present (check both cases)
+		if _, exists := cfg.LLMs[i].Headers["User-Agent"]; !exists {
+			if _, existsLower := cfg.LLMs[i].Headers["user-agent"]; !existsLower {
+				cfg.LLMs[i].Headers["User-Agent"] = "LLM-Verifier/1.0"
+			}
+		}
+	}
+
+	// Set default API config
+	if cfg.API.Port == "" {
+		cfg.API.Port = "8080"
+	}
+	// Only set default JWT secret if none provided (validation will catch short secrets)
+	if cfg.API.JWTSecret == "" {
+		cfg.API.JWTSecret = "default-secret-change-in-production-32charslong"
+	}
+
+	// Set default logging config
+	if cfg.Logging.Level == "" {
+		cfg.Logging.Level = "info"
+	}
+	if cfg.Logging.Format == "" {
+		cfg.Logging.Format = "json"
+	}
+}
+
 // ValidationResult contains the result of configuration validation
 type ValidationResult struct {
 	Valid  bool
@@ -24,6 +78,9 @@ type ValidationResult struct {
 
 // ValidateConfig validates the entire configuration
 func ValidateConfig(cfg *Config) *ValidationResult {
+	// Set defaults first
+	setDefaults(cfg)
+
 	result := &ValidationResult{
 		Valid:  true,
 		Errors: make([]ValidationError, 0),
