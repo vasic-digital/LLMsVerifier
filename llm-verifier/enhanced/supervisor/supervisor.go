@@ -1,8 +1,14 @@
 package supervisor
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
+	"strings"
 	"time"
+
+	"llm-verifier/database"
+	"llm-verifier/llmverifier"
 )
 
 // SupervisorConfig holds configuration for the supervisor
