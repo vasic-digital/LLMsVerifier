@@ -69,7 +69,7 @@ func TestInitializeMigrationTable(t *testing.T) {
 }
 
 func TestGetCurrentVersion(t *testing.T) {
-	db := setupTestDatabase(t)
+	db := setupEmptyTestDatabase(t)
 	defer db.Close()
 
 	mm := NewMigrationManager(db)
@@ -87,14 +87,14 @@ func TestGetCurrentVersion(t *testing.T) {
 	_, err = db.conn.Exec("INSERT INTO schema_migrations (version, description) VALUES (?, ?)", 1, "Test migration")
 	require.NoError(t, err)
 
-	// Should return the inserted version
+	// Should return inserted version
 	version, err = mm.GetCurrentVersion()
 	require.NoError(t, err)
 	assert.Equal(t, 1, version)
 }
 
 func TestMigrateUp(t *testing.T) {
-	db := setupTestDatabase(t)
+	db := setupEmptyTestDatabase(t)
 	defer db.Close()
 
 	mm := NewMigrationManager(db)
@@ -139,7 +139,7 @@ func TestMigrateUp(t *testing.T) {
 }
 
 func TestMigrateUp_SkipApplied(t *testing.T) {
-	db := setupTestDatabase(t)
+	db := setupEmptyTestDatabase(t)
 	defer db.Close()
 
 	mm := NewMigrationManager(db)
@@ -172,7 +172,7 @@ func TestMigrateUp_SkipApplied(t *testing.T) {
 }
 
 func TestMigrateDown(t *testing.T) {
-	db := setupTestDatabase(t)
+	db := setupEmptyTestDatabase(t)
 	defer db.Close()
 
 	mm := NewMigrationManager(db)
@@ -221,7 +221,7 @@ func TestMigrateDown(t *testing.T) {
 }
 
 func TestMigrateDown_NoMigrations(t *testing.T) {
-	db := setupTestDatabase(t)
+	db := setupEmptyTestDatabase(t)
 	defer db.Close()
 
 	mm := NewMigrationManager(db)
@@ -236,7 +236,7 @@ func TestMigrateDown_NoMigrations(t *testing.T) {
 }
 
 func TestGetMigrationStatus(t *testing.T) {
-	db := setupTestDatabase(t)
+	db := setupEmptyTestDatabase(t)
 	defer db.Close()
 
 	mm := NewMigrationManager(db)
@@ -305,7 +305,7 @@ func TestSetupDefaultMigrations(t *testing.T) {
 }
 
 func TestMigrationError_Up(t *testing.T) {
-	db := setupTestDatabase(t)
+	db := setupEmptyTestDatabase(t)
 	defer db.Close()
 
 	mm := NewMigrationManager(db)
@@ -381,4 +381,16 @@ func setupTestDatabase(t *testing.T) *Database {
 	db, err := New(":memory:")
 	require.NoError(t, err)
 	return db
+}
+
+// setupEmptyTestDatabase creates a database without running migrations
+func setupEmptyTestDatabase(t *testing.T) *Database {
+	sqlDB, err := sql.Open("sqlite3", ":memory:")
+	require.NoError(t, err)
+
+	database := &Database{
+		conn: sqlDB,
+	}
+
+	return database
 }
