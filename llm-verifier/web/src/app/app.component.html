@@ -6,6 +6,13 @@
     <button mat-button>Models</button>
     <button mat-button>Providers</button>
     <button mat-button>Verification</button>
+    <button mat-icon-button
+            (click)="toggleDarkMode()"
+            [attr.aria-label]="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+            [attr.aria-pressed]="isDarkMode"
+            role="switch">
+      <mat-icon>{{ isDarkMode ? 'light_mode' : 'dark_mode' }}</mat-icon>
+    </button>
   </mat-toolbar-row>
 </mat-toolbar>
 

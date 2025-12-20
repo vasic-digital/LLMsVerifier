@@ -1,8 +1,11 @@
 package enhanced
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strings"
 	"time"
 
 	"llm-verifier/database"
@@ -532,4 +535,328 @@ func (im *IssueManager) checkAutoResolutionCriteria(issue *database.Issue) bool 
 	}
 
 	return false
+}
+
+// GitHubIssueReporter handles automatic issue reporting to GitHub
+type GitHubIssueReporter struct {
+	token      string
+	repository string
+	baseURL    string
+	httpClient *http.Client
+}
+
+// NewGitHubIssueReporter creates a new GitHub issue reporter
+func NewGitHubIssueReporter(token, repository string) *GitHubIssueReporter {
+	return &GitHubIssueReporter{
+		token:      token,
+		repository: repository,
+		baseURL:    "https://api.github.com",
+		httpClient: &http.Client{Timeout: 30 * time.Second},
+	}
+}
+
+// ReportIssue creates a GitHub issue for a detected problem
+func (gir *GitHubIssueReporter) ReportIssue(issue *database.Issue, modelInfo map[string]interface{}) error {
+	if gir.token == "" {
+		return fmt.Errorf("GitHub token not configured")
+	}
+
+	severity := IssueSeverity(issue.Severity)
+	issueType := IssueType(issue.IssueType)
+
+	issueData := map[string]interface{}{
+		"title": gir.generateIssueTitle(issue),
+		"body":  gir.generateIssueBody(issue, modelInfo),
+		"labels": []string{
+			gir.getSeverityLabel(severity),
+			gir.getTypeLabel(issueType),
+			"automated",
+			"llm-verifier",
+		},
+	}
+
+	jsonData, err := json.Marshal(issueData)
+	if err != nil {
+		return fmt.Errorf("failed to marshal issue data: %w", err)
+	}
+
+	url := fmt.Sprintf("%s/repos/%s/issues", gir.baseURL, gir.repository)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", gir.token))
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := gir.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("GitHub API returned status: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+// generateIssueTitle creates a descriptive title for the GitHub issue
+func (gir *GitHubIssueReporter) generateIssueTitle(issue *database.Issue) string {
+	severity := IssueSeverity(issue.Severity)
+	return fmt.Sprintf("[%s] %s: %s", gir.getSeverityEmoji(severity), issue.IssueType, issue.Title)
+}
+
+// generateIssueBody creates detailed issue body
+func (gir *GitHubIssueReporter) generateIssueBody(issue *database.Issue, modelInfo map[string]interface{}) string {
+	lastOccurred := "N/A"
+	if issue.LastOccurred != nil {
+		lastOccurred = issue.LastOccurred.Format(time.RFC3339)
+	}
+
+	symptoms := "N/A"
+	if issue.Symptoms != nil {
+		symptoms = *issue.Symptoms
+	}
+
+	workarounds := "N/A"
+	if issue.Workarounds != nil {
+		workarounds = *issue.Workarounds
+	}
+
+	body := fmt.Sprintf(`## Issue Details
+
+**Type:** %s
+**Severity:** %s
+**First Detected:** %s
+**Last Occurred:** %s
+
+## Description
+
+%s
+
+## Symptoms
+
+%s
+
+## Workarounds
+
+%s
+
+## Affected Features
+
+%s
+
+## Model Information
+
+`+"```json"+`
+%s
+`+"```"+`
+
+---
+
+*This issue was automatically reported by LLM Verifier*
+*Detection Time: %s*
+`,
+		issue.IssueType,
+		issue.Severity,
+		issue.FirstDetected.Format(time.RFC3339),
+		lastOccurred,
+		issue.Description,
+		symptoms,
+		workarounds,
+		strings.Join(issue.AffectedFeatures, ", "),
+		gir.formatModelInfo(modelInfo),
+		time.Now().Format(time.RFC3339))
+
+	return body
+}
+
+// Helper methods for GitHub integration
+func (gir *GitHubIssueReporter) getSeverityLabel(severity IssueSeverity) string {
+	switch severity {
+	case SeverityCritical:
+		return "severity-critical"
+	case SeverityHigh:
+		return "severity-high"
+	case SeverityMedium:
+		return "severity-medium"
+	case SeverityLow:
+		return "severity-low"
+	default:
+		return "severity-unknown"
+	}
+}
+
+func (gir *GitHubIssueReporter) getSeverityEmoji(severity IssueSeverity) string {
+	switch severity {
+	case SeverityCritical:
+		return "🚨"
+	case SeverityHigh:
+		return "⚠️"
+	case SeverityMedium:
+		return "⚡"
+	case SeverityLow:
+		return "ℹ️"
+	default:
+		return "❓"
+	}
+}
+
+func (gir *GitHubIssueReporter) getTypeLabel(issueType IssueType) string {
+	return fmt.Sprintf("type-%s", issueType)
+}
+
+func (gir *GitHubIssueReporter) formatIssueDetails(details map[string]interface{}) string {
+	if details == nil {
+		return "{}"
+	}
+	jsonBytes, _ := json.MarshalIndent(details, "", "  ")
+	return string(jsonBytes)
+}
+
+func (gir *GitHubIssueReporter) formatModelInfo(modelInfo map[string]interface{}) string {
+	if modelInfo == nil {
+		return "{}"
+	}
+	jsonBytes, _ := json.MarshalIndent(modelInfo, "", "  ")
+	return string(jsonBytes)
+}
+
+func (gir *GitHubIssueReporter) generateRecommendations(issue *database.Issue) string {
+	var recommendations []string
+
+	switch IssueType(issue.IssueType) {
+	case IssueTypeAvailability:
+		recommendations = []string{
+			"• Check provider API status and documentation",
+			"• Verify API credentials and permissions",
+			"• Consider implementing fallback providers",
+			"• Monitor provider service status pages",
+		}
+	case IssueTypePerformance:
+		recommendations = []string{
+			"• Review rate limiting and request patterns",
+			"• Consider upgrading to higher-tier API plans",
+			"• Implement request batching and optimization",
+			"• Monitor response times and implement timeouts",
+		}
+	case IssueTypeAccuracy:
+		recommendations = []string{
+			"• Review prompt engineering and formatting",
+			"• Test with different model versions",
+			"• Implement response validation and retry logic",
+			"• Consider fine-tuning for specific use cases",
+		}
+	case IssueTypeSecurity:
+		recommendations = []string{
+			"• Audit API key usage and permissions",
+			"• Implement content filtering and validation",
+			"• Review data handling and privacy compliance",
+			"• Update security policies and monitoring",
+		}
+	default:
+		recommendations = []string{
+			"• Monitor issue trends and patterns",
+			"• Review system configuration and settings",
+			"• Implement additional error handling",
+			"• Consider reaching out to provider support",
+		}
+	}
+
+	return strings.Join(recommendations, "\n")
+}
+
+// SlackIssueReporter handles Slack notifications for issues
+type SlackIssueReporter struct {
+	webhookURL string
+	channel    string
+	httpClient *http.Client
+}
+
+// NewSlackIssueReporter creates a new Slack issue reporter
+func NewSlackIssueReporter(webhookURL, channel string) *SlackIssueReporter {
+	return &SlackIssueReporter{
+		webhookURL: webhookURL,
+		channel:    channel,
+		httpClient: &http.Client{Timeout: 30 * time.Second},
+	}
+}
+
+// ReportIssue sends issue notification to Slack
+func (sir *SlackIssueReporter) ReportIssue(issue *database.Issue, modelInfo map[string]interface{}) error {
+	if sir.webhookURL == "" {
+		return fmt.Errorf("Slack webhook URL not configured")
+	}
+
+	color := sir.getSlackColor(IssueSeverity(issue.Severity))
+
+	payload := map[string]interface{}{
+		"channel": sir.channel,
+		"attachments": []map[string]interface{}{
+			{
+				"color": color,
+				"title": fmt.Sprintf("%s: %s", issue.IssueType, issue.Title),
+				"text":  issue.Description,
+				"fields": []map[string]interface{}{
+					{
+						"title": "Severity",
+						"value": issue.Severity,
+						"short": true,
+					},
+					{
+						"title": "Type",
+						"value": issue.IssueType,
+						"short": true,
+					},
+					{
+						"title": "Affected Features",
+						"value": strings.Join(issue.AffectedFeatures, ", "),
+						"short": false,
+					},
+					{
+						"title": "First Detected",
+						"value": issue.FirstDetected.Format("2006-01-02 15:04:05"),
+						"short": true,
+					},
+				},
+				"footer": "LLM Verifier",
+				"ts":     time.Now().Unix(),
+			},
+		},
+	}
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal Slack payload: %w", err)
+	}
+
+	resp, err := http.Post(sir.webhookURL, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to send Slack notification: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Slack API returned status: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+func (sir *SlackIssueReporter) getSlackColor(severity IssueSeverity) string {
+	switch severity {
+	case SeverityCritical:
+		return "danger"
+	case SeverityHigh:
+		return "warning"
+	case SeverityMedium:
+		return "#ff9900"
+	case SeverityLow:
+		return "good"
+	default:
+		return "#808080"
+	}
 }
