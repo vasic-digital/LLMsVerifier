@@ -36,10 +36,10 @@ func TestScheduler_SetJobHandler(t *testing.T) {
 
 // TestScheduler_CreateSchedule tests schedule creation
 func TestScheduler_CreateSchedule(t *testing.T) {
-	scheduler := NewScheduler(nil)
+	_ = NewScheduler(nil)
 
 	// Test ID generation for cron schedule
-	cronSchedule := &Schedule{
+	_ = &Schedule{
 		Name:        "Test Cron Schedule",
 		Description: "Test description",
 		Type:        ScheduleTypeCron,

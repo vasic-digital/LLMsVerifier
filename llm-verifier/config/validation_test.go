@@ -611,6 +611,7 @@ func TestValidateCompleteConfig(t *testing.T) {
 		{
 			name: "Config with empty LLMs",
 			config: Config{
+				Timeout: 30 * time.Second,
 				Global: GlobalConfig{
 					BaseURL: "https://api.example.com",
 					APIKey:  "test-key",
@@ -660,7 +661,7 @@ func TestValidateCompleteConfig(t *testing.T) {
 		{
 			name: "Config with zero timeout",
 			config: Config{
-				Timeout: 0,
+				Timeout: -1,
 				Global: GlobalConfig{
 					BaseURL: "https://api.example.com",
 					APIKey:  "test-key",

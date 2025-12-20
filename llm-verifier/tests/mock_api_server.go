@@ -4,18 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"math/rand"
 	"net/http"
-	"net/http/httptest"
-	"net/url"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"llm-verifier/config"
 	"llm-verifier/providers"
 )
 
@@ -29,18 +25,31 @@ type MockAPIServer struct {
 	errorConfig    ErrorConfig
 }
 
+// EmbeddingRequest represents request for embeddings
+type EmbeddingRequest struct {
+	Model string   `json:"model"`
+	Input string   `json:"input"`
+}
+
+// EmbeddingResponse represents response from embeddings
+type EmbeddingResponse struct {
+	Object string `json:"object"`
+	Data   []struct {
+		Object    string    `json:"object"`
+		Embedding []float64 `json:"embedding"`
+		Index     int       `json:"index"`
+	} `json:"data"`
+	Model string `json:"model"`
+	Usage struct {
+		PromptTokens int `json:"prompt_tokens"`
+		TotalTokens  int `json:"total_tokens"`
+	} `json:"usage"`
+}
+
 type ErrorConfig struct {
 	SimulateErrors bool     `json:"simulate_errors"`
 	ErrorRate      float64  `json:"error_rate"`
 	ErrorTypes     []string `json:"error_types"`
-}
-
-// EmbeddingResponse represents embedding generation response
-type EmbeddingResponse struct {
-	Object string                 `json:"object"`
-	Data   []float64              `json:"data"`
-	Model  string                 `json:"model"`
-	Usage  map[string]interface{} `json:"usage"`
 }
 
 // ModerationRequest represents moderation request
@@ -226,7 +235,7 @@ func (m *MockAPIServer) writeError(w http.ResponseWriter, errorType string) {
 func (m *MockAPIServer) setRateLimitHeaders(w http.ResponseWriter) {
 	w.Header().Set("X-RateLimit-Limit", "100")
 	w.Header().Set("X-RateLimit-Remaining", "90")
-	w.Header().Set("X-RateLimit-Reset", strconv.FormatInt(time.Now().Add(1*time.Minute).Unix()))
+	w.Header().Set("X-RateLimit-Reset", strconv.FormatInt(time.Now().Add(1*time.Minute).Unix(), 10))
 }
 
 // handleRoot handles root endpoint
@@ -281,11 +290,24 @@ func (m *MockAPIServer) handleEmbeddings(w http.ResponseWriter, r *http.Request)
 	// Generate mock embeddings based on input
 	response := EmbeddingResponse{
 		Object: "list",
-		Data:   m.generateEmbeddings(req.Input, len(req.Input), req.Model),
-		Model:  req.Model,
-		Usage: map[string]interface{}{
-			"prompt_tokens": len(req.Input),
-			"total_tokens":  len(req.Input),
+		Data:   []struct {
+			Object    string    `json:"object"`
+			Embedding []float64 `json:"embedding"`
+			Index     int       `json:"index"`
+		}{
+			{
+				Object:    "embedding",
+				Embedding: m.generateEmbeddings(req.Input, req.Model),
+				Index:     0,
+			},
+		},
+		Model: req.Model,
+		Usage: struct {
+			PromptTokens int `json:"prompt_tokens"`
+			TotalTokens  int `json:"total_tokens"`
+		}{
+			PromptTokens: len(req.Input),
+			TotalTokens:  len(req.Input),
 		},
 	}
 
@@ -296,7 +318,7 @@ func (m *MockAPIServer) handleEmbeddings(w http.ResponseWriter, r *http.Request)
 // generateEmbeddings generates mock embedding data
 func (m *MockAPIServer) generateEmbeddings(input string, model string) []float64 {
 	// Simple mock: generate random values based on input hash
-	embeddings := make([]float64, len(input))
+	embeddings := make([]float64, 1536) // OpenAI standard embedding size
 	for i := range embeddings {
 		embeddings[i] = float64(i+1) * 0.1 // Simple mock values
 	}

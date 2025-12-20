@@ -26,7 +26,12 @@ func New(cfg *config.Config) *Verifier {
 
 // GetGlobalClient returns an LLM client configured with global settings
 func (v *Verifier) GetGlobalClient() *LLMClient {
-	return NewLLMClient(v.cfg.Global.BaseURL, v.cfg.Global.APIKey, nil)
+	// Create client with timeout matching config timeout
+	timeout := v.cfg.Global.Timeout
+	if timeout <= 0 {
+		timeout = 60 * time.Second // fallback to 60s if not configured
+	}
+	return NewLLMClientWithTimeout(v.cfg.Global.BaseURL, v.cfg.Global.APIKey, nil, timeout)
 }
 
 // SummarizeConversation uses LLM to generate a summary of conversation messages
@@ -166,6 +171,38 @@ func (v *Verifier) Verify() ([]VerificationResult, error) {
 					}
 				}
 				allResults = append(allResults, result)
+			}
+		}
+	}
+
+	// Fallback: ensure we always return results for configured LLMs
+	// This handles cases where all verifications fail but we still want to return error results
+	if len(v.cfg.LLMs) > 0 && len(allResults) < len(v.cfg.LLMs) {
+		// Add error results for any LLMs that weren't verified
+		for _, llmCfg := range v.cfg.LLMs {
+			found := false
+			for _, result := range allResults {
+				if result.ModelInfo.ID == llmCfg.Name || result.ModelInfo.ID == llmCfg.Model {
+					found = true
+					break
+				}
+			}
+			if !found {
+				errorResult := VerificationResult{
+					ModelInfo: ModelInfo{
+						ID: llmCfg.Name,
+					},
+					Availability: AvailabilityResult{
+						Exists:     false,
+						Responsive: false,
+						Error:      "Verification failed - no results obtained",
+					},
+					ResponseTime: ResponseTimeResult{
+						AverageLatency: 0,
+					},
+					Error: "Verification failed",
+				}
+				allResults = append(allResults, errorResult)
 			}
 		}
 	}
@@ -328,7 +365,12 @@ func (v *Verifier) verifySingleModel(client *LLMClient, modelName, endpoint stri
 
 // checkResponsiveness tests if the model responds to requests
 func (v *Verifier) checkResponsiveness(client *LLMClient, modelName string) (time.Duration, bool, string) {
-	ctx, cancel := context.WithTimeout(context.Background(), v.cfg.Timeout)
+	// Use global timeout for responsiveness checks
+	timeout := v.cfg.Global.Timeout
+	if timeout <= 0 {
+		timeout = 30 * time.Second // default if not set
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	startTime := time.Now()
@@ -357,7 +399,7 @@ func (v *Verifier) checkResponsiveness(client *LLMClient, modelName string) (tim
 
 // checkOverload tests if the model is overloaded by sending multiple concurrent requests
 func (v *Verifier) checkOverload(client *LLMClient, modelName string) (bool, time.Duration, float64) {
-	const numRequests = 5
+	const numRequests = 10
 	const timeoutPerRequest = 30 * time.Second
 
 	type result struct {

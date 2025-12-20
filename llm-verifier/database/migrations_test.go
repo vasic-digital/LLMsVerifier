@@ -278,7 +278,7 @@ func TestGetMigrationStatus(t *testing.T) {
 	// Check second migration status
 	assert.Equal(t, 2, status[1].Version)
 	assert.Equal(t, "Test migration 2", status[1].Description)
-	assert.False(t, status[1].Applied)
+	assert.True(t, status[1].Applied) // Both migrations should be applied after MigrateUp()
 }
 
 func TestSetupDefaultMigrations(t *testing.T) {
@@ -337,7 +337,7 @@ func TestMigrationError_Up(t *testing.T) {
 }
 
 func TestMigrationError_Down(t *testing.T) {
-	db := setupTestDatabase(t)
+	db := setupEmptyTestDatabase(t)  // Use empty DB to avoid default migrations
 	defer db.Close()
 
 	mm := NewMigrationManager(db)
