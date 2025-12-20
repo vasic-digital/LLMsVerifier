@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "created_at": "2025-12-16T17:55:46.263723376+03:00",
+  "created_at": "2025-12-20T18:53:46.444286107+03:00",
   "generated_by": "LLM Verifier",
   "models": [
     {
@@ -33,7 +33,12 @@
         "context_window": 128000,
         "frequency_penalty": 0,
         "max_tokens": 4096,
+        "model_family": "gpt",
         "presence_penalty": 0,
+        "reasoning_budget": 2048,
+        "reasoning_enabled": true,
+        "reasoning_temperature": 0.3,
+        "streaming_supported": true,
         "supports_audio": false,
         "supports_reasoning": true,
         "supports_video": false,
@@ -69,13 +74,18 @@
       "settings": {
         "context_window": 200000,
         "frequency_penalty": 0,
-        "max_tokens": 8192,
+        "max_tokens": 4096,
+        "model_family": "claude",
         "presence_penalty": 0,
+        "reasoning_budget": 2048,
+        "reasoning_enabled": true,
+        "reasoning_temperature": 0.3,
+        "streaming_supported": true,
         "supports_audio": false,
         "supports_reasoning": true,
         "supports_video": false,
         "supports_vision": false,
-        "temperature": 0.7,
+        "temperature": 0.8,
         "top_p": 0.9
       }
     },
@@ -107,7 +117,12 @@
         "context_window": 16384,
         "frequency_penalty": 0,
         "max_tokens": 4096,
+        "model_family": "gpt",
         "presence_penalty": 0,
+        "reasoning_budget": 2048,
+        "reasoning_enabled": true,
+        "reasoning_temperature": 0.3,
+        "streaming_supported": true,
         "supports_audio": false,
         "supports_reasoning": true,
         "supports_video": false,
@@ -123,6 +138,8 @@
       "claude-3-5-sonnet-20241022",
       "gpt-3.5-turbo"
     ],
+    "max_tokens": 4096,
+    "temperature": 0.7,
     "auto_save": true,
     "stream_responses": true,
     "language": "english"
@@ -130,8 +147,8 @@
   "metadata": {
     "total_models": 3,
     "average_score": 86.83333333333333,
-    "export_criteria": "min score 70.0; top 3 models",
+    "export_criteria": "min score 70.0; top 5 models",
     "llm_verifier_version": "1.0.0",
-    "last_updated": "2025-12-16T17:55:46.263730112+03:00"
+    "last_updated": "2025-12-20T18:53:46.444292389+03:00"
   }
 }

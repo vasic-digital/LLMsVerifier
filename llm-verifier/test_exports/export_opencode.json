@@ -1,0 +1,154 @@
+{
+  "version": "1.0",
+  "created_at": "2025-12-20T18:54:48.055268408+03:00",
+  "generated_by": "LLM Verifier",
+  "models": [
+    {
+      "id": "gpt-4-turbo",
+      "name": "gpt-4-turbo",
+      "provider": "OpenAI",
+      "endpoint": "https://api.openai.com/v1",
+      "capabilities": [
+        "tool_use",
+        "function_calling",
+        "code_generation",
+        "code_review",
+        "code_explanation",
+        "multimodal",
+        "streaming",
+        "json_mode",
+        "structured_output",
+        "reasoning",
+        "parallel_tool_use"
+      ],
+      "score": 92.5,
+      "category": "coding",
+      "tags": [
+        "coding",
+        "reasoning",
+        "multimodal"
+      ],
+      "description": "Latest GPT-4 model with improved capabilities",
+      "settings": {
+        "context_window": 128000,
+        "frequency_penalty": 0,
+        "max_tokens": 4096,
+        "model_family": "gpt",
+        "presence_penalty": 0,
+        "reasoning_budget": 2048,
+        "reasoning_enabled": true,
+        "reasoning_temperature": 0.3,
+        "streaming_supported": true,
+        "supports_audio": false,
+        "supports_reasoning": true,
+        "supports_video": false,
+        "supports_vision": true,
+        "temperature": 0.7,
+        "top_p": 0.9
+      }
+    },
+    {
+      "id": "claude-3-5-sonnet-20241022",
+      "name": "claude-3-5-sonnet-20241022",
+      "provider": "Anthropic",
+      "endpoint": "https://api.anthropic.com/v1",
+      "capabilities": [
+        "tool_use",
+        "function_calling",
+        "code_generation",
+        "code_review",
+        "code_explanation",
+        "streaming",
+        "json_mode",
+        "structured_output",
+        "reasoning"
+      ],
+      "score": 89.7,
+      "category": "coding",
+      "tags": [
+        "reasoning",
+        "coding",
+        "safety"
+      ],
+      "description": "Anthropic's most capable model",
+      "settings": {
+        "context_window": 200000,
+        "frequency_penalty": 0,
+        "max_tokens": 4096,
+        "model_family": "claude",
+        "presence_penalty": 0,
+        "reasoning_budget": 2048,
+        "reasoning_enabled": true,
+        "reasoning_temperature": 0.3,
+        "streaming_supported": true,
+        "supports_audio": false,
+        "supports_reasoning": true,
+        "supports_video": false,
+        "supports_vision": false,
+        "temperature": 0.8,
+        "top_p": 0.9
+      }
+    },
+    {
+      "id": "gpt-3.5-turbo",
+      "name": "gpt-3.5-turbo",
+      "provider": "OpenAI",
+      "endpoint": "https://api.openai.com/v1",
+      "capabilities": [
+        "tool_use",
+        "function_calling",
+        "code_generation",
+        "code_review",
+        "code_explanation",
+        "streaming",
+        "json_mode",
+        "structured_output",
+        "reasoning"
+      ],
+      "score": 78.3,
+      "category": "coding",
+      "tags": [
+        "coding",
+        "chat",
+        "fast"
+      ],
+      "description": "Fast and efficient model for general tasks",
+      "settings": {
+        "context_window": 16384,
+        "frequency_penalty": 0,
+        "max_tokens": 4096,
+        "model_family": "gpt",
+        "presence_penalty": 0,
+        "reasoning_budget": 2048,
+        "reasoning_enabled": true,
+        "reasoning_temperature": 0.3,
+        "streaming_supported": true,
+        "supports_audio": false,
+        "supports_reasoning": true,
+        "supports_video": false,
+        "supports_vision": false,
+        "temperature": 0.7,
+        "top_p": 0.9
+      }
+    }
+  ],
+  "preferences": {
+    "primary_model": "gpt-4-turbo",
+    "fallback_models": [
+      "claude-3-5-sonnet-20241022",
+      "gpt-3.5-turbo"
+    ],
+    "max_tokens": 4096,
+    "temperature": 0.7,
+    "auto_save": true,
+    "stream_responses": true,
+    "language": "english"
+  },
+  "metadata": {
+    "total_models": 3,
+    "average_score": 86.83333333333333,
+    "export_criteria": "min score 70.0; top 10 models",
+    "llm_verifier_version": "1.0.0",
+    "last_updated": "2025-12-20T18:54:48.05527105+03:00"
+  }
+}
