@@ -4261,6 +4261,135 @@ func (s *Server) chatWithAssistant(c *gin.Context) {
 	})
 }
 
+// listPlugins returns list of available plugins
+// @Summary List available plugins
+// @Description Get list of all registered plugins and their status
+// @Tags plugins
+// @Accept json
+// @Produce json
+// @Success 200 {array} map[string]interface{}
+// @Router /assistant/plugins [get]
+func (s *Server) listPlugins(c *gin.Context) {
+	if s.aiAssistant == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "AI assistant not available"})
+		return
+	}
+
+	plugins := s.aiAssistant.Plugins.ListPlugins()
+	c.JSON(http.StatusOK, gin.H{
+		"plugins": plugins,
+		"count":   len(plugins),
+	})
+}
+
+// executePlugin executes a specific plugin
+// @Summary Execute a plugin
+// @Description Execute a plugin with provided input
+// @Tags plugins
+// @Accept json
+// @Produce json
+// @Param name path string true "Plugin name"
+// @Param input body map[string]interface{} true "Plugin input"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /assistant/plugins/{name}/execute [post]
+func (s *Server) executePlugin(c *gin.Context) {
+	pluginName := c.Param("name")
+	if pluginName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Plugin name is required"})
+		return
+	}
+
+	var input map[string]interface{}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input format"})
+		return
+	}
+
+	if s.aiAssistant == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "AI assistant not available"})
+		return
+	}
+
+	result, err := s.aiAssistant.Plugins.ExecutePlugin(c.Request.Context(), pluginName, input)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"plugin": pluginName,
+		"result": result,
+	})
+}
+
+// enablePlugin enables a specific plugin
+// @Summary Enable a plugin
+// @Description Enable a specific plugin by name
+// @Tags plugins
+// @Accept json
+// @Produce json
+// @Param name path string true "Plugin name"
+// @Success 200 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /assistant/plugins/{name}/enable [put]
+func (s *Server) enablePlugin(c *gin.Context) {
+	pluginName := c.Param("name")
+	if pluginName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Plugin name is required"})
+		return
+	}
+
+	if s.aiAssistant == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "AI assistant not available"})
+		return
+	}
+
+	err := s.aiAssistant.GetPlugins().EnablePlugin(pluginName)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": fmt.Sprintf("Plugin %s enabled successfully", pluginName),
+	})
+}
+
+// disablePlugin disables a specific plugin
+// @Summary Disable a plugin
+// @Description Disable a specific plugin by name
+// @Tags plugins
+// @Accept json
+// @Produce json
+// @Param name path string true "Plugin name"
+// @Success 200 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /assistant/plugins/{name}/disable [put]
+func (s *Server) disablePlugin(c *gin.Context) {
+	pluginName := c.Param("name")
+	if pluginName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Plugin name is required"})
+		return
+	}
+
+	if s.aiAssistant == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "AI assistant not available"})
+		return
+	}
+
+	err := s.aiAssistant.GetPlugins().DisablePlugin(pluginName)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": fmt.Sprintf("Plugin %s disabled successfully", pluginName),
+	})
+}
+
 // getUserByID retrieves a specific user by ID
 func (s *Server) getUserByID(c *gin.Context) {
 	idStr := c.Param("id")

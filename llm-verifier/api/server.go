@@ -298,6 +298,10 @@ func (s *Server) setupRoutes() {
 		assistant := v1.Group("/assistant")
 		{
 			assistant.POST("/chat", s.chatWithAssistant)
+			assistant.GET("/plugins", s.listPlugins)
+			assistant.POST("/plugins/:name/execute", s.executePlugin)
+			assistant.PUT("/plugins/:name/enable", s.enablePlugin)
+			assistant.PUT("/plugins/:name/disable", s.disablePlugin)
 		}
 
 		// Failover

@@ -1,8 +1,11 @@
 package supervisor
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"llm-verifier/database"
@@ -42,22 +45,168 @@ func (c SupervisorConfig) Validate() error {
 	return nil
 }
 
+// PluginSystem provides extensible plugin architecture
+type PluginSystem struct {
+	plugins map[string]Plugin
+	enabled map[string]bool
+	mu      sync.RWMutex
+}
+
+// Plugin interface for system extensions
+type Plugin interface {
+	Name() string
+	Version() string
+	Description() string
+	Initialize(config map[string]interface{}) error
+	Execute(ctx context.Context, input interface{}) (interface{}, error)
+	Shutdown() error
+	GetCapabilities() []string
+}
+
+// PluginManager manages plugin lifecycle
+type PluginManager struct {
+	system *PluginSystem
+	logger *log.Logger
+}
+
+// NewPluginManager creates a new plugin manager
+func NewPluginManager(logger *log.Logger) *PluginManager {
+	return &PluginManager{
+		system: &PluginSystem{
+			plugins: make(map[string]Plugin),
+			enabled: make(map[string]bool),
+		},
+		logger: logger,
+	}
+}
+
+// RegisterPlugin registers a new plugin
+func (pm *PluginManager) RegisterPlugin(plugin Plugin) error {
+	pm.system.mu.Lock()
+	defer pm.system.mu.Unlock()
+
+	name := plugin.Name()
+	if _, exists := pm.system.plugins[name]; exists {
+		return fmt.Errorf("plugin %s already registered", name)
+	}
+
+	pm.system.plugins[name] = plugin
+	pm.system.enabled[name] = true
+
+	pm.logger.Printf("Plugin %s v%s registered: %s", name, plugin.Version(), plugin.Description())
+	return nil
+}
+
+// ExecutePlugin executes a plugin with given input
+func (pm *PluginManager) ExecutePlugin(ctx context.Context, pluginName string, input interface{}) (interface{}, error) {
+	pm.system.mu.RLock()
+	plugin, exists := pm.system.plugins[pluginName]
+	enabled := pm.system.enabled[pluginName]
+	pm.system.mu.RUnlock()
+
+	if !exists {
+		return nil, fmt.Errorf("plugin %s not found", pluginName)
+	}
+
+	if !enabled {
+		return nil, fmt.Errorf("plugin %s is disabled", pluginName)
+	}
+
+	result, err := plugin.Execute(ctx, input)
+	if err != nil {
+		pm.logger.Printf("Plugin %s execution failed: %v", pluginName, err)
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// EnablePlugin enables a plugin
+func (pm *PluginManager) EnablePlugin(name string) error {
+	pm.system.mu.Lock()
+	defer pm.system.mu.Unlock()
+
+	if _, exists := pm.system.plugins[name]; !exists {
+		return fmt.Errorf("plugin %s not found", name)
+	}
+
+	pm.system.enabled[name] = true
+	pm.logger.Printf("Plugin %s enabled", name)
+	return nil
+}
+
+// DisablePlugin disables a plugin
+func (pm *PluginManager) DisablePlugin(name string) error {
+	pm.system.mu.Lock()
+	defer pm.system.mu.Unlock()
+
+	if _, exists := pm.system.plugins[name]; !exists {
+		return fmt.Errorf("plugin %s not found", name)
+	}
+
+	pm.system.enabled[name] = false
+	pm.logger.Printf("Plugin %s disabled", name)
+	return nil
+}
+
+// ListPlugins returns list of registered plugins
+func (pm *PluginManager) ListPlugins() []map[string]interface{} {
+	pm.system.mu.RLock()
+	defer pm.system.mu.RUnlock()
+
+	var plugins []map[string]interface{}
+	for name, plugin := range pm.system.plugins {
+		pluginInfo := map[string]interface{}{
+			"name":         name,
+			"version":      plugin.Version(),
+			"description":  plugin.Description(),
+			"enabled":      pm.system.enabled[name],
+			"capabilities": plugin.GetCapabilities(),
+		}
+		plugins = append(plugins, pluginInfo)
+	}
+
+	return plugins
+}
+
 // AIAssistant represents an intelligent conversational assistant
 type AIAssistant struct {
 	db       *database.Database
 	config   *SupervisorConfig
 	verifier *llmverifier.Verifier
 	context  map[string][]string // userID -> conversation history
+	Plugins  *PluginManager
 }
 
 // NewAIAssistant creates a new AI assistant
 func NewAIAssistant(db *database.Database, config *SupervisorConfig, verifier *llmverifier.Verifier) *AIAssistant {
-	return &AIAssistant{
+	assistant := &AIAssistant{
 		db:       db,
 		config:   config,
 		verifier: verifier,
 		context:  make(map[string][]string),
+		Plugins:  NewPluginManager(log.Default()),
 	}
+
+	// Register built-in plugins
+	assistant.registerBuiltInPlugins()
+
+	return assistant
+}
+
+// registerBuiltInPlugins registers the default plugins
+func (ai *AIAssistant) registerBuiltInPlugins() {
+	// Sentiment Analysis Plugin
+	sentimentPlugin := &SentimentAnalysisPlugin{}
+	ai.Plugins.RegisterPlugin(sentimentPlugin)
+
+	// Code Review Plugin
+	codeReviewPlugin := &CodeReviewPlugin{}
+	ai.Plugins.RegisterPlugin(codeReviewPlugin)
+
+	// Performance Analysis Plugin
+	perfPlugin := &PerformanceAnalysisPlugin{}
+	ai.Plugins.RegisterPlugin(perfPlugin)
 }
 
 // ProcessMessage processes a user message and returns an intelligent response
@@ -362,4 +511,385 @@ func (ai *AIAssistant) getRecommendations(score float64, failures int) string {
 	recs = append(recs, "• Consider enabling advanced analytics for deeper insights")
 
 	return strings.Join(recs, "\n")
+}
+
+// GetPlugins returns the plugin manager
+func (ai *AIAssistant) GetPlugins() *PluginManager {
+	return ai.Plugins
+}
+
+// SentimentAnalysisPlugin analyzes sentiment in text
+type SentimentAnalysisPlugin struct{}
+
+// Name returns the plugin name
+func (p *SentimentAnalysisPlugin) Name() string { return "sentiment_analysis" }
+
+// Version returns the plugin version
+func (p *SentimentAnalysisPlugin) Version() string { return "1.0.0" }
+
+// Description returns the plugin description
+func (p *SentimentAnalysisPlugin) Description() string {
+	return "Analyzes sentiment and emotional tone in text"
+}
+
+// Initialize initializes the plugin
+func (p *SentimentAnalysisPlugin) Initialize(config map[string]interface{}) error {
+	return nil
+}
+
+// Execute executes sentiment analysis
+func (p *SentimentAnalysisPlugin) Execute(ctx context.Context, input interface{}) (interface{}, error) {
+	text, ok := input.(string)
+	if !ok {
+		return nil, fmt.Errorf("input must be a string")
+	}
+
+	// Simple sentiment analysis (could be enhanced with ML models)
+	score := analyzeSentiment(text)
+
+	return map[string]interface{}{
+		"text":       text,
+		"sentiment":  getSentimentLabel(score),
+		"score":      score,
+		"confidence": 0.85,
+	}, nil
+}
+
+// Shutdown shuts down the plugin
+func (p *SentimentAnalysisPlugin) Shutdown() error { return nil }
+
+// GetCapabilities returns plugin capabilities
+func (p *SentimentAnalysisPlugin) GetCapabilities() []string {
+	return []string{"sentiment_analysis", "text_processing"}
+}
+
+// CodeReviewPlugin provides automated code review
+type CodeReviewPlugin struct{}
+
+// Name returns the plugin name
+func (p *CodeReviewPlugin) Name() string { return "code_review" }
+
+// Version returns the plugin version
+func (p *CodeReviewPlugin) Version() string { return "1.0.0" }
+
+// Description returns the plugin description
+func (p *CodeReviewPlugin) Description() string {
+	return "Automated code review and quality analysis"
+}
+
+// Initialize initializes the plugin
+func (p *CodeReviewPlugin) Initialize(config map[string]interface{}) error {
+	return nil
+}
+
+// Execute executes code review
+func (p *CodeReviewPlugin) Execute(ctx context.Context, input interface{}) (interface{}, error) {
+	code, ok := input.(string)
+	if !ok {
+		return nil, fmt.Errorf("input must be a string")
+	}
+
+	issues := analyzeCode(code)
+
+	return map[string]interface{}{
+		"code":          code,
+		"issues":        issues,
+		"quality_score": calculateCodeQuality(issues),
+		"language":      detectLanguage(code),
+	}, nil
+}
+
+// Shutdown shuts down the plugin
+func (p *CodeReviewPlugin) Shutdown() error { return nil }
+
+// GetCapabilities returns plugin capabilities
+func (p *CodeReviewPlugin) GetCapabilities() []string {
+	return []string{"code_review", "quality_analysis", "language_detection"}
+}
+
+// PerformanceAnalysisPlugin analyzes system performance
+type PerformanceAnalysisPlugin struct{}
+
+// Name returns the plugin name
+func (p *PerformanceAnalysisPlugin) Name() string { return "performance_analysis" }
+
+// Version returns the plugin version
+func (p *PerformanceAnalysisPlugin) Version() string { return "1.0.0" }
+
+// Description returns the plugin description
+func (p *PerformanceAnalysisPlugin) Description() string {
+	return "Analyzes system performance metrics and provides optimization recommendations"
+}
+
+// Initialize initializes the plugin
+func (p *PerformanceAnalysisPlugin) Initialize(config map[string]interface{}) error {
+	return nil
+}
+
+// Execute executes performance analysis
+func (p *PerformanceAnalysisPlugin) Execute(ctx context.Context, input interface{}) (interface{}, error) {
+	metrics, ok := input.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("input must be a metrics map")
+	}
+
+	analysis := analyzePerformance(metrics)
+
+	return map[string]interface{}{
+		"metrics":         metrics,
+		"analysis":        analysis,
+		"recommendations": generatePerformanceRecommendations(analysis),
+		"bottlenecks":     identifyBottlenecks(metrics),
+	}, nil
+}
+
+// Shutdown shuts down the plugin
+func (p *PerformanceAnalysisPlugin) Shutdown() error { return nil }
+
+// GetCapabilities returns plugin capabilities
+func (p *PerformanceAnalysisPlugin) GetCapabilities() []string {
+	return []string{"performance_analysis", "bottleneck_detection", "optimization"}
+}
+
+// Helper functions for plugins
+
+func analyzeSentiment(text string) float64 {
+	// Simple sentiment analysis based on keyword matching
+	positiveWords := []string{"good", "great", "excellent", "amazing", "awesome", "fantastic", "perfect"}
+	negativeWords := []string{"bad", "terrible", "awful", "horrible", "worst", "hate", "disappointing"}
+
+	textLower := strings.ToLower(text)
+	positiveCount := 0
+	negativeCount := 0
+
+	for _, word := range positiveWords {
+		if strings.Contains(textLower, word) {
+			positiveCount++
+		}
+	}
+
+	for _, word := range negativeWords {
+		if strings.Contains(textLower, word) {
+			negativeCount++
+		}
+	}
+
+	total := positiveCount + negativeCount
+	if total == 0 {
+		return 0.5 // Neutral
+	}
+
+	score := float64(positiveCount) / float64(total)
+	return score
+}
+
+func getSentimentLabel(score float64) string {
+	switch {
+	case score >= 0.7:
+		return "positive"
+	case score <= 0.3:
+		return "negative"
+	default:
+		return "neutral"
+	}
+}
+
+func analyzeCode(code string) []map[string]interface{} {
+	var issues []map[string]interface{}
+
+	// Check for common code issues
+	lines := strings.Split(code, "\n")
+	for i, line := range lines {
+		lineNum := i + 1
+
+		// Check for TODO comments
+		if strings.Contains(strings.ToLower(line), "todo") {
+			issues = append(issues, map[string]interface{}{
+				"type":     "info",
+				"message":  "TODO comment found",
+				"line":     lineNum,
+				"severity": "low",
+			})
+		}
+
+		// Check for long lines
+		if len(line) > 120 {
+			issues = append(issues, map[string]interface{}{
+				"type":     "style",
+				"message":  "Line too long (>120 characters)",
+				"line":     lineNum,
+				"severity": "low",
+			})
+		}
+
+		// Check for potential security issues
+		if strings.Contains(strings.ToLower(line), "password") &&
+			strings.Contains(line, "=") &&
+			!strings.Contains(line, "os.getenv") &&
+			!strings.Contains(line, "config.get") {
+			issues = append(issues, map[string]interface{}{
+				"type":     "security",
+				"message":  "Potential hardcoded password",
+				"line":     lineNum,
+				"severity": "high",
+			})
+		}
+	}
+
+	return issues
+}
+
+func calculateCodeQuality(issues []map[string]interface{}) float64 {
+	if len(issues) == 0 {
+		return 100.0
+	}
+
+	severityWeights := map[string]float64{
+		"low":    1.0,
+		"medium": 2.0,
+		"high":   3.0,
+	}
+
+	totalPenalty := 0.0
+	for _, issue := range issues {
+		severity := issue["severity"].(string)
+		totalPenalty += severityWeights[severity]
+	}
+
+	// Quality score decreases with issues
+	quality := 100.0 - (totalPenalty * 5.0)
+	if quality < 0 {
+		quality = 0
+	}
+
+	return quality
+}
+
+func detectLanguage(code string) string {
+	codeLower := strings.ToLower(code)
+
+	if strings.Contains(codeLower, "func ") || strings.Contains(codeLower, "package ") {
+		return "go"
+	}
+	if strings.Contains(codeLower, "def ") || strings.Contains(codeLower, "import ") {
+		return "python"
+	}
+	if strings.Contains(codeLower, "function") || strings.Contains(codeLower, "const ") {
+		return "javascript"
+	}
+	if strings.Contains(codeLower, "class ") || strings.Contains(codeLower, "public ") {
+		return "java"
+	}
+
+	return "unknown"
+}
+
+func analyzePerformance(metrics map[string]interface{}) map[string]interface{} {
+	analysis := map[string]interface{}{
+		"overall_health":    "good",
+		"performance_score": 85.0,
+		"issues":            []string{},
+	}
+
+	// Analyze response time
+	if responseTime, ok := metrics["response_time_avg"].(float64); ok {
+		if responseTime > 2000 {
+			analysis["overall_health"] = "poor"
+			analysis["issues"] = []string{"High average response time"}
+		} else if responseTime > 1000 {
+			analysis["overall_health"] = "fair"
+			analysis["issues"] = []string{"Elevated response time"}
+		}
+	}
+
+	// Analyze error rate
+	if errorRate, ok := metrics["error_rate"].(float64); ok {
+		if errorRate > 0.05 {
+			analysis["overall_health"] = "poor"
+			analysis["issues"] = []string{"High error rate"}
+		} else if errorRate > 0.01 {
+			analysis["overall_health"] = "fair"
+			analysis["issues"] = []string{"Elevated error rate"}
+		}
+	}
+
+	// Calculate performance score
+	healthScore := map[string]float64{
+		"good": 100.0,
+		"fair": 70.0,
+		"poor": 40.0,
+	}[analysis["overall_health"].(string)]
+
+	analysis["performance_score"] = healthScore
+
+	return analysis
+}
+
+func generatePerformanceRecommendations(analysis map[string]interface{}) []string {
+	var recommendations []string
+
+	health := analysis["overall_health"].(string)
+	issues := analysis["issues"].([]string)
+
+	for _, issue := range issues {
+		switch {
+		case strings.Contains(issue, "response time"):
+			recommendations = append(recommendations,
+				"Implement response caching to reduce latency",
+				"Optimize database queries and add indexing",
+				"Consider implementing request batching")
+		case strings.Contains(issue, "error rate"):
+			recommendations = append(recommendations,
+				"Add comprehensive error handling and retry logic",
+				"Implement circuit breaker pattern",
+				"Enhance input validation and sanitization")
+		}
+	}
+
+	if health == "good" {
+		recommendations = append(recommendations, "System performance is optimal")
+	}
+
+	return recommendations
+}
+
+func identifyBottlenecks(metrics map[string]interface{}) []map[string]interface{} {
+	var bottlenecks []map[string]interface{}
+
+	// Check CPU usage
+	if cpu, ok := metrics["cpu_usage"].(float64); ok && cpu > 80 {
+		bottlenecks = append(bottlenecks, map[string]interface{}{
+			"component": "cpu",
+			"usage":     cpu,
+			"threshold": 80.0,
+			"impact":    "high",
+		})
+	}
+
+	// Check memory usage
+	if mem, ok := metrics["memory_usage"].(float64); ok && mem > 85 {
+		bottlenecks = append(bottlenecks, map[string]interface{}{
+			"component": "memory",
+			"usage":     mem,
+			"threshold": 85.0,
+			"impact":    "high",
+		})
+	}
+
+	// Check database connections
+	if dbConn, ok := metrics["db_connections_used"].(float64); ok {
+		if dbMax, ok2 := metrics["db_connections_max"].(float64); ok2 {
+			usage := (dbConn / dbMax) * 100
+			if usage > 90 {
+				bottlenecks = append(bottlenecks, map[string]interface{}{
+					"component": "database",
+					"usage":     usage,
+					"threshold": 90.0,
+					"impact":    "critical",
+				})
+			}
+		}
+	}
+
+	return bottlenecks
 }
