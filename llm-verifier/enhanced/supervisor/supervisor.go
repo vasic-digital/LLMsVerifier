@@ -2,6 +2,8 @@ package supervisor
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -169,6 +171,202 @@ func (pm *PluginManager) ListPlugins() []map[string]interface{} {
 	return plugins
 }
 
+// CacheBackend interface for different cache implementations
+type CacheBackend interface {
+	Get(key string) (interface{}, bool)
+	Set(key string, value interface{}, ttl time.Duration) error
+	Delete(key string) error
+	Clear() error
+	Close() error
+}
+
+// InMemoryCache provides in-memory caching
+type InMemoryCache struct {
+	data    map[string]cacheItem
+	mu      sync.RWMutex
+	maxSize int
+}
+
+type cacheItem struct {
+	value      interface{}
+	expiration time.Time
+}
+
+// NewInMemoryCache creates a new in-memory cache
+func NewInMemoryCache(maxSize int) *InMemoryCache {
+	return &InMemoryCache{
+		data:    make(map[string]cacheItem),
+		maxSize: maxSize,
+	}
+}
+
+// cleanup removes expired items
+func (imc *InMemoryCache) cleanup() {
+	now := time.Now()
+	for key, item := range imc.data {
+		if now.After(item.expiration) {
+			delete(imc.data, key)
+		}
+	}
+}
+
+// Get retrieves a value from cache
+func (imc *InMemoryCache) Get(key string) (interface{}, bool) {
+	imc.mu.RLock()
+	defer imc.mu.RUnlock()
+
+	item, exists := imc.data[key]
+	if !exists {
+		return nil, false
+	}
+
+	if time.Now().After(item.expiration) {
+		// Clean up expired item
+		go func() {
+			imc.mu.Lock()
+			delete(imc.data, key)
+			imc.mu.Unlock()
+		}()
+		return nil, false
+	}
+
+	return item.value, true
+}
+
+// Set stores a value in cache
+func (imc *InMemoryCache) Set(key string, value interface{}, ttl time.Duration) error {
+	imc.mu.Lock()
+	defer imc.mu.Unlock()
+
+	// Check size limit
+	if len(imc.data) >= imc.maxSize {
+		// Remove oldest item (simple LRU approximation)
+		for k := range imc.data {
+			delete(imc.data, k)
+			break
+		}
+	}
+
+	imc.data[key] = cacheItem{
+		value:      value,
+		expiration: time.Now().Add(ttl),
+	}
+
+	return nil
+}
+
+// Delete removes a key from cache
+func (imc *InMemoryCache) Delete(key string) error {
+	imc.mu.Lock()
+	defer imc.mu.Unlock()
+	delete(imc.data, key)
+	return nil
+}
+
+// Clear clears all cache entries
+func (imc *InMemoryCache) Clear() error {
+	imc.mu.Lock()
+	defer imc.mu.Unlock()
+	imc.data = make(map[string]cacheItem)
+	return nil
+}
+
+// Close closes the cache (no-op for in-memory)
+func (imc *InMemoryCache) Close() error {
+	return nil
+}
+
+// CacheManager provides unified caching interface
+type CacheManager struct {
+	backend CacheBackend
+	enabled bool
+	mu      sync.RWMutex
+}
+
+// NewCacheManager creates a new cache manager
+func NewCacheManager(backend CacheBackend, enabled bool) *CacheManager {
+	return &CacheManager{
+		backend: backend,
+		enabled: enabled,
+	}
+}
+
+// IsEnabled returns whether caching is enabled
+func (cm *CacheManager) IsEnabled() bool {
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
+	return cm.enabled
+}
+
+// Enable enables caching
+func (cm *CacheManager) Enable() {
+	cm.mu.Lock()
+	cm.enabled = true
+	cm.mu.Unlock()
+}
+
+// Disable disables caching
+func (cm *CacheManager) Disable() {
+	cm.mu.Lock()
+	cm.enabled = false
+	cm.mu.Unlock()
+}
+
+// Get retrieves a cached value
+func (cm *CacheManager) Get(key string) (interface{}, bool) {
+	if !cm.IsEnabled() {
+		return nil, false
+	}
+	return cm.backend.Get(key)
+}
+
+// Set stores a value in cache
+func (cm *CacheManager) Set(key string, value interface{}, ttl time.Duration) error {
+	if !cm.IsEnabled() {
+		return nil
+	}
+	return cm.backend.Set(key, value, ttl)
+}
+
+// Delete removes a cached value
+func (cm *CacheManager) Delete(key string) error {
+	if !cm.IsEnabled() {
+		return nil
+	}
+	return cm.backend.Delete(key)
+}
+
+// Clear clears all cached values
+func (cm *CacheManager) Clear() error {
+	if !cm.IsEnabled() {
+		return nil
+	}
+	return cm.backend.Clear()
+}
+
+// generateCacheKey generates a cache key from input parameters
+func generateCacheKey(prefix string, params ...interface{}) string {
+	// Create a hash of the parameters
+	hasher := md5.New()
+	hasher.Write([]byte(prefix))
+
+	for _, param := range params {
+		if param != nil {
+			data, _ := json.Marshal(param)
+			hasher.Write(data)
+		}
+	}
+
+	return fmt.Sprintf("%s_%x", prefix, hasher.Sum(nil))
+}
+
+// CachedResponse represents a cached API response
+type CachedResponse struct {
+	Data      interface{}   `json:"data"`
+	Timestamp time.Time     `json:"timestamp"`
+	TTL       time.Duration `json:"ttl"`
+}
+
 // AIAssistant represents an intelligent conversational assistant
 type AIAssistant struct {
 	db       *database.Database
@@ -176,16 +374,22 @@ type AIAssistant struct {
 	verifier *llmverifier.Verifier
 	context  map[string][]string // userID -> conversation history
 	Plugins  *PluginManager
+	cache    *CacheManager
 }
 
 // NewAIAssistant creates a new AI assistant
 func NewAIAssistant(db *database.Database, config *SupervisorConfig, verifier *llmverifier.Verifier) *AIAssistant {
+	// Create cache backend (in-memory for now, can be extended to Redis)
+	cacheBackend := NewInMemoryCache(1000) // Max 1000 items
+	cacheManager := NewCacheManager(cacheBackend, true)
+
 	assistant := &AIAssistant{
 		db:       db,
 		config:   config,
 		verifier: verifier,
 		context:  make(map[string][]string),
 		Plugins:  NewPluginManager(log.Default()),
+		cache:    cacheManager,
 	}
 
 	// Register built-in plugins
@@ -211,6 +415,14 @@ func (ai *AIAssistant) registerBuiltInPlugins() {
 
 // ProcessMessage processes a user message and returns an intelligent response
 func (ai *AIAssistant) ProcessMessage(userID, message string) (string, error) {
+	// Check cache first for similar messages
+	cacheKey := generateCacheKey("assistant_response", userID, message)
+	if cachedResponse, found := ai.cache.Get(cacheKey); found {
+		if cachedResp, ok := cachedResponse.(string); ok {
+			return cachedResp, nil
+		}
+	}
+
 	// Add message to context
 	ai.addToContext(userID, "user: "+message)
 
@@ -241,6 +453,9 @@ func (ai *AIAssistant) ProcessMessage(userID, message string) (string, error) {
 
 	// Add response to context
 	ai.addToContext(userID, "assistant: "+response)
+
+	// Cache the response for 5 minutes
+	ai.cache.Set(cacheKey, response, 5*time.Minute)
 
 	return response, nil
 }
@@ -516,6 +731,37 @@ func (ai *AIAssistant) getRecommendations(score float64, failures int) string {
 // GetPlugins returns the plugin manager
 func (ai *AIAssistant) GetPlugins() *PluginManager {
 	return ai.Plugins
+}
+
+// GetCache returns the cache manager
+func (ai *AIAssistant) GetCache() *CacheManager {
+	return ai.cache
+}
+
+// EnableCache enables caching
+func (ai *AIAssistant) EnableCache() {
+	ai.cache.Enable()
+}
+
+// DisableCache disables caching
+func (ai *AIAssistant) DisableCache() {
+	ai.cache.Disable()
+}
+
+// ClearCache clears all cached responses
+func (ai *AIAssistant) ClearCache() error {
+	return ai.cache.Clear()
+}
+
+// GetCacheStats returns cache statistics
+func (ai *AIAssistant) GetCacheStats() map[string]interface{} {
+	// Since we don't have direct access to internal stats,
+	// return basic information
+	return map[string]interface{}{
+		"enabled": ai.cache.IsEnabled(),
+		"type":    "in_memory",
+		"note":    "Detailed statistics not available for in-memory cache",
+	}
 }
 
 // SentimentAnalysisPlugin analyzes sentiment in text

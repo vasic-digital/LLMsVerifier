@@ -302,6 +302,10 @@ func (s *Server) setupRoutes() {
 			assistant.POST("/plugins/:name/execute", s.executePlugin)
 			assistant.PUT("/plugins/:name/enable", s.enablePlugin)
 			assistant.PUT("/plugins/:name/disable", s.disablePlugin)
+			assistant.GET("/cache/stats", s.getCacheStats)
+			assistant.POST("/cache/enable", s.enableCache)
+			assistant.POST("/cache/disable", s.disableCache)
+			assistant.POST("/cache/clear", s.clearCache)
 		}
 
 		// Failover
