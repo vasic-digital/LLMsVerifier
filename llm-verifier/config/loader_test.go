@@ -36,7 +36,7 @@ database:
 
 api:
   port: "9090"
-  jwt_secret: "test-jwt-secret"
+  jwt_secret: "test-jwt-secret-32-chars-long-enough"
   rate_limit: 200
   burst_limit: 50
   rate_limit_window: 60
@@ -137,6 +137,10 @@ llms:
 	err = viper.Unmarshal(&cfg)
 	require.NoError(t, err)
 
+	// Apply defaults and validation
+	err = ValidateCompleteConfig(&cfg)
+	require.NoError(t, err)
+
 	// Verify basic config
 	assert.Equal(t, "test", cfg.Profile)
 	assert.Equal(t, 10, cfg.Concurrency)
@@ -156,7 +160,7 @@ llms:
 
 	// Verify API config
 	assert.Equal(t, "9090", cfg.API.Port)
-	assert.Equal(t, "test-jwt-secret", cfg.API.JWTSecret)
+	assert.Equal(t, "test-jwt-secret-32-chars-long-enough", cfg.API.JWTSecret)
 	assert.Equal(t, 200, cfg.API.RateLimit)
 	assert.Equal(t, 50, cfg.API.BurstLimit)
 	assert.Equal(t, 60, cfg.API.RateLimitWindow)
@@ -215,13 +219,13 @@ llms:
 
 	// Verify LLM configs
 	assert.Len(t, cfg.LLMs, 2)
-	
+
 	llm1 := cfg.LLMs[0]
 	assert.Equal(t, "Test LLM 1", llm1.Name)
 	assert.Equal(t, "https://api.test1.com", llm1.Endpoint)
 	assert.Equal(t, "test-key-1", llm1.APIKey)
 	assert.Equal(t, "gpt-3.5-turbo", llm1.Model)
-	assert.Equal(t, map[string]string{"X-Custom-Header": "test-value", "User-Agent": "LLM-Verifier/1.0"}, llm1.Headers)
+	assert.Equal(t, map[string]string{"x-custom-header": "test-value", "User-Agent": "LLM-Verifier/1.0"}, llm1.Headers)
 	assert.True(t, llm1.Features["code_generation"])
 	assert.False(t, llm1.Features["multimodal"])
 
@@ -279,7 +283,7 @@ func TestLoadConfig_DefaultValues(t *testing.T) {
 
 	// Verify default values are set
 	assert.Equal(t, "", cfg.Profile)
-	assert.Equal(t, 0, cfg.Concurrency) // Default 0
+	assert.Equal(t, 0, cfg.Concurrency)            // Default 0
 	assert.Equal(t, time.Duration(0), cfg.Timeout) // Default 0
 
 	// Global defaults
@@ -491,7 +495,7 @@ func TestConfigValidation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := ValidateCompleteConfig(&tt.cfg)
-			
+
 			if tt.valid {
 				assert.NoError(t, err)
 			} else {

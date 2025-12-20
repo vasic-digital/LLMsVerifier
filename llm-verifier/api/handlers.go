@@ -4275,7 +4275,7 @@ func (s *Server) listPlugins(c *gin.Context) {
 		return
 	}
 
-	plugins := s.aiAssistant.Plugins.ListPlugins()
+	plugins := s.aiAssistant.GetPlugins().ListPlugins()
 	c.JSON(http.StatusOK, gin.H{
 		"plugins": plugins,
 		"count":   len(plugins),

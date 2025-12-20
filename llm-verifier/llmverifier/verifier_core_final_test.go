@@ -45,13 +45,13 @@ func TestVerifier_CalculateFeatureRichnessScore_Comprehensive(t *testing.T) {
 	resultFull := VerificationResult{
 		FeatureDetection: featuresFull,
 		GenerativeCapabilities: GenerativeCapabilityResult{
-			CreativeWriting:        true,
-			Storytelling:          true,
-			ContentGeneration:     true,
-			ArtisticCreativity:    true,
+			CreativeWriting:      true,
+			Storytelling:         true,
+			ContentGeneration:    true,
+			ArtisticCreativity:   true,
 			ProblemSolving:       true,
 			MultimodalGenerative: true,
-			OriginalityScore:      95.0,
+			OriginalityScore:     95.0,
 			CreativityScore:      90.0,
 		},
 	}
@@ -85,9 +85,9 @@ func TestVerifier_CalculateFeatureRichnessScore_Comprehensive(t *testing.T) {
 	resultMinimal := VerificationResult{
 		FeatureDetection: featuresMinimal,
 		GenerativeCapabilities: GenerativeCapabilityResult{
-			CreativeWriting: false,
+			CreativeWriting:  false,
 			OriginalityScore: 10.0,
-			CreativityScore:   5.0,
+			CreativityScore:  5.0,
 		},
 	}
 
@@ -113,7 +113,7 @@ func TestVerifier_assessComplexityHandling_Advanced(t *testing.T) {
 		if len(content) > 0 {
 			msg := content[0].(map[string]interface{})
 			prompt := msg["content"].(string)
-			
+
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 
@@ -144,8 +144,8 @@ func TestVerifier_assessComplexityHandling_Advanced(t *testing.T) {
 
 	cfg := &config.Config{
 		Global: config.GlobalConfig{
-			BaseURL:     mockServer.URL,
-			APIKey:      "test-key",
+			BaseURL:      mockServer.URL,
+			APIKey:       "test-key",
 			DefaultModel: "gpt-4",
 		},
 	}
@@ -225,8 +225,8 @@ func TestVerifier_runLanguageSpecificTests_Comprehensive(t *testing.T) {
 
 	cfg := &config.Config{
 		Global: config.GlobalConfig{
-			BaseURL:     mockServer.URL,
-			APIKey:      "test-key",
+			BaseURL:      mockServer.URL,
+			APIKey:       "test-key",
 			DefaultModel: "gpt-4",
 		},
 	}
@@ -264,8 +264,8 @@ func TestVerifier_EdgeCases(t *testing.T) {
 	// Test with minimal valid configuration
 	cfgMinimal := &config.Config{
 		Global: config.GlobalConfig{
-			BaseURL:     "https://api.minimal.com",
-			APIKey:      "minimal-key",
+			BaseURL:      "https://api.minimal.com",
+			APIKey:       "minimal-key",
 			DefaultModel: "minimal-model",
 		},
 	}
@@ -274,9 +274,11 @@ func TestVerifier_EdgeCases(t *testing.T) {
 
 	// Test with server that returns minimal responses
 	mockMinimalServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"choices": [{"message": {"content": "minimal"}}]}`))
+		if r.URL.Path == "/chat/completions" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"choices": [{"message": {"content": "minimal"}}]}`))
+		}
 	}))
 	defer mockMinimalServer.Close()
 
@@ -296,22 +298,31 @@ func TestVerifier_EdgeCases(t *testing.T) {
 
 	// Test with very rapid responses (fast model)
 	mockFastServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"choices": [{"message": {"content": "fast response"}}]}`))
+		t.Logf("Mock server received request: %s %s", r.Method, r.URL.Path)
+		if r.URL.Path == "/chat/completions" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"choices": [{"message": {"content": "fast response"}}]}`))
+		} else {
+			t.Logf("Mock server: Unexpected path: %s", r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
 	}))
 	defer mockFastServer.Close()
 
+	t.Logf("Mock server URL: %s", mockFastServer.URL)
 	cfgFast := &config.Config{
 		Global: config.GlobalConfig{
-			BaseURL:     mockFastServer.URL,
-			APIKey:      "fast-key",
+			BaseURL:      mockFastServer.URL,
+			APIKey:       "fast-key",
 			DefaultModel: "fast-model",
+			Timeout:      30 * time.Second,
 		},
 	}
 
 	verifierFast := New(cfgFast)
 	clientFast := verifierFast.GetGlobalClient()
+	t.Logf("Client endpoint: %s, Config timeout: %v", clientFast.endpoint, cfgFast.Global.Timeout)
 
 	// Test responsiveness with fast model
 	latency, responsive, status := verifierFast.checkResponsiveness(clientFast, "fast-model")
@@ -365,21 +376,21 @@ func TestVerifier_Verify_LargeNumberOfModels(t *testing.T) {
 	// Create config with multiple LLM entries
 	cfg := &config.Config{
 		Global: config.GlobalConfig{
-			BaseURL:     mockMultiServer.URL,
-			APIKey:      "multi-key",
+			BaseURL:      mockMultiServer.URL,
+			APIKey:       "multi-key",
 			DefaultModel: "model-1",
 		},
 		LLMs: []config.LLMConfig{
 			{
 				Name:     "MultiLLM-1",
 				Endpoint: mockMultiServer.URL,
-				APIKey:  "multi-key",
+				APIKey:   "multi-key",
 				Model:    "model-1",
 			},
 			{
 				Name:     "MultiLLM-2",
 				Endpoint: mockMultiServer.URL,
-				APIKey:  "multi-key",
+				APIKey:   "multi-key",
 				Model:    "model-2",
 			},
 		},
@@ -454,8 +465,8 @@ func TestVerifier_Verify_NoModels(t *testing.T) {
 	// Config with no LLMs specified (should discover models)
 	cfgDiscover := &config.Config{
 		Global: config.GlobalConfig{
-			BaseURL:     mockDiscoverServer.URL,
-			APIKey:      "discover-key",
+			BaseURL:      mockDiscoverServer.URL,
+			APIKey:       "discover-key",
 			DefaultModel: "discover-model",
 		},
 	}
@@ -514,8 +525,8 @@ func TestVerifier_checkOverload_Advanced(t *testing.T) {
 
 	cfg := &config.Config{
 		Global: config.GlobalConfig{
-			BaseURL:     mockOverloadServer.URL,
-			APIKey:      "overload-key",
+			BaseURL:      mockOverloadServer.URL,
+			APIKey:       "overload-key",
 			DefaultModel: "overload-model",
 		},
 	}
@@ -596,15 +607,15 @@ func TestVerifier_Verify_Integration_FullWorkflow(t *testing.T) {
 
 	cfg := &config.Config{
 		Global: config.GlobalConfig{
-			BaseURL:     mockWorkflowServer.URL,
-			APIKey:      "workflow-key",
+			BaseURL:      mockWorkflowServer.URL,
+			APIKey:       "workflow-key",
 			DefaultModel: "workflow-model",
 		},
 		LLMs: []config.LLMConfig{
 			{
 				Name:     "WorkflowLLM",
 				Endpoint: mockWorkflowServer.URL,
-				APIKey:  "workflow-key",
+				APIKey:   "workflow-key",
 				Model:    "workflow-model",
 			},
 		},
@@ -651,9 +662,15 @@ func TestVerifier_Verify_Integration_FullWorkflow(t *testing.T) {
 	}
 
 	featureCount := 0
-	if result.FeatureDetection.ToolUse { featureCount++ }
-	if result.FeatureDetection.CodeGeneration { featureCount++ }
-	if result.FeatureDetection.Streaming { featureCount++ }
+	if result.FeatureDetection.ToolUse {
+		featureCount++
+	}
+	if result.FeatureDetection.CodeGeneration {
+		featureCount++
+	}
+	if result.FeatureDetection.Streaming {
+		featureCount++
+	}
 
 	t.Logf("Full workflow test: Model=%s, Features detected=%d, Overall score=%.1f",
 		result.ModelInfo.ID, featureCount, result.PerformanceScores.OverallScore)
