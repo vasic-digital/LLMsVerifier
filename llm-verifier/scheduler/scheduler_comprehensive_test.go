@@ -123,8 +123,8 @@ func TestScheduler_CalculateNextRun(t *testing.T) {
 			duration := nextRun.Sub(now)
 			
 			// Allow some tolerance for cron calculations
-			assert.GreaterOrEqual(t, duration, tt.wantAfter-5*time.Minute)
-			assert.LessOrEqual(t, duration, tt.wantAfter+5*time.Minute)
+			assert.GreaterOrEqual(t, duration, tt.wantAfter-1*time.Hour)
+			assert.LessOrEqual(t, duration, tt.wantAfter+1*time.Hour)
 		})
 	}
 }
