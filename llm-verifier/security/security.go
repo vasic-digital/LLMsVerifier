@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -492,4 +493,168 @@ func sanitizeHeaders(headers map[string][]string) map[string][]string {
 		}
 	}
 	return sanitized
+}
+
+// RateLimiter provides API rate limiting functionality
+type RateLimiter struct {
+	requests map[string][]time.Time
+	window   time.Duration
+	limit    int
+	mu       sync.RWMutex
+}
+
+// NewRateLimiter creates a new rate limiter
+func NewRateLimiter(window time.Duration, limit int) *RateLimiter {
+	return &RateLimiter{
+		requests: make(map[string][]time.Time),
+		window:   window,
+		limit:    limit,
+	}
+}
+
+// Allow checks if a request from the given identifier is allowed
+func (rl *RateLimiter) Allow(identifier string) bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	now := time.Now()
+	windowStart := now.Add(-rl.window)
+
+	// Clean old requests
+	if requests, exists := rl.requests[identifier]; exists {
+		validRequests := make([]time.Time, 0)
+		for _, reqTime := range requests {
+			if reqTime.After(windowStart) {
+				validRequests = append(validRequests, reqTime)
+			}
+		}
+		rl.requests[identifier] = validRequests
+	}
+
+	// Check if under limit
+	if len(rl.requests[identifier]) < rl.limit {
+		rl.requests[identifier] = append(rl.requests[identifier], now)
+		return true
+	}
+
+	return false
+}
+
+// GetRemainingRequests returns the number of remaining requests for an identifier
+func (rl *RateLimiter) GetRemainingRequests(identifier string) int {
+	rl.mu.RLock()
+	defer rl.mu.RUnlock()
+
+	if requests, exists := rl.requests[identifier]; exists {
+		return rl.limit - len(requests)
+	}
+	return rl.limit
+}
+
+// GetResetTime returns when the rate limit window resets for an identifier
+func (rl *RateLimiter) GetResetTime(identifier string) time.Time {
+	rl.mu.RLock()
+	defer rl.mu.RUnlock()
+
+	if requests, exists := rl.requests[identifier]; exists && len(requests) > 0 {
+		return requests[0].Add(rl.window)
+	}
+	return time.Now().Add(rl.window)
+}
+
+// IPRateLimiter provides IP-based rate limiting
+type IPRateLimiter struct {
+	*RateLimiter
+}
+
+// NewIPRateLimiter creates a new IP-based rate limiter
+func NewIPRateLimiter(requestsPerMinute int) *IPRateLimiter {
+	return &IPRateLimiter{
+		RateLimiter: NewRateLimiter(time.Minute, requestsPerMinute),
+	}
+}
+
+// AllowIP checks if a request from the given IP is allowed
+func (irl *IPRateLimiter) AllowIP(ip string) bool {
+	return irl.Allow(ip)
+}
+
+// APIKeyRateLimiter provides API key-based rate limiting
+type APIKeyRateLimiter struct {
+	*RateLimiter
+}
+
+// NewAPIKeyRateLimiter creates a new API key-based rate limiter
+func NewAPIKeyRateLimiter(requestsPerMinute int) *APIKeyRateLimiter {
+	return &APIKeyRateLimiter{
+		RateLimiter: NewRateLimiter(time.Minute, requestsPerMinute),
+	}
+}
+
+// AllowAPIKey checks if a request with the given API key is allowed
+func (akrl *APIKeyRateLimiter) AllowAPIKey(apiKey string) bool {
+	// Use a hash of the API key for privacy
+	hashedKey := fmt.Sprintf("%x", sha256.Sum256([]byte(apiKey)))
+	return akrl.Allow(hashedKey)
+}
+
+// RequestThrottler provides advanced request throttling
+type RequestThrottler struct {
+	ipLimiter     *IPRateLimiter
+	apiKeyLimiter *APIKeyRateLimiter
+	globalLimiter *RateLimiter
+}
+
+// NewRequestThrottler creates a new request throttler
+func NewRequestThrottler(ipLimit, apiKeyLimit, globalLimit int) *RequestThrottler {
+	return &RequestThrottler{
+		ipLimiter:     NewIPRateLimiter(ipLimit),
+		apiKeyLimiter: NewAPIKeyRateLimiter(apiKeyLimit),
+		globalLimiter: NewRateLimiter(time.Minute, globalLimit),
+	}
+}
+
+// CheckRequest checks if a request should be allowed
+func (rt *RequestThrottler) CheckRequest(ip, apiKey string) (bool, string) {
+	// Check global limit first
+	if !rt.globalLimiter.Allow("global") {
+		return false, "Global rate limit exceeded"
+	}
+
+	// Check IP limit
+	if !rt.ipLimiter.AllowIP(ip) {
+		return false, "IP rate limit exceeded"
+	}
+
+	// Check API key limit if provided
+	if apiKey != "" && !rt.apiKeyLimiter.AllowAPIKey(apiKey) {
+		return false, "API key rate limit exceeded"
+	}
+
+	return true, ""
+}
+
+// GetRateLimitHeaders returns rate limit headers for the response
+func (rt *RequestThrottler) GetRateLimitHeaders(ip, apiKey string) map[string]string {
+	headers := make(map[string]string)
+
+	// IP-based headers
+	headers["X-RateLimit-IP-Limit"] = fmt.Sprintf("%d", rt.ipLimiter.limit)
+	headers["X-RateLimit-IP-Remaining"] = fmt.Sprintf("%d", rt.ipLimiter.GetRemainingRequests(ip))
+	headers["X-RateLimit-IP-Reset"] = fmt.Sprintf("%d", rt.ipLimiter.GetResetTime(ip).Unix())
+
+	// API key-based headers
+	if apiKey != "" {
+		hashedKey := fmt.Sprintf("%x", sha256.Sum256([]byte(apiKey)))
+		headers["X-RateLimit-APIKey-Limit"] = fmt.Sprintf("%d", rt.apiKeyLimiter.limit)
+		headers["X-RateLimit-APIKey-Remaining"] = fmt.Sprintf("%d", rt.apiKeyLimiter.GetRemainingRequests(hashedKey))
+		headers["X-RateLimit-APIKey-Reset"] = fmt.Sprintf("%d", rt.apiKeyLimiter.GetResetTime(hashedKey).Unix())
+	}
+
+	// Global headers
+	headers["X-RateLimit-Global-Limit"] = fmt.Sprintf("%d", rt.globalLimiter.limit)
+	headers["X-RateLimit-Global-Remaining"] = fmt.Sprintf("%d", rt.globalLimiter.GetRemainingRequests("global"))
+	headers["X-RateLimit-Global-Reset"] = fmt.Sprintf("%d", rt.globalLimiter.GetResetTime("global").Unix())
+
+	return headers
 }
