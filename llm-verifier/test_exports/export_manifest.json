@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "created_at": "2025-12-20T18:54:48.055916771+03:00",
+  "generated_by": "LLM Verifier",
+  "output_path": "test_exports",
+  "options": {
+    "format": "",
+    "top": 10,
+    "min_score": 70,
+    "include_api_key": false
+  },
+  "total_exports": 3,
+  "successful": 3,
+  "failed": 0,
+  "total_duration": 752897,
+  "results": [
+    {
+      "format": "opencode",
+      "filename": "export_opencode.json",
+      "path": "test_exports/export_opencode.json",
+      "success": true,
+      "duration": 321011
+    },
+    {
+      "format": "crush",
+      "filename": "export_crush.json",
+      "path": "test_exports/export_crush.json",
+      "success": true,
+      "duration": 220373
+    },
+    {
+      "format": "claude-code",
+      "filename": "export_claude_code.json",
+      "path": "test_exports/export_claude_code.json",
+      "success": true,
+      "duration": 211513
+    }
+  ]
+}
