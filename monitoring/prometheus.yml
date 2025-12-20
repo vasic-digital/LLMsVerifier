@@ -19,12 +19,16 @@ scrape_configs:
   # LLM Verifier application metrics
   - job_name: 'llm-verifier'
     static_configs:
-      - targets: ['llm-verifier-service:9090']
+      - targets: ['llm-verifier-service:8080']
     metrics_path: /metrics
-    scrape_interval: 15s
-    scrape_timeout: 10s
+    scrape_interval: 10s
+    scrape_timeout: 5s
     scheme: http
     honor_labels: true
+    metric_relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '(.*)'
 
   # Prometheus itself
   - job_name: 'prometheus'
