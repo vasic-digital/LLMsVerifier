@@ -1,9 +1,10 @@
 package failover
 
 import (
+	"crypto/rand"
 	"fmt"
 	"log"
-	"math/rand"
+	"math/big"
 	"sort"
 	"strconv"
 	"sync"
@@ -55,6 +56,41 @@ func (fm *FailoverManager) Stop() {
 		fm.healthChecker.Stop()
 	}
 	log.Println("Failover manager stopped")
+}
+
+// secureRandFloat64 generates a cryptographically secure random float64 in [0,1)
+func secureRandFloat64() (float64, error) {
+	// Generate 64-bit random number and convert to float64 [0,1)
+	bytes := make([]byte, 8)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		return 0, err
+	}
+	
+	// Convert bytes to uint64, then to float64 in [0,1)
+	randInt := new(big.Int).SetBytes(bytes).Uint64()
+	return float64(randInt) / float64(1<<64), nil
+}
+
+// secureRandIntn generates a cryptographically secure random int in [0,n)
+func secureRandIntn(n int) int {
+	if n <= 0 {
+		return 0
+	}
+	
+	// Generate random number and take modulo
+	bytes := make([]byte, 4)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		// Fallback to time-based random (not ideal but functional)
+		return int(time.Now().UnixNano()) % n
+	}
+	
+	randInt := int(new(big.Int).SetBytes(bytes).Int64())
+	if randInt < 0 {
+		randInt = -randInt
+	}
+	return randInt % n
 }
 
 // SelectProvider selects the best provider for a model using failover logic
@@ -122,17 +158,23 @@ func (fm *FailoverManager) selectWeightedProvider(providers []*database.Provider
 		costEffectiveCount = 1
 	}
 
-	r := rand.Float64()
+	// Use secure random for provider selection
+	r, err := secureRandFloat64()
+	if err != nil {
+		log.Printf("Failed to generate secure random, using timestamp as fallback: %v", err)
+		r = float64(time.Now().UnixNano()%1000) / 1000.0
+	}
+	
 	if r < 0.7 && costEffectiveCount > 0 {
 		// Select from cost-effective providers (lower latency)
-		return providers[rand.Intn(costEffectiveCount)]
+		return providers[secureRandIntn(costEffectiveCount)]
 	} else {
 		// Select from premium providers (higher latency, potentially better quality)
 		premiumStart := costEffectiveCount
 		if premiumStart >= len(providers) {
 			premiumStart = 0
 		}
-		return providers[premiumStart+rand.Intn(len(providers)-premiumStart)]
+		return providers[premiumStart+secureRandIntn(len(providers)-premiumStart)]
 	}
 }
 
