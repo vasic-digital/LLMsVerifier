@@ -125,6 +125,11 @@ func TestScheduler_CalculateNextRun(t *testing.T) {
 			// Allow some tolerance for cron calculations
 			assert.GreaterOrEqual(t, duration, tt.wantAfter-1*time.Hour)
 			assert.LessOrEqual(t, duration, tt.wantAfter+1*time.Hour)
+			
+			// Debug logging to understand failures
+			t.Logf("Test: %s, Now: %s, Next: %s, Duration: %v, Expected: %v",
+				tt.name, now.Format("2006-01-02 15:04:05"), 
+				nextRun.Format("2006-01-02 15:04:05"), duration, tt.wantAfter)
 		})
 	}
 }
