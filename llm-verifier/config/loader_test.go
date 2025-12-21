@@ -473,7 +473,7 @@ func TestConfigValidation(t *testing.T) {
 				},
 			},
 			valid:  false,
-			errMsg: "api.port must be a valid port number",
+			errMsg: "port must be a valid number",
 		},
 		{
 			name: "Negative concurrency",
