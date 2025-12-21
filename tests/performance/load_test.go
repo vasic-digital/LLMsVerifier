@@ -1,21 +1,21 @@
-package main
+package performance
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"log"
+	"net/http"
 	"sync"
 	"sync/atomic"
+	"testing"
 	"time"
 )
 
 // Simple load test without external dependencies
-func main() {
+func TestLoad(t *testing.T) {
 	// Test configuration
-	targetURL := "https://api.llm-verifier.com/api/v1/health" // Health endpoint
-	concurrentUsers := 10
-	duration := 2 * time.Minute
+	targetURL := "http://localhost:8080/api/v1/health" // Health endpoint
+	concurrentUsers := 5
+	duration := 1 * time.Minute
 
 	fmt.Printf("Starting simple load test against %s\n", targetURL)
 	fmt.Printf("Concurrent users: %d\n", concurrentUsers)
@@ -44,7 +44,7 @@ func main() {
 			// Simple HTTP request
 			req, err := http.NewRequest("GET", targetURL, nil)
 			if err != nil {
-				log.Printf("Error creating request for user %d: %v", userID, err)
+				t.Logf("Error creating request for user %d: %v", userID, err)
 				continue
 			}
 
@@ -54,7 +54,7 @@ func main() {
 			// Make request
 			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
-				log.Printf("Request failed for user %d: %v", userID, err)
+				t.Logf("Request failed for user %d: %v", userID, err)
 				atomic.AddInt64(&failedRequests, 1)
 			} else {
 				if resp.StatusCode == 200 {

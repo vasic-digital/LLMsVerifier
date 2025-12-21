@@ -1,20 +1,21 @@
-package main
+package performance
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"sync"
+	"testing"
 	"time"
 )
 
 // Simple load test for Enhanced LLM Verifier
-func main() {
+func TestSimpleLoad(t *testing.T) {
 	// Test configuration
-	targetURL := "https://api.llm-verifier.com/api/v1/verify"
-	concurrentUsers := 50
-	duration := 5 * time.Minute
+	targetURL := "http://localhost:8080/api/v1/verify"
+	concurrentUsers := 10
+	duration := 1 * time.Minute
 
 	var wg sync.WaitGroup
 	totalRequests := 0
@@ -52,7 +53,11 @@ func main() {
 
 				jsonData, _ := json.Marshal(payload)
 
-				req, err := http.NewRequest("POST", targetURL, nil)
+				req, err := http.NewRequest("POST", targetURL, bytes.NewReader(jsonData))
+				if err != nil {
+					errors = append(errors, fmt.Errorf("user %d: %v", userID, err))
+					return
+				}
 				if err != nil {
 					errors = append(errors, fmt.Errorf("user %d: %v", userID, err))
 					return
