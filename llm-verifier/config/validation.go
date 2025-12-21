@@ -1,8 +1,10 @@
 package config
 
 import (
+	"crypto/rand"
 	"fmt"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -16,6 +18,24 @@ type ValidationError struct {
 
 func (ve ValidationError) Error() string {
 	return fmt.Sprintf("validation error for field '%s': %s", ve.Field, ve.Message)
+}
+
+// generateSecureJWTSecret generates a cryptographically secure JWT secret
+func generateSecureJWTSecret() (string, error) {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
+	secretLength := 32
+	
+	bytes := make([]byte, secretLength)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate secure random bytes: %w", err)
+	}
+	
+	for i, b := range bytes {
+		bytes[i] = charset[b%byte(len(charset))]
+	}
+	
+	return string(bytes), nil
 }
 
 // setDefaults sets default values for configuration
@@ -64,7 +84,19 @@ func setDefaults(cfg *Config) {
 	}
 	// Only set default JWT secret if none provided (validation will catch short secrets)
 	if cfg.API.JWTSecret == "" {
-		cfg.API.JWTSecret = "default-secret-change-in-production-32charslong"
+		// Check if JWT secret is provided via environment variable
+		if envSecret := os.Getenv("LLM_VERIFIER_JWT_SECRET"); envSecret != "" {
+			cfg.API.JWTSecret = envSecret
+		} else {
+			// Generate a secure random secret as fallback
+			secret, err := generateSecureJWTSecret()
+			if err != nil {
+				// Log error but continue with a fallback
+				cfg.API.JWTSecret = "emergency-fallback-" + fmt.Sprintf("%d", time.Now().Unix())
+			} else {
+				cfg.API.JWTSecret = secret
+			}
+		}
 	}
 
 	// Set default logging config

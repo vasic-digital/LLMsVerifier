@@ -503,15 +503,21 @@ func (s *Scheduler) parseCronExpression(expression string, now time.Time) time.T
 	month := s.parseCronField(parts[3], 1, 12)
 	weekday := s.parseCronField(parts[4], 0, 6)
 
-	// Find next matching time
-	next := now.Add(time.Minute)
+// Find next matching time
+	next := now
 	for i := 0; i < 10000; i++ { // Prevent infinite loop
 		if s.matchesCronField(next.Minute(), minute) &&
 			s.matchesCronField(next.Hour(), hour) &&
 			s.matchesCronField(next.Day(), day) &&
 			s.matchesCronField(int(next.Month()), month) &&
 			s.matchesCronField(int(next.Weekday()), weekday) {
-			return next
+			// Ensure next run is in the future (not current time)
+			if next.After(now) {
+				return next
+			}
+			// If it's exactly now, move to next minute and check again
+			next = next.Add(time.Minute)
+			continue
 		}
 		next = next.Add(time.Minute)
 	}
@@ -572,6 +578,11 @@ func (s *Scheduler) matchesCronField(value int, allowed []int) bool {
 		}
 	}
 	return false
+}
+
+// isCronWildcard checks if a cron field is a wildcard
+func (s *Scheduler) isCronWildcard(field string) bool {
+	return field == "*"
 }
 
 func (s *Scheduler) loadSchedules() error {
