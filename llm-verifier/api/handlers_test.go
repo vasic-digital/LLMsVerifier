@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"llm-verifier/config"
+	"llm-verifier/database"
 )
 
 func TestHealthCheckHandler(t *testing.T) {
@@ -95,5 +96,58 @@ func TestRefreshTokenHandler_BasicValidation(t *testing.T) {
 
 			assert.Equal(t, tt.statusCode, w.Code)
 		})
+}
+
+func TestGetModelsHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Path: ":memory:",
+		},
+		API: config.APIConfig{
+			JWTSecret: "test-secret",
+		},
 	}
+
+	server, err := NewServer(cfg)
+	if err != nil {
+		t.Fatalf("Failed to create server: %v", err)
+	}
+	defer server.Shutdown()
+
+	// Create a provider first
+	provider := database.Provider{
+		Name:        "Test Provider",
+		Endpoint:    "https://api.example.com",
+		Description: "Test provider for unit tests",
+		Status:      "active",
+	}
+	err = server.database.CreateProvider(&provider)
+	if err != nil {
+		t.Fatalf("Failed to create provider: %v", err)
+	}
+
+	// Create a model
+	model := database.Model{
+		ProviderID:  provider.ID,
+		ModelID:     "test-model",
+		Name:        "Test Model",
+		Description: "Test model for unit tests",
+	}
+	err = server.database.CreateModel(&model)
+	if err != nil {
+		t.Fatalf("Failed to create model: %v", err)
+	}
+
+	req, _ := http.NewRequest("GET", "/api/v1/models?limit=10&offset=0", nil)
+	w := httptest.NewRecorder()
+
+	router := gin.Default()
+	router.GET("/api/v1/models", server.getModels)
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
 }

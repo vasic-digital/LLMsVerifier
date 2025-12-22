@@ -1561,4 +1561,192 @@ The supervisor system optimizes performance through:
 
 ## 2. Intermediate Level
 
-[Continue with intermediate-level documentation... The document would continue with detailed coverage of advanced features, automation, troubleshooting, etc. Due to length constraints, I've provided the complete beginner section which covers the 0-knowledge to getting-started requirements.]
+*Intermediate level documentation covering advanced configuration, automation, and troubleshooting is under development. For now, please refer to the Reference Materials section below for CLI and TUI documentation.*
+
+## 3. Advanced Level
+
+*Advanced level documentation covering enterprise deployment, custom development, and performance optimization is under development.*
+
+## 4. Reference Materials
+
+### 4.1 CLI Command Reference
+
+The LLM Verifier CLI provides a comprehensive command-line interface for managing, verifying, and benchmarking Large Language Models (LLMs). It supports all core functionality including model management, verification workflows, reporting, and system administration.
+
+#### Global Flags
+These flags apply to all commands:
+
+- `-c, --config string` - Configuration file path (default: `config.yaml`)
+- `-s, --server string` - API server URL (default: `http://localhost:8080`)
+- `-u, --username string` - Username for authentication
+- `-p, --password string` - Password for authentication
+- `-o, --output string` - Output directory for reports (default: `./reports`)
+- `-h, --help` - Show help for command
+
+#### Core Commands
+
+**Core Verification**
+- `llm-verifier` - Run verification with default configuration
+
+**Server Management**
+- `llm-verifier server` - Start the REST API server
+
+**Model Management**
+- `llm-verifier models list` - List all models
+- `llm-verifier models get <id>` - Get model details
+- `llm-verifier models create` - Create a new model
+- `llm-verifier models update <id>` - Update model
+- `llm-verifier models delete <id>` - Delete model
+
+**Provider Management**
+- `llm-verifier providers list` - List all providers
+- `llm-verifier providers get <id>` - Get provider details
+- `llm-verifier providers create` - Create new provider
+- `llm-verifier providers update <id>` - Update provider
+- `llm-verifier providers delete <id>` - Delete provider
+
+**Verification Results**
+- `llm-verifier results list` - List verification results
+- `llm-verifier results get <id>` - Get result details
+- `llm-verifier results export` - Export results to file
+
+**Configuration Export**
+- `llm-verifier ai-config export` - Export AI CLI agent configurations
+- `llm-verifier ai-config validate` - Validate exported configuration
+
+**Scheduling**
+- `llm-verifier schedules list` - List scheduled jobs
+- `llm-verifier schedules create` - Create new schedule
+- `llm-verifier schedules delete <id>` - Delete schedule
+
+**Event Management**
+- `llm-verifier events list` - List system events
+- `llm-verifier events subscribe` - Subscribe to real-time events
+
+**Issue Tracking**
+- `llm-verifier issues list` - List detected issues
+- `llm-verifier issues resolve <id>` - Mark issue as resolved
+
+**Rate Limits**
+- `llm-verifier limits list` - List rate limits
+- `llm-verifier limits update` - Update limit configuration
+
+**Pricing Management**
+- `llm-verifier pricing list` - List pricing plans
+- `llm-verifier pricing update` - Update pricing information
+
+**Batch Operations**
+- `llm-verifier batch verify` - Batch verification of multiple models
+- `llm-verifier batch export` - Batch export configurations
+
+**Terminal User Interface (TUI)**
+- `llm-verifier tui` - Start the Terminal User Interface
+
+**Configuration Management**
+- `llm-verifier config show` - Show current configuration
+- `llm-verifier config export` - Export configuration to file
+- `llm-verifier config validate` - Validate configuration file
+
+**Log Management**
+- `llm-verifier logs list` - List system logs
+- `llm-verifier logs tail` - Tail live logs
+
+#### Examples
+
+**Basic Verification Workflow**
+```bash
+# Start API server
+llm-verifier server --port 8080 &
+
+# List available models
+llm-verifier models list
+
+# Run verification
+llm-verifier --config production.yaml --output ./results
+
+# Export configuration for AI tools
+llm-verifier ai-config export --format crush --output ./ai-configs
+```
+
+**Automated Testing Pipeline**
+```bash
+# Batch verify all models
+llm-verifier batch verify --all --parallel 5
+
+# Export results in JSON format
+llm-verifier results list --format json > results.json
+
+# Generate markdown report
+llm-verifier --output ./reports
+```
+
+**Integration with CI/CD**
+```bash
+# Validate configuration before deployment
+llm-verifier config validate --config ci-config.yaml
+
+# Run verification with specific models
+llm-verifier --config ci-config.yaml --output ./artifacts
+
+# Export configuration for deployment
+llm-verifier ai-config export --format opencode --output ./artifacts
+```
+
+For a complete CLI reference with detailed flag descriptions and examples, see the separate [CLI_REFERENCE.md](../llm-verifier/docs/CLI_REFERENCE.md) file.
+
+### 4.2 TUI Navigation Guide
+
+The Terminal User Interface (TUI) provides an interactive interface with keyboard navigation for managing LLM verifications without leaving the terminal.
+
+#### Screen Navigation
+- `1` - Dashboard (main screen with statistics)
+- `2` - Models (browse and manage models)
+- `3` - Providers (manage LLM providers)
+- `4` - Verification (run and monitor verifications)
+
+#### Global Shortcuts
+- `q` or `Ctrl+C` - Quit application
+- `r` - Refresh current screen data
+- `h` - Show help overlay
+
+#### Dashboard Features
+- Real-time statistics updated every 30 seconds
+- Verification progress visualization
+- Quick action buttons with keyboard shortcuts
+- Color-coded score indicators
+
+#### Model Browser
+- Filter models by provider, capability, score
+- Sort by different columns
+- View detailed model information
+- Trigger verification directly from TUI
+
+#### Verification Screen
+- Select models for verification
+- Configure verification parameters
+- Monitor real-time progress
+- View results immediately upon completion
+
+#### Launching TUI
+```bash
+# Start TUI with default settings
+llm-verifier tui
+
+# TUI with specific server
+llm-verifier tui --server http://localhost:8080
+
+# TUI with custom configuration
+llm-verifier tui --config custom-config.yaml
+```
+
+### 4.3 API Documentation
+
+*API documentation is available in the [API_DOCUMENTATION.md](../llm-verifier/docs/API_DOCUMENTATION.md) file.*
+
+### 4.4 Configuration Reference
+
+*Configuration reference documentation is available in the [ENVIRONMENT_VARIABLES.md](../llm-verifier/docs/ENVIRONMENT_VARIABLES.md) file and configuration examples in the `config/examples/` directory.*
+
+### 4.5 Troubleshooting Reference
+
+*Troubleshooting guides and common solutions are available in the [USER_MANUAL.md](../llm-verifier/docs/USER_MANUAL.md) file under the Troubleshooting section.*
