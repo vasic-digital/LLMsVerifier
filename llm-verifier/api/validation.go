@@ -16,6 +16,7 @@ var (
 
 func init() {
 	validate = validator.New()
+	validate.SetTagName("binding")
 
 	// Register custom validations
 	validate.RegisterValidation("alphanumspace", validateAlphaNumSpace)
