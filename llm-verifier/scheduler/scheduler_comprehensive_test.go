@@ -119,7 +119,7 @@ func TestScheduler_CalculateNextRun(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			nextRun := scheduler.calculateNextRun(tt.schedule)
+			nextRun := scheduler.calculateNextRun(tt.schedule, now)
 			duration := nextRun.Sub(now)
 			
 			// Allow some tolerance for cron calculations
@@ -470,7 +470,7 @@ func BenchmarkScheduler_CalculateNextRun(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		scheduler.calculateNextRun(schedule)
+		scheduler.calculateNextRun(schedule, time.Now())
 	}
 }
 
