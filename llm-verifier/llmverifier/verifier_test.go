@@ -472,7 +472,7 @@ func TestVerifier_checkOverload(t *testing.T) {
 	verifier := New(cfg)
 
 	client := NewLLMClient("https://api.example.com/v1", "test-key", nil)
-	overloaded, avgLatency, throughput := verifier.checkOverload(client, "test-model")
+	overloaded, responseTime := verifier.checkOverload(client, "test-model")
 
 	// Since all requests will fail to fake API, it should return as overloaded
 	if !overloaded {
@@ -481,7 +481,7 @@ func TestVerifier_checkOverload(t *testing.T) {
 
 	// For failed requests, avgLatency will be 0, throughput will be 0
 	t.Logf("Overload detection results: overloaded=%v, avgLatency=%v, throughput=%v", 
-		overloaded, avgLatency, throughput)
+		overloaded, responseTime.AverageLatency, responseTime.Throughput)
 }
 
 func TestVerifier_getModelDetailedInfo(t *testing.T) {

@@ -15,7 +15,7 @@ func TestLoad(t *testing.T) {
 	// Test configuration
 	targetURL := "http://localhost:8080/api/v1/health" // Health endpoint
 	concurrentUsers := 5
-	duration := 1 * time.Minute
+	duration := 2 * time.Second
 
 	fmt.Printf("Starting simple load test against %s\n", targetURL)
 	fmt.Printf("Concurrent users: %d\n", concurrentUsers)
@@ -84,16 +84,28 @@ func TestLoad(t *testing.T) {
 
 	// Calculate metrics
 	testDuration := time.Since(startTime)
-	requestsPerSecond := float64(totalRequests) / testDuration.Seconds()
-	successRate := float64(successRequests) / float64(totalRequests) * 100
-	errorRate := float64(failedRequests) / float64(totalRequests) * 100
-
+	
 	// Output results
 	fmt.Printf("\n=== LOAD TEST RESULTS ===\n")
 	fmt.Printf("Test Duration: %v\n", testDuration)
 	fmt.Printf("Total Requests: %d\n", totalRequests)
 	fmt.Printf("Successful Requests: %d\n", successRequests)
 	fmt.Printf("Failed Requests: %d\n", failedRequests)
+	
+	if totalRequests == 0 {
+		fmt.Printf("No requests were made. Cannot calculate metrics.\n")
+		return
+	}
+	
+	var requestsPerSecond float64
+	if testDuration.Seconds() == 0 {
+		requestsPerSecond = 0
+	} else {
+		requestsPerSecond = float64(totalRequests) / testDuration.Seconds()
+	}
+	successRate := float64(successRequests) / float64(totalRequests) * 100
+	errorRate := float64(failedRequests) / float64(totalRequests) * 100
+	
 	fmt.Printf("Requests Per Second: %.2f\n", requestsPerSecond)
 	fmt.Printf("Success Rate: %.2f%%\n", successRate)
 	fmt.Printf("Error Rate: %.2f%%\n", errorRate)

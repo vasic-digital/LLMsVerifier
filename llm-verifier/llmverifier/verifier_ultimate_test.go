@@ -489,6 +489,7 @@ func TestVerifier_PerformanceBoundaryTests(t *testing.T) {
 	
 	mockPerfServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestCounter++
+		t.Logf("Perf request %d: path %s", requestCounter, r.URL.Path)
 		start := time.Now()
 		
 		// Simulate varying response times
@@ -506,16 +507,39 @@ func TestVerifier_PerformanceBoundaryTests(t *testing.T) {
 		
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{
-			"choices": [{
-				"message": {
-					"content": "Performance test response"
-				}
-			}]
-		}`))
 		
-		latency := time.Since(start)
-		latencies = append(latencies, latency)
+		if r.URL.Path == "/models" {
+			// Return list of models for ListModels call
+			w.Write([]byte(`{
+				"object": "list",
+				"data": [{
+					"id": "perf-model",
+					"object": "model",
+					"created": 1677858242,
+					"owned_by": "test"
+				}]
+			}`))
+		} else {
+			// Chat completion response
+			w.Write([]byte(`{
+				"id": "chatcmpl-123",
+				"object": "chat.completion",
+				"created": 1677858242,
+				"model": "perf-model",
+				"choices": [{
+					"message": {
+						"content": "Performance test response"
+					}
+				}],
+				"usage": {
+					"prompt_tokens": 10,
+					"completion_tokens": 5,
+					"total_tokens": 15
+				}
+			}`))
+			latency := time.Since(start)
+			latencies = append(latencies, latency)
+		}
 	}))
 	defer mockPerfServer.Close()
 

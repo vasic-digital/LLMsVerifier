@@ -242,14 +242,14 @@ func TestVerifier_checkOverload_HighConcurrency_Fixed(t *testing.T) {
 	verifier := New(cfg)
 	client := verifier.GetGlobalClient()
 
-	overloaded, avgLatency, throughput := verifier.checkOverload(client, "test-model")
+	overloaded, responseTime := verifier.checkOverload(client, "test-model")
 
 	// Since we're hitting fake APIs, all requests should fail
 	if !overloaded {
 		t.Log("Note: Model detected as overloaded with fake API")
 	}
 	t.Logf("Overload detection results: overloaded=%v, avgLatency=%v, throughput=%v", 
-		overloaded, avgLatency, throughput)
+		overloaded, responseTime.AverageLatency, responseTime.Throughput)
 }
 
 // TestVerifier_Verify_LargeNumberOfModels tests many models
