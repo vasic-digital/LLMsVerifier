@@ -128,7 +128,7 @@ func (s *Scheduler) CreateSchedule(schedule *Schedule) error {
 	schedule.ID = generateScheduleID()
 	schedule.CreatedAt = time.Now()
 	schedule.UpdatedAt = time.Now()
-	schedule.NextRun = s.calculateNextRun(schedule)
+	schedule.NextRun = s.calculateNextRun(schedule, time.Now())
 
 	// Convert to database schedule
 	dbSchedule := &database.Schedule{
@@ -213,7 +213,7 @@ func (s *Scheduler) UpdateSchedule(id string, updates *Schedule) error {
 		schedule.Options = updates.Options
 	}
 	schedule.UpdatedAt = time.Now()
-	schedule.NextRun = s.calculateNextRun(schedule)
+	schedule.NextRun = s.calculateNextRun(schedule, time.Now())
 
 	log.Printf("Updated schedule: %s", id)
 	return nil
@@ -308,7 +308,7 @@ func (s *Scheduler) EnableSchedule(id string) error {
 
 	schedule.Enabled = true
 	schedule.UpdatedAt = time.Now()
-	schedule.NextRun = s.calculateNextRun(schedule)
+	schedule.NextRun = s.calculateNextRun(schedule, time.Now())
 
 	log.Printf("Enabled schedule: %s", id)
 	return nil
@@ -378,7 +378,7 @@ func (s *Scheduler) checkSchedules() {
 			}(schedule)
 
 			// Update next run time
-			schedule.NextRun = s.calculateNextRun(schedule)
+			schedule.NextRun = s.calculateNextRun(schedule, time.Now())
 			schedule.LastRun = &now
 			schedule.RunCount++
 		}
@@ -463,7 +463,7 @@ func (s *Scheduler) executeSchedule(schedule *Schedule) error {
 		}
 
 		// Update schedule run info
-		nextRun := s.calculateNextRun(schedule)
+		nextRun := s.calculateNextRun(schedule, time.Now())
 		if updateInfoErr := s.db.UpdateScheduleRunInfo(scheduleID, now, &nextRun, schedule.RunCount+1); updateInfoErr != nil {
 			log.Printf("Failed to update schedule run info: %v", updateInfoErr)
 		}
@@ -472,9 +472,7 @@ func (s *Scheduler) executeSchedule(schedule *Schedule) error {
 	return jobErr
 }
 
-func (s *Scheduler) calculateNextRun(schedule *Schedule) time.Time {
-	now := time.Now()
-
+func (s *Scheduler) calculateNextRun(schedule *Schedule, now time.Time) time.Time {
 	switch schedule.Type {
 	case ScheduleTypeCron:
 		return s.parseCronExpression(schedule.Expression, now)
@@ -587,6 +585,9 @@ func (s *Scheduler) isCronWildcard(field string) bool {
 
 func (s *Scheduler) loadSchedules() error {
 	// Load schedules from database
+	if s.db == nil {
+		return fmt.Errorf("database not configured")
+	}
 	schedules, err := s.db.ListSchedules(map[string]interface{}{})
 	if err != nil {
 		return fmt.Errorf("failed to load schedules from database: %w", err)
@@ -631,7 +632,7 @@ func (s *Scheduler) loadSchedules() error {
 		if dbSchedule.NextRun != nil {
 			schedule.NextRun = *dbSchedule.NextRun
 		} else {
-			schedule.NextRun = s.calculateNextRun(schedule)
+			schedule.NextRun = s.calculateNextRun(schedule, time.Now())
 		}
 
 		if dbSchedule.LastRun != nil {

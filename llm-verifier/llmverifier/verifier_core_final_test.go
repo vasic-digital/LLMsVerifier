@@ -535,18 +535,18 @@ func TestVerifier_checkOverload_Advanced(t *testing.T) {
 	client := verifier.GetGlobalClient()
 
 	// Test overload detection
-	overloaded, avgLatency, throughput := verifier.checkOverload(client, "overload-model")
+	overloaded, responseTime := verifier.checkOverload(client, "overload-model")
 
-	if avgLatency < 0 {
+	if responseTime.AverageLatency < 0 {
 		t.Error("Expected positive average latency")
 	}
 
-	if throughput < 0 {
+	if responseTime.Throughput < 0 {
 		t.Error("Expected positive throughput")
 	}
 
 	t.Logf("Overload detection: Overloaded=%v, AvgLatency=%v, Throughput=%.2f req/s",
-		overloaded, avgLatency, throughput)
+		overloaded, responseTime.AverageLatency, responseTime.Throughput)
 
 	if requestCount < 10 {
 		t.Errorf("Expected at least 10 requests for overload testing, got %d", requestCount)

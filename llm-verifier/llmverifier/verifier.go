@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -313,10 +315,9 @@ func (v *Verifier) verifySingleModel(client *LLMClient, modelName, endpoint stri
 	result.Availability.LastChecked = time.Now()
 
 	// Test for overload by sending multiple concurrent requests
-	isOverloaded, avgLatency, throughput := v.checkOverload(client, modelName)
+	isOverloaded, responseTime := v.checkOverload(client, modelName)
 	result.Availability.Overloaded = isOverloaded
-	result.ResponseTime.AverageLatency = avgLatency
-	result.ResponseTime.Throughput = throughput
+	result.ResponseTime = responseTime
 
 	// Extract model info from a successful response
 	modelInfo, err := v.getModelDetailedInfo(client, modelName)
@@ -398,7 +399,7 @@ func (v *Verifier) checkResponsiveness(client *LLMClient, modelName string) (tim
 }
 
 // checkOverload tests if the model is overloaded by sending multiple concurrent requests
-func (v *Verifier) checkOverload(client *LLMClient, modelName string) (bool, time.Duration, float64) {
+func (v *Verifier) checkOverload(client *LLMClient, modelName string) (bool, ResponseTimeResult) {
 	const numRequests = 10
 	const timeoutPerRequest = 30 * time.Second
 
@@ -446,8 +447,19 @@ func (v *Verifier) checkOverload(client *LLMClient, modelName string) (bool, tim
 		}
 	}
 
+	// Initialize response time result
+	responseTime := ResponseTimeResult{
+		MeasurementCount: len(latencies),
+	}
+
 	if len(latencies) == 0 {
-		return true, 0, 0 // All requests failed, consider overloaded
+		// All requests failed, consider overloaded
+		responseTime.AverageLatency = 0
+		responseTime.MinLatency = 0
+		responseTime.MaxLatency = 0
+		responseTime.P95Latency = 0
+		responseTime.Throughput = 0
+		return true, responseTime
 	}
 
 	// Calculate average latency
@@ -456,6 +468,18 @@ func (v *Verifier) checkOverload(client *LLMClient, modelName string) (bool, tim
 		totalLatency += l
 	}
 	avgLatency := totalLatency / time.Duration(len(latencies))
+	responseTime.AverageLatency = avgLatency
+
+	// Calculate min, max, and p95 latencies
+	sort.Slice(latencies, func(i, j int) bool { return latencies[i] < latencies[j] })
+	responseTime.MinLatency = latencies[0]
+	responseTime.MaxLatency = latencies[len(latencies)-1]
+	// Calculate p95 latency
+	p95Index := int(math.Ceil(0.95 * float64(len(latencies)))) - 1
+	if p95Index < 0 {
+		p95Index = 0
+	}
+	responseTime.P95Latency = latencies[p95Index]
 
 	// Calculate throughput (requests per second)
 	totalDuration := time.Since(time.Now().Add(-time.Second * 1)) // Approximate
@@ -472,6 +496,7 @@ func (v *Verifier) checkOverload(client *LLMClient, modelName string) (bool, tim
 	}
 
 	throughput := float64(len(latencies)) / totalDuration.Seconds()
+	responseTime.Throughput = throughput
 
 	// Determine if overloaded based on high latency or high error rate
 	highErrorRate := float64(errorsCount)/float64(numRequests) > 0.5
@@ -479,7 +504,7 @@ func (v *Verifier) checkOverload(client *LLMClient, modelName string) (bool, tim
 
 	isOverloaded := highErrorRate || extremeLatency
 
-	return isOverloaded, avgLatency, throughput
+	return isOverloaded, responseTime
 }
 
 // getModelDetailedInfo retrieves detailed information about the model
