@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 )
@@ -1117,7 +1118,7 @@ func (d *Database) UpdateVerificationResult(verificationResult *VerificationResu
 			completed_at = ?,
 			status = ?,
 			error_message = ?,
-			exists = ?,
+			model_exists = ?,
 			responsive = ?,
 			overloaded = ?,
 			latency_ms = ?,
@@ -1247,6 +1248,7 @@ func (d *Database) UpdateVerificationResult(verificationResult *VerificationResu
 	)
 
 	if err != nil {
+	log.Printf("UpdateVerificationResult error: %v", err)
 		return fmt.Errorf("failed to update verification result: %w", err)
 	}
 
