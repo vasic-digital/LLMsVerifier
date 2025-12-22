@@ -132,7 +132,7 @@ CREATE TABLE verification_results (
     error_message TEXT,
     
     -- Availability metrics
-    exists BOOLEAN,
+    model_exists BOOLEAN,
     responsive BOOLEAN,
     overloaded BOOLEAN,
     latency_ms INTEGER,

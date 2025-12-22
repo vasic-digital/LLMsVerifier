@@ -246,22 +246,22 @@ type CreateProviderRequest struct {
 	SupportEmail          string  `json:"support_email" binding:"email"`
 	DocumentationURL      string  `json:"documentation_url" binding:"url"`
 	IsActive              bool    `json:"is_active"`
-	ReliabilityScore      float64 `json:"reliability_score" binding:"min=0,max=100"`
-	AverageResponseTimeMs int     `json:"average_response_time_ms" binding:"min=0"`
+	ReliabilityScore      float64 `json:"reliability_score" binding:"omitempty,min=0,max=100"`
+	AverageResponseTimeMs int     `json:"average_response_time_ms" binding:"omitempty,min=0"`
 }
 
 // UpdateProviderRequest represents provider update request
 type UpdateProviderRequest struct {
-	Name                  string  `json:"name" binding:"min=2,max=100,alphanumspace"`
-	Endpoint              string  `json:"endpoint" binding:"url"`
-	APIKeyEncrypted       string  `json:"api_key_encrypted" binding:"min=10"`
-	Description           string  `json:"description" binding:"max=500"`
-	Website               string  `json:"website" binding:"url"`
-	SupportEmail          string  `json:"support_email" binding:"email"`
-	DocumentationURL      string  `json:"documentation_url" binding:"url"`
+	Name                  string  `json:"name" binding:"omitempty,min=2,max=100,alphanumspace"`
+	Endpoint              string  `json:"endpoint" binding:"omitempty,url"`
+	APIKeyEncrypted       string  `json:"api_key_encrypted" binding:"omitempty,min=10"`
+	Description           string  `json:"description" binding:"omitempty,max=500"`
+	Website               string  `json:"website" binding:"omitempty,url"`
+	SupportEmail          string  `json:"support_email" binding:"omitempty,email"`
+	DocumentationURL      string  `json:"documentation_url" binding:"omitempty,url"`
 	IsActive              *bool   `json:"is_active"`
-	ReliabilityScore      float64 `json:"reliability_score" binding:"min=0,max=100"`
-	AverageResponseTimeMs int     `json:"average_response_time_ms" binding:"min=0"`
+	ReliabilityScore      float64 `json:"reliability_score" binding:"omitempty,min=0,max=100"`
+	AverageResponseTimeMs int     `json:"average_response_time_ms" binding:"omitempty,min=0"`
 }
 
 // CreateModelRequest represents model creation request
@@ -272,9 +272,9 @@ type CreateModelRequest struct {
 	Description           string     `json:"description" binding:"max=500"`
 	Version               string     `json:"version" binding:"max=50"`
 	Architecture          string     `json:"architecture" binding:"max=100"`
-	ParameterCount        *int64     `json:"parameter_count" binding:"min=0"`
-	ContextWindowTokens   *int       `json:"context_window_tokens" binding:"min=0"`
-	MaxOutputTokens       *int       `json:"max_output_tokens" binding:"min=0"`
+	ParameterCount        *int64     `json:"parameter_count" binding:"omitempty,min=0"`
+	ContextWindowTokens   *int       `json:"context_window_tokens" binding:"omitempty,min=0"`
+	MaxOutputTokens       *int       `json:"max_output_tokens" binding:"omitempty,min=0"`
 	TrainingDataCutoff    *time.Time `json:"training_data_cutoff"`
 	ReleaseDate           *time.Time `json:"release_date"`
 	IsMultimodal          bool       `json:"is_multimodal"`
@@ -291,22 +291,22 @@ type CreateModelRequest struct {
 	OverallScore          float64    `json:"overall_score" binding:"min=0,max=100"`
 	CodeCapabilityScore   float64    `json:"code_capability_score" binding:"min=0,max=100"`
 	ResponsivenessScore   float64    `json:"responsiveness_score" binding:"min=0,max=100"`
-	ReliabilityScore      float64    `json:"reliability_score" binding:"min=0,max=100"`
+	ReliabilityScore      float64 `json:"reliability_score" binding:"omitempty,min=0,max=100"`
 	FeatureRichnessScore  float64    `json:"feature_richness_score" binding:"min=0,max=100"`
 	ValuePropositionScore float64    `json:"value_proposition_score" binding:"min=0,max=100"`
 }
 
 // UpdateModelRequest represents model update request
 type UpdateModelRequest struct {
-	ProviderID            int64      `json:"provider_id" binding:"min=1"`
-	ModelID               string     `json:"model_id" binding:"min=1,max=100,alphanumspace"`
-	Name                  string     `json:"name" binding:"min=2,max=100,alphanumspace"`
-	Description           string     `json:"description" binding:"max=500"`
-	Version               string     `json:"version" binding:"max=50"`
-	Architecture          string     `json:"architecture" binding:"max=100"`
-	ParameterCount        *int64     `json:"parameter_count" binding:"min=0"`
-	ContextWindowTokens   *int       `json:"context_window_tokens" binding:"min=0"`
-	MaxOutputTokens       *int       `json:"max_output_tokens" binding:"min=0"`
+	ProviderID            int64      `json:"provider_id" binding:"omitempty,min=1"`
+	ModelID               string     `json:"model_id" binding:"omitempty,min=1,max=100,alphanumspace"`
+	Name                  string     `json:"name" binding:"omitempty,min=2,max=100,alphanumspace"`
+	Description           string     `json:"description" binding:"omitempty,max=500"`
+	Version               string     `json:"version" binding:"omitempty,max=50"`
+	Architecture          string     `json:"architecture" binding:"omitempty,max=100"`
+	ParameterCount        *int64     `json:"parameter_count" binding:"omitempty,min=0"`
+	ContextWindowTokens   *int       `json:"context_window_tokens" binding:"omitempty,min=0"`
+	MaxOutputTokens       *int       `json:"max_output_tokens" binding:"omitempty,min=0"`
 	TrainingDataCutoff    *time.Time `json:"training_data_cutoff"`
 	ReleaseDate           *time.Time `json:"release_date"`
 	IsMultimodal          *bool      `json:"is_multimodal"`
@@ -318,14 +318,14 @@ type UpdateModelRequest struct {
 	Deprecated            *bool      `json:"deprecated"`
 	Tags                  []string   `json:"tags"`
 	LanguageSupport       []string   `json:"language_support"`
-	UseCase               string     `json:"use_case" binding:"max=200"`
-	VerificationStatus    string     `json:"verification_status" binding:"oneof=pending verified failed"`
-	OverallScore          float64    `json:"overall_score" binding:"min=0,max=100"`
-	CodeCapabilityScore   float64    `json:"code_capability_score" binding:"min=0,max=100"`
-	ResponsivenessScore   float64    `json:"responsiveness_score" binding:"min=0,max=100"`
-	ReliabilityScore      float64    `json:"reliability_score" binding:"min=0,max=100"`
-	FeatureRichnessScore  float64    `json:"feature_richness_score" binding:"min=0,max=100"`
-	ValuePropositionScore float64    `json:"value_proposition_score" binding:"min=0,max=100"`
+	UseCase               string     `json:"use_case" binding:"omitempty,max=200"`
+	VerificationStatus    string     `json:"verification_status" binding:"omitempty,oneof=pending verified failed"`
+	OverallScore          float64    `json:"overall_score" binding:"omitempty,min=0,max=100"`
+	CodeCapabilityScore   float64    `json:"code_capability_score" binding:"omitempty,min=0,max=100"`
+	ResponsivenessScore   float64    `json:"responsiveness_score" binding:"omitempty,min=0,max=100"`
+	ReliabilityScore      float64    `json:"reliability_score" binding:"omitempty,min=0,max=100"`
+	FeatureRichnessScore  float64    `json:"feature_richness_score" binding:"omitempty,min=0,max=100"`
+	ValuePropositionScore float64    `json:"value_proposition_score" binding:"omitempty,min=0,max=100"`
 }
 
 // CreateVerificationResultRequest represents verification result creation request
@@ -335,11 +335,11 @@ type CreateVerificationResultRequest struct {
 	StartedAt                time.Time  `json:"started_at" binding:"required"`
 	CompletedAt              *time.Time `json:"completed_at"`
 	Status                   string     `json:"status" binding:"required,status"`
-	ErrorMessage             *string    `json:"error_message" binding:"max=1000"`
+	ErrorMessage             *string    `json:"error_message" binding:"omitempty,max=1000"`
 	ModelExists              *bool      `json:"model_exists"`
 	Responsive               *bool      `json:"responsive"`
 	Overloaded               *bool      `json:"overloaded"`
-	LatencyMs                *int       `json:"latency_ms" binding:"min=0"`
+	LatencyMs                *int       `json:"latency_ms" binding:"omitempty,min=0"`
 	SupportsToolUse          bool       `json:"supports_tool_use"`
 	SupportsFunctionCalling  bool       `json:"supports_function_calling"`
 	SupportsCodeGeneration   bool       `json:"supports_code_generation"`
@@ -379,31 +379,31 @@ type CreateVerificationResultRequest struct {
 	OverallScore             float64    `json:"overall_score" binding:"min=0,max=100"`
 	CodeCapabilityScore      float64    `json:"code_capability_score" binding:"min=0,max=100"`
 	ResponsivenessScore      float64    `json:"responsiveness_score" binding:"min=0,max=100"`
-	ReliabilityScore         float64    `json:"reliability_score" binding:"min=0,max=100"`
+	ReliabilityScore      float64 `json:"reliability_score" binding:"omitempty,min=0,max=100"`
 	FeatureRichnessScore     float64    `json:"feature_richness_score" binding:"min=0,max=100"`
 	ValuePropositionScore    float64    `json:"value_proposition_score" binding:"min=0,max=100"`
-	ScoreDetails             string     `json:"score_details" binding:"max=5000"`
+	ScoreDetails             string     `json:"score_details" binding:"omitempty,max=5000"`
 	AvgLatencyMs             int        `json:"avg_latency_ms" binding:"min=0"`
 	P95LatencyMs             int        `json:"p95_latency_ms" binding:"min=0"`
 	MinLatencyMs             int        `json:"min_latency_ms" binding:"min=0"`
 	MaxLatencyMs             int        `json:"max_latency_ms" binding:"min=0"`
 	ThroughputRPS            float64    `json:"throughput_rps" binding:"min=0"`
-	RawRequest               *string    `json:"raw_request" binding:"max=10000"`
-	RawResponse              *string    `json:"raw_response" binding:"max=10000"`
+	RawRequest               *string    `json:"raw_request" binding:"omitempty,max=10000"`
+	RawResponse              *string    `json:"raw_response" binding:"omitempty,max=10000"`
 }
 
 // UpdateVerificationResultRequest represents verification result update request
 type UpdateVerificationResultRequest struct {
-	ModelID                  int64      `json:"model_id" binding:"min=1"`
-	VerificationType         string     `json:"verification_type" binding:"verification_type"`
+	ModelID                  int64      `json:"model_id" binding:"omitempty,min=1"`
+	VerificationType         string     `json:"verification_type" binding:"omitempty,verification_type"`
 	StartedAt                time.Time  `json:"started_at"`
 	CompletedAt              *time.Time `json:"completed_at"`
-	Status                   string     `json:"status" binding:"status"`
-	ErrorMessage             *string    `json:"error_message" binding:"max=1000"`
+	Status                   string     `json:"status" binding:"omitempty,status"`
+	ErrorMessage             *string    `json:"error_message" binding:"omitempty,max=1000"`
 	ModelExists              *bool      `json:"model_exists"`
 	Responsive               *bool      `json:"responsive"`
 	Overloaded               *bool      `json:"overloaded"`
-	LatencyMs                *int       `json:"latency_ms" binding:"min=0"`
+	LatencyMs                *int       `json:"latency_ms" binding:"omitempty,min=0"`
 	SupportsToolUse          *bool      `json:"supports_tool_use"`
 	SupportsFunctionCalling  *bool      `json:"supports_function_calling"`
 	SupportsCodeGeneration   *bool      `json:"supports_code_generation"`
@@ -423,7 +423,7 @@ type UpdateVerificationResultRequest struct {
 	SupportsStructuredOutput *bool      `json:"supports_structured_output"`
 	SupportsReasoning        *bool      `json:"supports_reasoning"`
 	SupportsParallelToolUse  *bool      `json:"supports_parallel_tool_use"`
-	MaxParallelCalls         int        `json:"max_parallel_calls" binding:"min=0"`
+	MaxParallelCalls         int        `json:"max_parallel_calls" binding:"omitempty,min=0"`
 	SupportsBatchProcessing  *bool      `json:"supports_batch_processing"`
 	CodeLanguageSupport      []string   `json:"code_language_support"`
 	CodeDebugging            *bool      `json:"code_debugging"`
@@ -435,25 +435,25 @@ type UpdateVerificationResultRequest struct {
 	ArchitectureDesign       *bool      `json:"architecture_design"`
 	SecurityAssessment       *bool      `json:"security_assessment"`
 	PatternRecognition       *bool      `json:"pattern_recognition"`
-	DebuggingAccuracy        float64    `json:"debugging_accuracy" binding:"min=0,max=100"`
-	MaxHandledDepth          int        `json:"max_handled_depth" binding:"min=0"`
-	CodeQualityScore         float64    `json:"code_quality_score" binding:"min=0,max=100"`
-	LogicCorrectnessScore    float64    `json:"logic_correctness_score" binding:"min=0,max=100"`
-	RuntimeEfficiencyScore   float64    `json:"runtime_efficiency_score" binding:"min=0,max=100"`
-	OverallScore             float64    `json:"overall_score" binding:"min=0,max=100"`
-	CodeCapabilityScore      float64    `json:"code_capability_score" binding:"min=0,max=100"`
-	ResponsivenessScore      float64    `json:"responsiveness_score" binding:"min=0,max=100"`
-	ReliabilityScore         float64    `json:"reliability_score" binding:"min=0,max=100"`
-	FeatureRichnessScore     float64    `json:"feature_richness_score" binding:"min=0,max=100"`
-	ValuePropositionScore    float64    `json:"value_proposition_score" binding:"min=0,max=100"`
-	ScoreDetails             string     `json:"score_details" binding:"max=5000"`
-	AvgLatencyMs             int        `json:"avg_latency_ms" binding:"min=0"`
-	P95LatencyMs             int        `json:"p95_latency_ms" binding:"min=0"`
-	MinLatencyMs             int        `json:"min_latency_ms" binding:"min=0"`
-	MaxLatencyMs             int        `json:"max_latency_ms" binding:"min=0"`
-	ThroughputRPS            float64    `json:"throughput_rps" binding:"min=0"`
-	RawRequest               *string    `json:"raw_request" binding:"max=10000"`
-	RawResponse              *string    `json:"raw_response" binding:"max=10000"`
+	DebuggingAccuracy        float64    `json:"debugging_accuracy" binding:"omitempty,min=0,max=100"`
+	MaxHandledDepth          int        `json:"max_handled_depth" binding:"omitempty,min=0"`
+	CodeQualityScore         float64    `json:"code_quality_score" binding:"omitempty,min=0,max=100"`
+	LogicCorrectnessScore    float64    `json:"logic_correctness_score" binding:"omitempty,min=0,max=100"`
+	RuntimeEfficiencyScore   float64    `json:"runtime_efficiency_score" binding:"omitempty,min=0,max=100"`
+	OverallScore             float64    `json:"overall_score" binding:"omitempty,min=0,max=100"`
+	CodeCapabilityScore      float64    `json:"code_capability_score" binding:"omitempty,min=0,max=100"`
+	ResponsivenessScore      float64    `json:"responsiveness_score" binding:"omitempty,min=0,max=100"`
+	ReliabilityScore      float64 `json:"reliability_score" binding:"omitempty,min=0,max=100"`
+	FeatureRichnessScore     float64    `json:"feature_richness_score" binding:"omitempty,min=0,max=100"`
+	ValuePropositionScore    float64    `json:"value_proposition_score" binding:"omitempty,min=0,max=100"`
+	ScoreDetails             string     `json:"score_details" binding:"omitempty,max=5000"`
+	AvgLatencyMs             int        `json:"avg_latency_ms" binding:"omitempty,min=0"`
+	P95LatencyMs             int        `json:"p95_latency_ms" binding:"omitempty,min=0"`
+	MinLatencyMs             int        `json:"min_latency_ms" binding:"omitempty,min=0"`
+	MaxLatencyMs             int        `json:"max_latency_ms" binding:"omitempty,min=0"`
+	ThroughputRPS            float64    `json:"throughput_rps" binding:"omitempty,min=0"`
+	RawRequest               *string    `json:"raw_request" binding:"omitempty,max=10000"`
+	RawResponse              *string    `json:"raw_response" binding:"omitempty,max=10000"`
 }
 
 // CreateEventRequest represents event creation request
@@ -462,50 +462,50 @@ type CreateEventRequest struct {
 	Severity             string  `json:"severity" binding:"required,severity"`
 	Title                string  `json:"title" binding:"required,min=2,max=200"`
 	Message              string  `json:"message" binding:"required,min=2,max=1000"`
-	Details              *string `json:"details" binding:"max=5000"`
-	ModelID              *int64  `json:"model_id" binding:"min=1"`
-	ProviderID           *int64  `json:"provider_id" binding:"min=1"`
-	VerificationResultID *int64  `json:"verification_result_id" binding:"min=1"`
-	IssueID              *int64  `json:"issue_id" binding:"min=1"`
+	Details              *string `json:"details" binding:"omitempty,max=5000"`
+	ModelID              *int64  `json:"model_id" binding:"omitempty,min=1"`
+	ProviderID           *int64  `json:"provider_id" binding:"omitempty,min=1"`
+	VerificationResultID *int64  `json:"verification_result_id" binding:"omitempty,min=1"`
+	IssueID              *int64  `json:"issue_id" binding:"omitempty,min=1"`
 }
 
 // UpdateEventRequest represents event update request
 type UpdateEventRequest struct {
-	EventType            string  `json:"event_type" binding:"event_type"`
-	Severity             string  `json:"severity" binding:"severity"`
-	Title                string  `json:"title" binding:"min=2,max=200"`
-	Message              string  `json:"message" binding:"min=2,max=1000"`
-	Details              *string `json:"details" binding:"max=5000"`
-	ModelID              *int64  `json:"model_id" binding:"min=1"`
-	ProviderID           *int64  `json:"provider_id" binding:"min=1"`
-	VerificationResultID *int64  `json:"verification_result_id" binding:"min=1"`
-	IssueID              *int64  `json:"issue_id" binding:"min=1"`
+	EventType            string  `json:"event_type" binding:"omitempty,event_type"`
+	Severity             string  `json:"severity" binding:"omitempty,severity"`
+	Title                string  `json:"title" binding:"omitempty,min=2,max=200"`
+	Message              string  `json:"message" binding:"omitempty,min=2,max=1000"`
+	Details              *string `json:"details" binding:"omitempty,max=5000"`
+	ModelID              *int64  `json:"model_id" binding:"omitempty,min=1"`
+	ProviderID           *int64  `json:"provider_id" binding:"omitempty,min=1"`
+	VerificationResultID *int64  `json:"verification_result_id" binding:"omitempty,min=1"`
+	IssueID              *int64  `json:"issue_id" binding:"omitempty,min=1"`
 }
 
 // CreateScheduleRequest represents schedule creation request
 type CreateScheduleRequest struct {
 	Name            string  `json:"name" binding:"required,min=2,max=100,alphanumspace"`
-	Description     *string `json:"description" binding:"max=500"`
+	Description     *string `json:"description" binding:"omitempty,max=500"`
 	ScheduleType    string  `json:"schedule_type" binding:"required,schedule_type"`
-	CronExpression  *string `json:"cron_expression" binding:"cron"`
-	IntervalSeconds *int    `json:"interval_seconds" binding:"min=60"`
+	CronExpression  *string `json:"cron_expression" binding:"omitempty,cron"`
+	IntervalSeconds *int    `json:"interval_seconds" binding:"omitempty,min=60"`
 	TargetType      string  `json:"target_type" binding:"required,target_type"`
-	TargetID        *int64  `json:"target_id" binding:"min=1"`
+	TargetID        *int64  `json:"target_id" binding:"omitempty,min=1"`
 	IsActive        bool    `json:"is_active"`
-	MaxRuns         *int    `json:"max_runs" binding:"min=1"`
+	MaxRuns         *int    `json:"max_runs" binding:"omitempty,min=1"`
 }
 
 // UpdateScheduleRequest represents schedule update request
 type UpdateScheduleRequest struct {
-	Name            string  `json:"name" binding:"min=2,max=100,alphanumspace"`
-	Description     *string `json:"description" binding:"max=500"`
-	ScheduleType    string  `json:"schedule_type" binding:"schedule_type"`
-	CronExpression  *string `json:"cron_expression" binding:"cron"`
-	IntervalSeconds *int    `json:"interval_seconds" binding:"min=60"`
-	TargetType      string  `json:"target_type" binding:"target_type"`
-	TargetID        *int64  `json:"target_id" binding:"min=1"`
+	Name            string  `json:"name" binding:"omitempty,min=2,max=100,alphanumspace"`
+	Description     *string `json:"description" binding:"omitempty,max=500"`
+	ScheduleType    string  `json:"schedule_type" binding:"omitempty,schedule_type"`
+	CronExpression  *string `json:"cron_expression" binding:"omitempty,cron"`
+	IntervalSeconds *int    `json:"interval_seconds" binding:"omitempty,min=60"`
+	TargetType      string  `json:"target_type" binding:"omitempty,target_type"`
+	TargetID        *int64  `json:"target_id" binding:"omitempty,min=1"`
 	IsActive        *bool   `json:"is_active"`
-	MaxRuns         *int    `json:"max_runs" binding:"min=1"`
+	MaxRuns         *int    `json:"max_runs" binding:"omitempty,min=1"`
 }
 
 // GenerateReportRequest represents report generation request
@@ -541,31 +541,31 @@ type CreateIssueRequest struct {
 	Severity             string     `json:"severity" binding:"required,severity"`
 	Title                string     `json:"title" binding:"required,min=2,max=200"`
 	Description          string     `json:"description" binding:"required,min=2,max=1000"`
-	Symptoms             *string    `json:"symptoms" binding:"max=1000"`
-	Workarounds          *string    `json:"workarounds" binding:"max=1000"`
+	Symptoms             *string    `json:"symptoms" binding:"omitempty,max=1000"`
+	Workarounds          *string    `json:"workarounds" binding:"omitempty,max=1000"`
 	AffectedFeatures     []string   `json:"affected_features"`
 	FirstDetected        time.Time  `json:"first_detected" binding:"required"`
 	LastOccurred         *time.Time `json:"last_occurred"`
 	ResolvedAt           *time.Time `json:"resolved_at"`
-	ResolutionNotes      *string    `json:"resolution_notes" binding:"max=1000"`
-	VerificationResultID *int64     `json:"verification_result_id" binding:"min=1"`
+	ResolutionNotes      *string    `json:"resolution_notes" binding:"omitempty,max=1000"`
+	VerificationResultID *int64     `json:"verification_result_id" binding:"omitempty,min=1"`
 }
 
 // UpdateIssueRequest represents issue update request
 type UpdateIssueRequest struct {
-	ModelID              int64      `json:"model_id" binding:"min=1"`
-	IssueType            string     `json:"issue_type" binding:"issue_type"`
-	Severity             string     `json:"severity" binding:"severity"`
-	Title                string     `json:"title" binding:"min=2,max=200"`
-	Description          string     `json:"description" binding:"min=2,max=1000"`
-	Symptoms             *string    `json:"symptoms" binding:"max=1000"`
-	Workarounds          *string    `json:"workarounds" binding:"max=1000"`
+	ModelID              int64      `json:"model_id" binding:"omitempty,min=1"`
+	IssueType            string     `json:"issue_type" binding:"omitempty,issue_type"`
+	Severity             string     `json:"severity" binding:"omitempty,severity"`
+	Title                string     `json:"title" binding:"omitempty,min=2,max=200"`
+	Description          string     `json:"description" binding:"omitempty,min=2,max=1000"`
+	Symptoms             *string    `json:"symptoms" binding:"omitempty,max=1000"`
+	Workarounds          *string    `json:"workarounds" binding:"omitempty,max=1000"`
 	AffectedFeatures     []string   `json:"affected_features"`
 	FirstDetected        time.Time  `json:"first_detected"`
 	LastOccurred         *time.Time `json:"last_occurred"`
 	ResolvedAt           *time.Time `json:"resolved_at"`
-	ResolutionNotes      *string    `json:"resolution_notes" binding:"max=1000"`
-	VerificationResultID *int64     `json:"verification_result_id" binding:"min=1"`
+	ResolutionNotes      *string    `json:"resolution_notes" binding:"omitempty,max=1000"`
+	VerificationResultID *int64     `json:"verification_result_id" binding:"omitempty,min=1"`
 }
 
 // CreatePricingRequest represents pricing creation request
@@ -584,14 +584,14 @@ type CreatePricingRequest struct {
 
 // UpdatePricingRequest represents pricing update request
 type UpdatePricingRequest struct {
-	ModelID              int64      `json:"model_id" binding:"min=1"`
-	InputTokenCost       float64    `json:"input_token_cost" binding:"min=0"`
-	OutputTokenCost      float64    `json:"output_token_cost" binding:"min=0"`
-	CachedInputTokenCost float64    `json:"cached_input_token_cost" binding:"min=0"`
-	StorageCost          float64    `json:"storage_cost" binding:"min=0"`
-	RequestCost          float64    `json:"request_cost" binding:"min=0"`
-	Currency             string     `json:"currency" binding:"min=3,max=3"`
-	PricingModel         string     `json:"pricing_model" binding:"pricing_model"`
+	ModelID              int64      `json:"model_id" binding:"omitempty,min=1"`
+	InputTokenCost       float64    `json:"input_token_cost" binding:"omitempty,min=0"`
+	OutputTokenCost      float64    `json:"output_token_cost" binding:"omitempty,min=0"`
+	CachedInputTokenCost float64    `json:"cached_input_token_cost" binding:"omitempty,min=0"`
+	StorageCost          float64    `json:"storage_cost" binding:"omitempty,min=0"`
+	RequestCost          float64    `json:"request_cost" binding:"omitempty,min=0"`
+	Currency             string     `json:"currency" binding:"omitempty,min=3,max=3"`
+	PricingModel         string     `json:"pricing_model" binding:"omitempty,pricing_model"`
 	EffectiveFrom        *time.Time `json:"effective_from"`
 	EffectiveTo          *time.Time `json:"effective_to"`
 }
@@ -609,11 +609,11 @@ type CreateLimitRequest struct {
 
 // UpdateLimitRequest represents limit update request
 type UpdateLimitRequest struct {
-	ModelID      int64      `json:"model_id" binding:"min=1"`
-	LimitType    string     `json:"limit_type" binding:"limit_type"`
-	LimitValue   int        `json:"limit_value" binding:"min=0"`
-	CurrentUsage int        `json:"current_usage" binding:"min=0"`
-	ResetPeriod  string     `json:"reset_period" binding:"reset_period"`
+	ModelID      int64      `json:"model_id" binding:"omitempty,min=1"`
+	LimitType    string     `json:"limit_type" binding:"omitempty,limit_type"`
+	LimitValue   int        `json:"limit_value" binding:"omitempty,min=0"`
+	CurrentUsage int        `json:"current_usage" binding:"omitempty,min=0"`
+	ResetPeriod  string     `json:"reset_period" binding:"omitempty,reset_period"`
 	ResetTime    *time.Time `json:"reset_time"`
 	IsHardLimit  *bool      `json:"is_hard_limit"`
 }
@@ -634,16 +634,16 @@ type CreateConfigExportRequest struct {
 
 // UpdateConfigExportRequest represents config export update request
 type UpdateConfigExportRequest struct {
-	ExportType        string  `json:"export_type" binding:"export_type"`
-	Name              string  `json:"name" binding:"min=2,max=100,alphanumspace"`
-	Description       string  `json:"description" binding:"max=500"`
-	ConfigData        string  `json:"config_data" binding:"min=2"`
-	TargetModels      *string `json:"target_models" binding:"max=1000"`
-	TargetProviders   *string `json:"target_providers" binding:"max=1000"`
-	Filters           *string `json:"filters" binding:"max=1000"`
+	ExportType        string  `json:"export_type" binding:"omitempty,export_type"`
+	Name              string  `json:"name" binding:"omitempty,min=2,max=100,alphanumspace"`
+	Description       string  `json:"description" binding:"omitempty,max=500"`
+	ConfigData        string  `json:"config_data" binding:"omitempty,min=2"`
+	TargetModels      *string `json:"target_models" binding:"omitempty,max=1000"`
+	TargetProviders   *string `json:"target_providers" binding:"omitempty,max=1000"`
+	Filters           *string `json:"filters" binding:"omitempty,max=1000"`
 	IsVerified        *bool   `json:"is_verified"`
-	VerificationNotes *string `json:"verification_notes" binding:"max=1000"`
-	CreatedBy         *string `json:"created_by" binding:"max=100"`
+	VerificationNotes *string `json:"verification_notes" binding:"omitempty,max=1000"`
+	CreatedBy         *string `json:"created_by" binding:"omitempty,max=100"`
 }
 
 // Helper function to validate request
