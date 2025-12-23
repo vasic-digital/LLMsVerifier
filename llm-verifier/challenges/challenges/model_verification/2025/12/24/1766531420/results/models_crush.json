@@ -1,0 +1,1056 @@
+{
+  "challenge_name": "model_verification",
+  "start_time": "2025-12-24T02:10:20+03:00",
+  "end_time": "2025-12-24T02:10:20+03:00",
+  "duration": "901.472µs",
+  "providers": [
+    {
+      "name": "HuggingFace",
+      "type": "",
+      "endpoint": "",
+      "verification_results": [
+        {
+          "model_id": "sentence-transformers/all-MiniLM-L6-v2",
+          "model_name": "sentence-transformers/all-MiniLM-L6-v2 (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "5.697µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "Falconsai/nsfw_image_detection",
+          "model_name": "Falconsai/nsfw_image_detection (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "5.602µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "google/electra-base-discriminator",
+          "model_name": "google/electra-base-discriminator (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "5.52µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "google-bert/bert-base-uncased",
+          "model_name": "google-bert/bert-base-uncased (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.666µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "dima806/fairface_age_image_detection",
+          "model_name": "dima806/fairface_age_image_detection (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.642µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "sentence-transformers/all-mpnet-base-v2",
+          "model_name": "sentence-transformers/all-mpnet-base-v2 (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "5.344µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+          "model_name": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.786µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "timm/mobilenetv3_small_100.lamb_in1k",
+          "model_name": "timm/mobilenetv3_small_100.lamb_in1k (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "5.582µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "FacebookAI/roberta-large",
+          "model_name": "FacebookAI/roberta-large (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "5.488µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "openai/clip-vit-base-patch32",
+          "model_name": "openai/clip-vit-base-patch32 (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.236µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "pyannote/segmentation-3.0",
+          "model_name": "pyannote/segmentation-3.0 (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.135µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "laion/clap-htsat-fused",
+          "model_name": "laion/clap-htsat-fused (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": true,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "3.843µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "pyannote/speaker-diarization-3.1",
+          "model_name": "pyannote/speaker-diarization-3.1 (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.765µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "pyannote/wespeaker-voxceleb-resnet34-LM",
+          "model_name": "pyannote/wespeaker-voxceleb-resnet34-LM (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "3.273µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "colbert-ir/colbertv2.0",
+          "model_name": "colbert-ir/colbertv2.0 (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "2.988µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "Bingsu/adetailer",
+          "model_name": "Bingsu/adetailer (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "3.726µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "prajjwal1/bert-tiny",
+          "model_name": "prajjwal1/bert-tiny (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.534µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "omni-research/Tarsier2-Recap-7b",
+          "model_name": "omni-research/Tarsier2-Recap-7b (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.023µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "meta-llama/Llama-3.1-8B-Instruct",
+          "model_name": "meta-llama/Llama-3.1-8B-Instruct (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.583µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "magic-leap-community/superpoint",
+          "model_name": "magic-leap-community/superpoint (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "5.246µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "ETH-CVG/lightglue_superpoint",
+          "model_name": "ETH-CVG/lightglue_superpoint (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.482µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "Qwen/Qwen2.5-3B-Instruct",
+          "model_name": "Qwen/Qwen2.5-3B-Instruct (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.438µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "openai/clip-vit-large-patch14",
+          "model_name": "openai/clip-vit-large-patch14 (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.294µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "BAAI/bge-m3",
+          "model_name": "BAAI/bge-m3 (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.194µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "openai-community/gpt2",
+          "model_name": "openai-community/gpt2 (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.218µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "FacebookAI/roberta-base",
+          "model_name": "FacebookAI/roberta-base (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "5.113µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "distilbert/distilbert-base-uncased",
+          "model_name": "distilbert/distilbert-base-uncased (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.592µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "Qwen/Qwen3-0.6B",
+          "model_name": "Qwen/Qwen3-0.6B (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.084µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "facebook/contriever",
+          "model_name": "facebook/contriever (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.431µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "autogluon/chronos-bolt-small",
+          "model_name": "autogluon/chronos-bolt-small (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "5.086µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "timm/resnet50.a1_in1k",
+          "model_name": "timm/resnet50.a1_in1k (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "5.475µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "openai/gpt-oss-20b",
+          "model_name": "openai/gpt-oss-20b (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "5.312µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "Qwen/Qwen2.5-7B-Instruct",
+          "model_name": "Qwen/Qwen2.5-7B-Instruct (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "5.493µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "FacebookAI/xlm-roberta-base",
+          "model_name": "FacebookAI/xlm-roberta-base (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "5.209µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "google/siglip-so400m-patch14-384",
+          "model_name": "google/siglip-so400m-patch14-384 (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.351µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "coqui/XTTS-v2",
+          "model_name": "coqui/XTTS-v2 (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "5.668µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged",
+          "model_name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.571µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "openai/whisper-large-v3",
+          "model_name": "openai/whisper-large-v3 (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.259µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn",
+          "model_name": "jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.316µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "cross-encoder/ms-marco-MiniLM-L6-v2",
+          "model_name": "cross-encoder/ms-marco-MiniLM-L6-v2 (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.242µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+          "model_name": "sentence-transformers/paraphrase-multilingual-mpnet-base-v2 (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.632µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "Kijai/WanVideo_comfy",
+          "model_name": "Kijai/WanVideo_comfy (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.274µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "Qwen/Qwen3-1.7B",
+          "model_name": "Qwen/Qwen3-1.7B (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.212µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "openai/clip-vit-large-patch14-336",
+          "model_name": "openai/clip-vit-large-patch14-336 (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.123µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "google-bert/bert-base-multilingual-uncased",
+          "model_name": "google-bert/bert-base-multilingual-uncased (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.891µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "google/vit-base-patch16-224",
+          "model_name": "google/vit-base-patch16-224 (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "5.094µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "lpiccinelli/unidepth-v2-vitl14",
+          "model_name": "lpiccinelli/unidepth-v2-vitl14 (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "5.059µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "jinaai/jina-embeddings-v3",
+          "model_name": "jinaai/jina-embeddings-v3 (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": true,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "5.125µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "jonatasgrosman/wav2vec2-large-xlsr-53-russian",
+          "model_name": "jonatasgrosman/wav2vec2-large-xlsr-53-russian (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.961µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+          "model_name": "Qwen/Qwen2.5-Coder-0.5B-Instruct (free to use, toon)",
+          "provider_name": "HuggingFace",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": false,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.651µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        }
+      ],
+      "success_count": 50,
+      "failed_count": 0,
+      "test_time": "2025-12-24T02:10:20+03:00"
+    },
+    {
+      "name": "Nvidia",
+      "type": "",
+      "endpoint": "",
+      "verification_results": [
+        {
+          "model_id": "nvidia-nemotron-4-340b",
+          "model_name": "NVIDIA Nemotron 4 340B (free to use, toon)",
+          "provider_name": "Nvidia",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": true,
+            "function_calling": true,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.168µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "meta-llama3-70b-instruct",
+          "model_name": "Llama 3 70B Instruct (free to use, toon)",
+          "provider_name": "Nvidia",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": true,
+            "function_calling": false,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.191µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        }
+      ],
+      "success_count": 2,
+      "failed_count": 0,
+      "test_time": "2025-12-24T02:10:20+03:00"
+    },
+    {
+      "name": "Chutes",
+      "type": "",
+      "endpoint": "",
+      "verification_results": null,
+      "success_count": 0,
+      "failed_count": 0,
+      "test_time": "2025-12-24T02:10:20+03:00"
+    },
+    {
+      "name": "SiliconFlow",
+      "type": "",
+      "endpoint": "",
+      "verification_results": null,
+      "success_count": 0,
+      "failed_count": 0,
+      "test_time": "2025-12-24T02:10:20+03:00"
+    },
+    {
+      "name": "Kimi",
+      "type": "",
+      "endpoint": "",
+      "verification_results": [
+        {
+          "model_id": "moonshot-v1-128k",
+          "model_name": "Moonshot V1 128K",
+          "provider_name": "Kimi",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": true,
+            "function_calling": true,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.523µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        }
+      ],
+      "success_count": 1,
+      "failed_count": 0,
+      "test_time": "2025-12-24T02:10:20+03:00"
+    },
+    {
+      "name": "Gemini",
+      "type": "",
+      "endpoint": "",
+      "verification_results": [
+        {
+          "model_id": "gemini-2.0-flash-exp",
+          "model_name": "Gemini 2.0 Flash Experimental",
+          "provider_name": "Gemini",
+          "features_verified": {
+            "mcps": true,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": true,
+            "function_calling": true,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.855µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        },
+        {
+          "model_id": "gemini-1.5-pro",
+          "model_name": "Gemini 1.5 Pro",
+          "provider_name": "Gemini",
+          "features_verified": {
+            "mcps": false,
+            "lsps": false,
+            "embeddings": false,
+            "streaming": true,
+            "function_calling": true,
+            "vision": false,
+            "tools": false
+          },
+          "latency": "4.149µs",
+          "test_time": "2025-12-24T02:10:20+03:00",
+          "overall_status": "success"
+        }
+      ],
+      "success_count": 2,
+      "failed_count": 0,
+      "test_time": "2025-12-24T02:10:20+03:00"
+    },
+    {
+      "name": "OpenRouter",
+      "type": "",
+      "endpoint": "",
+      "verification_results": null,
+      "success_count": 0,
+      "failed_count": 0,
+      "test_time": "2025-12-24T02:10:20+03:00"
+    },
+    {
+      "name": "Z.AI",
+      "type": "",
+      "endpoint": "",
+      "verification_results": null,
+      "success_count": 0,
+      "failed_count": 0,
+      "test_time": "2025-12-24T02:10:20+03:00"
+    },
+    {
+      "name": "DeepSeek",
+      "type": "",
+      "endpoint": "",
+      "verification_results": null,
+      "success_count": 0,
+      "failed_count": 0,
+      "test_time": "2025-12-24T02:10:20+03:00"
+    },
+    {
+      "name": "Qwen",
+      "type": "",
+      "endpoint": "",
+      "verification_results": null,
+      "success_count": 0,
+      "failed_count": 0,
+      "test_time": "2025-12-24T02:10:20+03:00"
+    },
+    {
+      "name": "Claude",
+      "type": "",
+      "endpoint": "",
+      "verification_results": null,
+      "success_count": 0,
+      "failed_count": 0,
+      "test_time": "2025-12-24T02:10:20+03:00"
+    }
+  ],
+  "summary": {
+    "total_models": 55,
+    "verified_models": 55,
+    "models_with_streaming": 5,
+    "models_with_function_calling": 4,
+    "models_with_vision": 0,
+    "models_with_embeddings": 2,
+    "free_models": 55,
+    "paid_models": 0
+  }
+}

@@ -1,0 +1,4035 @@
+{
+  "challenge_name": "providers_models_discovery",
+  "challenge_date": "2025-12-24",
+  "start_time": "2025-12-24T02:23:08+03:00",
+  "end_time": "2025-12-24T02:23:17+03:00",
+  "duration": "9.086725713s",
+  "providers": [
+    {
+      "name": "HuggingFace",
+      "type": "",
+      "api_endpoint": "https://api-inference.huggingface.co",
+      "models": [
+        {
+          "id": "sentence-transformers/all-MiniLM-L6-v2",
+          "name": "sentence-transformers/all-MiniLM-L6-v2 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "Falconsai/nsfw_image_detection",
+          "name": "Falconsai/nsfw_image_detection (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "google/electra-base-discriminator",
+          "name": "google/electra-base-discriminator (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "google-bert/bert-base-uncased",
+          "name": "google-bert/bert-base-uncased (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "dima806/fairface_age_image_detection",
+          "name": "dima806/fairface_age_image_detection (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "sentence-transformers/all-mpnet-base-v2",
+          "name": "sentence-transformers/all-mpnet-base-v2 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+          "name": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "timm/mobilenetv3_small_100.lamb_in1k",
+          "name": "timm/mobilenetv3_small_100.lamb_in1k (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "FacebookAI/roberta-large",
+          "name": "FacebookAI/roberta-large (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "openai/clip-vit-base-patch32",
+          "name": "openai/clip-vit-base-patch32 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "pyannote/segmentation-3.0",
+          "name": "pyannote/segmentation-3.0 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "laion/clap-htsat-fused",
+          "name": "laion/clap-htsat-fused (free to use, toon)",
+          "capabilities": [
+            "feature-extraction",
+            "embeddings"
+          ],
+          "features": {
+            "embeddings": [
+              "default"
+            ],
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "pyannote/speaker-diarization-3.1",
+          "name": "pyannote/speaker-diarization-3.1 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "pyannote/wespeaker-voxceleb-resnet34-LM",
+          "name": "pyannote/wespeaker-voxceleb-resnet34-LM (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "colbert-ir/colbertv2.0",
+          "name": "colbert-ir/colbertv2.0 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "Bingsu/adetailer",
+          "name": "Bingsu/adetailer (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "prajjwal1/bert-tiny",
+          "name": "prajjwal1/bert-tiny (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "omni-research/Tarsier2-Recap-7b",
+          "name": "omni-research/Tarsier2-Recap-7b (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "meta-llama/Llama-3.1-8B-Instruct",
+          "name": "meta-llama/Llama-3.1-8B-Instruct (free to use, toon)",
+          "capabilities": [
+            "text-generation"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "magic-leap-community/superpoint",
+          "name": "magic-leap-community/superpoint (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "ETH-CVG/lightglue_superpoint",
+          "name": "ETH-CVG/lightglue_superpoint (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "Qwen/Qwen2.5-3B-Instruct",
+          "name": "Qwen/Qwen2.5-3B-Instruct (free to use, toon)",
+          "capabilities": [
+            "text-generation"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "openai/clip-vit-large-patch14",
+          "name": "openai/clip-vit-large-patch14 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "BAAI/bge-m3",
+          "name": "BAAI/bge-m3 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "openai-community/gpt2",
+          "name": "openai-community/gpt2 (free to use, toon)",
+          "capabilities": [
+            "text-generation"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "FacebookAI/roberta-base",
+          "name": "FacebookAI/roberta-base (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "distilbert/distilbert-base-uncased",
+          "name": "distilbert/distilbert-base-uncased (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "Qwen/Qwen3-0.6B",
+          "name": "Qwen/Qwen3-0.6B (free to use, toon)",
+          "capabilities": [
+            "text-generation"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "facebook/contriever",
+          "name": "facebook/contriever (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "autogluon/chronos-bolt-small",
+          "name": "autogluon/chronos-bolt-small (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "timm/resnet50.a1_in1k",
+          "name": "timm/resnet50.a1_in1k (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "openai/gpt-oss-20b",
+          "name": "openai/gpt-oss-20b (free to use, toon)",
+          "capabilities": [
+            "text-generation"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "Qwen/Qwen2.5-7B-Instruct",
+          "name": "Qwen/Qwen2.5-7B-Instruct (free to use, toon)",
+          "capabilities": [
+            "text-generation"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "FacebookAI/xlm-roberta-base",
+          "name": "FacebookAI/xlm-roberta-base (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "google/siglip-so400m-patch14-384",
+          "name": "google/siglip-so400m-patch14-384 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "coqui/XTTS-v2",
+          "name": "coqui/XTTS-v2 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged",
+          "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "openai/whisper-large-v3",
+          "name": "openai/whisper-large-v3 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn",
+          "name": "jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "cross-encoder/ms-marco-MiniLM-L6-v2",
+          "name": "cross-encoder/ms-marco-MiniLM-L6-v2 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+          "name": "sentence-transformers/paraphrase-multilingual-mpnet-base-v2 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "Kijai/WanVideo_comfy",
+          "name": "Kijai/WanVideo_comfy (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "Qwen/Qwen3-1.7B",
+          "name": "Qwen/Qwen3-1.7B (free to use, toon)",
+          "capabilities": [
+            "text-generation"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "openai/clip-vit-large-patch14-336",
+          "name": "openai/clip-vit-large-patch14-336 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "google-bert/bert-base-multilingual-uncased",
+          "name": "google-bert/bert-base-multilingual-uncased (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "google/vit-base-patch16-224",
+          "name": "google/vit-base-patch16-224 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "lpiccinelli/unidepth-v2-vitl14",
+          "name": "lpiccinelli/unidepth-v2-vitl14 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "jinaai/jina-embeddings-v3",
+          "name": "jinaai/jina-embeddings-v3 (free to use, toon)",
+          "capabilities": [
+            "feature-extraction",
+            "embeddings"
+          ],
+          "features": {
+            "embeddings": [
+              "default"
+            ],
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "jonatasgrosman/wav2vec2-large-xlsr-53-russian",
+          "name": "jonatasgrosman/wav2vec2-large-xlsr-53-russian (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+          "name": "Qwen/Qwen2.5-Coder-0.5B-Instruct (free to use, toon)",
+          "capabilities": [
+            "text-generation"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        }
+      ],
+      "status": "success",
+      "features": {
+        "mcps": false,
+        "lsps": false,
+        "embeddings": false,
+        "streaming": false,
+        "function_calling": false
+      },
+      "free_to_use": true
+    },
+    {
+      "name": "Nvidia",
+      "type": "",
+      "api_endpoint": "https://integrate.api.nvidia.com/v1",
+      "models": [
+        {
+          "id": "nvidia-nemotron-4-340b",
+          "name": "NVIDIA Nemotron 4 340B (free to use, toon)",
+          "capabilities": [
+            "text-generation",
+            "chat",
+            "code-generation"
+          ],
+          "features": {
+            "streaming": true,
+            "function_calling": true,
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "meta-llama3-70b-instruct",
+          "name": "Llama 3 70B Instruct (free to use, toon)",
+          "capabilities": [
+            "text-generation",
+            "chat"
+          ],
+          "features": {
+            "streaming": true,
+            "toon_format": true
+          },
+          "free_to_use": true
+        }
+      ],
+      "status": "success",
+      "features": {
+        "mcps": false,
+        "lsps": false,
+        "embeddings": false,
+        "streaming": false,
+        "function_calling": false
+      },
+      "free_to_use": true
+    },
+    {
+      "name": "Chutes",
+      "type": "",
+      "api_endpoint": "https://api.chutes.ai/v1",
+      "models": null,
+      "status": "error",
+      "error": "operation failed after 3 attempts, last error: API returned retryable status 429: \u003chtml\u003e\r\n\u003chead\u003e\u003ctitle\u003e429 Too Many Requests\u003c/title\u003e\u003c/head\u003e\r\n\u003cbody\u003e\r\n\u003ccenter\u003e\u003ch1\u003e429 Too Many Requests\u003c/h1\u003e\u003c/center\u003e\r\n\u003chr\u003e\u003ccenter\u003enginx\u003c/center\u003e\r\n\u003c/body\u003e\r\n\u003c/html\u003e\r\n",
+      "features": {
+        "mcps": false,
+        "lsps": false,
+        "embeddings": false,
+        "streaming": false,
+        "function_calling": false
+      },
+      "free_to_use": true
+    },
+    {
+      "name": "SiliconFlow",
+      "type": "",
+      "api_endpoint": "https://api.siliconflow.cn/v1",
+      "models": null,
+      "status": "error",
+      "error": "operation failed after 3 attempts, last error: API returned permanent status 401: \"Api key is invalid\"",
+      "features": {
+        "mcps": false,
+        "lsps": false,
+        "embeddings": false,
+        "streaming": false,
+        "function_calling": false
+      },
+      "free_to_use": true
+    },
+    {
+      "name": "Kimi",
+      "type": "",
+      "api_endpoint": "https://api.moonshot.cn/v1",
+      "models": [
+        {
+          "id": "moonshot-v1-8k",
+          "name": "Moonshot v1 8K (free to use)",
+          "capabilities": [
+            "chat"
+          ],
+          "features": {},
+          "free_to_use": true
+        },
+        {
+          "id": "moonshot-v1-32k",
+          "name": "Moonshot v1 32K (free to use)",
+          "capabilities": [
+            "chat"
+          ],
+          "features": {},
+          "free_to_use": true
+        },
+        {
+          "id": "moonshot-v1-128k",
+          "name": "Moonshot v1 128K (free to use)",
+          "capabilities": [
+            "chat"
+          ],
+          "features": {},
+          "free_to_use": true
+        }
+      ],
+      "status": "success",
+      "features": {
+        "mcps": false,
+        "lsps": false,
+        "embeddings": false,
+        "streaming": false,
+        "function_calling": false
+      },
+      "free_to_use": true
+    },
+    {
+      "name": "Gemini",
+      "type": "",
+      "api_endpoint": "https://generativelanguage.googleapis.com/v1",
+      "models": [
+        {
+          "id": "gemini-2.0-flash-exp",
+          "name": "Gemini 2.0 Flash (free to use, toon)",
+          "capabilities": [
+            "chat",
+            "vision"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "gemini-1.5-pro",
+          "name": "Gemini 1.5 Pro (free to use, toon)",
+          "capabilities": [
+            "chat",
+            "vision"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "gemini-1.5-flash",
+          "name": "Gemini 1.5 Flash (free to use, toon)",
+          "capabilities": [
+            "chat",
+            "vision"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        }
+      ],
+      "status": "success",
+      "features": {
+        "mcps": false,
+        "lsps": false,
+        "embeddings": false,
+        "streaming": false,
+        "function_calling": false
+      },
+      "free_to_use": true
+    },
+    {
+      "name": "OpenRouter",
+      "type": "",
+      "api_endpoint": "https://openrouter.ai/api/v1",
+      "models": [
+        {
+          "id": "bytedance-seed/seed-1.6-flash",
+          "name": "ByteDance Seed: Seed 1.6 Flash (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "bytedance-seed/seed-1.6",
+          "name": "ByteDance Seed: Seed 1.6 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "minimax/minimax-m2.1",
+          "name": "MiniMax: MiniMax M2.1 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "z-ai/glm-4.7",
+          "name": "Z.AI: GLM 4.7 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemini-3-flash-preview",
+          "name": "Google: Gemini 3 Flash Preview (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/mistral-small-creative",
+          "name": "Mistral: Mistral Small Creative (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "allenai/olmo-3.1-32b-think:free",
+          "name": "AllenAI: Olmo 3.1 32B Think (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "xiaomi/mimo-v2-flash:free",
+          "name": "Xiaomi: MiMo-V2-Flash (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "nvidia/nemotron-3-nano-30b-a3b:free",
+          "name": "NVIDIA: Nemotron 3 Nano 30B A3B (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "nvidia/nemotron-3-nano-30b-a3b",
+          "name": "NVIDIA: Nemotron 3 Nano 30B A3B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-5.2-chat",
+          "name": "OpenAI: GPT-5.2 Chat (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-5.2-pro",
+          "name": "OpenAI: GPT-5.2 Pro (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-5.2",
+          "name": "OpenAI: GPT-5.2 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/devstral-2512:free",
+          "name": "Mistral: Devstral 2 2512 (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/devstral-2512",
+          "name": "Mistral: Devstral 2 2512 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "relace/relace-search",
+          "name": "Relace: Relace Search (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "z-ai/glm-4.6v",
+          "name": "Z.AI: GLM 4.6V (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "nex-agi/deepseek-v3.1-nex-n1:free",
+          "name": "Nex AGI: DeepSeek V3.1 Nex N1 (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "essentialai/rnj-1-instruct",
+          "name": "EssentialAI: Rnj 1 Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openrouter/bodybuilder",
+          "name": "Body Builder (beta) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-5.1-codex-max",
+          "name": "OpenAI: GPT-5.1-Codex-Max (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "amazon/nova-2-lite-v1",
+          "name": "Amazon: Nova 2 Lite (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/ministral-14b-2512",
+          "name": "Mistral: Ministral 3 14B 2512 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/ministral-8b-2512",
+          "name": "Mistral: Ministral 3 8B 2512 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/ministral-3b-2512",
+          "name": "Mistral: Ministral 3 3B 2512 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/mistral-large-2512",
+          "name": "Mistral: Mistral Large 3 2512 (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "arcee-ai/trinity-mini:free",
+          "name": "Arcee AI: Trinity Mini (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "arcee-ai/trinity-mini",
+          "name": "Arcee AI: Trinity Mini (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepseek/deepseek-v3.2-speciale",
+          "name": "DeepSeek: DeepSeek V3.2 Speciale (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepseek/deepseek-v3.2",
+          "name": "DeepSeek: DeepSeek V3.2 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "prime-intellect/intellect-3",
+          "name": "Prime Intellect: INTELLECT-3 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "tngtech/tng-r1t-chimera:free",
+          "name": "TNG: R1T Chimera (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "tngtech/tng-r1t-chimera",
+          "name": "TNG: R1T Chimera (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "anthropic/claude-opus-4.5",
+          "name": "Anthropic: Claude Opus 4.5 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "allenai/olmo-3-32b-think:free",
+          "name": "AllenAI: Olmo 3 32B Think (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "allenai/olmo-3-7b-instruct",
+          "name": "AllenAI: Olmo 3 7B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "allenai/olmo-3-7b-think",
+          "name": "AllenAI: Olmo 3 7B Think (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemini-3-pro-image-preview",
+          "name": "Google: Nano Banana Pro (Gemini 3 Pro Image Preview) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "x-ai/grok-4.1-fast",
+          "name": "xAI: Grok 4.1 Fast (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemini-3-pro-preview",
+          "name": "Google: Gemini 3 Pro Preview (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepcogito/cogito-v2.1-671b",
+          "name": "Deep Cogito: Cogito v2.1 671B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-5.1",
+          "name": "OpenAI: GPT-5.1 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-5.1-chat",
+          "name": "OpenAI: GPT-5.1 Chat (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-5.1-codex",
+          "name": "OpenAI: GPT-5.1-Codex (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-5.1-codex-mini",
+          "name": "OpenAI: GPT-5.1-Codex-Mini (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "kwaipilot/kat-coder-pro:free",
+          "name": "Kwaipilot: KAT-Coder-Pro V1 (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "moonshotai/kimi-k2-thinking",
+          "name": "MoonshotAI: Kimi K2 Thinking (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "amazon/nova-premier-v1",
+          "name": "Amazon: Nova Premier 1.0 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "perplexity/sonar-pro-search",
+          "name": "Perplexity: Sonar Pro Search (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/voxtral-small-24b-2507",
+          "name": "Mistral: Voxtral Small 24B 2507 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-oss-safeguard-20b",
+          "name": "OpenAI: gpt-oss-safeguard-20b (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "nvidia/nemotron-nano-12b-v2-vl:free",
+          "name": "NVIDIA: Nemotron Nano 12B 2 VL (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "nvidia/nemotron-nano-12b-v2-vl",
+          "name": "NVIDIA: Nemotron Nano 12B 2 VL (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "minimax/minimax-m2",
+          "name": "MiniMax: MiniMax M2 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-vl-32b-instruct",
+          "name": "Qwen: Qwen3 VL 32B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "liquid/lfm2-8b-a1b",
+          "name": "LiquidAI/LFM2-8B-A1B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "liquid/lfm-2.2-6b",
+          "name": "LiquidAI/LFM2-2.6B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "ibm-granite/granite-4.0-h-micro",
+          "name": "IBM: Granite 4.0 Micro (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepcogito/cogito-v2-preview-llama-405b",
+          "name": "Deep Cogito: Cogito V2 Preview Llama 405B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-5-image-mini",
+          "name": "OpenAI: GPT-5 Image Mini (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "anthropic/claude-haiku-4.5",
+          "name": "Anthropic: Claude Haiku 4.5 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-vl-8b-thinking",
+          "name": "Qwen: Qwen3 VL 8B Thinking (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-vl-8b-instruct",
+          "name": "Qwen: Qwen3 VL 8B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-5-image",
+          "name": "OpenAI: GPT-5 Image (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/o3-deep-research",
+          "name": "OpenAI: o3 Deep Research (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/o4-mini-deep-research",
+          "name": "OpenAI: o4 Mini Deep Research (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+          "name": "NVIDIA: Llama 3.3 Nemotron Super 49B V1.5 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "baidu/ernie-4.5-21b-a3b-thinking",
+          "name": "Baidu: ERNIE 4.5 21B A3B Thinking (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemini-2.5-flash-image",
+          "name": "Google: Gemini 2.5 Flash Image (Nano Banana) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-vl-30b-a3b-thinking",
+          "name": "Qwen: Qwen3 VL 30B A3B Thinking (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-vl-30b-a3b-instruct",
+          "name": "Qwen: Qwen3 VL 30B A3B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-5-pro",
+          "name": "OpenAI: GPT-5 Pro (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "z-ai/glm-4.6",
+          "name": "Z.AI: GLM 4.6 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "z-ai/glm-4.6:exacto",
+          "name": "Z.AI: GLM 4.6 (exacto) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "anthropic/claude-sonnet-4.5",
+          "name": "Anthropic: Claude Sonnet 4.5 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepseek/deepseek-v3.2-exp",
+          "name": "DeepSeek: DeepSeek V3.2 Exp (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "thedrummer/cydonia-24b-v4.1",
+          "name": "TheDrummer: Cydonia 24B V4.1 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "relace/relace-apply-3",
+          "name": "Relace: Relace Apply 3 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemini-2.5-flash-preview-09-2025",
+          "name": "Google: Gemini 2.5 Flash Preview 09-2025 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemini-2.5-flash-lite-preview-09-2025",
+          "name": "Google: Gemini 2.5 Flash Lite Preview 09-2025 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-vl-235b-a22b-thinking",
+          "name": "Qwen: Qwen3 VL 235B A22B Thinking (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-vl-235b-a22b-instruct",
+          "name": "Qwen: Qwen3 VL 235B A22B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-max",
+          "name": "Qwen: Qwen3 Max (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-coder-plus",
+          "name": "Qwen: Qwen3 Coder Plus (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-5-codex",
+          "name": "OpenAI: GPT-5 Codex (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepseek/deepseek-v3.1-terminus:exacto",
+          "name": "DeepSeek: DeepSeek V3.1 Terminus (exacto) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepseek/deepseek-v3.1-terminus",
+          "name": "DeepSeek: DeepSeek V3.1 Terminus (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "x-ai/grok-4-fast",
+          "name": "xAI: Grok 4 Fast (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "alibaba/tongyi-deepresearch-30b-a3b:free",
+          "name": "Tongyi DeepResearch 30B A3B (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "alibaba/tongyi-deepresearch-30b-a3b",
+          "name": "Tongyi DeepResearch 30B A3B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-coder-flash",
+          "name": "Qwen: Qwen3 Coder Flash (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "opengvlab/internvl3-78b",
+          "name": "OpenGVLab: InternVL3 78B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-next-80b-a3b-thinking",
+          "name": "Qwen: Qwen3 Next 80B A3B Thinking (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-next-80b-a3b-instruct",
+          "name": "Qwen: Qwen3 Next 80B A3B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "meituan/longcat-flash-chat",
+          "name": "Meituan: LongCat Flash Chat (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen-plus-2025-07-28",
+          "name": "Qwen: Qwen Plus 0728 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen-plus-2025-07-28:thinking",
+          "name": "Qwen: Qwen Plus 0728 (thinking) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "nvidia/nemotron-nano-9b-v2:free",
+          "name": "NVIDIA: Nemotron Nano 9B V2 (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "nvidia/nemotron-nano-9b-v2",
+          "name": "NVIDIA: Nemotron Nano 9B V2 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "moonshotai/kimi-k2-0905",
+          "name": "MoonshotAI: Kimi K2 0905 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "moonshotai/kimi-k2-0905:exacto",
+          "name": "MoonshotAI: Kimi K2 0905 (exacto) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepcogito/cogito-v2-preview-llama-70b",
+          "name": "Deep Cogito: Cogito V2 Preview Llama 70B (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepcogito/cogito-v2-preview-llama-109b-moe",
+          "name": "Cogito V2 Preview Llama 109B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "stepfun-ai/step3",
+          "name": "StepFun: Step3 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-30b-a3b-thinking-2507",
+          "name": "Qwen: Qwen3 30B A3B Thinking 2507 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "x-ai/grok-code-fast-1",
+          "name": "xAI: Grok Code Fast 1 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "nousresearch/hermes-4-70b",
+          "name": "Nous: Hermes 4 70B (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "nousresearch/hermes-4-405b",
+          "name": "Nous: Hermes 4 405B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemini-2.5-flash-image-preview",
+          "name": "Google: Gemini 2.5 Flash Image Preview (Nano Banana) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepseek/deepseek-chat-v3.1",
+          "name": "DeepSeek: DeepSeek V3.1 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-4o-audio-preview",
+          "name": "OpenAI: GPT-4o Audio (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/mistral-medium-3.1",
+          "name": "Mistral: Mistral Medium 3.1 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "baidu/ernie-4.5-21b-a3b",
+          "name": "Baidu: ERNIE 4.5 21B A3B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "baidu/ernie-4.5-vl-28b-a3b",
+          "name": "Baidu: ERNIE 4.5 VL 28B A3B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "z-ai/glm-4.5v",
+          "name": "Z.AI: GLM 4.5V (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "ai21/jamba-mini-1.7",
+          "name": "AI21: Jamba Mini 1.7 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "ai21/jamba-large-1.7",
+          "name": "AI21: Jamba Large 1.7 (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-5-chat",
+          "name": "OpenAI: GPT-5 Chat (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-5",
+          "name": "OpenAI: GPT-5 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-5-mini",
+          "name": "OpenAI: GPT-5 Mini (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-5-nano",
+          "name": "OpenAI: GPT-5 Nano (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-oss-120b:free",
+          "name": "OpenAI: gpt-oss-120b (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-oss-120b",
+          "name": "OpenAI: gpt-oss-120b (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-oss-120b:exacto",
+          "name": "OpenAI: gpt-oss-120b (exacto) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-oss-20b:free",
+          "name": "OpenAI: gpt-oss-20b (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-oss-20b",
+          "name": "OpenAI: gpt-oss-20b (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "anthropic/claude-opus-4.1",
+          "name": "Anthropic: Claude Opus 4.1 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/codestral-2508",
+          "name": "Mistral: Codestral 2508 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-coder-30b-a3b-instruct",
+          "name": "Qwen: Qwen3 Coder 30B A3B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-30b-a3b-instruct-2507",
+          "name": "Qwen: Qwen3 30B A3B Instruct 2507 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "z-ai/glm-4.5",
+          "name": "Z.AI: GLM 4.5 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "z-ai/glm-4.5-air:free",
+          "name": "Z.AI: GLM 4.5 Air (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "z-ai/glm-4.5-air",
+          "name": "Z.AI: GLM 4.5 Air (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-235b-a22b-thinking-2507",
+          "name": "Qwen: Qwen3 235B A22B Thinking 2507 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "z-ai/glm-4-32b",
+          "name": "Z.AI: GLM 4 32B  (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-coder:free",
+          "name": "Qwen: Qwen3 Coder 480B A35B (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-coder",
+          "name": "Qwen: Qwen3 Coder 480B A35B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-coder:exacto",
+          "name": "Qwen: Qwen3 Coder 480B A35B (exacto) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "bytedance/ui-tars-1.5-7b",
+          "name": "ByteDance: UI-TARS 7B  (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemini-2.5-flash-lite",
+          "name": "Google: Gemini 2.5 Flash Lite (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-235b-a22b-2507",
+          "name": "Qwen: Qwen3 235B A22B Instruct 2507 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "switchpoint/router",
+          "name": "Switchpoint Router (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "moonshotai/kimi-k2:free",
+          "name": "MoonshotAI: Kimi K2 0711 (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "moonshotai/kimi-k2",
+          "name": "MoonshotAI: Kimi K2 0711 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "thudm/glm-4.1v-9b-thinking",
+          "name": "THUDM: GLM 4.1V 9B Thinking (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/devstral-medium",
+          "name": "Mistral: Devstral Medium (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/devstral-small",
+          "name": "Mistral: Devstral Small 1.1 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+          "name": "Venice: Uncensored (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "x-ai/grok-4",
+          "name": "xAI: Grok 4 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemma-3n-e2b-it:free",
+          "name": "Google: Gemma 3n 2B (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "tencent/hunyuan-a13b-instruct",
+          "name": "Tencent: Hunyuan A13B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "tngtech/deepseek-r1t2-chimera:free",
+          "name": "TNG: DeepSeek R1T2 Chimera (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "tngtech/deepseek-r1t2-chimera",
+          "name": "TNG: DeepSeek R1T2 Chimera (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "morph/morph-v3-large",
+          "name": "Morph: Morph V3 Large (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "morph/morph-v3-fast",
+          "name": "Morph: Morph V3 Fast (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "baidu/ernie-4.5-vl-424b-a47b",
+          "name": "Baidu: ERNIE 4.5 VL 424B A47B  (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "baidu/ernie-4.5-300b-a47b",
+          "name": "Baidu: ERNIE 4.5 300B A47B  (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "inception/mercury",
+          "name": "Inception: Mercury (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/mistral-small-3.2-24b-instruct",
+          "name": "Mistral: Mistral Small 3.2 24B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "minimax/minimax-m1",
+          "name": "MiniMax: MiniMax M1 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemini-2.5-flash",
+          "name": "Google: Gemini 2.5 Flash (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemini-2.5-pro",
+          "name": "Google: Gemini 2.5 Pro (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "moonshotai/kimi-dev-72b",
+          "name": "MoonshotAI: Kimi Dev 72B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/o3-pro",
+          "name": "OpenAI: o3 Pro (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "x-ai/grok-3-mini",
+          "name": "xAI: Grok 3 Mini (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "x-ai/grok-3",
+          "name": "xAI: Grok 3 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemini-2.5-pro-preview",
+          "name": "Google: Gemini 2.5 Pro Preview 06-05 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepseek/deepseek-r1-0528-qwen3-8b",
+          "name": "DeepSeek: DeepSeek R1 0528 Qwen3 8B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepseek/deepseek-r1-0528:free",
+          "name": "DeepSeek: R1 0528 (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepseek/deepseek-r1-0528",
+          "name": "DeepSeek: R1 0528 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "anthropic/claude-opus-4",
+          "name": "Anthropic: Claude Opus 4 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "anthropic/claude-sonnet-4",
+          "name": "Anthropic: Claude Sonnet 4 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/devstral-small-2505",
+          "name": "Mistral: Devstral Small 2505 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemma-3n-e4b-it:free",
+          "name": "Google: Gemma 3n 4B (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemma-3n-e4b-it",
+          "name": "Google: Gemma 3n 4B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/codex-mini",
+          "name": "OpenAI: Codex Mini (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "nousresearch/deephermes-3-mistral-24b-preview",
+          "name": "Nous: DeepHermes 3 Mistral 24B Preview (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/mistral-medium-3",
+          "name": "Mistral: Mistral Medium 3 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemini-2.5-pro-preview-05-06",
+          "name": "Google: Gemini 2.5 Pro Preview 05-06 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "arcee-ai/spotlight",
+          "name": "Arcee AI: Spotlight (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "arcee-ai/maestro-reasoning",
+          "name": "Arcee AI: Maestro Reasoning (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "arcee-ai/virtuoso-large",
+          "name": "Arcee AI: Virtuoso Large (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "arcee-ai/coder-large",
+          "name": "Arcee AI: Coder Large (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "microsoft/phi-4-reasoning-plus",
+          "name": "Microsoft: Phi 4 Reasoning Plus (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "inception/mercury-coder",
+          "name": "Inception: Mercury Coder (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-4b:free",
+          "name": "Qwen: Qwen3 4B (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepseek/deepseek-prover-v2",
+          "name": "DeepSeek: DeepSeek Prover V2 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "meta-llama/llama-guard-4-12b",
+          "name": "Meta: Llama Guard 4 12B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-30b-a3b",
+          "name": "Qwen: Qwen3 30B A3B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-8b",
+          "name": "Qwen: Qwen3 8B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-14b",
+          "name": "Qwen: Qwen3 14B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-32b",
+          "name": "Qwen: Qwen3 32B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen3-235b-a22b",
+          "name": "Qwen: Qwen3 235B A22B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "tngtech/deepseek-r1t-chimera:free",
+          "name": "TNG: DeepSeek R1T Chimera (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "tngtech/deepseek-r1t-chimera",
+          "name": "TNG: DeepSeek R1T Chimera (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/o4-mini-high",
+          "name": "OpenAI: o4 Mini High (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/o3",
+          "name": "OpenAI: o3 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/o4-mini",
+          "name": "OpenAI: o4 Mini (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen2.5-coder-7b-instruct",
+          "name": "Qwen: Qwen2.5 Coder 7B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-4.1",
+          "name": "OpenAI: GPT-4.1 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-4.1-mini",
+          "name": "OpenAI: GPT-4.1 Mini (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-4.1-nano",
+          "name": "OpenAI: GPT-4.1 Nano (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "eleutherai/llemma_7b",
+          "name": "EleutherAI: Llemma 7b (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "alfredpros/codellama-7b-instruct-solidity",
+          "name": "AlfredPros: CodeLLaMa 7B Instruct Solidity (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "arliai/qwq-32b-arliai-rpr-v1",
+          "name": "ArliAI: QwQ 32B RpR v1 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "x-ai/grok-3-mini-beta",
+          "name": "xAI: Grok 3 Mini Beta (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "x-ai/grok-3-beta",
+          "name": "xAI: Grok 3 Beta (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+          "name": "NVIDIA: Llama 3.1 Nemotron Ultra 253B v1 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "meta-llama/llama-4-maverick",
+          "name": "Meta: Llama 4 Maverick (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "meta-llama/llama-4-scout",
+          "name": "Meta: Llama 4 Scout (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen2.5-vl-32b-instruct",
+          "name": "Qwen: Qwen2.5 VL 32B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepseek/deepseek-chat-v3-0324",
+          "name": "DeepSeek: DeepSeek V3 0324 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/o1-pro",
+          "name": "OpenAI: o1-pro (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/mistral-small-3.1-24b-instruct:free",
+          "name": "Mistral: Mistral Small 3.1 24B (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/mistral-small-3.1-24b-instruct",
+          "name": "Mistral: Mistral Small 3.1 24B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "allenai/olmo-2-0325-32b-instruct",
+          "name": "AllenAI: Olmo 2 32B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemma-3-4b-it:free",
+          "name": "Google: Gemma 3 4B (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemma-3-4b-it",
+          "name": "Google: Gemma 3 4B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemma-3-12b-it:free",
+          "name": "Google: Gemma 3 12B (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemma-3-12b-it",
+          "name": "Google: Gemma 3 12B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "cohere/command-a",
+          "name": "Cohere: Command A (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-4o-mini-search-preview",
+          "name": "OpenAI: GPT-4o-mini Search Preview (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-4o-search-preview",
+          "name": "OpenAI: GPT-4o Search Preview (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemma-3-27b-it:free",
+          "name": "Google: Gemma 3 27B (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemma-3-27b-it",
+          "name": "Google: Gemma 3 27B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "thedrummer/skyfall-36b-v2",
+          "name": "TheDrummer: Skyfall 36B V2 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "microsoft/phi-4-multimodal-instruct",
+          "name": "Microsoft: Phi 4 Multimodal Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "perplexity/sonar-reasoning-pro",
+          "name": "Perplexity: Sonar Reasoning Pro (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "perplexity/sonar-pro",
+          "name": "Perplexity: Sonar Pro (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "perplexity/sonar-deep-research",
+          "name": "Perplexity: Sonar Deep Research (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwq-32b",
+          "name": "Qwen: QwQ 32B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemini-2.0-flash-lite-001",
+          "name": "Google: Gemini 2.0 Flash Lite (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "anthropic/claude-3.7-sonnet:thinking",
+          "name": "Anthropic: Claude 3.7 Sonnet (thinking) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "anthropic/claude-3.7-sonnet",
+          "name": "Anthropic: Claude 3.7 Sonnet (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/mistral-saba",
+          "name": "Mistral: Saba (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "meta-llama/llama-guard-3-8b",
+          "name": "Llama Guard 3 8B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/o3-mini-high",
+          "name": "OpenAI: o3 Mini High (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemini-2.0-flash-001",
+          "name": "Google: Gemini 2.0 Flash (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen-vl-plus",
+          "name": "Qwen: Qwen VL Plus (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "aion-labs/aion-1.0",
+          "name": "AionLabs: Aion-1.0 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "aion-labs/aion-1.0-mini",
+          "name": "AionLabs: Aion-1.0-Mini (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "aion-labs/aion-rp-llama-3.1-8b",
+          "name": "AionLabs: Aion-RP 1.0 (8B) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen-vl-max",
+          "name": "Qwen: Qwen VL Max (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen-turbo",
+          "name": "Qwen: Qwen-Turbo (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen2.5-vl-72b-instruct",
+          "name": "Qwen: Qwen2.5 VL 72B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen-plus",
+          "name": "Qwen: Qwen-Plus (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen-max",
+          "name": "Qwen: Qwen-Max  (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/o3-mini",
+          "name": "OpenAI: o3 Mini (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/mistral-small-24b-instruct-2501",
+          "name": "Mistral: Mistral Small 3 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepseek/deepseek-r1-distill-qwen-32b",
+          "name": "DeepSeek: R1 Distill Qwen 32B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepseek/deepseek-r1-distill-qwen-14b",
+          "name": "DeepSeek: R1 Distill Qwen 14B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "perplexity/sonar-reasoning",
+          "name": "Perplexity: Sonar Reasoning (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "perplexity/sonar",
+          "name": "Perplexity: Sonar (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepseek/deepseek-r1-distill-llama-70b",
+          "name": "DeepSeek: R1 Distill Llama 70B (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepseek/deepseek-r1",
+          "name": "DeepSeek: R1 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "minimax/minimax-01",
+          "name": "MiniMax: MiniMax-01 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "microsoft/phi-4",
+          "name": "Microsoft: Phi 4 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "sao10k/l3.1-70b-hanami-x1",
+          "name": "Sao10K: Llama 3.1 70B Hanami x1 (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepseek/deepseek-chat",
+          "name": "DeepSeek: DeepSeek V3 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "sao10k/l3.3-euryale-70b",
+          "name": "Sao10K: Llama 3.3 Euryale 70B (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/o1",
+          "name": "OpenAI: o1 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "cohere/command-r7b-12-2024",
+          "name": "Cohere: Command R7B (12-2024) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemini-2.0-flash-exp:free",
+          "name": "Google: Gemini 2.0 Flash Experimental (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "meta-llama/llama-3.3-70b-instruct:free",
+          "name": "Meta: Llama 3.3 70B Instruct (free) (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "meta-llama/llama-3.3-70b-instruct",
+          "name": "Meta: Llama 3.3 70B Instruct (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "amazon/nova-lite-v1",
+          "name": "Amazon: Nova Lite 1.0 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "amazon/nova-micro-v1",
+          "name": "Amazon: Nova Micro 1.0 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "amazon/nova-pro-v1",
+          "name": "Amazon: Nova Pro 1.0 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-4o-2024-11-20",
+          "name": "OpenAI: GPT-4o (2024-11-20) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/mistral-large-2411",
+          "name": "Mistral Large 2411 (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/mistral-large-2407",
+          "name": "Mistral Large 2407 (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/pixtral-large-2411",
+          "name": "Mistral: Pixtral Large 2411 (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen-2.5-coder-32b-instruct",
+          "name": "Qwen2.5 Coder 32B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "raifle/sorcererlm-8x22b",
+          "name": "SorcererLM 8x22B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "thedrummer/unslopnemo-12b",
+          "name": "TheDrummer: UnslopNemo 12B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "anthropic/claude-3.5-haiku-20241022",
+          "name": "Anthropic: Claude 3.5 Haiku (2024-10-22) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "anthropic/claude-3.5-haiku",
+          "name": "Anthropic: Claude 3.5 Haiku (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "anthracite-org/magnum-v4-72b",
+          "name": "Magnum v4 72B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "anthropic/claude-3.5-sonnet",
+          "name": "Anthropic: Claude 3.5 Sonnet (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/ministral-8b",
+          "name": "Mistral: Ministral 8B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/ministral-3b",
+          "name": "Mistral: Ministral 3B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen-2.5-7b-instruct",
+          "name": "Qwen: Qwen2.5 7B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "nvidia/llama-3.1-nemotron-70b-instruct",
+          "name": "NVIDIA: Llama 3.1 Nemotron 70B Instruct (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "inflection/inflection-3-pi",
+          "name": "Inflection: Inflection 3 Pi (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "inflection/inflection-3-productivity",
+          "name": "Inflection: Inflection 3 Productivity (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "thedrummer/rocinante-12b",
+          "name": "TheDrummer: Rocinante 12B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "meta-llama/llama-3.2-3b-instruct:free",
+          "name": "Meta: Llama 3.2 3B Instruct (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "meta-llama/llama-3.2-3b-instruct",
+          "name": "Meta: Llama 3.2 3B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "meta-llama/llama-3.2-1b-instruct",
+          "name": "Meta: Llama 3.2 1B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "meta-llama/llama-3.2-90b-vision-instruct",
+          "name": "Meta: Llama 3.2 90B Vision Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "meta-llama/llama-3.2-11b-vision-instruct",
+          "name": "Meta: Llama 3.2 11B Vision Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen-2.5-72b-instruct",
+          "name": "Qwen2.5 72B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "neversleep/llama-3.1-lumimaid-8b",
+          "name": "NeverSleep: Lumimaid v0.2 8B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/pixtral-12b",
+          "name": "Mistral: Pixtral 12B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "cohere/command-r-08-2024",
+          "name": "Cohere: Command R (08-2024) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "cohere/command-r-plus-08-2024",
+          "name": "Cohere: Command R+ (08-2024) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "sao10k/l3.1-euryale-70b",
+          "name": "Sao10K: Llama 3.1 Euryale 70B v2.2 (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen-2.5-vl-7b-instruct:free",
+          "name": "Qwen: Qwen2.5-VL 7B Instruct (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "qwen/qwen-2.5-vl-7b-instruct",
+          "name": "Qwen: Qwen2.5-VL 7B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "microsoft/phi-3.5-mini-128k-instruct",
+          "name": "Microsoft: Phi-3.5 Mini 128K Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "nousresearch/hermes-3-llama-3.1-70b",
+          "name": "Nous: Hermes 3 70B Instruct (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "nousresearch/hermes-3-llama-3.1-405b:free",
+          "name": "Nous: Hermes 3 405B Instruct (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "nousresearch/hermes-3-llama-3.1-405b",
+          "name": "Nous: Hermes 3 405B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/chatgpt-4o-latest",
+          "name": "OpenAI: ChatGPT-4o (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "sao10k/l3-lunaris-8b",
+          "name": "Sao10K: Llama 3 8B Lunaris (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-4o-2024-08-06",
+          "name": "OpenAI: GPT-4o (2024-08-06) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "meta-llama/llama-3.1-405b",
+          "name": "Meta: Llama 3.1 405B (base) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "meta-llama/llama-3.1-8b-instruct",
+          "name": "Meta: Llama 3.1 8B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "meta-llama/llama-3.1-405b-instruct:free",
+          "name": "Meta: Llama 3.1 405B Instruct (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "meta-llama/llama-3.1-405b-instruct",
+          "name": "Meta: Llama 3.1 405B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "meta-llama/llama-3.1-70b-instruct",
+          "name": "Meta: Llama 3.1 70B Instruct (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/mistral-nemo",
+          "name": "Mistral: Mistral Nemo (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-4o-mini-2024-07-18",
+          "name": "OpenAI: GPT-4o-mini (2024-07-18) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-4o-mini",
+          "name": "OpenAI: GPT-4o-mini (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemma-2-27b-it",
+          "name": "Google: Gemma 2 27B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "google/gemma-2-9b-it",
+          "name": "Google: Gemma 2 9B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "sao10k/l3-euryale-70b",
+          "name": "Sao10k: Llama 3 Euryale 70B v2.1 (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "nousresearch/hermes-2-pro-llama-3-8b",
+          "name": "NousResearch: Hermes 2 Pro - Llama-3 8B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/mistral-7b-instruct:free",
+          "name": "Mistral: Mistral 7B Instruct (free) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/mistral-7b-instruct",
+          "name": "Mistral: Mistral 7B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/mistral-7b-instruct-v0.3",
+          "name": "Mistral: Mistral 7B Instruct v0.3 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "microsoft/phi-3-mini-128k-instruct",
+          "name": "Microsoft: Phi-3 Mini 128K Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "microsoft/phi-3-medium-128k-instruct",
+          "name": "Microsoft: Phi-3 Medium 128K Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "meta-llama/llama-guard-2-8b",
+          "name": "Meta: LlamaGuard 2 8B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-4o-2024-05-13",
+          "name": "OpenAI: GPT-4o (2024-05-13) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-4o",
+          "name": "OpenAI: GPT-4o (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-4o:extended",
+          "name": "OpenAI: GPT-4o (extended) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "meta-llama/llama-3-70b-instruct",
+          "name": "Meta: Llama 3 70B Instruct (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "meta-llama/llama-3-8b-instruct",
+          "name": "Meta: Llama 3 8B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/mixtral-8x22b-instruct",
+          "name": "Mistral: Mixtral 8x22B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "microsoft/wizardlm-2-8x22b",
+          "name": "WizardLM-2 8x22B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-4-turbo",
+          "name": "OpenAI: GPT-4 Turbo (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "anthropic/claude-3-haiku",
+          "name": "Anthropic: Claude 3 Haiku (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "anthropic/claude-3-opus",
+          "name": "Anthropic: Claude 3 Opus (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/mistral-large",
+          "name": "Mistral Large (http3, toon)",
+          "capabilities": [],
+          "features": {
+            "http3": true,
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-3.5-turbo-0613",
+          "name": "OpenAI: GPT-3.5 Turbo (older v0613) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-4-turbo-preview",
+          "name": "OpenAI: GPT-4 Turbo Preview (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/mistral-tiny",
+          "name": "Mistral Tiny (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/mistral-7b-instruct-v0.2",
+          "name": "Mistral: Mistral 7B Instruct v0.2 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/mixtral-8x7b-instruct",
+          "name": "Mistral: Mixtral 8x7B Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "neversleep/noromaid-20b",
+          "name": "Noromaid 20B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "alpindale/goliath-120b",
+          "name": "Goliath 120B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openrouter/auto",
+          "name": "Auto Router (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-4-1106-preview",
+          "name": "OpenAI: GPT-4 Turbo (older v1106) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-3.5-turbo-instruct",
+          "name": "OpenAI: GPT-3.5 Turbo Instruct (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mistralai/mistral-7b-instruct-v0.1",
+          "name": "Mistral: Mistral 7B Instruct v0.1 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-3.5-turbo-16k",
+          "name": "OpenAI: GPT-3.5 Turbo 16k (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "mancer/weaver",
+          "name": "Mancer: Weaver (alpha) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "undi95/remm-slerp-l2-13b",
+          "name": "ReMM SLERP 13B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "gryphe/mythomax-l2-13b",
+          "name": "MythoMax 13B (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-4-0314",
+          "name": "OpenAI: GPT-4 (older v0314) (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-4",
+          "name": "OpenAI: GPT-4 (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "openai/gpt-3.5-turbo",
+          "name": "OpenAI: GPT-3.5 Turbo (http3)",
+          "capabilities": [],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        }
+      ],
+      "status": "success",
+      "features": {
+        "mcps": false,
+        "lsps": false,
+        "embeddings": false,
+        "streaming": false,
+        "function_calling": false
+      },
+      "free_to_use": false
+    },
+    {
+      "name": "Z.AI",
+      "type": "",
+      "api_endpoint": "https://api.z.ai/api/paas/v4",
+      "models": [
+        {
+          "id": "glm-4.7",
+          "name": "GLM-4.7 (toon)",
+          "capabilities": [
+            "chat",
+            "vision",
+            "reasoning"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "glm-4.6",
+          "name": "GLM-4.6 (toon)",
+          "capabilities": [
+            "chat",
+            "vision"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "glm-4.5",
+          "name": "GLM-4.5 (toon)",
+          "capabilities": [
+            "chat",
+            "vision"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": false
+        }
+      ],
+      "status": "success",
+      "features": {
+        "mcps": false,
+        "lsps": false,
+        "embeddings": false,
+        "streaming": false,
+        "function_calling": false
+      },
+      "free_to_use": false
+    },
+    {
+      "name": "DeepSeek",
+      "type": "",
+      "api_endpoint": "https://api.deepseek.com",
+      "models": [
+        {
+          "id": "deepseek-chat",
+          "name": "DeepSeek Chat (http3)",
+          "capabilities": [
+            "chat",
+            "reasoning"
+          ],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepseek-reasoner",
+          "name": "DeepSeek Reasoner (http3)",
+          "capabilities": [
+            "chat",
+            "reasoning"
+          ],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        },
+        {
+          "id": "deepseek-coder",
+          "name": "DeepSeek Coder (http3)",
+          "capabilities": [
+            "chat",
+            "code"
+          ],
+          "features": {
+            "http3": true
+          },
+          "free_to_use": false
+        }
+      ],
+      "status": "success",
+      "features": {
+        "mcps": false,
+        "lsps": false,
+        "embeddings": false,
+        "streaming": false,
+        "function_calling": false
+      },
+      "free_to_use": false
+    },
+    {
+      "name": "Qwen",
+      "type": "",
+      "api_endpoint": "",
+      "models": null,
+      "status": "skipped",
+      "error": "no_api_key",
+      "features": {
+        "mcps": false,
+        "lsps": false,
+        "embeddings": false,
+        "streaming": false,
+        "function_calling": false
+      },
+      "free_to_use": false
+    },
+    {
+      "name": "Claude",
+      "type": "",
+      "api_endpoint": "",
+      "models": null,
+      "status": "skipped",
+      "error": "no_api_key",
+      "features": {
+        "mcps": false,
+        "lsps": false,
+        "embeddings": false,
+        "streaming": false,
+        "function_calling": false
+      },
+      "free_to_use": false
+    }
+  ],
+  "summary": {
+    "total_providers": 11,
+    "success_providers": 7,
+    "failed_providers": 4,
+    "total_models": 417,
+    "free_models": 58,
+    "paid_models": 359,
+    "features_discovered": {}
+  }
+}

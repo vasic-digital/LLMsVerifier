@@ -419,53 +419,125 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 		models, err = discoverOpenAIModels(ctx, "https://api.chutes.ai/v1", test.APIKey, test.FreeToUse)
 		provider.APIEndpoint = "https://api.chutes.ai/v1"
 	case "SiliconFlow":
-		models, err = discoverOpenAIModels(ctx, "https://api.siliconflow.cn/v1", test.APIKey, test.FreeToUse)
+		// Use the correct SiliconFlow models API endpoint
+		models, err = discoverSiliconFlowModels(ctx, test.APIKey, test.FreeToUse)
 		provider.APIEndpoint = "https://api.siliconflow.cn/v1"
 	case "Kimi":
-		models = []ModelInfo{
-			{
-				ID:           "moonshot-v1-128k",
-				Name:         "Moonshot V1 128K",
-				ContextSize:  128000,
-				Capabilities: []string{"text-generation", "chat", "long-context"},
-				Features:     ModelFeatures{Streaming: true, FunctionCalling: true},
+		// Kimi (Moonshot) models - hardcoded based on documentation
+		kimiModels := []struct {
+			id           string
+			name         string
+			capabilities []string
+		}{
+			{"moonshot-v1-8k", "Moonshot v1 8K", []string{"chat"}},
+			{"moonshot-v1-32k", "Moonshot v1 32K", []string{"chat"}},
+			{"moonshot-v1-128k", "Moonshot v1 128K", []string{"chat"}},
+		}
+
+		models = make([]ModelInfo, 0, len(kimiModels))
+		for _, m := range kimiModels {
+			http3 := detectHTTP3Support(m.id, "Kimi", m.capabilities)
+			toon := detectToonFormatSupport(m.id, "Kimi", m.capabilities)
+			name := buildModelNameWithSuffixes(m.name, test.FreeToUse, http3, toon)
+
+			models = append(models, ModelInfo{
+				ID:           m.id,
+				Name:         name,
+				Capabilities: m.capabilities,
+				Features:     ModelFeatures{HTTP3: http3, ToonFormat: toon},
 				FreeToUse:    test.FreeToUse,
-			},
+			})
 		}
 		provider.APIEndpoint = "https://api.moonshot.cn/v1"
 		provider.Status = "success"
-		provider.Models = models
-		return provider
 	case "Gemini":
-		models = []ModelInfo{
-			{
-				ID:           "gemini-2.0-flash-exp",
-				Name:         "Gemini 2.0 Flash Experimental",
-				Capabilities: []string{"text-generation", "chat", "code-generation", "vision"},
-				Features:     ModelFeatures{Streaming: true, FunctionCalling: true, MCPs: []string{"mcp-proto"}},
+		// Gemini models - hardcoded based on documentation
+		geminiModels := []struct {
+			id           string
+			name         string
+			capabilities []string
+		}{
+			{"gemini-2.0-flash-exp", "Gemini 2.0 Flash", []string{"chat", "vision"}},
+			{"gemini-1.5-pro", "Gemini 1.5 Pro", []string{"chat", "vision"}},
+			{"gemini-1.5-flash", "Gemini 1.5 Flash", []string{"chat", "vision"}},
+		}
+
+		models = make([]ModelInfo, 0, len(geminiModels))
+		for _, m := range geminiModels {
+			http3 := detectHTTP3Support(m.id, "Gemini", m.capabilities)
+			toon := detectToonFormatSupport(m.id, "Gemini", m.capabilities)
+			name := buildModelNameWithSuffixes(m.name, test.FreeToUse, http3, toon)
+
+			models = append(models, ModelInfo{
+				ID:           m.id,
+				Name:         name,
+				Capabilities: m.capabilities,
+				Features:     ModelFeatures{HTTP3: http3, ToonFormat: toon},
 				FreeToUse:    test.FreeToUse,
-			},
-			{
-				ID:           "gemini-1.5-pro",
-				Name:         "Gemini 1.5 Pro",
-				Capabilities: []string{"text-generation", "chat", "code-generation", "vision"},
-				Features:     ModelFeatures{Streaming: true, FunctionCalling: true},
-				FreeToUse:    test.FreeToUse,
-			},
+			})
 		}
 		provider.APIEndpoint = "https://generativelanguage.googleapis.com/v1"
 		provider.Status = "success"
-		provider.Models = models
-		return provider
 	case "OpenRouter":
-		models, err = discoverOpenAIModels(ctx, "https://openrouter.ai/api/v1", test.APIKey, test.FreeToUse)
+		// Try to use OpenRouter's models API
+		models, err = discoverOpenRouterModels(ctx, test.APIKey, test.FreeToUse)
 		provider.APIEndpoint = "https://openrouter.ai/api/v1"
 	case "DeepSeek":
-		models, err = discoverOpenAIModels(ctx, "https://api.deepseek.com/v1", test.APIKey, test.FreeToUse)
-		provider.APIEndpoint = "https://api.deepseek.com/v1"
+		// DeepSeek models - hardcoded based on documentation
+		deepSeekModels := []struct {
+			id           string
+			name         string
+			capabilities []string
+		}{
+			{"deepseek-chat", "DeepSeek Chat", []string{"chat", "reasoning"}},
+			{"deepseek-reasoner", "DeepSeek Reasoner", []string{"chat", "reasoning"}},
+			{"deepseek-coder", "DeepSeek Coder", []string{"chat", "code"}},
+		}
+
+		models = make([]ModelInfo, 0, len(deepSeekModels))
+		for _, m := range deepSeekModels {
+			http3 := detectHTTP3Support(m.id, "DeepSeek", m.capabilities)
+			toon := detectToonFormatSupport(m.id, "DeepSeek", m.capabilities)
+			name := buildModelNameWithSuffixes(m.name, test.FreeToUse, http3, toon)
+
+			models = append(models, ModelInfo{
+				ID:           m.id,
+				Name:         name,
+				Capabilities: m.capabilities,
+				Features:     ModelFeatures{HTTP3: http3, ToonFormat: toon},
+				FreeToUse:    test.FreeToUse,
+			})
+		}
+		provider.APIEndpoint = "https://api.deepseek.com"
+		provider.Status = "success"
 	case "Z.AI":
-		models, err = discoverOpenAIModels(ctx, "https://api.z.ai/v1", test.APIKey, test.FreeToUse)
-		provider.APIEndpoint = "https://api.z.ai/v1"
+		// Z.AI models - hardcoded based on documentation
+		zaiModels := []struct {
+			id           string
+			name         string
+			capabilities []string
+		}{
+			{"glm-4.7", "GLM-4.7", []string{"chat", "vision", "reasoning"}},
+			{"glm-4.6", "GLM-4.6", []string{"chat", "vision"}},
+			{"glm-4.5", "GLM-4.5", []string{"chat", "vision"}},
+		}
+
+		models = make([]ModelInfo, 0, len(zaiModels))
+		for _, m := range zaiModels {
+			http3 := detectHTTP3Support(m.id, "Z.AI", m.capabilities)
+			toon := detectToonFormatSupport(m.id, "Z.AI", m.capabilities)
+			name := buildModelNameWithSuffixes(m.name, test.FreeToUse, http3, toon)
+
+			models = append(models, ModelInfo{
+				ID:           m.id,
+				Name:         name,
+				Capabilities: m.capabilities,
+				Features:     ModelFeatures{HTTP3: http3, ToonFormat: toon},
+				FreeToUse:    test.FreeToUse,
+			})
+		}
+		provider.APIEndpoint = "https://api.z.ai/api/paas/v4"
+		provider.Status = "success"
 	case "Qwen":
 		provider.Status = "skipped"
 		provider.Error = "no_api_key"
@@ -587,7 +659,7 @@ func loadAPIKeys() (*APIKeys, error) {
 		Kimi:        os.Getenv("ApiKey_Kimi"),
 		Gemini:      os.Getenv("ApiKey_Gemini"),
 		OpenRouter:  os.Getenv("ApiKey_OpenRouter"),
-		ZAI:         os.Getenv("ApiKey_Z_AI"),
+		ZAI:         os.Getenv("ApiKey_ZAI"),
 		DeepSeek:    os.Getenv("ApiKey_DeepSeek"),
 	}, nil
 }
@@ -679,6 +751,167 @@ func discoverHuggingFaceModels(ctx context.Context, apiKey string, freeToUse boo
 	return models, nil
 }
 
+func discoverSiliconFlowModels(ctx context.Context, apiKey string, freeToUse bool) ([]ModelInfo, error) {
+	var siliconResp struct {
+		Object string `json:"object"`
+		Data   []struct {
+			ID string `json:"id"`
+		} `json:"data"`
+	}
+
+	err := doWithRetry(ctx, func() error {
+		modelsURL := "https://api.siliconflow.cn/v1/models"
+		req, err := http.NewRequestWithContext(ctx, "GET", modelsURL, nil)
+		if err != nil {
+			return fmt.Errorf("failed to create request: %w", err)
+		}
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+
+		logger.Printf("API REQUEST: GET %s", modelsURL)
+		logger.Printf("API REQUEST HEADERS: %v", req.Header)
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			logger.Printf("API RESPONSE ERROR: %v", err)
+			return fmt.Errorf("failed to make request: %w", err)
+		}
+		defer resp.Body.Close()
+
+		body, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return fmt.Errorf("failed to read response body: %w", readErr)
+		}
+
+		logger.Printf("API RESPONSE STATUS: %d", resp.StatusCode)
+		logger.Printf("API RESPONSE HEADERS: %v", resp.Header)
+		logger.Printf("API RESPONSE BODY LENGTH: %d bytes", len(body))
+
+		if resp.StatusCode != 200 {
+			if isRetryableError(nil, resp.StatusCode) {
+				return fmt.Errorf("API returned retryable status %d: %s", resp.StatusCode, string(body))
+			}
+			return fmt.Errorf("API returned permanent status %d: %s", resp.StatusCode, string(body))
+		}
+
+		if err := json.Unmarshal(body, &siliconResp); err != nil {
+			return fmt.Errorf("failed to decode models: %w", err)
+		}
+
+		return nil
+	}, defaultRetryConfig)
+
+	if err != nil {
+		return nil, err
+	}
+
+	models := make([]ModelInfo, 0, len(siliconResp.Data))
+	for _, m := range siliconResp.Data {
+		// Detect advanced features
+		http3 := detectHTTP3Support(m.ID, "SiliconFlow", []string{})
+		toon := detectToonFormatSupport(m.ID, "SiliconFlow", []string{})
+
+		// Build name with all suffixes
+		name := buildModelNameWithSuffixes(m.ID, freeToUse, http3, toon)
+
+		models = append(models, ModelInfo{
+			ID:           m.ID,
+			Name:         name,
+			Capabilities: []string{}, // Will be determined by testing
+			Features: ModelFeatures{
+				HTTP3:      http3,
+				ToonFormat: toon,
+			},
+			FreeToUse: freeToUse,
+		})
+	}
+
+	return models, nil
+}
+
+func discoverOpenRouterModels(ctx context.Context, apiKey string, freeToUse bool) ([]ModelInfo, error) {
+	var openRouterResp struct {
+		Data []struct {
+			ID      string `json:"id"`
+			Name    string `json:"name"`
+			Pricing struct {
+				Prompt     string `json:"prompt"`
+				Completion string `json:"completion"`
+			} `json:"pricing"`
+		} `json:"data"`
+	}
+
+	err := doWithRetry(ctx, func() error {
+		modelsURL := "https://openrouter.ai/api/v1/models"
+		req, err := http.NewRequestWithContext(ctx, "GET", modelsURL, nil)
+		if err != nil {
+			return fmt.Errorf("failed to create request: %w", err)
+		}
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+
+		logger.Printf("API REQUEST: GET %s", modelsURL)
+		logger.Printf("API REQUEST HEADERS: %v", req.Header)
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			logger.Printf("API RESPONSE ERROR: %v", err)
+			return fmt.Errorf("failed to make request: %w", err)
+		}
+		defer resp.Body.Close()
+
+		body, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return fmt.Errorf("failed to read response body: %w", readErr)
+		}
+
+		logger.Printf("API RESPONSE STATUS: %d", resp.StatusCode)
+		logger.Printf("API RESPONSE HEADERS: %v", resp.Header)
+		logger.Printf("API RESPONSE BODY LENGTH: %d bytes", len(body))
+
+		if resp.StatusCode != 200 {
+			if isRetryableError(nil, resp.StatusCode) {
+				return fmt.Errorf("API returned retryable status %d: %s", resp.StatusCode, string(body))
+			}
+			return fmt.Errorf("API returned permanent status %d: %s", resp.StatusCode, string(body))
+		}
+
+		if err := json.Unmarshal(body, &openRouterResp); err != nil {
+			return fmt.Errorf("failed to decode models: %w", err)
+		}
+
+		return nil
+	}, defaultRetryConfig)
+
+	if err != nil {
+		return nil, err
+	}
+
+	models := make([]ModelInfo, 0, len(openRouterResp.Data))
+	for _, m := range openRouterResp.Data {
+		// Determine if model is free based on pricing
+		isFree := freeToUse && (m.Pricing.Prompt == "0" || m.Pricing.Prompt == "")
+
+		// Detect advanced features
+		http3 := detectHTTP3Support(m.ID, "OpenRouter", []string{})
+		toon := detectToonFormatSupport(m.ID, "OpenRouter", []string{})
+
+		// Build name with all suffixes
+		name := buildModelNameWithSuffixes(m.Name, isFree, http3, toon)
+
+		models = append(models, ModelInfo{
+			ID:           m.ID,
+			Name:         name,
+			Capabilities: []string{}, // Will be determined by testing
+			Features: ModelFeatures{
+				HTTP3:      http3,
+				ToonFormat: toon,
+			},
+			FreeToUse: isFree,
+		})
+	}
+
+	return models, nil
+}
+
 func discoverOpenAIModels(ctx context.Context, endpoint, apiKey string, freeToUse bool) ([]ModelInfo, error) {
 	// Determine provider name from endpoint
 	providerName := getProviderNameFromEndpoint(endpoint)
@@ -693,7 +926,13 @@ func discoverOpenAIModels(ctx context.Context, endpoint, apiKey string, freeToUs
 	}
 
 	err := doWithRetry(ctx, func() error {
-		modelsURL := strings.TrimSuffix(endpoint, "/") + "/v1/models"
+		// For OpenRouter, the endpoint already includes /api/v1, so just add /models
+		modelsURL := strings.TrimSuffix(endpoint, "/")
+		if strings.Contains(endpoint, "openrouter.ai") {
+			modelsURL += "/models"
+		} else {
+			modelsURL += "/v1/models"
+		}
 		req, err := http.NewRequestWithContext(ctx, "GET", modelsURL, nil)
 		if err != nil {
 			return fmt.Errorf("failed to create request: %w", err)
