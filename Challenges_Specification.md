@@ -2,15 +2,15 @@ I want you now you now to implement the type of the tests that we are going to s
 
 This is the first challenge: process the providers, obtain all its models and all features they offer. Verify all providers and all its LLMs for real usability, and then create configuration files opencode and crush which will configure all these providers and LLMs with all supported features (MCPs, LSPs, Embeddings and other). Providers to do: Chutes, SiliconFlow, OpenRouter, Z.AI, Kimi, HuggingFace, Nvidia, DeepSeek, Qwen, Claude. Marke every LLM which is 100% free with suffix "free to use". The ones which are not free will not have any suffix, but they will be a part of the final configurations. All these models must be verified to work. Free and payed ones! Make sure we support all types of LLMs which are offered by the providers - chat, coding, generative (all types - image, audio, video, etc.), etc. Api keys are defined as exported env. variables. Here are the examples of them: 
 
-export ApiKey_HuggingFace=
-export ApiKey_Nvidia=
-export ApiKey Chutes=
-export ApiKey_SiliconFlow=
-export ApiKey_Kimi=
-export ApiKey_Gemini=
-export ApiKey_OpenRouter=
-export Api_key_Z_AI=
-export ApiKey=DeepSeek=
+export ApiKey_HuggingFace=XXXXXXXXXX
+export ApiKey_Nvidia=XXXXXXXXXX
+export ApiKey_Chutes=XXXXXXXXXX
+export ApiKey_SiliconFlow=XXXXXXXXXX
+export ApiKey_Kimi=XXXXXXXXXX
+export ApiKey_Gemini=XXXXXXXXXX
+export ApiKey_OpenRouter=XXXXXXXXXX
+export ApiKey_ZAI=XXXXXXXXXX
+export ApiKey_DeepSeek=XXXXXXXXXX
 
 If api key for certain provider is not valid or it is not defined we will skip it, and proper logs about that will be recorded! It will be part of the final report as well!
 
