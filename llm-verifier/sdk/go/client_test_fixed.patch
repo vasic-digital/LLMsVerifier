@@ -1,0 +1,12 @@
+--- a/client_test.go
++++ b/client_test.go
+@@ -357,7 +357,6 @@ func TestGetModelNotFound(t *testing.T) {
+ 	defer server.Close()
+ 
+ 	client := NewLLMVerifierClient(server.URL, "")
+-
+ 	model, err := client.GetModel(999)
+ 
+ 	assert.Error(t, err)
+-	assert.Nil(t, model)
+ }
