@@ -14,63 +14,63 @@ import (
 
 // Challenge results structures
 type ProviderResult struct {
-	Name        string      `json:"name"`
-	Type         string      `json:"type"`
-	Endpoint    string      `json:"endpoint"`
-	Status      string      `json:"status"`
-	Error       string      `json:"error,omitempty"`
-	Models      []ModelInfo `json:"models"`
-	Features    Features    `json:"features"`
-	FreeToUse   bool        `json:"free_to_use"`
-	Latency     string      `json:"latency,omitempty"`
-	TestTime    string      `json:"test_time"`
+	Name      string      `json:"name"`
+	Type      string      `json:"type"`
+	Endpoint  string      `json:"endpoint"`
+	Status    string      `json:"status"`
+	Error     string      `json:"error,omitempty"`
+	Models    []ModelInfo `json:"models"`
+	Features  Features    `json:"features"`
+	FreeToUse bool        `json:"free_to_use"`
+	Latency   string      `json:"latency,omitempty"`
+	TestTime  string      `json:"test_time"`
 }
 
 type ModelInfo struct {
-	ID            string          `json:"id"`
-	Name          string          `json:"name"`
-	ContextSize   int             `json:"context_size,omitempty"`
-	Capabilities []string         `json:"capabilities"`
-	Features      ModelFeatures   `json:"features"`
-	FreeToUse     bool            `json:"free_to_use"`
+	ID           string        `json:"id"`
+	Name         string        `json:"name"`
+	ContextSize  int           `json:"context_size,omitempty"`
+	Capabilities []string      `json:"capabilities"`
+	Features     ModelFeatures `json:"features"`
+	FreeToUse    bool          `json:"free_to_use"`
 }
 
 type ModelFeatures struct {
-	MCPs           []string `json:"mcps,omitempty"`
-	LSPs           []string `json:"lsps,omitempty"`
+	MCPs            []string `json:"mcps,omitempty"`
+	LSPs            []string `json:"lsps,omitempty"`
 	Embeddings      []string `json:"embeddings,omitempty"`
 	Streaming       bool     `json:"streaming"`
 	FunctionCalling bool     `json:"function_calling"`
-	Vision         bool     `json:"vision"`
-	Tools          bool     `json:"tools"`
+	Vision          bool     `json:"vision"`
+	Tools           bool     `json:"tools"`
 }
 
 type Features struct {
-	MCPs           bool `json:"mcps"`
-	LSPs           bool `json:"lsps"`
+	MCPs            bool `json:"mcps"`
+	LSPs            bool `json:"lsps"`
 	Embeddings      bool `json:"embeddings"`
 	Streaming       bool `json:"streaming"`
 	FunctionCalling bool `json:"function_calling"`
-	Vision         bool `json:"vision"`
-	Tools          bool `json:"tools"`
+	Vision          bool `json:"vision"`
+	Tools           bool `json:"tools"`
 }
 
 type ChallengeResult struct {
-	ChallengeName string          `json:"challenge_name"`
-	StartTime    string          `json:"start_time"`
-	EndTime      string          `json:"end_time"`
-	Duration     string          `json:"duration"`
-	Providers    []ProviderResult `json:"providers"`
-	Summary      ChallengeSummary `json:"summary"`
+	ChallengeName string           `json:"challenge_name"`
+	StartTime     string           `json:"start_time"`
+	EndTime       string           `json:"end_time"`
+	Duration      string           `json:"duration"`
+	Providers     []ProviderResult `json:"providers"`
+	Summary       ChallengeSummary `json:"summary"`
 }
 
 type ChallengeSummary struct {
 	TotalProviders int `json:"total_providers"`
-	SuccessCount  int `json:"success_count"`
-	ErrorCount    int `json:"error_count"`
-	SkippedCount int `json:"skipped_count"`
-	TotalModels   int `json:"total_models"`
-	FreeModels    int `json:"free_models"`
+	SuccessCount   int `json:"success_count"`
+	ErrorCount     int `json:"error_count"`
+	SkippedCount   int `json:"skipped_count"`
+	TotalModels    int `json:"total_models"`
+	FreeModels     int `json:"free_models"`
 }
 
 var (
@@ -94,7 +94,7 @@ func main() {
 	challengeDir := filepath.Join("challenges", "provider_models_discovery",
 		time.Now().Format("2006"), time.Now().Format("01"), time.Now().Format("02"),
 		fmt.Sprintf("%d", timestamp))
-	
+
 	logDir := filepath.Join(challengeDir, "logs")
 	resultsDir := filepath.Join(challengeDir, "results")
 
@@ -107,15 +107,15 @@ func main() {
 	logger.Printf("Timestamp: %s", time.Now().Format(time.RFC3339))
 
 	apiKeys := map[string]string{
-		"huggingface": "hf_*****",
-		"nvidia": "nvapi-*****",
-		"chutes": "cpk_*****",
-		"siliconflow": "sk-*****",
-		"kimi": "sk-kimi-*****",
-		"gemini": "AIzaSy*****",
-		"openrouter": "sk-or-v1-*****",
-		"zai": "a977c8417a45457a83a897de82e4215b.*****",
-		"deepseek": "sk-*****",
+		"huggingface": os.Getenv("ApiKey_HuggingFace"),
+		"nvidia":      os.Getenv("ApiKey_Nvidia"),
+		"chutes":      os.Getenv("ApiKey_Chutes"),
+		"siliconflow": os.Getenv("ApiKey_SiliconFlow"),
+		"kimi":        os.Getenv("ApiKey_Kimi"),
+		"gemini":      os.Getenv("ApiKey_Gemini"),
+		"openrouter":  os.Getenv("ApiKey_OpenRouter"),
+		"zai":         os.Getenv("ApiKey_Z_AI"),
+		"deepseek":    os.Getenv("ApiKey_DeepSeek"),
 	}
 
 	logger.Printf("Loaded %d API keys", len(apiKeys))
@@ -346,11 +346,11 @@ func generateSummary(result ChallengeResult) ChallengeSummary {
 
 	return ChallengeSummary{
 		TotalProviders: len(result.Providers),
-		SuccessCount:  successCount,
-		ErrorCount:    errorCount,
-		SkippedCount: skippedCount,
-		TotalModels:   totalModels,
-		FreeModels:    freeModels,
+		SuccessCount:   successCount,
+		ErrorCount:     errorCount,
+		SkippedCount:   skippedCount,
+		TotalModels:    totalModels,
+		FreeModels:     freeModels,
 	}
 }
 
@@ -359,19 +359,19 @@ func saveResults(resultsDir string, result ChallengeResult) error {
 
 	opencodeData := map[string]interface{}{
 		"challenge_name": result.ChallengeName,
-		"date":          time.Now().Format("2006-01-02"),
-		"providers":     make([]interface{}, 0),
+		"date":           time.Now().Format("2006-01-02"),
+		"providers":      make([]interface{}, 0),
 	}
 
 	for _, provider := range result.Providers {
 		providerMap := map[string]interface{}{
-			"name":         provider.Name,
-			"type":         provider.Type,
-			"endpoint":     provider.Endpoint,
-			"status":       provider.Status,
-			"free_to_use":  provider.FreeToUse,
-			"features":     provider.Features,
-			"models":       provider.Models,
+			"name":        provider.Name,
+			"type":        provider.Type,
+			"endpoint":    provider.Endpoint,
+			"status":      provider.Status,
+			"free_to_use": provider.FreeToUse,
+			"features":    provider.Features,
+			"models":      provider.Models,
 		}
 		opencodeData["providers"] = append(opencodeData["providers"].([]interface{}), providerMap)
 	}
