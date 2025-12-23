@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -237,84 +238,106 @@ func discoverProviderModels(ctx context.Context, provider struct {
 
 	providerName := strings.ToLower(provider.Name)
 
+	// Attempt to discover models via API
 	switch providerName {
 	case "huggingface":
-		models = []ModelInfo{
-			{ID: "gpt2", Name: "GPT-2", Capabilities: []string{"text-generation"}, Features: ModelFeatures{}},
-			{ID: "bert-base-uncased", Name: "BERT Base Uncased", Capabilities: []string{"feature-extraction", "fill-mask"}, Features: ModelFeatures{Embeddings: []string{"bert-base-uncased"}}},
-			{ID: "distilbert-base-uncased", Name: "DistilBERT Base Uncased", Capabilities: []string{"feature-extraction", "fill-mask"}, Features: ModelFeatures{Embeddings: []string{"distilbert-base-uncased"}}},
-			{ID: "sentence-transformers/all-MiniLM-L6-v2", Name: "All MiniLM L6 v2", Capabilities: []string{"feature-extraction"}, Features: ModelFeatures{Embeddings: []string{"all-minilm-l6-v2"}}},
+		// HuggingFace has a models API: https://huggingface.co/api/models
+		modelsURL := "https://huggingface.co/api/models?sort=downloads&direction=-1&limit=50"
+		req, err := http.NewRequestWithContext(ctx, "GET", modelsURL, nil)
+		if err != nil {
+			return nil, Features{}, fmt.Errorf("failed to create request: %w", err)
+		}
+		if provider.APIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+provider.APIKey)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return nil, Features{}, fmt.Errorf("failed to fetch models: %w", err)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != 200 {
+			return nil, Features{}, fmt.Errorf("API returned status %d", resp.StatusCode)
+		}
+		var hfModels []struct {
+			ID       string `json:"id"`
+			Pipeline string `json:"pipeline_tag"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&hfModels); err != nil {
+			return nil, Features{}, fmt.Errorf("failed to decode models: %w", err)
+		}
+		for _, m := range hfModels {
+			caps := []string{}
+			switch m.Pipeline {
+			case "text-generation":
+				caps = []string{"text-generation"}
+			case "feature-extraction":
+				caps = []string{"feature-extraction", "embeddings"}
+			}
+			models = append(models, ModelInfo{
+				ID:           m.ID,
+				Name:         m.ID,
+				Capabilities: caps,
+				FreeToUse:    provider.FreeToUse,
+			})
 		}
 		features = Features{Embeddings: true}
 
-	case "nvidia":
-		models = []ModelInfo{
-			{ID: "nvidia-nemotron-4-340b", Name: "NVIDIA Nemotron 4 340B", Capabilities: []string{"chat", "code-generation"}, Features: ModelFeatures{Streaming: true, FunctionCalling: true, Vision: true}},
-			{ID: "meta-llama3-70b-instruct", Name: "Llama 3 70B Instruct", Capabilities: []string{"chat", "text-generation"}, Features: ModelFeatures{Streaming: true}},
-			{ID: "mistralai/mistral-large", Name: "Mistral Large", Capabilities: []string{"chat"}, Features: ModelFeatures{Streaming: true}},
-		}
-		features = Features{Streaming: true, FunctionCalling: true, Vision: true}
-
-	case "chutes":
-		models = []ModelInfo{
-			{ID: "gpt-4", Name: "GPT-4", Capabilities: []string{"chat", "code-generation", "function-calling"}, Features: ModelFeatures{Streaming: true, FunctionCalling: true}},
-			{ID: "gpt-4-turbo", Name: "GPT-4 Turbo", Capabilities: []string{"chat", "code-generation", "function-calling"}, Features: ModelFeatures{Streaming: true, FunctionCalling: true}},
-			{ID: "gpt-3.5-turbo", Name: "GPT-3.5 Turbo", Capabilities: []string{"chat", "code-generation"}, Features: ModelFeatures{Streaming: true}},
-			{ID: "gpt-4o-mini", Name: "GPT-4o Mini", Capabilities: []string{"chat", "vision"}, Features: ModelFeatures{Streaming: true, Vision: true}},
-		}
-		features = Features{Streaming: true, FunctionCalling: true, Vision: true}
-
-	case "siliconflow":
-		models = []ModelInfo{
-			{ID: "Qwen/Qwen2-72B-Instruct", Name: "Qwen 2 72B Instruct", Capabilities: []string{"chat"}, Features: ModelFeatures{Streaming: true}},
-			{ID: "THUDM/glm-4-9b-chat", Name: "GLM 4 9B Chat", Capabilities: []string{"chat"}, Features: ModelFeatures{Streaming: true}},
-			{ID: "deepseek-ai/DeepSeek-V2-Chat", Name: "DeepSeek V2 Chat", Capabilities: []string{"chat", "code-generation"}, Features: ModelFeatures{Streaming: true, FunctionCalling: true}},
-		}
-		features = Features{Streaming: true, FunctionCalling: true}
-
-	case "kimi":
-		models = []ModelInfo{
-			{ID: "moonshot-v1-128k", Name: "Moonshot V1 128K", ContextSize: 128000, Capabilities: []string{"chat", "long-context"}, Features: ModelFeatures{Streaming: true, FunctionCalling: true}},
-		}
-		features = Features{Streaming: true, FunctionCalling: true}
-
-	case "gemini":
-		models = []ModelInfo{
-			{ID: "gemini-2.0-flash-exp", Name: "Gemini 2.0 Flash Experimental", Capabilities: []string{"chat", "vision", "code-generation"}, Features: ModelFeatures{Streaming: true, FunctionCalling: true, Vision: true, Tools: true}},
-			{ID: "gemini-1.5-pro", Name: "Gemini 1.5 Pro", Capabilities: []string{"chat", "vision", "code-generation"}, Features: ModelFeatures{Streaming: true, FunctionCalling: true, Vision: true}},
-			{ID: "gemini-1.5-flash", Name: "Gemini 1.5 Flash", Capabilities: []string{"chat", "vision"}, Features: ModelFeatures{Streaming: true, Vision: true}},
-		}
-		features = Features{Streaming: true, FunctionCalling: true, Vision: true, Tools: true}
-
-	case "openrouter":
-		models = []ModelInfo{
-			{ID: "anthropic/claude-3.5-sonnet", Name: "Claude 3.5 Sonnet", Capabilities: []string{"chat", "vision"}, Features: ModelFeatures{Streaming: true, Vision: true}},
-			{ID: "openai/gpt-4o", Name: "GPT-4o", Capabilities: []string{"chat", "vision"}, Features: ModelFeatures{Streaming: true, Vision: true}},
-			{ID: "google/gemini-pro-1.5", Name: "Gemini Pro 1.5", Capabilities: []string{"chat", "vision"}, Features: ModelFeatures{Streaming: true, Vision: true}},
-			{ID: "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo", Name: "Llama 3.1 405B Turbo", Capabilities: []string{"chat"}, Features: ModelFeatures{Streaming: true}},
-		}
-		features = Features{Streaming: true, Vision: true}
-
-	case "z.ai":
-		models = []ModelInfo{
-			{ID: "zai-large", Name: "Z.AI Large", Capabilities: []string{"chat"}, Features: ModelFeatures{Streaming: true}},
-			{ID: "zai-medium", Name: "Z.AI Medium", Capabilities: []string{"chat"}, Features: ModelFeatures{Streaming: true}},
-		}
-		features = Features{Streaming: true}
-
-	case "deepseek":
-		models = []ModelInfo{
-			{ID: "deepseek-chat", Name: "DeepSeek Chat", Capabilities: []string{"chat", "code-generation"}, Features: ModelFeatures{Streaming: true, FunctionCalling: true}},
-			{ID: "deepseek-coder", Name: "DeepSeek Coder", Capabilities: []string{"chat", "code-generation"}, Features: ModelFeatures{Streaming: true, FunctionCalling: true}},
-		}
-		features = Features{Streaming: true, FunctionCalling: true}
-
 	default:
-		return nil, Features{}, fmt.Errorf("unsupported provider: %s", provider.Name)
-	}
-
-	for i := range models {
-		models[i].FreeToUse = provider.FreeToUse
+		// For OpenAI-compatible providers, try /v1/models
+		modelsURL := provider.Endpoint + "/v1/models"
+		req, err := http.NewRequestWithContext(ctx, "GET", modelsURL, nil)
+		if err != nil {
+			return nil, Features{}, fmt.Errorf("failed to create request: %w", err)
+		}
+		req.Header.Set("Authorization", "Bearer "+provider.APIKey)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return nil, Features{}, fmt.Errorf("failed to fetch models: %w", err)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != 200 {
+			return nil, Features{}, fmt.Errorf("API returned status %d", resp.StatusCode)
+		}
+		var openaiResp struct {
+			Data []struct {
+				ID      string `json:"id"`
+				Object  string `json:"object"`
+				Created int    `json:"created"`
+				OwnedBy string `json:"owned_by"`
+			} `json:"data"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&openaiResp); err != nil {
+			return nil, Features{}, fmt.Errorf("failed to decode models: %w", err)
+		}
+		for _, m := range openaiResp.Data {
+			models = append(models, ModelInfo{
+				ID:           m.ID,
+				Name:         m.ID,
+				Capabilities: []string{"chat"}, // Assume chat for now
+				FreeToUse:    provider.FreeToUse,
+			})
+		}
+		// Set features based on provider knowledge
+		switch providerName {
+		case "nvidia":
+			features = Features{Streaming: true, FunctionCalling: true, Vision: true}
+		case "chutes":
+			features = Features{Streaming: true, FunctionCalling: true, Vision: true}
+		case "siliconflow":
+			features = Features{Streaming: true, FunctionCalling: true}
+		case "kimi":
+			features = Features{Streaming: true, FunctionCalling: true}
+		case "gemini":
+			features = Features{Streaming: true, FunctionCalling: true, Vision: true, Tools: true}
+		case "openrouter":
+			features = Features{Streaming: true, Vision: true}
+		case "z.ai":
+			features = Features{Streaming: true}
+		case "deepseek":
+			features = Features{Streaming: true, FunctionCalling: true}
+		default:
+			features = Features{}
+		}
 	}
 
 	return models, features, nil
