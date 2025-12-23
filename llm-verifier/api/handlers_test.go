@@ -2555,3 +2555,1085 @@ func TestDeleteEventHandler(t *testing.T) {
 		assert.Equal(t, http.StatusNoContent, w.Code)
 	})
 }
+
+func TestGetSchedulesHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Path: ":memory:",
+		},
+		API: config.APIConfig{
+			JWTSecret: "test-secret",
+		},
+	}
+
+	server, err := NewServer(cfg)
+	if err != nil {
+		t.Fatalf("Failed to create server: %v", err)
+	}
+	defer server.Shutdown()
+
+	// Create a schedule entry
+	schedule := database.Schedule{
+		Name:         "Test Schedule",
+		ScheduleType: "manual",
+		TargetType:   "all_models",
+		IsActive:     true,
+	}
+	err = server.database.CreateSchedule(&schedule)
+	if err != nil {
+		t.Fatalf("Failed to create schedule: %v", err)
+	}
+
+	req, _ := http.NewRequest("GET", "/api/v1/schedules?limit=10&offset=0", nil)
+	w := httptest.NewRecorder()
+
+	router := gin.Default()
+	router.GET("/api/v1/schedules", server.getSchedules)
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestGetScheduleByIDHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Path: ":memory:",
+		},
+		API: config.APIConfig{
+			JWTSecret: "test-secret",
+		},
+	}
+
+	server, err := NewServer(cfg)
+	if err != nil {
+		t.Fatalf("Failed to create server: %v", err)
+	}
+	defer server.Shutdown()
+
+	// Create a schedule entry
+	schedule := database.Schedule{
+		Name:         "Test Schedule",
+		ScheduleType: "manual",
+		TargetType:   "all_models",
+		IsActive:     true,
+	}
+	err = server.database.CreateSchedule(&schedule)
+	if err != nil {
+		t.Fatalf("Failed to create schedule: %v", err)
+	}
+
+	t.Run("Success", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", fmt.Sprintf("/api/v1/schedules/%d", schedule.ID), nil)
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.GET("/api/v1/schedules/:id", server.getScheduleByID)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("NotFound", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/v1/schedules/99999", nil)
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.GET("/api/v1/schedules/:id", server.getScheduleByID)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+}
+
+func TestCreateScheduleHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Path: ":memory:",
+		},
+		API: config.APIConfig{
+			JWTSecret: "test-secret",
+		},
+	}
+
+	server, err := NewServer(cfg)
+	if err != nil {
+		t.Fatalf("Failed to create server: %v", err)
+	}
+	defer server.Shutdown()
+
+	t.Run("Success", func(t *testing.T) {
+		requestBody := map[string]interface{}{
+			"name":          "Test Schedule Created",
+			"schedule_type": "manual",
+			"target_type":   "all_models",
+			"is_active":     true,
+		}
+		jsonBody, _ := json.Marshal(requestBody)
+
+		req, _ := http.NewRequest("POST", "/api/v1/schedules", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.POST("/api/v1/schedules", server.createSchedule)
+
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusCreated {
+			t.Logf("Response body: %s", w.Body.String())
+		}
+		assert.Equal(t, http.StatusCreated, w.Code)
+		
+		var response map[string]interface{}
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response["id"])
+		assert.Equal(t, "Test Schedule Created", response["name"])
+		assert.Equal(t, "manual", response["schedule_type"])
+		assert.Equal(t, "all_models", response["target_type"])
+	})
+
+	t.Run("ValidationError", func(t *testing.T) {
+		// Missing required fields
+		requestBody := map[string]interface{}{
+			"name": "Test Schedule",
+			// missing schedule_type, target_type
+		}
+		jsonBody, _ := json.Marshal(requestBody)
+
+		req, _ := http.NewRequest("POST", "/api/v1/schedules", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.POST("/api/v1/schedules", server.createSchedule)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+}
+
+func TestUpdateScheduleHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Path: ":memory:",
+		},
+		API: config.APIConfig{
+			JWTSecret: "test-secret",
+		},
+	}
+
+	server, err := NewServer(cfg)
+	if err != nil {
+		t.Fatalf("Failed to create server: %v", err)
+	}
+	defer server.Shutdown()
+
+	// Create a schedule entry
+	schedule := database.Schedule{
+		Name:         "Test Schedule",
+		ScheduleType: "manual",
+		TargetType:   "all_models",
+		IsActive:     true,
+	}
+	err = server.database.CreateSchedule(&schedule)
+	if err != nil {
+		t.Fatalf("Failed to create schedule: %v", err)
+	}
+
+	t.Run("Success", func(t *testing.T) {
+		requestBody := map[string]interface{}{
+			"name": "Updated Schedule Name",
+			"is_active": false,
+		}
+		jsonBody, _ := json.Marshal(requestBody)
+
+		req, _ := http.NewRequest("PUT", fmt.Sprintf("/api/v1/schedules/%d", schedule.ID), bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.PUT("/api/v1/schedules/:id", server.updateSchedule)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		
+		var response map[string]interface{}
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, schedule.ID, int64(response["id"].(float64)))
+		assert.Equal(t, "Updated Schedule Name", response["name"])
+		assert.Equal(t, false, response["is_active"])
+	})
+
+	t.Run("ValidationError", func(t *testing.T) {
+		// Invalid schedule_type (not in enum)
+		requestBody := map[string]interface{}{
+			"schedule_type": "invalid_type",
+		}
+		jsonBody, _ := json.Marshal(requestBody)
+
+		req, _ := http.NewRequest("PUT", fmt.Sprintf("/api/v1/schedules/%d", schedule.ID), bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.PUT("/api/v1/schedules/:id", server.updateSchedule)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("NotFound", func(t *testing.T) {
+		requestBody := map[string]interface{}{
+			"name": "Updated Name",
+		}
+		jsonBody, _ := json.Marshal(requestBody)
+
+		req, _ := http.NewRequest("PUT", "/api/v1/schedules/99999", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.PUT("/api/v1/schedules/:id", server.updateSchedule)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+}
+
+func TestDeleteScheduleHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Path: ":memory:",
+		},
+		API: config.APIConfig{
+			JWTSecret: "test-secret",
+		},
+	}
+
+	server, err := NewServer(cfg)
+	if err != nil {
+		t.Fatalf("Failed to create server: %v", err)
+	}
+	defer server.Shutdown()
+
+	// Create a schedule entry
+	schedule := database.Schedule{
+		Name:         "Test Schedule",
+		ScheduleType: "manual",
+		TargetType:   "all_models",
+		IsActive:     true,
+	}
+	err = server.database.CreateSchedule(&schedule)
+	if err != nil {
+		t.Fatalf("Failed to create schedule: %v", err)
+	}
+
+	t.Run("Success", func(t *testing.T) {
+		req, _ := http.NewRequest("DELETE", fmt.Sprintf("/api/v1/schedules/%d", schedule.ID), nil)
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.DELETE("/api/v1/schedules/:id", server.deleteSchedule)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNoContent, w.Code)
+	})
+
+	t.Run("NotFound", func(t *testing.T) {
+		req, _ := http.NewRequest("DELETE", "/api/v1/schedules/99999", nil)
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.DELETE("/api/v1/schedules/:id", server.deleteSchedule)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNoContent, w.Code)
+	})
+}
+
+func TestGetIssuesHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Path: ":memory:",
+		},
+		API: config.APIConfig{
+			JWTSecret: "test-secret",
+		},
+	}
+
+	server, err := NewServer(cfg)
+	if err != nil {
+		t.Fatalf("Failed to create server: %v", err)
+	}
+	defer server.Shutdown()
+
+	// Create provider and model
+	provider := database.Provider{
+		Name:        "Test Provider",
+		Endpoint:    "https://api.example.com",
+		Description: "Test provider for unit tests",
+		IsActive:    true,
+	}
+	err = server.database.CreateProvider(&provider)
+	if err != nil {
+		t.Fatalf("Failed to create provider: %v", err)
+	}
+
+	model := database.Model{
+		ProviderID:  provider.ID,
+		ModelID:     "test-model-issues",
+		Name:        "Test Model",
+		Description: "Test model for issues tests",
+	}
+	err = server.database.CreateModel(&model)
+	if err != nil {
+		t.Fatalf("Failed to create model: %v", err)
+	}
+
+	// Create an issue entry
+	firstDetected := time.Now()
+	issue := database.Issue{
+		ModelID:       model.ID,
+		IssueType:     "performance",
+		Severity:      "warning",
+		Title:         "Test Issue",
+		Description:   "This is a test issue for unit tests",
+		FirstDetected: firstDetected,
+	}
+	err = server.database.CreateIssue(&issue)
+	if err != nil {
+		t.Fatalf("Failed to create issue: %v", err)
+	}
+
+	req, _ := http.NewRequest("GET", "/api/v1/issues?limit=10&offset=0", nil)
+	w := httptest.NewRecorder()
+
+	router := gin.Default()
+	router.GET("/api/v1/issues", server.getIssues)
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestGetIssueByIDHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Path: ":memory:",
+		},
+		API: config.APIConfig{
+			JWTSecret: "test-secret",
+		},
+	}
+
+	server, err := NewServer(cfg)
+	if err != nil {
+		t.Fatalf("Failed to create server: %v", err)
+	}
+	defer server.Shutdown()
+
+	// Create provider and model
+	provider := database.Provider{
+		Name:        "Test Provider",
+		Endpoint:    "https://api.example.com",
+		Description: "Test provider for unit tests",
+		IsActive:    true,
+	}
+	err = server.database.CreateProvider(&provider)
+	if err != nil {
+		t.Fatalf("Failed to create provider: %v", err)
+	}
+
+	model := database.Model{
+		ProviderID:  provider.ID,
+		ModelID:     "test-model-issues",
+		Name:        "Test Model",
+		Description: "Test model for issues tests",
+	}
+	err = server.database.CreateModel(&model)
+	if err != nil {
+		t.Fatalf("Failed to create model: %v", err)
+	}
+
+	// Create an issue entry
+	firstDetected := time.Now()
+	issue := database.Issue{
+		ModelID:       model.ID,
+		IssueType:     "performance",
+		Severity:      "warning",
+		Title:         "Test Issue",
+		Description:   "This is a test issue for unit tests",
+		FirstDetected: firstDetected,
+	}
+	err = server.database.CreateIssue(&issue)
+	if err != nil {
+		t.Fatalf("Failed to create issue: %v", err)
+	}
+
+	t.Run("Success", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", fmt.Sprintf("/api/v1/issues/%d", issue.ID), nil)
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.GET("/api/v1/issues/:id", server.getIssueByID)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("NotFound", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/v1/issues/99999", nil)
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.GET("/api/v1/issues/:id", server.getIssueByID)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+}
+
+func TestCreateIssueHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Path: ":memory:",
+		},
+		API: config.APIConfig{
+			JWTSecret: "test-secret",
+		},
+	}
+
+	server, err := NewServer(cfg)
+	if err != nil {
+		t.Fatalf("Failed to create server: %v", err)
+	}
+	defer server.Shutdown()
+
+	// Create provider and model
+	provider := database.Provider{
+		Name:        "Test Provider",
+		Endpoint:    "https://api.example.com",
+		Description: "Test provider for unit tests",
+		IsActive:    true,
+	}
+	err = server.database.CreateProvider(&provider)
+	if err != nil {
+		t.Fatalf("Failed to create provider: %v", err)
+	}
+
+	model := database.Model{
+		ProviderID:  provider.ID,
+		ModelID:     "test-model-issues-create",
+		Name:        "Test Model",
+		Description: "Test model for issues create tests",
+	}
+	err = server.database.CreateModel(&model)
+	if err != nil {
+		t.Fatalf("Failed to create model: %v", err)
+	}
+
+	t.Run("Success", func(t *testing.T) {
+		firstDetected := time.Now()
+		requestBody := map[string]interface{}{
+			"model_id":       model.ID,
+			"issue_type":     "performance",
+			"severity":       "warning",
+			"title":          "Test Issue Created",
+			"description":    "This is a test issue created via API",
+			"first_detected": firstDetected.Format(time.RFC3339),
+		}
+		jsonBody, _ := json.Marshal(requestBody)
+
+		req, _ := http.NewRequest("POST", "/api/v1/issues", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.POST("/api/v1/issues", server.createIssue)
+
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusCreated {
+			t.Logf("Response body: %s", w.Body.String())
+		}
+		assert.Equal(t, http.StatusCreated, w.Code)
+		
+		var response map[string]interface{}
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response["id"])
+		assert.Equal(t, model.ID, int64(response["model_id"].(float64)))
+		assert.Equal(t, "performance", response["issue_type"])
+		assert.Equal(t, "warning", response["severity"])
+	})
+
+	t.Run("ValidationError", func(t *testing.T) {
+		// Missing required fields
+		requestBody := map[string]interface{}{
+			"model_id": model.ID,
+			// missing issue_type, severity, title, description, first_detected
+		}
+		jsonBody, _ := json.Marshal(requestBody)
+
+		req, _ := http.NewRequest("POST", "/api/v1/issues", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.POST("/api/v1/issues", server.createIssue)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+}
+
+func TestUpdateIssueHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Path: ":memory:",
+		},
+		API: config.APIConfig{
+			JWTSecret: "test-secret",
+		},
+	}
+
+	server, err := NewServer(cfg)
+	if err != nil {
+		t.Fatalf("Failed to create server: %v", err)
+	}
+	defer server.Shutdown()
+
+	// Create provider and model
+	provider := database.Provider{
+		Name:        "Test Provider",
+		Endpoint:    "https://api.example.com",
+		Description: "Test provider for unit tests",
+		IsActive:    true,
+	}
+	err = server.database.CreateProvider(&provider)
+	if err != nil {
+		t.Fatalf("Failed to create provider: %v", err)
+	}
+
+	model := database.Model{
+		ProviderID:  provider.ID,
+		ModelID:     "test-model-issues-update",
+		Name:        "Test Model",
+		Description: "Test model for issues update tests",
+	}
+	err = server.database.CreateModel(&model)
+	if err != nil {
+		t.Fatalf("Failed to create model: %v", err)
+	}
+
+	// Create an issue entry
+	firstDetected := time.Now()
+	issue := database.Issue{
+		ModelID:       model.ID,
+		IssueType:     "performance",
+		Severity:      "warning",
+		Title:         "Test Issue",
+		Description:   "This is a test issue for unit tests",
+		FirstDetected: firstDetected,
+	}
+	err = server.database.CreateIssue(&issue)
+	if err != nil {
+		t.Fatalf("Failed to create issue: %v", err)
+	}
+
+	t.Run("Success", func(t *testing.T) {
+		requestBody := map[string]interface{}{
+			"severity": "error",
+			"title":    "Updated Issue Title",
+		}
+		jsonBody, _ := json.Marshal(requestBody)
+
+		req, _ := http.NewRequest("PUT", fmt.Sprintf("/api/v1/issues/%d", issue.ID), bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.PUT("/api/v1/issues/:id", server.updateIssue)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		
+		var response map[string]interface{}
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, issue.ID, int64(response["id"].(float64)))
+		assert.Equal(t, "error", response["severity"])
+		assert.Equal(t, "Updated Issue Title", response["title"])
+	})
+
+	t.Run("ValidationError", func(t *testing.T) {
+		// Invalid severity (not in enum)
+		requestBody := map[string]interface{}{
+			"severity": "invalid_severity",
+		}
+		jsonBody, _ := json.Marshal(requestBody)
+
+		req, _ := http.NewRequest("PUT", fmt.Sprintf("/api/v1/issues/%d", issue.ID), bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.PUT("/api/v1/issues/:id", server.updateIssue)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("NotFound", func(t *testing.T) {
+		requestBody := map[string]interface{}{
+			"title": "Updated Title",
+		}
+		jsonBody, _ := json.Marshal(requestBody)
+
+		req, _ := http.NewRequest("PUT", "/api/v1/issues/99999", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.PUT("/api/v1/issues/:id", server.updateIssue)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+}
+
+func TestDeleteIssueHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Path: ":memory:",
+		},
+		API: config.APIConfig{
+			JWTSecret: "test-secret",
+		},
+	}
+
+	server, err := NewServer(cfg)
+	if err != nil {
+		t.Fatalf("Failed to create server: %v", err)
+	}
+	defer server.Shutdown()
+
+	// Create provider and model
+	provider := database.Provider{
+		Name:        "Test Provider",
+		Endpoint:    "https://api.example.com",
+		Description: "Test provider for unit tests",
+		IsActive:    true,
+	}
+	err = server.database.CreateProvider(&provider)
+	if err != nil {
+		t.Fatalf("Failed to create provider: %v", err)
+	}
+
+	model := database.Model{
+		ProviderID:  provider.ID,
+		ModelID:     "test-model-issues-delete",
+		Name:        "Test Model",
+		Description: "Test model for issues delete tests",
+	}
+	err = server.database.CreateModel(&model)
+	if err != nil {
+		t.Fatalf("Failed to create model: %v", err)
+	}
+
+	// Create an issue entry
+	firstDetected := time.Now()
+	issue := database.Issue{
+		ModelID:       model.ID,
+		IssueType:     "performance",
+		Severity:      "warning",
+		Title:         "Test Issue",
+		Description:   "This is a test issue for unit tests",
+		FirstDetected: firstDetected,
+	}
+	err = server.database.CreateIssue(&issue)
+	if err != nil {
+		t.Fatalf("Failed to create issue: %v", err)
+	}
+
+	t.Run("Success", func(t *testing.T) {
+		req, _ := http.NewRequest("DELETE", fmt.Sprintf("/api/v1/issues/%d", issue.ID), nil)
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.DELETE("/api/v1/issues/:id", server.deleteIssue)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNoContent, w.Code)
+	})
+
+	t.Run("NotFound", func(t *testing.T) {
+		req, _ := http.NewRequest("DELETE", "/api/v1/issues/99999", nil)
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.DELETE("/api/v1/issues/:id", server.deleteIssue)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNoContent, w.Code)
+	})
+}
+
+func TestGetConfigExportsHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Path: ":memory:",
+		},
+		API: config.APIConfig{
+			JWTSecret: "test-secret",
+		},
+	}
+
+	server, err := NewServer(cfg)
+	if err != nil {
+		t.Fatalf("Failed to create server: %v", err)
+	}
+	defer server.Shutdown()
+
+	// Create a config export entry
+	export := database.ConfigExport{
+		ExportType:  "json",
+		Name:        "Test Export",
+		Description: "Test description",
+		ConfigData:  "{\"key\":\"value\"}",
+		IsVerified:  false,
+	}
+	err = server.database.CreateConfigExport(&export)
+	if err != nil {
+		t.Fatalf("Failed to create config export: %v", err)
+	}
+
+	req, _ := http.NewRequest("GET", "/api/v1/exports?limit=10&offset=0", nil)
+	w := httptest.NewRecorder()
+
+	router := gin.Default()
+	router.GET("/api/v1/exports", server.getConfigExports)
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestGetConfigExportByIDHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Path: ":memory:",
+		},
+		API: config.APIConfig{
+			JWTSecret: "test-secret",
+		},
+	}
+
+	server, err := NewServer(cfg)
+	if err != nil {
+		t.Fatalf("Failed to create server: %v", err)
+	}
+	defer server.Shutdown()
+
+	// Create a config export entry
+	export := database.ConfigExport{
+		ExportType:  "json",
+		Name:        "Test Export",
+		Description: "Test description",
+		ConfigData:  "{\"key\":\"value\"}",
+		IsVerified:  false,
+	}
+	err = server.database.CreateConfigExport(&export)
+	if err != nil {
+		t.Fatalf("Failed to create config export: %v", err)
+	}
+
+	t.Run("Success", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", fmt.Sprintf("/api/v1/exports/%d", export.ID), nil)
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.GET("/api/v1/exports/:id", server.getConfigExportByID)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("NotFound", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/api/v1/exports/99999", nil)
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.GET("/api/v1/exports/:id", server.getConfigExportByID)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+}
+
+func TestCreateConfigExportHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Path: ":memory:",
+		},
+		API: config.APIConfig{
+			JWTSecret: "test-secret",
+		},
+	}
+
+	server, err := NewServer(cfg)
+	if err != nil {
+		t.Fatalf("Failed to create server: %v", err)
+	}
+	defer server.Shutdown()
+
+	t.Run("Success", func(t *testing.T) {
+		requestBody := map[string]interface{}{
+			"export_type":  "json",
+			"name":         "Test Export Created",
+			"description":  "Test description",
+			"config_data":  "{\"key\":\"value\"}",
+			"is_verified":  false,
+		}
+		jsonBody, _ := json.Marshal(requestBody)
+
+		req, _ := http.NewRequest("POST", "/api/v1/exports", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.POST("/api/v1/exports", server.createConfigExport)
+
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusCreated {
+			t.Logf("Response body: %s", w.Body.String())
+		}
+		assert.Equal(t, http.StatusCreated, w.Code)
+		
+		var response map[string]interface{}
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response["id"])
+		assert.Equal(t, "json", response["export_type"])
+		assert.Equal(t, "Test Export Created", response["name"])
+	})
+
+	t.Run("ValidationError", func(t *testing.T) {
+		// Missing required fields
+		requestBody := map[string]interface{}{
+			"name": "Test Export",
+			// missing export_type, config_data
+		}
+		jsonBody, _ := json.Marshal(requestBody)
+
+		req, _ := http.NewRequest("POST", "/api/v1/exports", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.POST("/api/v1/exports", server.createConfigExport)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+}
+
+func TestUpdateConfigExportHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Path: ":memory:",
+		},
+		API: config.APIConfig{
+			JWTSecret: "test-secret",
+		},
+	}
+
+	server, err := NewServer(cfg)
+	if err != nil {
+		t.Fatalf("Failed to create server: %v", err)
+	}
+	defer server.Shutdown()
+
+	// Create a config export entry
+	export := database.ConfigExport{
+		ExportType:  "json",
+		Name:        "Test Export",
+		Description: "Test description",
+		ConfigData:  "{\"key\":\"value\"}",
+		IsVerified:  false,
+	}
+	err = server.database.CreateConfigExport(&export)
+	if err != nil {
+		t.Fatalf("Failed to create config export: %v", err)
+	}
+
+	t.Run("Success", func(t *testing.T) {
+		requestBody := map[string]interface{}{
+			"name":        "Updated Export Name",
+			"is_verified": true,
+		}
+		jsonBody, _ := json.Marshal(requestBody)
+
+		req, _ := http.NewRequest("PUT", fmt.Sprintf("/api/v1/exports/%d", export.ID), bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.PUT("/api/v1/exports/:id", server.updateConfigExport)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		
+		var response map[string]interface{}
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, export.ID, int64(response["id"].(float64)))
+		assert.Equal(t, "Updated Export Name", response["name"])
+		assert.Equal(t, true, response["is_verified"])
+	})
+
+	t.Run("ValidationError", func(t *testing.T) {
+		// Invalid export_type (not in enum)
+		requestBody := map[string]interface{}{
+			"export_type": "invalid_type",
+		}
+		jsonBody, _ := json.Marshal(requestBody)
+
+		req, _ := http.NewRequest("PUT", fmt.Sprintf("/api/v1/exports/%d", export.ID), bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.PUT("/api/v1/exports/:id", server.updateConfigExport)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("NotFound", func(t *testing.T) {
+		requestBody := map[string]interface{}{
+			"name": "Updated Name",
+		}
+		jsonBody, _ := json.Marshal(requestBody)
+
+		req, _ := http.NewRequest("PUT", "/api/v1/exports/99999", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.PUT("/api/v1/exports/:id", server.updateConfigExport)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+}
+
+func TestDeleteConfigExportHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Path: ":memory:",
+		},
+		API: config.APIConfig{
+			JWTSecret: "test-secret",
+		},
+	}
+
+	server, err := NewServer(cfg)
+	if err != nil {
+		t.Fatalf("Failed to create server: %v", err)
+	}
+	defer server.Shutdown()
+
+	// Create a config export entry
+	export := database.ConfigExport{
+		ExportType:  "json",
+		Name:        "Test Export",
+		Description: "Test description",
+		ConfigData:  "{\"key\":\"value\"}",
+		IsVerified:  false,
+	}
+	err = server.database.CreateConfigExport(&export)
+	if err != nil {
+		t.Fatalf("Failed to create config export: %v", err)
+	}
+
+	t.Run("Success", func(t *testing.T) {
+		req, _ := http.NewRequest("DELETE", fmt.Sprintf("/api/v1/exports/%d", export.ID), nil)
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.DELETE("/api/v1/exports/:id", server.deleteConfigExport)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNoContent, w.Code)
+	})
+
+	t.Run("NotFound", func(t *testing.T) {
+		req, _ := http.NewRequest("DELETE", "/api/v1/exports/99999", nil)
+		w := httptest.NewRecorder()
+
+		router := gin.Default()
+		router.DELETE("/api/v1/exports/:id", server.deleteConfigExport)
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNoContent, w.Code)
+	})
+}
