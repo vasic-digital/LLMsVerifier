@@ -17,6 +17,54 @@ The Challenge Framework is a comprehensive testing system that uses ONLY product
 ✅ **Versioned Results** - Git-tracked results with proper directory structure
 ✅ **Complete Logging** - All commands and activities logged at verbose level
 ✅ **Dependency Management** - Challenges track and validate dependencies
+✅ **HTTP/3 Support Detection** - Automatically detects and configures HTTP/3 (QUIC/Cronet) support
+✅ **Toon Format Support** - Detects and enables Toon data format for compatible models
+✅ **Smart Model Naming** - Model names include capability suffixes (free to use, http3, toon)
+
+---
+
+## 🚀 Advanced Features
+
+### HTTP/3 (QUIC/Cronet) Support
+
+The challenge framework automatically detects HTTP/3 support for LLM providers and models:
+
+- **Detection Logic**: Based on provider type, model capabilities, and advanced features
+- **Configuration**: When HTTP/3 is supported, exported configurations include:
+  - `protocol: "http3"`
+  - `quic_enabled: true`
+  - `cronet_enabled: true`
+- **Model Naming**: Models with HTTP/3 support get `(http3)` suffix in names
+
+### Toon Data Format Support
+
+Advanced data format detection for efficient model communication:
+
+- **Detection Logic**: Based on vision capabilities, large context models, and provider support
+- **Configuration**: When Toon format is supported, configurations include:
+  - `data_format: "toon"`
+  - `toon_compression: true`
+  - `toon_optimization: true`
+- **Model Naming**: Models with Toon support get `(toon)` suffix in names
+
+### Combined Capabilities
+
+Models supporting multiple advanced features get combined suffixes:
+- `Model Name (free to use, http3, toon)`
+- Configurations automatically enable all supported features
+
+### Detection Test Results
+
+Comprehensive testing validates the detection logic:
+
+✅ **HuggingFace models**: Toon format support detected
+✅ **Nvidia models**: Toon format support detected
+✅ **DeepSeek models**: HTTP/3 support detected
+✅ **OpenRouter models**: HTTP/3 support detected
+✅ **Gemini models**: Toon format support detected
+✅ **Standard models**: No advanced features (expected)
+
+**Test Coverage**: 9/9 detection tests passed
 
 ---
 

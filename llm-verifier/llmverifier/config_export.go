@@ -102,6 +102,8 @@ type CrushModel struct {
 	DefaultMaxTokens    int     `json:"default_max_tokens,omitempty"`
 	CanReason           bool    `json:"can_reason,omitempty"`
 	SupportsAttachments bool    `json:"supports_attachments,omitempty"`
+	SupportsHTTP3       bool    `json:"supports_http3,omitempty"`
+	SupportsToon        bool    `json:"supports_toon,omitempty"`
 }
 
 // CrushLSP represents LSP configuration
@@ -307,10 +309,26 @@ func createOpenCodeModelSettings(result VerificationResult, provider string) map
 		"supports_audio":     result.ModelInfo.SupportsAudio,
 		"supports_video":     result.ModelInfo.SupportsVideo,
 		"supports_reasoning": result.ModelInfo.SupportsReasoning,
+		"supports_http3":     result.ModelInfo.SupportsHTTP3,
+		"supports_toon":      result.ModelInfo.SupportsToon,
 		"temperature":        0.7,
 		"top_p":              0.9,
 		"frequency_penalty":  0.0,
 		"presence_penalty":   0.0,
+	}
+
+	// Configure HTTP/3 settings if supported
+	if result.ModelInfo.SupportsHTTP3 {
+		baseSettings["protocol"] = "http3"
+		baseSettings["quic_enabled"] = true
+		baseSettings["cronet_enabled"] = true
+	}
+
+	// Configure Toon format settings if supported
+	if result.ModelInfo.SupportsToon {
+		baseSettings["data_format"] = "toon"
+		baseSettings["toon_compression"] = true
+		baseSettings["toon_optimization"] = true
 	}
 
 	// Provider-specific optimizations
@@ -451,6 +469,24 @@ func createCrushModelSettings(result VerificationResult, provider string) map[st
 		"test_generation":   true,
 		"linting_enabled":   true,
 		"format_on_save":    true,
+		"supports_http3":    result.ModelInfo.SupportsHTTP3,
+		"supports_toon":     result.ModelInfo.SupportsToon,
+	}
+
+	// Configure HTTP/3 for coding workflows if supported
+	if result.ModelInfo.SupportsHTTP3 {
+		baseSettings["protocol"] = "http3"
+		baseSettings["quic_enabled"] = true
+		baseSettings["cronet_enabled"] = true
+		baseSettings["low_latency_mode"] = true
+	}
+
+	// Configure Toon format for efficient code transmission if supported
+	if result.ModelInfo.SupportsToon {
+		baseSettings["data_format"] = "toon"
+		baseSettings["toon_compression"] = true
+		baseSettings["toon_optimization"] = true
+		baseSettings["code_streaming"] = true
 	}
 
 	// Provider-specific coding optimizations
@@ -1652,6 +1688,8 @@ func exportCrushConfig(results []VerificationResult, outputPath string, options 
 				DefaultMaxTokens:    result.ModelInfo.MaxOutputTokens,
 				CanReason:           result.ModelInfo.SupportsReasoning,
 				SupportsAttachments: result.ModelInfo.SupportsVision || result.ModelInfo.SupportsAudio || result.ModelInfo.SupportsVideo,
+				SupportsHTTP3:       result.ModelInfo.SupportsHTTP3,
+				SupportsToon:        result.ModelInfo.SupportsToon,
 			}
 
 			// Add cost information (mock values for now)
