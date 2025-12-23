@@ -11,7 +11,7 @@ Before you begin, ensure you have:
 - ✅ **Project Built** - All binaries compiled (CLI, REST API, TUI, Desktop, Mobile, Web)
 - ✅ **Git Installed** - For versioning challenge results
 - ✅ **Bash Shell** - For running challenge scripts
-- ✅ **API Keys Available** - Stored in `API_KEYS.md` (not git-versioned)
+- ✅ **API Keys Available** - Set environment variables: ApiKey_HuggingFace, ApiKey_Nvidia, ApiKey_Chutes, ApiKey_SiliconFlow, ApiKey_Kimi, ApiKey_Gemini, ApiKey_OpenRouter, ApiKey_Z_AI, ApiKey_DeepSeek
 
 ### Verify Binaries
 

@@ -53,7 +53,7 @@ A **challenge** is a specific test scenario that validates the LLM Verifier syst
 
 **Example:** "Provider Models Discovery" challenge
 - **Objective:** Discover all available providers and their models
-- **Configuration:** API keys, endpoints, feature settings
+- **Configuration:** Environment variables for API keys, endpoints, feature settings
 - **Execution:** Run binary to query providers
 - **Results:** JSON files with discovered providers/models
 - **Validation:** Verify all providers are accessible
@@ -194,7 +194,7 @@ User → run_challenges.sh → Challenge Bank → Challenge Script → Platform 
 4. **Script** configures and executes platform binary
 5. **Binary** performs test and generates output
 6. **Results** are stored in timestamped directory
-7. **Git** versioning tracks all results (except API keys)
+7. **Git** versioning tracks all results (API keys loaded from environment)
 
 ---
 
