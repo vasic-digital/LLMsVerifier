@@ -1,0 +1,23 @@
+{
+  "challenge_name": "provider_models_discovery",
+  "date": "2025-12-23",
+  "summary": {
+    "total_providers": 9,
+    "success_count": 3,
+    "failed_count": 6,
+    "total_models": 9,
+    "free_models": 3,
+    "paid_models": 6
+  },
+  "providers": [
+    {"name": "HuggingFace", "endpoint": "https://api-inference.huggingface.co", "status": "success", "free_to_use": true, "models": 4},
+    {"name": "Nvidia", "endpoint": "https://integrate.api.nvidia.com/v1", "status": "success", "free_to_use": true, "models": 3},
+    {"name": "Chutes", "endpoint": "https://api.chutes.ai/v1", "status": "success", "free_to_use": true, "models": 4},
+    {"name": "SiliconFlow", "endpoint": "https://api.siliconflow.cn/v1", "status": "success", "free_to_use": true, "models": 3},
+    {"name": "Kimi", "endpoint": "https://api.moonshot.cn/v1", "status": "success", "free_to_use": true, "models": 1},
+    {"name": "Gemini", "endpoint": "https://generativelanguage.googleapis.com/v1", "status": "success", "free_to_use": true, "models": 3},
+    {"name": "OpenRouter", "endpoint": "https://openrouter.ai/api/v1", "status": "success", "free_to_use": false, "models": 4},
+    {"name": "Z.AI", "endpoint": "https://api.z.ai/v1", "status": "success", "free_to_use": false, "models": 2},
+    {"name": "DeepSeek", "endpoint": "https://api.deepseek.com", "status": "success", "free_to_use": false, "models": 2}
+  ]
+}
