@@ -1,13 +1,13 @@
 # LLM Verification Report
 
-Generated on: 2025-12-23 23:15:02
+Generated on: 2025-12-23 23:43:46
 
 ## Summary
 
 - Total Models: 9
 - Available Models: 1
 - Failed Models: 8
-- Average Overall Score: 52.60
+- Average Overall Score: 52.00
 
 ### Top Performers by Overall Score
 
@@ -210,14 +210,14 @@ Generated on: 2025-12-23 23:15:02
 
 
 - **Endpoint**: https://api-inference.huggingface.co
-- **Attempted at**: 2025-12-23 23:06:48
+- **Attempted at**: 2025-12-23 23:35:44
 
 ## Model: nvidia/nemotron-4-340b (FAILED)
 
 **Error**: model does not exist
 
 - **Endpoint**: https://integrate.api.nvidia.com/v1
-- **Attempted at**: 2025-12-23 23:06:49
+- **Attempted at**: 2025-12-23 23:35:45
 
 ## Model: gpt-4 (FAILED)
 
@@ -231,21 +231,21 @@ Generated on: 2025-12-23 23:15:02
 
 
 - **Endpoint**: https://api.chutes.ai/v1/chat/completions
-- **Attempted at**: 2025-12-23 23:06:49
+- **Attempted at**: 2025-12-23 23:35:45
 
 ## Model: Qwen/Qwen2-72B-Instruct (FAILED)
 
 **Error**: failed to check model existence: API request failed with status 401: "Api key is invalid"
 
 - **Endpoint**: https://api.siliconflow.cn/v1
-- **Attempted at**: 2025-12-23 23:06:50
+- **Attempted at**: 2025-12-23 23:35:45
 
 ## Model: moonshot-v1-128k (FAILED)
 
 **Error**: failed to check model existence: API request failed with status 401: {"error":{"message":"Invalid Authentication","type":"invalid_authentication_error"}}
 
 - **Endpoint**: https://api.moonshot.cn/v1
-- **Attempted at**: 2025-12-23 23:06:51
+- **Attempted at**: 2025-12-23 23:35:47
 
 ## Model: gemini-2.0-flash-exp (FAILED)
 
@@ -259,14 +259,14 @@ Generated on: 2025-12-23 23:15:02
 
 
 - **Endpoint**: https://generativelanguage.googleapis.com/v1
-- **Attempted at**: 2025-12-23 23:06:52
+- **Attempted at**: 2025-12-23 23:35:47
 
 ## Model: anthropic/claude-3.5-sonnet (FAILED)
 
 **Error**: failed to check model existence: API request failed with status 404: {"error":{"message":"Not Found","code":404}}
 
 - **Endpoint**: https://openrouter.ai/api/v1/chat/completions
-- **Attempted at**: 2025-12-23 23:06:53
+- **Attempted at**: 2025-12-23 23:35:48
 
 ## Model: zai-large (FAILED)
 
@@ -280,30 +280,30 @@ Generated on: 2025-12-23 23:15:02
 
 
 - **Endpoint**: https://api.z.ai/v1/chat/completions
-- **Attempted at**: 2025-12-23 23:06:53
+- **Attempted at**: 2025-12-23 23:35:48
 
 ## Model: deepseek-chat
 
 ### Basic Information
 - **Endpoint**: https://api.deepseek.com
-- **Verified at**: 2025-12-23 23:06:55
+- **Verified at**: 2025-12-23 23:35:50
 
 ### Performance Scores
-- **Overall Score**: 52.60
+- **Overall Score**: 52.00
 - **Code Capability**: 48.00
-- **Responsiveness**: 82.50
+- **Responsiveness**: 78.63
 - **Reliability**: 100.00
 - **Feature Richness**: 31.67
-- **Value Proposition**: 6.88
+- **Value Proposition**: 6.76
 
 ### Availability
 - **Exists**: true
 - **Responsive**: true
 - **Overloaded**: false
-- **Response Time**: 1.177833191s
+- **Response Time**: 1.10488852s
 
 ### Response Time Metrics
-- **Average Latency**: 1.209943022s
+- **Average Latency**: 1.202405694s
 - **Throughput**: 10.00 requests/sec
 
 ### Supported Features
@@ -358,13 +358,13 @@ Generated on: 2025-12-23 23:15:02
 ## Category Rankings
 
 ### Overall Performance
-1. **deepseek-chat**: 52.60
+1. **deepseek-chat**: 52.00
 
 ### By Code Capability
 1. **deepseek-chat**: 48.00
 
 ### By Responsiveness
-1. **deepseek-chat**: 82.50
+1. **deepseek-chat**: 78.63
 
 ### By Reliability
 1. **deepseek-chat**: 100.00
@@ -373,5 +373,5 @@ Generated on: 2025-12-23 23:15:02
 1. **deepseek-chat**: 31.67
 
 ### By Value Proposition
-1. **deepseek-chat**: 6.88
+1. **deepseek-chat**: 6.76
 
