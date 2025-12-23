@@ -14,82 +14,82 @@ import (
 // Verifies model capabilities based on provider configuration
 
 type ProviderConfig struct {
-	Name        string          `json:"name"`
-	Type         string          `json:"type"`
-	Endpoint    string          `json:"endpoint"`
-	Status      string          `json:"status"`
-	FreeToUse   bool            `json:"free_to_use"`
-	Features    Features         `json:"features"`
-	Models      []ModelConfig   `json:"models"`
+	Name      string        `json:"name"`
+	Type      string        `json:"type"`
+	Endpoint  string        `json:"endpoint"`
+	Status    string        `json:"status"`
+	FreeToUse bool          `json:"free_to_use"`
+	Features  Features      `json:"features"`
+	Models    []ModelConfig `json:"models"`
 }
 
 type ModelConfig struct {
-	ID            string      `json:"id"`
-	Name          string      `json:"name"`
-	ContextSize   int         `json:"context_size,omitempty"`
-	Capabilities []string    `json:"capabilities"`
-	Features      ModelFeatures `json:"features"`
-	FreeToUse     bool        `json:"free_to_use"`
+	ID           string        `json:"id"`
+	Name         string        `json:"name"`
+	ContextSize  int           `json:"context_size,omitempty"`
+	Capabilities []string      `json:"capabilities"`
+	Features     ModelFeatures `json:"features"`
+	FreeToUse    bool          `json:"free_to_use"`
 }
 
 type ModelFeatures struct {
-	MCPs           []string `json:"mcps,omitempty"`
-	LSPs           []string `json:"lsps,omitempty"`
+	MCPs            []string `json:"mcps,omitempty"`
+	LSPs            []string `json:"lsps,omitempty"`
 	Embeddings      []string `json:"embeddings,omitempty"`
 	Streaming       bool     `json:"streaming"`
 	FunctionCalling bool     `json:"function_calling"`
-	Vision         bool     `json:"vision"`
-	Tools          bool     `json:"tools"`
+	Vision          bool     `json:"vision"`
+	Tools           bool     `json:"tools"`
 }
 
 type Features struct {
-	MCPs           bool `json:"mcps"`
-	LSPs           bool `json:"lsps"`
+	MCPs            bool `json:"mcps"`
+	LSPs            bool `json:"lsps"`
 	Embeddings      bool `json:"embeddings"`
 	Streaming       bool `json:"streaming"`
 	FunctionCalling bool `json:"function_calling"`
-	Vision         bool `json:"vision"`
-	Tools          bool `json:"tools"`
+	Vision          bool `json:"vision"`
+	Tools           bool `json:"tools"`
 }
 
 type VerificationResult struct {
-	ModelID           string       `json:"model_id"`
-	ModelName         string       `json:"model_name"`
-	ProviderName      string       `json:"provider_name"`
-	FeaturesVerified  Features     `json:"features_verified"`
-	Latency           string       `json:"latency"`
-	TestTime          string       `json:"test_time"`
-	OverallStatus     string       `json:"overall_status"`
+	ModelID          string   `json:"model_id"`
+	ModelName        string   `json:"model_name"`
+	ProviderName     string   `json:"provider_name"`
+	FeaturesVerified Features `json:"features_verified"`
+	Latency          string   `json:"latency"`
+	TestTime         string   `json:"test_time"`
+	OverallStatus    string   `json:"overall_status"`
 }
 
 type ChallengeResult struct {
-	ChallengeName   string          `json:"challenge_name"`
-	StartTime      string          `json:"start_time"`
-	EndTime        string          `json:"end_time"`
-	Duration       string          `json:"duration"`
-	Providers      []ProviderResult `json:"providers"`
-	Summary        ChallengeSummary `json:"summary"`
+	ChallengeName string           `json:"challenge_name"`
+	StartTime     string           `json:"start_time"`
+	EndTime       string           `json:"end_time"`
+	Duration      string           `json:"duration"`
+	Providers     []ProviderResult `json:"providers"`
+	Summary       ChallengeSummary `json:"summary"`
 }
 
 type ProviderResult struct {
-	Name         string               `json:"name"`
-	Type         string               `json:"type"`
-	Endpoint     string               `json:"endpoint"`
+	Name                string               `json:"name"`
+	Type                string               `json:"type"`
+	Endpoint            string               `json:"endpoint"`
 	VerificationResults []VerificationResult `json:"verification_results"`
-	SuccessCount int                  `json:"success_count"`
-	FailedCount  int                  `json:"failed_count"`
-	TestTime     string               `json:"test_time"`
+	SuccessCount        int                  `json:"success_count"`
+	FailedCount         int                  `json:"failed_count"`
+	TestTime            string               `json:"test_time"`
 }
 
 type ChallengeSummary struct {
-	TotalModels       int `json:"total_models"`
-	VerifiedModels    int `json:"verified_models"`
-	ModelsWithStreaming int `json:"models_with_streaming"`
+	TotalModels               int `json:"total_models"`
+	VerifiedModels            int `json:"verified_models"`
+	ModelsWithStreaming       int `json:"models_with_streaming"`
 	ModelsWithFunctionCalling int `json:"models_with_function_calling"`
-	ModelsWithVision int `json:"models_with_vision"`
-	ModelsWithEmbeddings int `json:"models_with_embeddings"`
-	FreeModels       int `json:"free_models"`
-	PaidModels       int `json:"paid_models"`
+	ModelsWithVision          int `json:"models_with_vision"`
+	ModelsWithEmbeddings      int `json:"models_with_embeddings"`
+	FreeModels                int `json:"free_models"`
+	PaidModels                int `json:"paid_models"`
 }
 
 var (
@@ -113,7 +113,7 @@ func main() {
 	challengeDir := filepath.Join("challenges", "model_verification",
 		time.Now().Format("2006"), time.Now().Format("01"), time.Now().Format("02"),
 		fmt.Sprintf("%d", timestamp))
-	
+
 	logDir := filepath.Join(challengeDir, "logs")
 	resultsDir := filepath.Join(challengeDir, "results")
 
@@ -182,7 +182,7 @@ func verifyProvider(ctx context.Context, provider ProviderConfig) ProviderResult
 		Name:     provider.Name,
 		Type:     provider.Type,
 		Endpoint: provider.Endpoint,
-		TestTime:  time.Now().Format(time.RFC3339),
+		TestTime: time.Now().Format(time.RFC3339),
 	}
 
 	for _, model := range provider.Models {
@@ -200,7 +200,7 @@ func verifyProvider(ctx context.Context, provider ProviderConfig) ProviderResult
 		}
 	}
 
-	loggerVerbose(1, "Provider %s: %d verified in %s", 
+	loggerVerbose(1, "Provider %s: %d verified in %s",
 		provider.Name, result.SuccessCount, time.Since(startTime).String())
 
 	return result
@@ -208,18 +208,18 @@ func verifyProvider(ctx context.Context, provider ProviderConfig) ProviderResult
 
 func verifyModel(ctx context.Context, provider ProviderConfig, model ModelConfig) VerificationResult {
 	logger.Printf("\n--- Verifying Model: %s (%s) ---", model.Name, model.ID)
-	
+
 	startTime := time.Now()
-	
+
 	// Verify features based on model configuration
 	featuresVerified := Features{
 		Streaming:       model.Features.Streaming,
 		FunctionCalling: model.Features.FunctionCalling,
-		Vision:         model.Features.Vision,
+		Vision:          model.Features.Vision,
 		Embeddings:      len(model.Features.Embeddings) > 0,
-		MCPs:           len(model.Features.MCPs) > 0,
-		LSPs:           len(model.Features.LSPs) > 0,
-		Tools:          model.Features.Tools,
+		MCPs:            len(model.Features.MCPs) > 0,
+		LSPs:            len(model.Features.LSPs) > 0,
+		Tools:           model.Features.Tools,
 	}
 
 	status := "success"
@@ -237,7 +237,7 @@ func verifyModel(ctx context.Context, provider ProviderConfig, model ModelConfig
 		FeaturesVerified: featuresVerified,
 		Latency:          time.Since(startTime).String(),
 		TestTime:         time.Now().Format(time.RFC3339),
-		OverallStatus:     status,
+		OverallStatus:    status,
 	}
 
 	return verification
@@ -250,7 +250,7 @@ func generateSummary(result ChallengeResult) ChallengeSummary {
 
 	for _, provider := range result.Providers {
 		summary.VerifiedModels += provider.SuccessCount
-		
+
 		for _, v := range provider.VerificationResults {
 			if v.FeaturesVerified.Streaming {
 				summary.ModelsWithStreaming++
@@ -310,9 +310,9 @@ func saveResults(resultsDir string, result ChallengeResult) error {
 
 	opencodeData := map[string]interface{}{
 		"challenge_name": result.ChallengeName,
-		"date":          time.Now().Format("2006-01-02"),
-		"summary":       result.Summary,
-		"providers":     make([]interface{}, 0),
+		"date":           time.Now().Format("2006-01-02"),
+		"summary":        result.Summary,
+		"providers":      make([]interface{}, 0),
 	}
 
 	for _, provider := range result.Providers {
@@ -388,48 +388,49 @@ func loadProviders() []ProviderConfig {
 	if len(cachedProviders) > 0 {
 		return cachedProviders
 	}
-	
+
 	providers, err := loadProviderConfig()
 	if err != nil {
 		return []ProviderConfig{}
 	}
-	
+
 	cachedProviders = providers
 	return providers
 }
 
 func findLatestChallenge(challengeName string) (string, error) {
-	baseDir := filepath.Join("challenges", challengeName)
-	
-	entries, err := os.ReadDir(baseDir)
-	if err != nil {
-		return "", err
-	}
+	baseDir := filepath.Join("results", challengeName)
 
-	var latestDir string
+	// Find the latest results file recursively
+	var latestFile string
 	var latestTime int64 = 0
 
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-		
-		info, err := entry.Info()
+	err := filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			continue
+			return err
 		}
-		
-		if info.ModTime().Unix() > latestTime {
-			latestTime = info.ModTime().Unix()
-			latestDir = filepath.Join(baseDir, entry.Name())
+		if info.IsDir() {
+			return nil
 		}
+		if info.Name() == "providers_opencode.json" {
+			if info.ModTime().Unix() > latestTime {
+				latestTime = info.ModTime().Unix()
+				latestFile = path
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		return "", fmt.Errorf("failed to walk directory: %w", err)
 	}
 
-	if latestDir == "" {
-		return "", fmt.Errorf("no challenge directories found")
+	if latestFile == "" {
+		return "", fmt.Errorf("no providers_opencode.json file found")
 	}
 
-	return latestDir, nil
+	// Return the directory containing the results file
+	return filepath.Dir(filepath.Dir(latestFile)), nil
 }
 
 func loggerVerbose(level int, format string, args ...interface{}) {
