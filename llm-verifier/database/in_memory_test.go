@@ -191,7 +191,7 @@ func TestScheduleStruct(t *testing.T) {
 		CreatedBy:       &createdBy,
 	}
 
-	assert.Equal(t, 1, schedule.ID)
+	assert.Equal(t, int64(1), schedule.ID)
 	assert.Equal(t, "Daily Test", schedule.Name)
 	assert.Equal(t, "cron", schedule.ScheduleType)
 }
@@ -213,8 +213,8 @@ func TestScheduleRunStruct(t *testing.T) {
 		ErrorMessage:  &msg,
 	}
 
-	assert.Equal(t, 1, run.ID)
-	assert.Equal(t, 1, run.ScheduleID)
+	assert.Equal(t, int64(1), run.ID)
+	assert.Equal(t, int64(1), run.ScheduleID)
 	assert.Equal(t, "completed", run.Status)
 }
 

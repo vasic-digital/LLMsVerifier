@@ -209,6 +209,16 @@ func (cm *ContextManager) Cleanup() {
 
 // Shutdown gracefully shuts down the context manager
 func (cm *ContextManager) Shutdown() {
-	close(cm.stopCh)
-	log.Println("Context manager shutdown complete")
+	// Protect against double close
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+	
+	select {
+	case <-cm.stopCh:
+		// Already closed
+		return
+	default:
+		close(cm.stopCh)
+		log.Println("Context manager shutdown complete")
+	}
 }
