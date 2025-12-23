@@ -1,0 +1,17 @@
+# Real API keys for LLM Verifier Challenges
+# This file is in .gitignore - NEVER commit this to git
+
+# Replace the placeholders with actual API keys
+# This is a template - copy and rename to api_keys.yaml
+
+huggingface: hf_*****
+nvidia: nvapi-*****
+chutes: cpk_*****
+siliconflow: sk-*****
+kimi: sk-kimi-*****
+gemini: AIzaSy*****
+openrouter: sk-or-v1-*****
+zai: a977c8417a45457a83a897de82e4215b.*****
+deepseek: sk-fa5d528b2bb44a0693cb6a1870f25fb1
+qwen: sk-*****
+claude: sk-*****
