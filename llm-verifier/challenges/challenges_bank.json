@@ -1,0 +1,178 @@
+{
+  "version": "1.0",
+  "description": "Challenge Bank - Generic system for running all or specific challenges",
+  "challenges": [
+    {
+      "id": "provider_models_discovery",
+      "name": "Provider Models Discovery",
+      "description": "Discover all available providers, their models, and verify features",
+      "platforms": ["cli", "rest-api", "tui", "desktop"],
+      "binary": "llm-verifier",
+      "script": "challenge_runners/provider_models_discovery/run.sh",
+      "config_template": "challenge_runners/provider_models_discovery/config_template.yaml",
+      "dependencies": [],
+      "estimated_duration": "5-10 minutes",
+      "outputs": [
+        "providers_opencode.json",
+        "providers_crush.json",
+        "config.yaml"
+      ]
+    },
+    {
+      "id": "model_verification",
+      "name": "Model Verification",
+      "description": "Verify each model's actual capabilities (chat, streaming, function calling, vision)",
+      "platforms": ["cli", "rest-api"],
+      "binary": "llm-verifier",
+      "script": "challenge_runners/model_verification/run.sh",
+      "config_template": "challenge_runners/model_verification/config_template.yaml",
+      "dependencies": ["provider_models_discovery"],
+      "estimated_duration": "15-30 minutes",
+      "outputs": [
+        "models_verification_opencode.json",
+        "models_verification_crush.json",
+        "feature_tests.json"
+      ]
+    },
+    {
+      "id": "feature_integration",
+      "name": "Feature Integration",
+      "description": "Test multi-provider failover, load balancing, and health monitoring",
+      "platforms": ["cli", "rest-api", "tui"],
+      "binary": "llm-verifier",
+      "script": "challenge_runners/feature_integration/run.sh",
+      "config_template": "challenge_runners/feature_integration/config_template.yaml",
+      "dependencies": ["provider_models_discovery", "model_verification"],
+      "estimated_duration": "20-40 minutes",
+      "outputs": [
+        "integration_test_opencode.json",
+        "integration_test_crush.json",
+        "failover_tests.json"
+      ]
+    },
+    {
+      "id": "performance_benchmark",
+      "name": "Performance Benchmark",
+      "description": "Benchmark response times, concurrent requests, and rate limits",
+      "platforms": ["cli", "rest-api"],
+      "binary": "llm-verifier",
+      "script": "challenge_runners/performance_benchmark/run.sh",
+      "config_template": "challenge_runners/performance_benchmark/config_template.yaml",
+      "dependencies": ["provider_models_discovery", "model_verification"],
+      "estimated_duration": "30-60 minutes",
+      "outputs": [
+        "benchmark_opencode.json",
+        "benchmark_crush.json",
+        "latency_metrics.json",
+        "throughput_metrics.json"
+      ]
+    },
+    {
+      "id": "rest_api_testing",
+      "name": "REST API Testing",
+      "description": "Test all REST API endpoints and verify functionality",
+      "platforms": ["rest-api"],
+      "binary": "llm-verifier-api",
+      "script": "challenge_runners/rest_api_testing/run.sh",
+      "config_template": "challenge_runners/rest_api_testing/config_template.yaml",
+      "dependencies": [],
+      "estimated_duration": "10-20 minutes",
+      "outputs": [
+        "api_tests_opencode.json",
+        "api_tests_crush.json",
+        "endpoint_tests.json"
+      ]
+    },
+    {
+      "id": "tui_functionality",
+      "name": "TUI Functionality",
+      "description": "Test Terminal User Interface features and workflows",
+      "platforms": ["tui"],
+      "binary": "llm-verifier-tui",
+      "script": "challenge_runners/tui_functionality/run.sh",
+      "config_template": "challenge_runners/tui_functionality/config_template.yaml",
+      "dependencies": [],
+      "estimated_duration": "5-10 minutes",
+      "outputs": [
+        "tui_tests_opencode.json",
+        "tui_tests_crush.json",
+        "workflow_tests.json"
+      ]
+    },
+    {
+      "id": "desktop_app_testing",
+      "name": "Desktop Application Testing",
+      "description": "Test desktop application features and integrations",
+      "platforms": ["desktop"],
+      "binary": "llm-verifier-desktop",
+      "script": "challenge_runners/desktop_app_testing/run.sh",
+      "config_template": "challenge_runners/desktop_app_testing/config_template.yaml",
+      "dependencies": [],
+      "estimated_duration": "10-20 minutes",
+      "outputs": [
+        "desktop_tests_opencode.json",
+        "desktop_tests_crush.json",
+        "ui_tests.json"
+      ]
+    },
+    {
+      "id": "mobile_app_testing",
+      "name": "Mobile Application Testing",
+      "description": "Test mobile application features and integrations",
+      "platforms": ["mobile"],
+      "binary": "llm-verifier-mobile",
+      "script": "challenge_runners/mobile_app_testing/run.sh",
+      "config_template": "challenge_runners/mobile_app_testing/config_template.yaml",
+      "dependencies": [],
+      "estimated_duration": "10-20 minutes",
+      "outputs": [
+        "mobile_tests_opencode.json",
+        "mobile_tests_crush.json",
+        "mobile_ui_tests.json"
+      ]
+    },
+    {
+      "id": "config_export_import",
+      "name": "Configuration Export/Import",
+      "description": "Test AI configuration export and import functionality",
+      "platforms": ["cli", "rest-api"],
+      "binary": "llm-verifier",
+      "script": "challenge_runners/config_export_import/run.sh",
+      "config_template": "challenge_runners/config_export_import/config_template.yaml",
+      "dependencies": ["provider_models_discovery"],
+      "estimated_duration": "5-10 minutes",
+      "outputs": [
+        "ai_config_opencode.json",
+        "ai_config_crush.json",
+        "claude_code_config.json",
+        "cline_config.json"
+      ]
+    }
+  ],
+  "platforms": {
+    "cli": {
+      "binary": "llm-verifier",
+      "description": "Command Line Interface"
+    },
+    "rest-api": {
+      "binary": "llm-verifier-api",
+      "description": "REST API Server"
+    },
+    "tui": {
+      "binary": "llm-verifier-tui",
+      "description": "Terminal User Interface"
+    },
+    "desktop": {
+      "binary": "llm-verifier-desktop",
+      "description": "Desktop Application"
+    },
+    "mobile": {
+      "binary": "llm-verifier-mobile",
+      "description": "Mobile Application"
+    },
+    "web": {
+      "binary": "llm-verifier-web",
+      "description": "Web Application"
+    }
+  }
+}
