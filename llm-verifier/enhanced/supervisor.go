@@ -439,7 +439,7 @@ func (s *Supervisor) Stop() {
 	close(s.stopCh)
 
 	// Wait a bit for workers to finish
-	time.Sleep(2 * time.Second)
+	time.Sleep(500 * time.Millisecond)
 
 	// Clean up resources
 	close(s.taskQueue)
@@ -710,14 +710,21 @@ func (s *Supervisor) workerLoop(worker *Worker) {
 				select {
 				case task := <-s.taskQueue:
 					s.executeTask(worker, task)
-				case <-time.After(1 * time.Second):
+				case <-time.After(100 * time.Millisecond):
 					// No task available, continue
 				}
 			}
 
 			// Update heartbeat
 			worker.LastHeartbeat = time.Now()
-			time.Sleep(5 * time.Second)
+			// Wait for next iteration or stop
+			select {
+			case <-s.stopCh:
+				log.Printf("Worker %s stopping", worker.ID)
+				return
+			case <-time.After(500 * time.Millisecond):
+				// Continue loop
+			}
 		}
 	}
 }
