@@ -624,12 +624,12 @@ type CreateConfigExportRequest struct {
 	Name              string  `json:"name" binding:"required,min=2,max=100,alphanumspace"`
 	Description       string  `json:"description" binding:"max=500"`
 	ConfigData        string  `json:"config_data" binding:"required,min=2"`
-	TargetModels      *string `json:"target_models" binding:"max=1000"`
-	TargetProviders   *string `json:"target_providers" binding:"max=1000"`
-	Filters           *string `json:"filters" binding:"max=1000"`
+	TargetModels      *string `json:"target_models" binding:"omitempty,max=1000"`
+	TargetProviders   *string `json:"target_providers" binding:"omitempty,max=1000"`
+	Filters           *string `json:"filters" binding:"omitempty,max=1000"`
 	IsVerified        bool    `json:"is_verified"`
-	VerificationNotes *string `json:"verification_notes" binding:"max=1000"`
-	CreatedBy         *string `json:"created_by" binding:"max=100"`
+	VerificationNotes *string `json:"verification_notes" binding:"omitempty,max=1000"`
+	CreatedBy         *string `json:"created_by" binding:"omitempty,max=100"`
 }
 
 // UpdateConfigExportRequest represents config export update request
