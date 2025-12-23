@@ -4,5 +4,6 @@ api_keys.json
 *_secrets.json
 *.env
 
-# Challenge results will be versioned
-!/name_of_the_challenge
+# Logs (may contain sensitive information)
+# Note: Challenge logs can be versioned if they don't contain actual API keys in full
+# This configuration allows versioning of results while protecting keys
