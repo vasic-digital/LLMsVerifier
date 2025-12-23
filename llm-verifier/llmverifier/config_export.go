@@ -220,9 +220,14 @@ func createOpenCodeConfig(results []VerificationResult, options *ExportOptions) 
 		category := categorizeModel(result)
 		provider := extractProvider(result.ModelInfo.Endpoint)
 
+		name := result.ModelInfo.ID
+		if isProviderFree(provider) {
+			name += " free to use"
+		}
+
 		model := AIModel{
 			ID:           result.ModelInfo.ID,
-			Name:         result.ModelInfo.ID,
+			Name:         name,
 			Provider:     provider,
 			Endpoint:     result.ModelInfo.Endpoint,
 			Capabilities: capabilities,
@@ -494,9 +499,14 @@ func createClaudeCode(results []VerificationResult, options *ExportOptions) (*AI
 		category := categorizeModel(result)
 		provider := extractProvider(result.ModelInfo.Endpoint)
 
+		name := result.ModelInfo.ID
+		if isProviderFree(provider) {
+			name += " free to use"
+		}
+
 		model := AIModel{
 			ID:           result.ModelInfo.ID,
-			Name:         result.ModelInfo.ID,
+			Name:         name,
 			Provider:     provider,
 			Endpoint:     result.ModelInfo.Endpoint,
 			Capabilities: capabilities,
@@ -800,7 +810,7 @@ func extractProvider(endpoint string) string {
 	if strings.Contains(endpoint, "deepseek.com") {
 		return "DeepSeek"
 	}
-	if strings.Contains(endpoint, "google.com") {
+	if strings.Contains(endpoint, "google.com") || strings.Contains(endpoint, "generativelanguage.googleapis.com") {
 		return "Google"
 	}
 	if strings.Contains(endpoint, "azure.com") {
@@ -809,8 +819,47 @@ func extractProvider(endpoint string) string {
 	if strings.Contains(endpoint, "aws") || strings.Contains(endpoint, "bedrock") {
 		return "AWS"
 	}
+	if strings.Contains(endpoint, "huggingface.co") {
+		return "HuggingFace"
+	}
+	if strings.Contains(endpoint, "nvidia.com") || strings.Contains(endpoint, "integrate.api.nvidia.com") {
+		return "Nvidia"
+	}
+	if strings.Contains(endpoint, "chutes.ai") {
+		return "Chutes"
+	}
+	if strings.Contains(endpoint, "siliconflow.cn") {
+		return "SiliconFlow"
+	}
+	if strings.Contains(endpoint, "moonshot.cn") {
+		return "Kimi"
+	}
+	if strings.Contains(endpoint, "openrouter.ai") {
+		return "OpenRouter"
+	}
+	if strings.Contains(endpoint, "z.ai") {
+		return "Z.AI"
+	}
 
 	return "Unknown"
+}
+
+// isProviderFree checks if a provider offers free models
+func isProviderFree(provider string) bool {
+	freeProviders := []string{
+		"HuggingFace",
+		"Nvidia",
+		"Chutes",
+		"SiliconFlow",
+		"Kimi",
+		"Gemini", // Google Gemini
+	}
+	for _, free := range freeProviders {
+		if strings.EqualFold(provider, free) {
+			return true
+		}
+	}
+	return false
 }
 
 // getExportCriteriaDescription generates description of export criteria
@@ -1592,9 +1641,13 @@ func exportCrushConfig(results []VerificationResult, outputPath string, options 
 
 		// Convert models
 		for _, result := range models {
+			name := result.ModelInfo.ID
+			if isProviderFree(providerName) {
+				name += " free to use"
+			}
 			crushModel := CrushModel{
 				ID:                  result.ModelInfo.ID,
-				Name:                result.ModelInfo.ID,
+				Name:                name,
 				ContextWindow:       result.ModelInfo.ContextWindow.TotalMaxTokens,
 				DefaultMaxTokens:    result.ModelInfo.MaxOutputTokens,
 				CanReason:           result.ModelInfo.SupportsReasoning,

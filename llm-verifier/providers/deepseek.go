@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -38,6 +39,10 @@ func (d *DeepSeekAdapter) ChatCompletion(ctx context.Context, request DeepSeekCh
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
+	log.Printf("API REQUEST: POST %s/chat/completions", d.endpoint)
+	log.Printf("API REQUEST HEADERS: %v", d.headers)
+	log.Printf("API REQUEST BODY: %s", string(requestBody))
+
 	// Create HTTP request
 	url := fmt.Sprintf("%s/chat/completions", d.endpoint)
 	req, err := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(string(requestBody)))
@@ -62,6 +67,10 @@ func (d *DeepSeekAdapter) ChatCompletion(ctx context.Context, request DeepSeekCh
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
+
+	log.Printf("API RESPONSE STATUS: %d", resp.StatusCode)
+	log.Printf("API RESPONSE HEADERS: %v", resp.Header)
+	log.Printf("API RESPONSE BODY: %s", string(body))
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("DeepSeek API error: %d - %s", resp.StatusCode, string(body))
@@ -177,6 +186,9 @@ func (d *DeepSeekAdapter) ValidateRequest(request DeepSeekChatRequest) error {
 // GetModelInfo retrieves model information from DeepSeek
 func (d *DeepSeekAdapter) GetModelInfo(ctx context.Context, model string) (*ModelInfo, error) {
 	url := fmt.Sprintf("%s/models/%s", d.endpoint, model)
+	log.Printf("API REQUEST: GET %s", url)
+	log.Printf("API REQUEST HEADERS: %v", d.headers)
+
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -192,8 +204,16 @@ func (d *DeepSeekAdapter) GetModelInfo(ctx context.Context, model string) (*Mode
 	}
 	defer resp.Body.Close()
 
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	log.Printf("API RESPONSE STATUS: %d", resp.StatusCode)
+	log.Printf("API RESPONSE HEADERS: %v", resp.Header)
+	log.Printf("API RESPONSE BODY: %s", string(body))
+
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("DeepSeek API error: %d - %s", resp.StatusCode, string(body))
 	}
 
@@ -204,7 +224,7 @@ func (d *DeepSeekAdapter) GetModelInfo(ctx context.Context, model string) (*Mode
 		OwnedBy string `json:"owned_by"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&modelResp); err != nil {
+	if err := json.Unmarshal(body, &modelResp); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
