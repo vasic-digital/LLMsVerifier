@@ -296,8 +296,9 @@ func TestLLMVerifierMetricsRecordModelScore(t *testing.T) {
 
 	lvm.RecordModelScore("gpt-4", "openai", 95.5)
 
-	metric, _ := lvm.collector.GetMetric("model_score", map[string]string{"model": "gpt-4", "provider": "openai"})
+	metric, exists := lvm.collector.GetMetric("model_score", map[string]string{"model": "gpt-4", "provider": "openai"})
 
+	assert.True(t, exists, "Metric should exist after recording")
 	assert.NotNil(t, metric)
 	assert.Equal(t, 95.5, metric.Value)
 }

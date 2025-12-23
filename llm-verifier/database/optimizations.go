@@ -287,9 +287,15 @@ func (d *Database) GetDatabaseStats() (map[string]interface{}, error) {
 	}
 
 	for _, table := range tables {
+		// Validate table name to prevent SQL injection
+		quotedTable, err := QuoteTableName(table)
+		if err != nil {
+			return nil, fmt.Errorf("invalid table name: %w", err)
+		}
+		
 		var count int
-		query := fmt.Sprintf("SELECT COUNT(*) FROM %s", table)
-		err := d.conn.QueryRow(query).Scan(&count)
+		query := fmt.Sprintf("SELECT COUNT(*) FROM %s", quotedTable)
+		err = d.conn.QueryRow(query).Scan(&count)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get count for %s: %w", table, err)
 		}
