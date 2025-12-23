@@ -110,6 +110,7 @@ type HealthChecker struct {
 	database      *database.Database
 	components    map[string]*ComponentHealth
 	systemMetrics *SystemMetrics
+	metricsTracker *MetricsTracker
 	startTime     time.Time
 	mu            sync.RWMutex
 	ctx           context.Context
@@ -124,6 +125,7 @@ func NewHealthChecker(db *database.Database) *HealthChecker {
 		database:      db,
 		components:    make(map[string]*ComponentHealth),
 		systemMetrics: &SystemMetrics{},
+		metricsTracker: NewMetricsTracker(),
 		startTime:     time.Now(),
 		ctx:           ctx,
 		cancel:        cancel,
@@ -358,11 +360,7 @@ func (hc *HealthChecker) checkNotificationsHealth() {
 	component.Message = "Notification system is operational"
 	component.ResponseTime = time.Millisecond * 8
 
-	component.Details = map[string]interface{}{
-		"channels_configured": 3,
-		"messages_sent":       250,
-		"delivery_rate":       0.98,
-	}
+	component.Details = hc.metricsTracker.GetNotificationStats()
 }
 
 // updateSystemMetrics collects current system metrics
@@ -400,42 +398,14 @@ func (hc *HealthChecker) updateSystemMetrics() {
 		GCCPUFraction: m.GCCPUFraction,
 	}
 
-	// Database stats (simplified)
-	hc.systemMetrics.DatabaseStats = DatabaseStats{
-		ConnectionsInUse: 5,
-		ConnectionsIdle:  10,
-		ConnectionsOpen:  15,
-		QueryCount:       1250,
-		QueryDuration:    time.Millisecond * 15,
-		ErrorCount:       3,
-	}
+	// Database stats - get from tracker
+	hc.systemMetrics.DatabaseStats = hc.metricsTracker.GetDatabaseStats()
 
-	// API metrics (simplified)
-	hc.systemMetrics.APIMetrics = APIMetrics{
-		TotalRequests:       2500,
-		ActiveRequests:      8,
-		AverageResponseTime: time.Millisecond * 120,
-		RequestRate:         15.5,
-		ErrorRate:           0.02,
-		EndpointStats: map[string]EndpointStats{
-			"/api/v1/models": {
-				Requests:        500,
-				Errors:          5,
-				AvgResponseTime: time.Millisecond * 80,
-				LastRequest:     time.Now().Add(-time.Minute),
-			},
-		},
-	}
+	// API metrics - get from tracker
+	hc.systemMetrics.APIMetrics = hc.metricsTracker.GetAPIMetrics()
 
-	// Verification stats (simplified)
-	hc.systemMetrics.VerificationStats = VerificationStats{
-		ActiveVerifications: 2,
-		CompletedToday:      25,
-		FailedToday:         1,
-		AverageDuration:     time.Minute * 3,
-		SuccessRate:         0.96,
-		QueueLength:         3,
-	}
+	// Verification stats - get from tracker
+	hc.systemMetrics.VerificationStats = hc.metricsTracker.GetVerificationStats()
 }
 
 // RegisterHealthEndpoints registers health check endpoints with the API server

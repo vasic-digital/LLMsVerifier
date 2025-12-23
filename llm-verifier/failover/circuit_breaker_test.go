@@ -4,6 +4,7 @@ import (
 	"errors"
 	"sync"
 	"testing"
+	"sync/atomic"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -239,25 +240,25 @@ func TestCircuitBreakerConcurrentCalls(t *testing.T) {
 	cb := NewCircuitBreaker("test-breaker")
 
 	var wg sync.WaitGroup
-	callCount := 0
-	successCount := 0
+	var callCount int64
+	var successCount int64
 
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			callCount++
+			atomic.AddInt64(&callCount, 1)
 			err := cb.Call(func() error { return nil })
 			if err == nil {
-				successCount++
+				atomic.AddInt64(&successCount, 1)
 			}
 		}()
 	}
 
 	wg.Wait()
 
-	assert.GreaterOrEqual(t, callCount, 95, "Most calls should be made")
-	assert.GreaterOrEqual(t, successCount, 95, "Most calls should succeed")
+	assert.GreaterOrEqual(t, int(atomic.LoadInt64(&callCount)), 95, "Most calls should be made")
+	assert.GreaterOrEqual(t, int(atomic.LoadInt64(&successCount)), 95, "Most calls should succeed")
 }
 
 func TestCircuitBreakerConcurrentFailures(t *testing.T) {
