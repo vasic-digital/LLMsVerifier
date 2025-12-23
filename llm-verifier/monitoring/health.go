@@ -267,6 +267,22 @@ func (hc *HealthChecker) checkAllComponents() {
 func (hc *HealthChecker) checkDatabaseHealth() {
 	start := time.Now()
 
+	// Check for nil database to prevent panic
+	if hc.database == nil {
+		hc.mu.Lock()
+		defer hc.mu.Unlock()
+		
+		component := hc.components["database"]
+		component.LastChecked = time.Now()
+		component.Status = HealthStatusUnhealthy
+		component.Message = "Database is not configured"
+		component.ResponseTime = 0
+		component.Details = map[string]interface{}{
+			"error": "database is nil",
+		}
+		return
+	}
+
 	// Simple query to test database connectivity
 	_, err := hc.database.ListModels(map[string]interface{}{})
 
