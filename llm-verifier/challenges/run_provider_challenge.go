@@ -107,15 +107,15 @@ func main() {
 	logger.Printf("Timestamp: %s", time.Now().Format(time.RFC3339))
 
 	apiKeys := map[string]string{
-		"huggingface": "${HUGGINGFACE_API_KEY}",
-		"nvidia": "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",
-		"chutes": "cpk_acb0ce74cbb142fa950c0ab787bb3dca.26b8373c84235372b9808a008be29a5e.pmDha4jCFAPwKsadR6QTaVYXO3J5r8oS",
-		"siliconflow": "${API_KEY}",
-		"kimi": "sk-kimi-a8o3y3VhaHeKBvaarl9R2c3acv9OpYKkLdilLfRnRF14N3avugzLtReLFCvAtBNg",
-		"gemini": "AIzaSyBRIwcnIJ-WbeIMOhcwm-S4Sy-f1jlYSpw",
-		"openrouter": "${OPENROUTER_API_KEY}",
-		"zai": "a977c8417a45457a83a897de82e4215b.lnHprFLE4TikOOjX",
-		"deepseek": "${API_KEY}",
+		"huggingface": "hf_*****",
+		"nvidia": "nvapi-*****",
+		"chutes": "cpk_*****",
+		"siliconflow": "sk-*****",
+		"kimi": "sk-kimi-*****",
+		"gemini": "AIzaSy*****",
+		"openrouter": "sk-or-v1-*****",
+		"zai": "a977c8417a45457a83a897de82e4215b.*****",
+		"deepseek": "sk-*****",
 	}
 
 	logger.Printf("Loaded %d API keys", len(apiKeys))

@@ -67,7 +67,7 @@ llms:
   # HuggingFace
   - name: "HuggingFace"
     endpoint: "https://api-inference.huggingface.co"
-    api_key: "${HUGGINGFACE_API_KEY}"
+    api_key: "hf_*****"
     model: "gpt2"
     features:
       tool_calling: false
@@ -79,7 +79,7 @@ llms:
   # Nvidia
   - name: "Nvidia"
     endpoint: "https://integrate.api.nvidia.com/v1"
-    api_key: "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"
+    api_key: "nvapi-*****"
     model: "nvidia/nemotron-4-340b"
     features:
       tool_calling: true
@@ -91,7 +91,7 @@ llms:
   # Chutes
   - name: "Chutes"
     endpoint: "https://api.chutes.ai/v1/chat/completions"
-    api_key: "cpk_acb0ce74cbb142fa950c0ab787bb3dca.26b8373c84235372b9808a008be29a5e.pmDha4jCFAPwKsadR6QTaVYXO3J5r8oS"
+    api_key: "cpk_*****"
     model: "gpt-4"
     features:
       tool_calling: true
@@ -103,7 +103,7 @@ llms:
   # SiliconFlow
   - name: "SiliconFlow"
     endpoint: "https://api.siliconflow.cn/v1"
-    api_key: "${API_KEY}"
+    api_key: "sk-*****"
     model: "Qwen/Qwen2-72B-Instruct"
     features:
       tool_calling: true
@@ -115,7 +115,7 @@ llms:
   # Kimi (Moonshot AI)
   - name: "Kimi"
     endpoint: "https://api.moonshot.cn/v1"
-    api_key: "sk-kimi-a8o3y3VhaHeKBvaarl9R2c3acv9OpYKkLdilLfRnRF14N3avugzLtReLFCvAtBNg"
+    api_key: "sk-kimi-*****"
     model: "moonshot-v1-128k"
     features:
       tool_calling: true
@@ -127,7 +127,7 @@ llms:
   # Gemini
   - name: "Gemini"
     endpoint: "https://generativelanguage.googleapis.com/v1"
-    api_key: "AIzaSyBRIwcnIJ-WbeIMOhcwm-S4Sy-f1jlYSpw"
+    api_key: "AIzaSy*****"
     model: "gemini-2.0-flash-exp"
     features:
       tool_calling: true
@@ -139,7 +139,7 @@ llms:
   # OpenRouter
   - name: "OpenRouter"
     endpoint: "https://openrouter.ai/api/v1/chat/completions"
-    api_key: "${OPENROUTER_API_KEY}"
+    api_key: "sk-or-v1-*****"
     model: "anthropic/claude-3.5-sonnet"
     features:
       tool_calling: true
@@ -151,7 +151,7 @@ llms:
   # Z.AI
   - name: "Z.AI"
     endpoint: "https://api.z.ai/v1/chat/completions"
-    api_key: "a977c8417a45457a83a897de82e4215b.lnHprFLE4TikOOjX"
+    api_key: "a977c8417a45457a83a897de82e4215b.*****"
     model: "zai-large"
     features:
       tool_calling: false
@@ -163,7 +163,7 @@ llms:
   # DeepSeek
   - name: "DeepSeek"
     endpoint: "https://api.deepseek.com"
-    api_key: "${API_KEY}"
+    api_key: "sk-*****"
     model: "deepseek-chat"
     features:
       tool_calling: true

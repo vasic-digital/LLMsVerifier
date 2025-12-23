@@ -201,13 +201,13 @@ llm-verifier/challenges/
 ### Example Logged Commands
 
 ```bash
-[2025-12-23 18:30:27] COMMAND: curl -s -H 'Authorization: Bearer ${HUGGINGFACE_API_KEY}' 'https://api-inference.huggingface.co/models'
+[2025-12-23 18:30:27] COMMAND: curl -s -H 'Authorization: Bearer hf_***' 'https://api-inference.huggingface.co/models'
 
-[2025-12-23 18:30:28] COMMAND: curl -s -H 'Authorization: Bearer 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' 'https://integrate.api.nvidia.com/v1/models'
+[2025-12-23 18:30:28] COMMAND: curl -s -H 'Authorization: Bearer nvapi-***' 'https://integrate.api.nvidia.com/v1/models'
 
-[2025-12-23 18:30:33] COMMAND: curl -s -H 'Authorization: Bearer ${OPENROUTER_API_KEY}' 'https://openrouter.ai/api/v1/models'
+[2025-12-23 18:30:33] COMMAND: curl -s -H 'Authorization: Bearer sk-or-v1-*****' 'https://openrouter.ai/api/v1/models'
 
-[2025-12-23 18:30:35] COMMAND: curl -s -H 'Authorization: Bearer ${API_KEY}' 'https://api.deepseek.com/v1/models'
+[2025-12-23 18:30:35] COMMAND: curl -s -H 'Authorization: Bearer sk-*****' 'https://api.deepseek.com/v1/models'
 ```
 
 ### Security Note
