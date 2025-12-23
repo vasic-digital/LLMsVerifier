@@ -18,6 +18,7 @@ import (
 type ProviderInfo struct {
 	Name        string           `json:"name"`
 	Type        string           `json:"type"`
+	APIKey      string           `json:"api_key,omitempty"`
 	APIEndpoint string           `json:"api_endpoint"`
 	Models      []ModelInfo      `json:"models"`
 	Status      string           `json:"status"`
@@ -28,12 +29,14 @@ type ProviderInfo struct {
 
 // ModelInfo holds information about a discovered model
 type ModelInfo struct {
-	ID           string        `json:"id"`
-	Name         string        `json:"name"`
-	ContextSize  int           `json:"context_size,omitempty"`
-	Capabilities []string      `json:"capabilities"`
-	Features     ModelFeatures `json:"features"`
-	FreeToUse    bool          `json:"free_to_use"`
+	ID            string        `json:"id"`
+	Name          string        `json:"name"`
+	ContextSize   int           `json:"context_size,omitempty"`
+	Capabilities  []string      `json:"capabilities"`
+	Features      ModelFeatures `json:"features"`
+	FreeToUse     bool          `json:"free_to_use"`
+	SupportsHTTP3 bool          `json:"supports_http3,omitempty"`
+	SupportsToon  bool          `json:"supports_toon,omitempty"`
 }
 
 // ModelFeatures holds feature information for a model
@@ -249,21 +252,48 @@ func doWithRetry(ctx context.Context, operation func() error, config RetryConfig
 	return fmt.Errorf("operation failed after %d attempts, last error: %w", config.MaxAttempts, lastErr)
 }
 
-// getProviderNameFromEndpoint extracts provider name from endpoint URL
-func getProviderNameFromEndpoint(endpoint string) string {
-	if strings.Contains(endpoint, "chutes.ai") {
-		return "Chutes"
+// createCrushConfig creates a Crush-compatible configuration with providers as a map
+func createCrushConfig(result ChallengeResult) map[string]interface{} {
+	providersMap := make(map[string]interface{})
+
+	for _, provider := range result.Providers {
+		providerConfig := map[string]interface{}{
+			"type":         "openai", // Default type for Crush
+			"api_endpoint": provider.APIEndpoint,
+			"api_key":      provider.APIKey,
+		}
+
+		// Add models if present
+		if len(provider.Models) > 0 {
+			models := make([]map[string]interface{}, 0, len(provider.Models))
+			for _, model := range provider.Models {
+				modelConfig := map[string]interface{}{
+					"id":           model.ID,
+					"name":         model.Name,
+					"capabilities": model.Capabilities,
+					"free_to_use":  model.FreeToUse,
+				}
+
+				// Add Crush-specific fields
+				if model.SupportsHTTP3 {
+					modelConfig["supports_http3"] = true
+				}
+				if model.SupportsToon {
+					modelConfig["supports_toon"] = true
+				}
+
+				models = append(models, modelConfig)
+			}
+			providerConfig["models"] = models
+		}
+
+		providersMap[provider.Name] = providerConfig
 	}
-	if strings.Contains(endpoint, "siliconflow.cn") {
-		return "SiliconFlow"
+
+	return map[string]interface{}{
+		"version":   "1.0.0",
+		"providers": providersMap,
 	}
-	if strings.Contains(endpoint, "openrouter.ai") {
-		return "OpenRouter"
-	}
-	if strings.Contains(endpoint, "deepseek.com") {
-		return "DeepSeek"
-	}
-	return "Unknown"
 }
 
 // detectHTTP3Support checks if a model supports HTTP/3 (QUIC/Cronet)
@@ -352,6 +382,7 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 
 	provider := ProviderInfo{
 		Name:      test.Name,
+		APIKey:    test.APIKey,
 		FreeToUse: test.FreeToUse,
 	}
 
@@ -404,11 +435,13 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 			name := buildModelNameWithSuffixes(m.name, test.FreeToUse, http3, toon)
 
 			models = append(models, ModelInfo{
-				ID:           m.id,
-				Name:         name,
-				Capabilities: m.capabilities,
-				Features:     m.features,
-				FreeToUse:    test.FreeToUse,
+				ID:            m.id,
+				Name:          name,
+				Capabilities:  m.capabilities,
+				Features:      m.features,
+				FreeToUse:     test.FreeToUse,
+				SupportsHTTP3: m.features.HTTP3,
+				SupportsToon:  m.features.ToonFormat,
 			})
 		}
 		provider.APIEndpoint = "https://integrate.api.nvidia.com/v1"
@@ -626,9 +659,10 @@ func saveResults(resultsDir string, result ChallengeResult) {
 		logger.Printf("Failed to save opencode: %v", err)
 	}
 
-	// Save providers crush
+	// Save providers crush (with correct map format)
 	crushFile := filepath.Join(resultsDir, "providers_crush.json")
-	crushData, _ := json.MarshalIndent(result, "", "  ")
+	crushConfig := createCrushConfig(result)
+	crushData, _ := json.MarshalIndent(crushConfig, "", "  ")
 	if err := os.WriteFile(crushFile, crushData, 0644); err != nil {
 		logger.Printf("Failed to save crush: %v", err)
 	}
@@ -887,8 +921,8 @@ func discoverOpenRouterModels(ctx context.Context, apiKey string, freeToUse bool
 
 	models := make([]ModelInfo, 0, len(openRouterResp.Data))
 	for _, m := range openRouterResp.Data {
-		// Determine if model is free based on pricing
-		isFree := freeToUse && (m.Pricing.Prompt == "0" || m.Pricing.Prompt == "")
+		// Determine if model is free based on pricing - check actual pricing data
+		isFree := (m.Pricing.Prompt == "0" || m.Pricing.Prompt == "" || m.Pricing.Prompt == "0.0")
 
 		// Detect advanced features
 		http3 := detectHTTP3Support(m.ID, "OpenRouter", []string{})
