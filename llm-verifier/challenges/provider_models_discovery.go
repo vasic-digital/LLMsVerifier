@@ -12,69 +12,69 @@ import (
 	"time"
 
 	"llm-verifier/client"
-	"llm-verifier/providers"
 	"llm-verifier/config"
+	"llm-verifier/providers"
 )
 
 // ProviderInfo holds information about a tested provider
 type ProviderInfo struct {
-	Name        string            `json:"name"`
-	Type         string            `json:"type"`
-	APIEndpoint  string            `json:"api_endpoint"`
-	Models       []ModelInfo       `json:"models"`
-	Status       string            `json:"status"`
-	Error        string            `json:"error,omitempty"`
-	Features     ProviderFeatures  `json:"features"`
-	FreeToUse    bool              `json:"free_to_use"`
+	Name        string           `json:"name"`
+	Type        string           `json:"type"`
+	APIEndpoint string           `json:"api_endpoint"`
+	Models      []ModelInfo      `json:"models"`
+	Status      string           `json:"status"`
+	Error       string           `json:"error,omitempty"`
+	Features    ProviderFeatures `json:"features"`
+	FreeToUse   bool             `json:"free_to_use"`
 }
 
 // ModelInfo holds information about a discovered model
 type ModelInfo struct {
-	ID          string   `json:"id"`
-	Name        string   `json:"name"`
-	ContextSize int      `json:"context_size,omitempty"`
-	Capabilities []string `json:"capabilities"`
-	Features    ModelFeatures `json:"features"`
-	FreeToUse   bool     `json:"free_to_use"`
+	ID           string        `json:"id"`
+	Name         string        `json:"name"`
+	ContextSize  int           `json:"context_size,omitempty"`
+	Capabilities []string      `json:"capabilities"`
+	Features     ModelFeatures `json:"features"`
+	FreeToUse    bool          `json:"free_to_use"`
 }
 
 // ModelFeatures holds feature information for a model
 type ModelFeatures struct {
-	MCPs      []string `json:"mcps,omitempty"`
-	LSPs      []string `json:"lsps,omitempty"`
-	Embeddings []string `json:"embeddings,omitempty"`
-	Streaming  bool     `json:"streaming,omitempty"`
-	FunctionCalling bool `json:"function_calling,omitempty"`
+	MCPs            []string `json:"mcps,omitempty"`
+	LSPs            []string `json:"lsps,omitempty"`
+	Embeddings      []string `json:"embeddings,omitempty"`
+	Streaming       bool     `json:"streaming,omitempty"`
+	FunctionCalling bool     `json:"function_calling,omitempty"`
 }
 
 // ProviderFeatures holds provider-level features
 type ProviderFeatures struct {
-	MCPs      bool `json:"mcps"`
-	LSPs      bool `json:"lsps"`
-	Embeddings bool `json:"embeddings"`
-	Streaming  bool `json:"streaming"`
+	MCPs            bool `json:"mcps"`
+	LSPs            bool `json:"lsps"`
+	Embeddings      bool `json:"embeddings"`
+	Streaming       bool `json:"streaming"`
 	FunctionCalling bool `json:"function_calling"`
 }
 
 // ChallengeResult holds the complete challenge result
 type ChallengeResult struct {
-	ChallengeName   string       `json:"challenge_name"`
-	ChallengeDate   string       `json:"challenge_date"`
-	StartTime      string       `json:"start_time"`
-	EndTime        string       `json:"end_time"`
-	Duration       string       `json:"duration"`
-	Providers      []ProviderInfo `json:"providers"`
-	Summary        ChallengeSummary `json:"summary"`
+	ChallengeName string           `json:"challenge_name"`
+	ChallengeDate string           `json:"challenge_date"`
+	StartTime     string           `json:"start_time"`
+	EndTime       string           `json:"end_time"`
+	Duration      string           `json:"duration"`
+	Providers     []ProviderInfo   `json:"providers"`
+	Summary       ChallengeSummary `json:"summary"`
 }
 
 // ChallengeSummary holds summary statistics
 type ChallengeSummary struct {
-	TotalProviders     int `json:"total_providers"`
-	SuccessProviders   int `json:"success_providers"`
-	FailedProviders    int `json:"failed_providers"`
-	TotalModels       int `json:"total_models"`
-	FreeModels        int `json:"free_models"`
-	PaidModels        int `json:"paid_models"`
+	TotalProviders     int            `json:"total_providers"`
+	SuccessProviders   int            `json:"success_providers"`
+	FailedProviders    int            `json:"failed_providers"`
+	TotalModels        int            `json:"total_models"`
+	FreeModels         int            `json:"free_models"`
+	PaidModels         int            `json:"paid_models"`
 	FeaturesDiscovered map[string]int `json:"features_discovered"`
 }
 
@@ -139,7 +139,7 @@ func main() {
 		{Name: "OpenRouter", APIKey: apiKeys.OpenRouter, FreeToUse: false},
 		{Name: "Z.AI", APIKey: apiKeys.ZAI, FreeToUse: false},
 		{Name: "DeepSeek", APIKey: apiKeys.DeepSeek, FreeToUse: false},
-		{Name: "Qwen", APIKey: "", FreeToUse: false}, // No API key provided
+		{Name: "Qwen", APIKey: "", FreeToUse: false},   // No API key provided
 		{Name: "Claude", APIKey: "", FreeToUse: false}, // No API key provided
 	}
 
@@ -180,7 +180,7 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 	logger.Printf("Testing %s...", test.Name)
 
 	provider := ProviderInfo{
-		Name:     test.Name,
+		Name:      test.Name,
 		FreeToUse: test.FreeToUse,
 	}
 
@@ -205,18 +205,18 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 		provider.Status = "tested"
 		provider.Models = []ModelInfo{
 			{
-				ID:          "nvidia-nemotron-4-340b",
-				Name:        "NVIDIA Nemotron 4 340B",
+				ID:           "nvidia-nemotron-4-340b",
+				Name:         "NVIDIA Nemotron 4 340B",
 				Capabilities: []string{"text-generation", "chat", "code-generation"},
-				Features: ModelFeatures{Streaming: true, FunctionCalling: true},
-				FreeToUse: test.FreeToUse,
+				Features:     ModelFeatures{Streaming: true, FunctionCalling: true},
+				FreeToUse:    test.FreeToUse,
 			},
 			{
-				ID:          "meta-llama3-70b-instruct",
-				Name:        "Llama 3 70B Instruct",
+				ID:           "meta-llama3-70b-instruct",
+				Name:         "Llama 3 70B Instruct",
 				Capabilities: []string{"text-generation", "chat"},
-				Features: ModelFeatures{Streaming: true},
-				FreeToUse: test.FreeToUse,
+				Features:     ModelFeatures{Streaming: true},
+				FreeToUse:    test.FreeToUse,
 			},
 		}
 		return provider
@@ -230,12 +230,12 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 		provider.Status = "tested"
 		provider.Models = []ModelInfo{
 			{
-				ID:          "moonshot-v1-128k",
-				Name:        "Moonshot V1 128K",
-				ContextSize: 128000,
+				ID:           "moonshot-v1-128k",
+				Name:         "Moonshot V1 128K",
+				ContextSize:  128000,
 				Capabilities: []string{"text-generation", "chat", "long-context"},
-				Features: ModelFeatures{Streaming: true, FunctionCalling: true},
-				FreeToUse: test.FreeToUse,
+				Features:     ModelFeatures{Streaming: true, FunctionCalling: true},
+				FreeToUse:    test.FreeToUse,
 			},
 		}
 		return provider
@@ -244,18 +244,18 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 		provider.APIEndpoint = "https://generativelanguage.googleapis.com/v1"
 		provider.Models = []ModelInfo{
 			{
-				ID:          "gemini-2.0-flash-exp",
-				Name:        "Gemini 2.0 Flash Experimental",
+				ID:           "gemini-2.0-flash-exp",
+				Name:         "Gemini 2.0 Flash Experimental",
 				Capabilities: []string{"text-generation", "chat", "code-generation", "vision"},
-				Features: ModelFeatures{Streaming: true, FunctionCalling: true, MCPs: []string{"mcp-proto"}},
-				FreeToUse: test.FreeToUse,
+				Features:     ModelFeatures{Streaming: true, FunctionCalling: true, MCPs: []string{"mcp-proto"}},
+				FreeToUse:    test.FreeToUse,
 			},
 			{
-				ID:          "gemini-1.5-pro",
-				Name:        "Gemini 1.5 Pro",
+				ID:           "gemini-1.5-pro",
+				Name:         "Gemini 1.5 Pro",
 				Capabilities: []string{"text-generation", "chat", "code-generation", "vision"},
-				Features: ModelFeatures{Streaming: true, FunctionCalling: true},
-				FreeToUse: test.FreeToUse,
+				Features:     ModelFeatures{Streaming: true, FunctionCalling: true},
+				FreeToUse:    test.FreeToUse,
 			},
 		}
 		return provider
@@ -267,11 +267,11 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 		provider.APIEndpoint = "https://api.z.ai/v1"
 		provider.Models = []ModelInfo{
 			{
-				ID:          "zai-large",
-				Name:        "Z.AI Large",
+				ID:           "zai-large",
+				Name:         "Z.AI Large",
 				Capabilities: []string{"text-generation", "chat"},
-				Features: ModelFeatures{Streaming: true},
-				FreeToUse: test.FreeToUse,
+				Features:     ModelFeatures{Streaming: true},
+				FreeToUse:    test.FreeToUse,
 			},
 		}
 		return provider
@@ -311,13 +311,13 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 	for _, model := range models {
 		modelID, _ := model["id"].(string)
 		modelName, _ := model["name"].(string)
-		
+
 		provider.Models = append(provider.Models, ModelInfo{
-			ID:          modelID,
-			Name:        modelName,
+			ID:           modelID,
+			Name:         modelName,
 			Capabilities: []string{"chat", "text-generation"},
-			Features: ModelFeatures{Streaming: true},
-			FreeToUse: test.FreeToUse,
+			Features:     ModelFeatures{Streaming: true},
+			FreeToUse:    test.FreeToUse,
 		})
 	}
 
@@ -365,18 +365,18 @@ func saveResults(resultsDir string, result ChallengeResult) {
 	// Save providers opencode
 	opencode := map[string]interface{}{
 		"challenge_name": result.ChallengeName,
-		"date":          result.ChallengeDate,
-		"providers":     make([]map[string]interface{}, 0),
+		"date":           result.ChallengeDate,
+		"providers":      make([]map[string]interface{}, 0),
 	}
 
 	for _, provider := range result.Providers {
 		providerData := map[string]interface{}{
-			"name":       provider.Name,
-			"type":        provider.Type,
+			"name":         provider.Name,
+			"type":         provider.Type,
 			"api_endpoint": provider.APIEndpoint,
-			"status":     provider.Status,
-			"free_to_use": provider.FreeToUse,
-			"models":     provider.Models,
+			"status":       provider.Status,
+			"free_to_use":  provider.FreeToUse,
+			"models":       provider.Models,
 		}
 		opencode["providers"] = append(opencode["providers"].([]map[string]interface{}), providerData)
 	}
@@ -401,31 +401,26 @@ func saveResults(resultsDir string, result ChallengeResult) {
 
 type APIKeys struct {
 	HuggingFace string `json:"huggingface"`
-	Nvidia       string `json:"nvidia"`
-	Chutes       string `json:"chutes"`
+	Nvidia      string `json:"nvidia"`
+	Chutes      string `json:"chutes"`
 	SiliconFlow string `json:"siliconflow"`
-	Kimi         string `json:"kimi"`
-	Gemini       string `json:"gemini"`
-	OpenRouter   string `json:"openrouter"`
-	ZAI          string `json:"zai"`
-	DeepSeek     string `json:"deepseek"`
+	Kimi        string `json:"kimi"`
+	Gemini      string `json:"gemini"`
+	OpenRouter  string `json:"openrouter"`
+	ZAI         string `json:"zai"`
+	DeepSeek    string `json:"deepseek"`
 }
 
 func loadAPIKeys() (*APIKeys, error) {
-	keysFile := os.Getenv("CHALLENGE_API_KEYS")
-	if keysFile == "" {
-		keysFile = "challenges/api_keys.json"
-	}
-
-	data, err := os.ReadFile(keysFile)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read API keys file: %w", err)
-	}
-
-	var keys APIKeys
-	if err := json.Unmarshal(data, &keys); err != nil {
-		return nil, fmt.Errorf("failed to parse API keys: %w", err)
-	}
-
-	return &keys, nil
+	return &APIKeys{
+		HuggingFace: os.Getenv("ApiKey_HuggingFace"),
+		Nvidia:      os.Getenv("ApiKey_Nvidia"),
+		Chutes:      os.Getenv("ApiKey_Chutes"),
+		SiliconFlow: os.Getenv("ApiKey_SiliconFlow"),
+		Kimi:        os.Getenv("ApiKey_Kimi"),
+		Gemini:      os.Getenv("ApiKey_Gemini"),
+		OpenRouter:  os.Getenv("ApiKey_OpenRouter"),
+		ZAI:         os.Getenv("ApiKey_Z_AI"),
+		DeepSeek:    os.Getenv("ApiKey_DeepSeek"),
+	}, nil
 }
