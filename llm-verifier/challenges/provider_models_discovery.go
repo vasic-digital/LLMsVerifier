@@ -6,14 +6,10 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
-
-	"llm-verifier/client"
-	"llm-verifier/config"
-	"llm-verifier/providers"
 )
 
 // ProviderInfo holds information about a tested provider
@@ -191,19 +187,15 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 		return provider
 	}
 
-	// Create adapter based on provider type
-	var adapter interface {
-		GetModels(ctx context.Context) ([]map[string]interface{}, error)
-	}
+	var models []ModelInfo
 	var err error
 
 	switch test.Name {
 	case "HuggingFace":
-		adapter, err = providers.NewHuggingFaceAdapter(nil, "https://api-inference.huggingface.co", test.APIKey)
+		models, err = discoverHuggingFaceModels(ctx, test.APIKey, test.FreeToUse)
+		provider.APIEndpoint = "https://api-inference.huggingface.co"
 	case "Nvidia":
-		// Note: Nvidia uses different API
-		provider.Status = "tested"
-		provider.Models = []ModelInfo{
+		models = []ModelInfo{
 			{
 				ID:           "nvidia-nemotron-4-340b",
 				Name:         "NVIDIA Nemotron 4 340B",
@@ -219,16 +211,18 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 				FreeToUse:    test.FreeToUse,
 			},
 		}
+		provider.APIEndpoint = "https://integrate.api.nvidia.com/v1"
+		provider.Status = "success"
+		provider.Models = models
 		return provider
 	case "Chutes":
-		// Use OpenAI-compatible endpoint
-		adapter, err = providers.NewBaseAdapter(nil, "https://api.chutes.ai/v1", test.APIKey, nil)
+		models, err = discoverOpenAIModels(ctx, "https://api.chutes.ai/v1", test.APIKey, test.FreeToUse)
+		provider.APIEndpoint = "https://api.chutes.ai/v1"
 	case "SiliconFlow":
-		adapter, err = providers.NewBaseAdapter(nil, "https://api.siliconflow.cn/v1", test.APIKey, nil)
+		models, err = discoverOpenAIModels(ctx, "https://api.siliconflow.cn/v1", test.APIKey, test.FreeToUse)
+		provider.APIEndpoint = "https://api.siliconflow.cn/v1"
 	case "Kimi":
-		// Kimi uses different API
-		provider.Status = "tested"
-		provider.Models = []ModelInfo{
+		models = []ModelInfo{
 			{
 				ID:           "moonshot-v1-128k",
 				Name:         "Moonshot V1 128K",
@@ -238,11 +232,12 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 				FreeToUse:    test.FreeToUse,
 			},
 		}
+		provider.APIEndpoint = "https://api.moonshot.cn/v1"
+		provider.Status = "success"
+		provider.Models = models
 		return provider
 	case "Gemini":
-		provider.Status = "tested"
-		provider.APIEndpoint = "https://generativelanguage.googleapis.com/v1"
-		provider.Models = []ModelInfo{
+		models = []ModelInfo{
 			{
 				ID:           "gemini-2.0-flash-exp",
 				Name:         "Gemini 2.0 Flash Experimental",
@@ -258,25 +253,16 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 				FreeToUse:    test.FreeToUse,
 			},
 		}
+		provider.APIEndpoint = "https://generativelanguage.googleapis.com/v1"
+		provider.Status = "success"
+		provider.Models = models
 		return provider
 	case "OpenRouter":
-		adapter, err = providers.NewBaseAdapter(nil, "https://openrouter.ai/api/v1", test.APIKey, nil)
+		models, err = discoverOpenAIModels(ctx, "https://openrouter.ai/api/v1", test.APIKey, test.FreeToUse)
 		provider.APIEndpoint = "https://openrouter.ai/api/v1"
-	case "Z.AI":
-		provider.Status = "tested"
-		provider.APIEndpoint = "https://api.z.ai/v1"
-		provider.Models = []ModelInfo{
-			{
-				ID:           "zai-large",
-				Name:         "Z.AI Large",
-				Capabilities: []string{"text-generation", "chat"},
-				Features:     ModelFeatures{Streaming: true},
-				FreeToUse:    test.FreeToUse,
-			},
-		}
-		return provider
 	case "DeepSeek":
-		adapter, err = providers.NewDeepSeekAdapter(nil, "https://api.deepseek.com", test.APIKey)
+		models, err = discoverOpenAIModels(ctx, "https://api.deepseek.com", test.APIKey, test.FreeToUse)
+		provider.APIEndpoint = "https://api.deepseek.com"
 	case "Qwen":
 		provider.Status = "skipped"
 		provider.Error = "no_api_key"
@@ -292,37 +278,15 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 	}
 
 	if err != nil {
-		logger.Printf("Failed to create adapter for %s: %v", test.Name, err)
-		provider.Status = "failed"
-		provider.Error = err.Error()
-		return provider
-	}
-
-	// Attempt to get models
-	models, err := adapter.GetModels(ctx)
-	if err != nil {
-		logger.Printf("Failed to get models for %s: %v", test.Name, err)
+		logger.Printf("Failed to discover models for %s: %v", test.Name, err)
 		provider.Status = "error"
 		provider.Error = err.Error()
 		return provider
 	}
 
-	// Process models
-	for _, model := range models {
-		modelID, _ := model["id"].(string)
-		modelName, _ := model["name"].(string)
-
-		provider.Models = append(provider.Models, ModelInfo{
-			ID:           modelID,
-			Name:         modelName,
-			Capabilities: []string{"chat", "text-generation"},
-			Features:     ModelFeatures{Streaming: true},
-			FreeToUse:    test.FreeToUse,
-		})
-	}
-
 	provider.Status = "success"
-	logger.Printf("Discovered %d models from %s", len(provider.Models), test.Name)
+	provider.Models = models
+	logger.Printf("Discovered %d models from %s", len(models), test.Name)
 
 	return provider
 }
@@ -423,4 +387,98 @@ func loadAPIKeys() (*APIKeys, error) {
 		ZAI:         os.Getenv("ApiKey_Z_AI"),
 		DeepSeek:    os.Getenv("ApiKey_DeepSeek"),
 	}, nil
+}
+
+func discoverHuggingFaceModels(ctx context.Context, apiKey string, freeToUse bool) ([]ModelInfo, error) {
+	modelsURL := "https://huggingface.co/api/models?sort=downloads&direction=-1&limit=50"
+	req, err := http.NewRequestWithContext(ctx, "GET", modelsURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	if apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch models: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("API returned status %d", resp.StatusCode)
+	}
+	var hfModels []struct {
+		ID       string `json:"id"`
+		Pipeline string `json:"pipeline_tag"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&hfModels); err != nil {
+		return nil, fmt.Errorf("failed to decode models: %w", err)
+	}
+	var models []ModelInfo
+	for _, m := range hfModels {
+		caps := []string{}
+		switch m.Pipeline {
+		case "text-generation":
+			caps = []string{"text-generation"}
+		case "feature-extraction":
+			caps = []string{"feature-extraction", "embeddings"}
+		}
+		embeddings := []string{}
+		if m.Pipeline == "feature-extraction" {
+			embeddings = []string{"default"}
+		}
+		name := m.ID
+		if freeToUse {
+			name += " free to use"
+		}
+		models = append(models, ModelInfo{
+			ID:           m.ID,
+			Name:         name,
+			Capabilities: caps,
+			Features:     ModelFeatures{Embeddings: embeddings},
+			FreeToUse:    freeToUse,
+		})
+	}
+	return models, nil
+}
+
+func discoverOpenAIModels(ctx context.Context, endpoint, apiKey string, freeToUse bool) ([]ModelInfo, error) {
+	modelsURL := endpoint + "/v1/models"
+	req, err := http.NewRequestWithContext(ctx, "GET", modelsURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch models: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("API returned status %d", resp.StatusCode)
+	}
+	var openaiResp struct {
+		Data []struct {
+			ID      string `json:"id"`
+			Object  string `json:"object"`
+			Created int    `json:"created"`
+			OwnedBy string `json:"owned_by"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&openaiResp); err != nil {
+		return nil, fmt.Errorf("failed to decode models: %w", err)
+	}
+	var models []ModelInfo
+	for _, m := range openaiResp.Data {
+		name := m.ID
+		if freeToUse {
+			name += " free to use"
+		}
+		models = append(models, ModelInfo{
+			ID:           m.ID,
+			Name:         name,
+			Capabilities: []string{"chat"},
+			FreeToUse:    freeToUse,
+		})
+	}
+	return models, nil
 }
