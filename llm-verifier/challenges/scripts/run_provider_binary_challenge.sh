@@ -172,14 +172,43 @@ log_cmd "$CMD2"
 log "Executing: llm-verifier ai-config export --format opencode --output results/"
 log ""
 
-# Simulate binary execution (for demonstration)
-# In production, these would actually execute the binary
-log "Binary execution simulated:"
-log "  - Verification run completed"
-log "  - AI configuration exported"
-log "  - Models discovered: 26"
-log "  - Providers verified: 9"
-log ""
+# Run the provider discovery Go program
+GO_PROGRAM="$CHALLENGE_DIR/provider_models_discovery.go"
+if [ -f "../codebase/go_files/provider_models_discovery.go" ]; then
+    log "Running Go provider discovery program..."
+    cd ../codebase/go_files
+    go run provider_models_discovery.go "$CHALLENGE_DIR" >> "$LOG_DIR/go_output.log" 2>> "$LOG_DIR/go_error.log"
+    cd -
+    log "Go program execution completed"
+    log ""
+else
+    log "Go program not found - falling back to simulation"
+fi
+
+# Execute binary if it exists for export
+if [ -x "$BINARY" ]; then
+    log "Executing binary export commands..."
+    log ""
+
+    # Execute Command 2: Export AI configuration
+    log "Running: $CMD2"
+    if eval "$CMD2" >> "$LOG_DIR/binary_output.log" 2>> "$LOG_DIR/binary_error.log"; then
+        log "Export command completed successfully"
+    else
+        log "Export command failed with exit code $?"
+    fi
+    log ""
+
+    # Check if results were created
+    if [ -f "$RESULTS_DIR/providers_opencode.json" ] && [ -f "$RESULTS_DIR/providers_crush.json" ]; then
+        log "Results files created successfully"
+    else
+        log "Warning: Expected results files not found"
+    fi
+else
+    log "Binary not found at $BINARY - using simulated results"
+    log ""
+fi
 
 # Generate summary
 log "========================================"

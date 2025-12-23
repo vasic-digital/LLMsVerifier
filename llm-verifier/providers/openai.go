@@ -181,6 +181,9 @@ func (o *OpenAIAdapter) ValidateRequest(request OpenAIChatRequest) error {
 // GetModelInfo retrieves model information from OpenAI
 func (o *OpenAIAdapter) GetModelInfo(ctx context.Context, model string) (*ModelInfo, error) {
 	url := fmt.Sprintf("%s/models/%s", o.endpoint, model)
+	log.Printf("API REQUEST: GET %s", url)
+	log.Printf("API REQUEST HEADERS: %v", o.headers)
+
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -190,17 +193,23 @@ func (o *OpenAIAdapter) GetModelInfo(ctx context.Context, model string) (*ModelI
 		req.Header.Set(key, value)
 	}
 
-	log.Printf("<-- %s %s", req.Method, req.URL.String())
 	resp, err := o.client.Do(req)
 	if err != nil {
-		log.Printf("<-- %s %s --> ERROR %v", req.Method, req.URL.String(), err)
+		log.Printf("API RESPONSE ERROR: %v", err)
 		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
-	log.Printf("<-- %s %s --> %d %s", req.Method, req.URL.String(), resp.StatusCode, resp.Status)
 	defer resp.Body.Close()
 
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	log.Printf("API RESPONSE STATUS: %d", resp.StatusCode)
+	log.Printf("API RESPONSE HEADERS: %v", resp.Header)
+	log.Printf("API RESPONSE BODY: %s", string(body))
+
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("OpenAI API error: %d - %s", resp.StatusCode, string(body))
 	}
 
@@ -211,7 +220,7 @@ func (o *OpenAIAdapter) GetModelInfo(ctx context.Context, model string) (*ModelI
 		OwnedBy string `json:"owned_by"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&modelResp); err != nil {
+	if err := json.Unmarshal(body, &modelResp); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 

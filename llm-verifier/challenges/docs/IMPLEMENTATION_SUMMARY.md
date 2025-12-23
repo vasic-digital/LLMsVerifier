@@ -35,7 +35,7 @@ llm-verifier/challenges/
 │   ├── 01_INTRODUCTION.md
 │   ├── 02_QUICK_START.md
 │   └── 04_CHALLENGE_RUNNER_GUIDE.md
-├── challenge_runners/            ✅ Individual challenge scripts (empty, ready for population)
+├── codebase/challenge_runners/            ✅ Individual challenge scripts (empty, ready for population)
 │   ├── provider_models_discovery/
 │   ├── model_verification/
 │   ├── feature_integration/
@@ -399,7 +399,7 @@ llm-verifier ai-config export --format opencode --output results/
 ### Immediate Actions
 
 1. ✅ **Complete Challenge #1** - Provider Models Discovery - COMPLETE
-2. ⏳ **Create Challenge Scripts** - Add challenge scripts to `challenge_runners/`
+2. ⏳ **Create Challenge Scripts** - Add challenge scripts to `codebase/challenge_runners/`
 3. ⏳ **Implement Challenge #2** - Model Verification
 4. ⏳ **Implement Challenge #3** - Feature Integration
 5. ⏳ **Add Tutorials** - Write step-by-step tutorials

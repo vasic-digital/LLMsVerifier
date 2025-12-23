@@ -77,7 +77,7 @@ The **Challenge Bank** is a centralized registry (JSON) of all available challen
       "name": "Provider Models Discovery",
       "platforms": ["cli", "rest-api"],
       "binary": "llm-verifier",
-      "script": "challenge_runners/provider_models_discovery/run.sh"
+      "script": "codebase/challenge_runners/provider_models_discovery/run.sh"
       ...
     }
   ]
