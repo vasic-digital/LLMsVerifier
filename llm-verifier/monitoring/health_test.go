@@ -330,23 +330,32 @@ func TestHealthCheckerMetricsFields(t *testing.T) {
 	db := (*database.Database)(nil)
 	hc := NewHealthChecker(db)
 
+	// Record some test data for metrics
+	hc.metricsTracker.UpdateDatabaseStats(5, 10, 15)
+	hc.metricsTracker.RecordQuery(time.Millisecond * 15)
+	hc.metricsTracker.RecordAPIRequest("/api/v1/test")
+	hc.metricsTracker.RecordAPIResponse("/api/v1/test", time.Millisecond * 50)
+	hc.metricsTracker.RecordVerificationStarted()
+	hc.metricsTracker.RecordVerificationCompleted(true, time.Minute * 3)
+	hc.metricsTracker.SetNotificationChannels(3)
+
 	hc.updateSystemMetrics()
 	metrics := hc.GetSystemMetrics()
 
-	// Test MemoryStats
+	// Test MemoryStats (from runtime, always non-zero)
 	assert.NotZero(t, metrics.MemoryUsage.Alloc)
 	assert.NotZero(t, metrics.MemoryUsage.Sys)
 	assert.NotZero(t, metrics.MemoryUsage.HeapAlloc)
 
-	// Test DatabaseStats
+	// Test DatabaseStats (now from tracker)
 	assert.NotZero(t, metrics.DatabaseStats.ConnectionsOpen)
 	assert.NotZero(t, metrics.DatabaseStats.QueryCount)
 
-	// Test APIMetrics
+	// Test APIMetrics (now from tracker)
 	assert.NotZero(t, metrics.APIMetrics.TotalRequests)
-	assert.NotZero(t, metrics.APIMetrics.EndpointStats)
+	assert.NotEmpty(t, metrics.APIMetrics.EndpointStats)
 
-	// Test VerificationStats
+	// Test VerificationStats (now from tracker)
 	assert.NotNil(t, metrics.VerificationStats)
 
 }
@@ -512,6 +521,22 @@ func TestHealthCheckerMemoryMetrics(t *testing.T) {
 func TestHealthCheckerAPIMetricsDetails(t *testing.T) {
 	db := (*database.Database)(nil)
 	hc := NewHealthChecker(db)
+
+
+	// Note: Since we now use real MetricsTracker, record test data first
+	// Note: Since we now use real MetricsTracker, record test data first
+	hc.metricsTracker.RecordAPIRequest("/api/v1/models")
+	hc.metricsTracker.RecordAPIResponse("/api/v1/models", time.Millisecond*50)
+	hc.metricsTracker.RecordAPIRequest("/api/v1/providers")
+	hc.metricsTracker.RecordAPIResponse("/api/v1/providers", time.Millisecond*80)
+	hc.metricsTracker.RecordAPIRequest("/api/v1/models")
+	hc.metricsTracker.RecordAPIResponse("/api/v1/models", time.Millisecond*60)
+	hc.metricsTracker.RecordAPIError("/api/v1/models")
+
+
+
+
+
 
 	hc.updateSystemMetrics()
 	metrics := hc.GetSystemMetrics()

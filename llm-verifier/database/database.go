@@ -176,12 +176,22 @@ func copyTableData(sourceDB, destDB *sql.DB, tableName string) error {
 		return nil
 	}
 
-	// Build SELECT and INSERT queries
-	selectQuery := fmt.Sprintf("SELECT %s FROM %s", fmt.Sprintf(`"%s"`, strings.Join(columns, `","`)), tableName)
+	// Build SELECT and INSERT queries with validation
+	quotedTable, err := QuoteTableName(tableName)
+	if err != nil {
+		return fmt.Errorf("invalid table name: %w", err)
+	}
+	
+	quotedColumns, err := QuoteColumnNames(columns)
+	if err != nil {
+		return fmt.Errorf("invalid column names: %w", err)
+	}
+	
+	selectQuery := fmt.Sprintf("SELECT %s FROM %s", strings.Join(quotedColumns, ", "), quotedTable)
 	insertQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
-		tableName,
-		fmt.Sprintf(`"%s"`, strings.Join(columns, `","`)),
-		strings.Repeat("?,", len(columns)-1)+"?")
+		quotedTable,
+		strings.Join(quotedColumns, ", "),
+		strings.Repeat("?,", len(columns))+"?")
 
 	// Copy data
 	sourceRows, err := sourceDB.Query(selectQuery)
