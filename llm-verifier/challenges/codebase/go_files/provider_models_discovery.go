@@ -261,8 +261,8 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 		models, err = discoverOpenAIModels(ctx, "https://openrouter.ai/api/v1", test.APIKey, test.FreeToUse)
 		provider.APIEndpoint = "https://openrouter.ai/api/v1"
 	case "DeepSeek":
-		models, err = discoverOpenAIModels(ctx, "https://api.deepseek.com", test.APIKey, test.FreeToUse)
-		provider.APIEndpoint = "https://api.deepseek.com"
+		models, err = discoverOpenAIModels(ctx, "https://api.deepseek.com/v1", test.APIKey, test.FreeToUse)
+		provider.APIEndpoint = "https://api.deepseek.com/v1"
 	case "Qwen":
 		provider.Status = "skipped"
 		provider.Error = "no_api_key"

@@ -306,7 +306,7 @@ cd challenges
 
 ```bash
 cd challenges
-mkdir -p challenge_runners/my_custom_challenge
+mkdir -p codebase/challenge_runners/my_custom_challenge
 # Edit challenges_bank.json to add your challenge
 # Run your challenge
 ./run_challenges.sh my_custom_challenge
