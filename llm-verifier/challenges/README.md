@@ -29,8 +29,7 @@ llm-verifier/challenges/
 ├── run_actual_binary_challenge.sh # Actual binary challenge runner
 ├── run_provider_binary_challenge.sh # Provider discovery binary runner
 ├── README.md                    # This file
-├── .gitignore                   # API keys NOT versioned
-├── API_KEYS.md                  # API keys (git-ignored)
+├── .gitignore                   # API keys NOT versioned (use environment variables)
 ├── docs/                        # Complete documentation suite
 │   ├── 00_INDEX.md
 │   ├── 01_INTRODUCTION.md
@@ -182,9 +181,9 @@ challenges/
 
 | File | Description | Git Versioned |
 |-------|-------------|----------------|
-| `config.yaml` | Challenge configuration | ❌ No (contains API keys) |
+| `config.yaml` | Challenge configuration | ❌ No (API keys from env vars) |
 | `challenge.log` | Verbose execution log | ✅ Yes |
-| `commands.log` | All binary commands executed | ⚠️ Review (contains API keys) |
+| `commands.log` | All binary commands executed | ⚠️ Review (may contain API keys) |
 | `<challenge>_opencode.json` | Configuration output | ✅ Yes |
 | `<challenge>_crush.json` | Full challenge results | ✅ Yes |
 
@@ -242,9 +241,19 @@ The `challenges_bank.json` file defines all available challenges.
 
 ### API Keys
 
-The `API_KEYS.md` file contains all API keys for challenges.
+API keys are loaded from environment variables for security:
 
-**Important:** This file is in `.gitignore` and should NEVER be committed to git.
+- `ApiKey_HuggingFace`
+- `ApiKey_Nvidia`
+- `ApiKey_Chutes`
+- `ApiKey_SiliconFlow`
+- `ApiKey_Kimi`
+- `ApiKey_Gemini`
+- `ApiKey_OpenRouter`
+- `ApiKey_Z_AI`
+- `ApiKey_DeepSeek`
+
+**Important:** Never store API keys in files or commit them to git. Always use environment variables.
 
 ---
 
@@ -306,7 +315,7 @@ tar -czf challenge-results.tar.gz challenges/*/20**/*/
 | **Proper directory structure** | ✅ Complete |
 | **Results in results/** | ✅ Complete |
 | **Logs in logs/** | ✅ Complete |
-| **API keys git-ignored** | ✅ Complete |
+| **API keys from env vars** | ✅ Complete |
 | **Results versioned** | ✅ Complete |
 
 ---
