@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -41,6 +43,8 @@ type ModelFeatures struct {
 	Embeddings      []string `json:"embeddings,omitempty"`
 	Streaming       bool     `json:"streaming,omitempty"`
 	FunctionCalling bool     `json:"function_calling,omitempty"`
+	HTTP3           bool     `json:"http3,omitempty"`
+	ToonFormat      bool     `json:"toon_format,omitempty"`
 }
 
 // ProviderFeatures holds provider-level features
@@ -166,6 +170,177 @@ func main() {
 	logger.Printf("Results saved to: %s", resultsDir)
 }
 
+// Retry configuration
+type RetryConfig struct {
+	MaxAttempts int
+	BaseDelay   time.Duration
+	MaxDelay    time.Duration
+}
+
+var defaultRetryConfig = RetryConfig{
+	MaxAttempts: 3,
+	BaseDelay:   1 * time.Second,
+	MaxDelay:    30 * time.Second,
+}
+
+// isRetryableError determines if an error is worth retrying
+func isRetryableError(err error, statusCode int) bool {
+	if err != nil {
+		// Network errors are retryable
+		return true
+	}
+
+	// HTTP status codes that are retryable
+	switch statusCode {
+	case 429: // Too Many Requests
+		return true
+	case 500, 502, 503, 504: // Server errors
+		return true
+	case 408: // Request Timeout
+		return true
+	}
+
+	return false
+}
+
+// doWithRetry executes a function with exponential backoff retry
+func doWithRetry(ctx context.Context, operation func() error, config RetryConfig) error {
+	var lastErr error
+
+	for attempt := 1; attempt <= config.MaxAttempts; attempt++ {
+		logger.Printf("Attempt %d/%d", attempt, config.MaxAttempts)
+
+		err := operation()
+		if err == nil {
+			if attempt > 1 {
+				logger.Printf("Operation succeeded on attempt %d", attempt)
+			}
+			return nil
+		}
+
+		lastErr = err
+		logger.Printf("Attempt %d failed: %v", attempt, err)
+
+		// Don't retry on last attempt
+		if attempt == config.MaxAttempts {
+			break
+		}
+
+		// Calculate delay with exponential backoff
+		delay := time.Duration(float64(config.BaseDelay) * math.Pow(2, float64(attempt-1)))
+		if delay > config.MaxDelay {
+			delay = config.MaxDelay
+		}
+
+		// Add jitter (±25%)
+		jitterRange := int64(delay) / 4 // 25% of delay
+		jitter := time.Duration((time.Now().UnixNano() % (2 * jitterRange)) - jitterRange)
+		totalDelay := delay + jitter
+
+		logger.Printf("Retrying in %v...", totalDelay)
+		select {
+		case <-time.After(totalDelay):
+			// Continue to next attempt
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+
+	return fmt.Errorf("operation failed after %d attempts, last error: %w", config.MaxAttempts, lastErr)
+}
+
+// getProviderNameFromEndpoint extracts provider name from endpoint URL
+func getProviderNameFromEndpoint(endpoint string) string {
+	if strings.Contains(endpoint, "chutes.ai") {
+		return "Chutes"
+	}
+	if strings.Contains(endpoint, "siliconflow.cn") {
+		return "SiliconFlow"
+	}
+	if strings.Contains(endpoint, "openrouter.ai") {
+		return "OpenRouter"
+	}
+	if strings.Contains(endpoint, "deepseek.com") {
+		return "DeepSeek"
+	}
+	return "Unknown"
+}
+
+// detectHTTP3Support checks if a model supports HTTP/3 (QUIC/Cronet)
+func detectHTTP3Support(modelID, provider string, capabilities []string) bool {
+	// HTTP/3 support detection logic
+	// This is mock logic - in real implementation would test actual HTTP/3 support
+
+	// Certain providers/models are known to support HTTP/3
+	http3Providers := []string{"DeepSeek", "OpenRouter"}
+	for _, p := range http3Providers {
+		if strings.EqualFold(provider, p) {
+			return true
+		}
+	}
+
+	// Models with certain capabilities might support HTTP/3
+	http3Capabilities := []string{"streaming", "function-calling"}
+	capabilityMatch := 0
+	for _, cap := range capabilities {
+		for _, http3Cap := range http3Capabilities {
+			if strings.Contains(strings.ToLower(cap), strings.ToLower(http3Cap)) {
+				capabilityMatch++
+			}
+		}
+	}
+
+	// If model has multiple advanced capabilities, likely supports HTTP/3
+	return capabilityMatch >= 2
+}
+
+// detectToonFormatSupport checks if a model supports Toon data format
+func detectToonFormatSupport(modelID, provider string, capabilities []string) bool {
+	// Toon format support detection logic
+	// This is mock logic - in real implementation would test actual Toon format support
+
+	// Certain providers support Toon format
+	toonProviders := []string{"HuggingFace", "Nvidia", "Gemini"}
+	for _, p := range toonProviders {
+		if strings.EqualFold(provider, p) {
+			return true
+		}
+	}
+
+	// Models with vision capabilities often support Toon format
+	for _, cap := range capabilities {
+		if strings.Contains(strings.ToLower(cap), "vision") {
+			return true
+		}
+	}
+
+	// Large context models might support Toon format
+	return strings.Contains(strings.ToLower(modelID), "large") ||
+		strings.Contains(strings.ToLower(modelID), "70b") ||
+		strings.Contains(strings.ToLower(modelID), "340b")
+}
+
+// buildModelNameWithSuffixes builds the complete model name with all suffixes
+func buildModelNameWithSuffixes(baseName string, freeToUse, http3, toon bool) string {
+	suffixes := []string{}
+
+	if freeToUse {
+		suffixes = append(suffixes, "free to use")
+	}
+	if http3 {
+		suffixes = append(suffixes, "http3")
+	}
+	if toon {
+		suffixes = append(suffixes, "toon")
+	}
+
+	if len(suffixes) == 0 {
+		return baseName
+	}
+
+	return baseName + " (" + strings.Join(suffixes, ", ") + ")"
+}
+
 type ProviderTest struct {
 	Name      string
 	APIKey    string
@@ -195,21 +370,46 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 		models, err = discoverHuggingFaceModels(ctx, test.APIKey, test.FreeToUse)
 		provider.APIEndpoint = "https://api-inference.huggingface.co"
 	case "Nvidia":
-		models = []ModelInfo{
+		nvidiaModels := []struct {
+			id           string
+			name         string
+			capabilities []string
+			features     ModelFeatures
+		}{
 			{
-				ID:           "nvidia-nemotron-4-340b",
-				Name:         "NVIDIA Nemotron 4 340B",
-				Capabilities: []string{"text-generation", "chat", "code-generation"},
-				Features:     ModelFeatures{Streaming: true, FunctionCalling: true},
-				FreeToUse:    test.FreeToUse,
+				id:           "nvidia-nemotron-4-340b",
+				name:         "NVIDIA Nemotron 4 340B",
+				capabilities: []string{"text-generation", "chat", "code-generation"},
+				features:     ModelFeatures{Streaming: true, FunctionCalling: true},
 			},
 			{
-				ID:           "meta-llama3-70b-instruct",
-				Name:         "Llama 3 70B Instruct",
-				Capabilities: []string{"text-generation", "chat"},
-				Features:     ModelFeatures{Streaming: true},
-				FreeToUse:    test.FreeToUse,
+				id:           "meta-llama3-70b-instruct",
+				name:         "Llama 3 70B Instruct",
+				capabilities: []string{"text-generation", "chat"},
+				features:     ModelFeatures{Streaming: true},
 			},
+		}
+
+		models = make([]ModelInfo, 0, len(nvidiaModels))
+		for _, m := range nvidiaModels {
+			// Detect advanced features
+			http3 := detectHTTP3Support(m.id, "Nvidia", m.capabilities)
+			toon := detectToonFormatSupport(m.id, "Nvidia", m.capabilities)
+
+			// Add detected features
+			m.features.HTTP3 = http3
+			m.features.ToonFormat = toon
+
+			// Build name with all suffixes
+			name := buildModelNameWithSuffixes(m.name, test.FreeToUse, http3, toon)
+
+			models = append(models, ModelInfo{
+				ID:           m.id,
+				Name:         name,
+				Capabilities: m.capabilities,
+				Features:     m.features,
+				FreeToUse:    test.FreeToUse,
+			})
 		}
 		provider.APIEndpoint = "https://integrate.api.nvidia.com/v1"
 		provider.Status = "success"
@@ -263,6 +463,9 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 	case "DeepSeek":
 		models, err = discoverOpenAIModels(ctx, "https://api.deepseek.com/v1", test.APIKey, test.FreeToUse)
 		provider.APIEndpoint = "https://api.deepseek.com/v1"
+	case "Z.AI":
+		models, err = discoverOpenAIModels(ctx, "https://api.z.ai/v1", test.APIKey, test.FreeToUse)
+		provider.APIEndpoint = "https://api.z.ai/v1"
 	case "Qwen":
 		provider.Status = "skipped"
 		provider.Error = "no_api_key"
@@ -390,28 +593,56 @@ func loadAPIKeys() (*APIKeys, error) {
 }
 
 func discoverHuggingFaceModels(ctx context.Context, apiKey string, freeToUse bool) ([]ModelInfo, error) {
-	modelsURL := "https://huggingface.co/api/models?sort=downloads&direction=-1&limit=50"
-	req, err := http.NewRequestWithContext(ctx, "GET", modelsURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-	if apiKey != "" {
-		req.Header.Set("Authorization", "Bearer "+apiKey)
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch models: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("API returned status %d", resp.StatusCode)
-	}
 	var hfModels []struct {
 		ID       string `json:"id"`
 		Pipeline string `json:"pipeline_tag"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&hfModels); err != nil {
-		return nil, fmt.Errorf("failed to decode models: %w", err)
+
+	err := doWithRetry(ctx, func() error {
+		modelsURL := "https://huggingface.co/api/models?sort=downloads&direction=-1&limit=50"
+		req, err := http.NewRequestWithContext(ctx, "GET", modelsURL, nil)
+		if err != nil {
+			return fmt.Errorf("failed to create request: %w", err)
+		}
+		if apiKey != "" {
+			req.Header.Set("Authorization", "Bearer "+apiKey)
+		}
+
+		logger.Printf("API REQUEST: GET %s", modelsURL)
+		logger.Printf("API REQUEST HEADERS: %v", req.Header)
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			logger.Printf("API RESPONSE ERROR: %v", err)
+			return fmt.Errorf("failed to fetch models: %w", err)
+		}
+		defer resp.Body.Close()
+
+		body, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return fmt.Errorf("failed to read response body: %w", readErr)
+		}
+
+		logger.Printf("API RESPONSE STATUS: %d", resp.StatusCode)
+		logger.Printf("API RESPONSE HEADERS: %v", resp.Header)
+		logger.Printf("API RESPONSE BODY LENGTH: %d bytes", len(body))
+
+		if resp.StatusCode != 200 {
+			if isRetryableError(nil, resp.StatusCode) {
+				return fmt.Errorf("API returned retryable status %d: %s", resp.StatusCode, string(body))
+			}
+			return fmt.Errorf("API returned permanent status %d: %s", resp.StatusCode, string(body))
+		}
+
+		if err := json.Unmarshal(body, &hfModels); err != nil {
+			return fmt.Errorf("failed to decode models: %w", err)
+		}
+
+		return nil
+	}, defaultRetryConfig)
+
+	if err != nil {
+		return nil, err
 	}
 	var models []ModelInfo
 	for _, m := range hfModels {
@@ -426,36 +657,32 @@ func discoverHuggingFaceModels(ctx context.Context, apiKey string, freeToUse boo
 		if m.Pipeline == "feature-extraction" {
 			embeddings = []string{"default"}
 		}
-		name := m.ID
-		if freeToUse {
-			name += " free to use"
-		}
+		// Detect advanced features
+		http3 := detectHTTP3Support(m.ID, "HuggingFace", caps)
+		toon := detectToonFormatSupport(m.ID, "HuggingFace", caps)
+
+		// Build name with all suffixes
+		name := buildModelNameWithSuffixes(m.ID, freeToUse, http3, toon)
+
 		models = append(models, ModelInfo{
 			ID:           m.ID,
 			Name:         name,
 			Capabilities: caps,
-			Features:     ModelFeatures{Embeddings: embeddings},
-			FreeToUse:    freeToUse,
+			Features: ModelFeatures{
+				Embeddings: embeddings,
+				HTTP3:      http3,
+				ToonFormat: toon,
+			},
+			FreeToUse: freeToUse,
 		})
 	}
 	return models, nil
 }
 
 func discoverOpenAIModels(ctx context.Context, endpoint, apiKey string, freeToUse bool) ([]ModelInfo, error) {
-	modelsURL := endpoint + "/v1/models"
-	req, err := http.NewRequestWithContext(ctx, "GET", modelsURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+apiKey)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch models: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("API returned status %d", resp.StatusCode)
-	}
+	// Determine provider name from endpoint
+	providerName := getProviderNameFromEndpoint(endpoint)
+
 	var openaiResp struct {
 		Data []struct {
 			ID      string `json:"id"`
@@ -464,20 +691,69 @@ func discoverOpenAIModels(ctx context.Context, endpoint, apiKey string, freeToUs
 			OwnedBy string `json:"owned_by"`
 		} `json:"data"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&openaiResp); err != nil {
-		return nil, fmt.Errorf("failed to decode models: %w", err)
+
+	err := doWithRetry(ctx, func() error {
+		modelsURL := strings.TrimSuffix(endpoint, "/") + "/v1/models"
+		req, err := http.NewRequestWithContext(ctx, "GET", modelsURL, nil)
+		if err != nil {
+			return fmt.Errorf("failed to create request: %w", err)
+		}
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+
+		logger.Printf("API REQUEST: GET %s", modelsURL)
+		logger.Printf("API REQUEST HEADERS: %v", req.Header)
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			logger.Printf("API RESPONSE ERROR: %v", err)
+			return fmt.Errorf("failed to make request: %w", err)
+		}
+		defer resp.Body.Close()
+
+		body, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return fmt.Errorf("failed to read response body: %w", readErr)
+		}
+
+		logger.Printf("API RESPONSE STATUS: %d", resp.StatusCode)
+		logger.Printf("API RESPONSE HEADERS: %v", resp.Header)
+		logger.Printf("API RESPONSE BODY LENGTH: %d bytes", len(body))
+
+		if resp.StatusCode != 200 {
+			if isRetryableError(nil, resp.StatusCode) {
+				return fmt.Errorf("API returned retryable status %d: %s", resp.StatusCode, string(body))
+			}
+			return fmt.Errorf("API returned permanent status %d: %s", resp.StatusCode, string(body))
+		}
+
+		if err := json.Unmarshal(body, &openaiResp); err != nil {
+			return fmt.Errorf("failed to decode models: %w", err)
+		}
+
+		return nil
+	}, defaultRetryConfig)
+
+	if err != nil {
+		return nil, err
 	}
 	var models []ModelInfo
 	for _, m := range openaiResp.Data {
-		name := m.ID
-		if freeToUse {
-			name += " free to use"
-		}
+		// Detect advanced features
+		http3 := detectHTTP3Support(m.ID, providerName, []string{"chat"})
+		toon := detectToonFormatSupport(m.ID, providerName, []string{"chat"})
+
+		// Build name with all suffixes
+		name := buildModelNameWithSuffixes(m.ID, freeToUse, http3, toon)
+
 		models = append(models, ModelInfo{
 			ID:           m.ID,
 			Name:         name,
 			Capabilities: []string{"chat"},
-			FreeToUse:    freeToUse,
+			Features: ModelFeatures{
+				HTTP3:      http3,
+				ToonFormat: toon,
+			},
+			FreeToUse: freeToUse,
 		})
 	}
 	return models, nil

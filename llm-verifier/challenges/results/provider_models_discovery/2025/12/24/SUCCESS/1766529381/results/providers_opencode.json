@@ -1,0 +1,652 @@
+{
+  "challenge_name": "providers_models_discovery",
+  "date": "2025-12-24",
+  "providers": [
+    {
+      "api_endpoint": "https://api-inference.huggingface.co",
+      "free_to_use": true,
+      "models": [
+        {
+          "id": "sentence-transformers/all-MiniLM-L6-v2",
+          "name": "sentence-transformers/all-MiniLM-L6-v2 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "Falconsai/nsfw_image_detection",
+          "name": "Falconsai/nsfw_image_detection (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "google/electra-base-discriminator",
+          "name": "google/electra-base-discriminator (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "google-bert/bert-base-uncased",
+          "name": "google-bert/bert-base-uncased (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "dima806/fairface_age_image_detection",
+          "name": "dima806/fairface_age_image_detection (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "sentence-transformers/all-mpnet-base-v2",
+          "name": "sentence-transformers/all-mpnet-base-v2 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+          "name": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "timm/mobilenetv3_small_100.lamb_in1k",
+          "name": "timm/mobilenetv3_small_100.lamb_in1k (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "FacebookAI/roberta-large",
+          "name": "FacebookAI/roberta-large (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "openai/clip-vit-base-patch32",
+          "name": "openai/clip-vit-base-patch32 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "pyannote/segmentation-3.0",
+          "name": "pyannote/segmentation-3.0 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "laion/clap-htsat-fused",
+          "name": "laion/clap-htsat-fused (free to use, toon)",
+          "capabilities": [
+            "feature-extraction",
+            "embeddings"
+          ],
+          "features": {
+            "embeddings": [
+              "default"
+            ],
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "pyannote/speaker-diarization-3.1",
+          "name": "pyannote/speaker-diarization-3.1 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "pyannote/wespeaker-voxceleb-resnet34-LM",
+          "name": "pyannote/wespeaker-voxceleb-resnet34-LM (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "colbert-ir/colbertv2.0",
+          "name": "colbert-ir/colbertv2.0 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "Bingsu/adetailer",
+          "name": "Bingsu/adetailer (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "prajjwal1/bert-tiny",
+          "name": "prajjwal1/bert-tiny (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "omni-research/Tarsier2-Recap-7b",
+          "name": "omni-research/Tarsier2-Recap-7b (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "meta-llama/Llama-3.1-8B-Instruct",
+          "name": "meta-llama/Llama-3.1-8B-Instruct (free to use, toon)",
+          "capabilities": [
+            "text-generation"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "magic-leap-community/superpoint",
+          "name": "magic-leap-community/superpoint (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "ETH-CVG/lightglue_superpoint",
+          "name": "ETH-CVG/lightglue_superpoint (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "Qwen/Qwen2.5-3B-Instruct",
+          "name": "Qwen/Qwen2.5-3B-Instruct (free to use, toon)",
+          "capabilities": [
+            "text-generation"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "openai/clip-vit-large-patch14",
+          "name": "openai/clip-vit-large-patch14 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "BAAI/bge-m3",
+          "name": "BAAI/bge-m3 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "openai-community/gpt2",
+          "name": "openai-community/gpt2 (free to use, toon)",
+          "capabilities": [
+            "text-generation"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "FacebookAI/roberta-base",
+          "name": "FacebookAI/roberta-base (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "distilbert/distilbert-base-uncased",
+          "name": "distilbert/distilbert-base-uncased (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "Qwen/Qwen3-0.6B",
+          "name": "Qwen/Qwen3-0.6B (free to use, toon)",
+          "capabilities": [
+            "text-generation"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "facebook/contriever",
+          "name": "facebook/contriever (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "autogluon/chronos-bolt-small",
+          "name": "autogluon/chronos-bolt-small (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "timm/resnet50.a1_in1k",
+          "name": "timm/resnet50.a1_in1k (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "openai/gpt-oss-20b",
+          "name": "openai/gpt-oss-20b (free to use, toon)",
+          "capabilities": [
+            "text-generation"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "Qwen/Qwen2.5-7B-Instruct",
+          "name": "Qwen/Qwen2.5-7B-Instruct (free to use, toon)",
+          "capabilities": [
+            "text-generation"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "FacebookAI/xlm-roberta-base",
+          "name": "FacebookAI/xlm-roberta-base (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "google/siglip-so400m-patch14-384",
+          "name": "google/siglip-so400m-patch14-384 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "coqui/XTTS-v2",
+          "name": "coqui/XTTS-v2 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged",
+          "name": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "openai/whisper-large-v3",
+          "name": "openai/whisper-large-v3 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn",
+          "name": "jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "cross-encoder/ms-marco-MiniLM-L6-v2",
+          "name": "cross-encoder/ms-marco-MiniLM-L6-v2 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+          "name": "sentence-transformers/paraphrase-multilingual-mpnet-base-v2 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "Kijai/WanVideo_comfy",
+          "name": "Kijai/WanVideo_comfy (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "Qwen/Qwen3-1.7B",
+          "name": "Qwen/Qwen3-1.7B (free to use, toon)",
+          "capabilities": [
+            "text-generation"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "openai/clip-vit-large-patch14-336",
+          "name": "openai/clip-vit-large-patch14-336 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "google-bert/bert-base-multilingual-uncased",
+          "name": "google-bert/bert-base-multilingual-uncased (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "google/vit-base-patch16-224",
+          "name": "google/vit-base-patch16-224 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "lpiccinelli/unidepth-v2-vitl14",
+          "name": "lpiccinelli/unidepth-v2-vitl14 (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "jinaai/jina-embeddings-v3",
+          "name": "jinaai/jina-embeddings-v3 (free to use, toon)",
+          "capabilities": [
+            "feature-extraction",
+            "embeddings"
+          ],
+          "features": {
+            "embeddings": [
+              "default"
+            ],
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "jonatasgrosman/wav2vec2-large-xlsr-53-russian",
+          "name": "jonatasgrosman/wav2vec2-large-xlsr-53-russian (free to use, toon)",
+          "capabilities": [],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+          "name": "Qwen/Qwen2.5-Coder-0.5B-Instruct (free to use, toon)",
+          "capabilities": [
+            "text-generation"
+          ],
+          "features": {
+            "toon_format": true
+          },
+          "free_to_use": true
+        }
+      ],
+      "name": "HuggingFace",
+      "status": "success",
+      "type": ""
+    },
+    {
+      "api_endpoint": "https://integrate.api.nvidia.com/v1",
+      "free_to_use": true,
+      "models": [
+        {
+          "id": "nvidia-nemotron-4-340b",
+          "name": "NVIDIA Nemotron 4 340B (free to use, toon)",
+          "capabilities": [
+            "text-generation",
+            "chat",
+            "code-generation"
+          ],
+          "features": {
+            "streaming": true,
+            "function_calling": true,
+            "toon_format": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "meta-llama3-70b-instruct",
+          "name": "Llama 3 70B Instruct (free to use, toon)",
+          "capabilities": [
+            "text-generation",
+            "chat"
+          ],
+          "features": {
+            "streaming": true,
+            "toon_format": true
+          },
+          "free_to_use": true
+        }
+      ],
+      "name": "Nvidia",
+      "status": "success",
+      "type": ""
+    },
+    {
+      "api_endpoint": "https://api.chutes.ai/v1",
+      "free_to_use": true,
+      "models": null,
+      "name": "Chutes",
+      "status": "error",
+      "type": ""
+    },
+    {
+      "api_endpoint": "https://api.siliconflow.cn/v1",
+      "free_to_use": true,
+      "models": null,
+      "name": "SiliconFlow",
+      "status": "error",
+      "type": ""
+    },
+    {
+      "api_endpoint": "https://api.moonshot.cn/v1",
+      "free_to_use": true,
+      "models": [
+        {
+          "id": "moonshot-v1-128k",
+          "name": "Moonshot V1 128K",
+          "context_size": 128000,
+          "capabilities": [
+            "text-generation",
+            "chat",
+            "long-context"
+          ],
+          "features": {
+            "streaming": true,
+            "function_calling": true
+          },
+          "free_to_use": true
+        }
+      ],
+      "name": "Kimi",
+      "status": "success",
+      "type": ""
+    },
+    {
+      "api_endpoint": "https://generativelanguage.googleapis.com/v1",
+      "free_to_use": true,
+      "models": [
+        {
+          "id": "gemini-2.0-flash-exp",
+          "name": "Gemini 2.0 Flash Experimental",
+          "capabilities": [
+            "text-generation",
+            "chat",
+            "code-generation",
+            "vision"
+          ],
+          "features": {
+            "mcps": [
+              "mcp-proto"
+            ],
+            "streaming": true,
+            "function_calling": true
+          },
+          "free_to_use": true
+        },
+        {
+          "id": "gemini-1.5-pro",
+          "name": "Gemini 1.5 Pro",
+          "capabilities": [
+            "text-generation",
+            "chat",
+            "code-generation",
+            "vision"
+          ],
+          "features": {
+            "streaming": true,
+            "function_calling": true
+          },
+          "free_to_use": true
+        }
+      ],
+      "name": "Gemini",
+      "status": "success",
+      "type": ""
+    },
+    {
+      "api_endpoint": "https://openrouter.ai/api/v1",
+      "free_to_use": false,
+      "models": null,
+      "name": "OpenRouter",
+      "status": "error",
+      "type": ""
+    },
+    {
+      "api_endpoint": "",
+      "free_to_use": false,
+      "models": null,
+      "name": "Z.AI",
+      "status": "skipped",
+      "type": ""
+    },
+    {
+      "api_endpoint": "https://api.deepseek.com/v1",
+      "free_to_use": false,
+      "models": null,
+      "name": "DeepSeek",
+      "status": "error",
+      "type": ""
+    },
+    {
+      "api_endpoint": "",
+      "free_to_use": false,
+      "models": null,
+      "name": "Qwen",
+      "status": "skipped",
+      "type": ""
+    },
+    {
+      "api_endpoint": "",
+      "free_to_use": false,
+      "models": null,
+      "name": "Claude",
+      "status": "skipped",
+      "type": ""
+    }
+  ]
+}

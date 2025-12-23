@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"strings"
+	"time"
 )
 
 // DeepSeekAdapter provides DeepSeek-specific functionality
@@ -33,53 +35,67 @@ func NewDeepSeekAdapter(client *http.Client, endpoint, apiKey string) *DeepSeekA
 
 // ChatCompletion performs a chat completion with DeepSeek
 func (d *DeepSeekAdapter) ChatCompletion(ctx context.Context, request DeepSeekChatRequest) (*DeepSeekChatResponse, error) {
-	// Prepare request body
-	requestBody, err := json.Marshal(request)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
-	}
-
-	log.Printf("API REQUEST: POST %s/chat/completions", d.endpoint)
-	log.Printf("API REQUEST HEADERS: %v", d.headers)
-	log.Printf("API REQUEST BODY: %s", string(requestBody))
-
-	// Create HTTP request
-	url := fmt.Sprintf("%s/chat/completions", d.endpoint)
-	req, err := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(string(requestBody)))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	// Set headers
-	for key, value := range d.headers {
-		req.Header.Set(key, value)
-	}
-
-	// Make request
-	resp, err := d.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to make request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// Read response
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response: %w", err)
-	}
-
-	log.Printf("API RESPONSE STATUS: %d", resp.StatusCode)
-	log.Printf("API RESPONSE HEADERS: %v", resp.Header)
-	log.Printf("API RESPONSE BODY: %s", string(body))
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("DeepSeek API error: %d - %s", resp.StatusCode, string(body))
-	}
-
-	// Parse response
 	var response DeepSeekChatResponse
-	if err := json.Unmarshal(body, &response); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+
+	err := d.doWithRetry(ctx, func() error {
+		// Prepare request body
+		requestBody, err := json.Marshal(request)
+		if err != nil {
+			return fmt.Errorf("failed to marshal request: %w", err)
+		}
+
+		log.Printf("API REQUEST: POST %s/chat/completions", d.endpoint)
+		log.Printf("API REQUEST HEADERS: %v", d.headers)
+		log.Printf("API REQUEST BODY: %s", string(requestBody))
+
+		// Create HTTP request
+		url := fmt.Sprintf("%s/chat/completions", d.endpoint)
+		req, err := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(string(requestBody)))
+		if err != nil {
+			return fmt.Errorf("failed to create request: %w", err)
+		}
+
+		// Set headers
+		for key, value := range d.headers {
+			req.Header.Set(key, value)
+		}
+
+		// Make request
+		resp, err := d.client.Do(req)
+		if err != nil {
+			log.Printf("API RESPONSE ERROR: %v", err)
+			return fmt.Errorf("failed to make request: %w", err)
+		}
+		defer resp.Body.Close()
+
+		// Read response
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("failed to read response body: %w", err)
+		}
+
+		log.Printf("API RESPONSE STATUS: %d", resp.StatusCode)
+		log.Printf("API RESPONSE HEADERS: %v", resp.Header)
+		log.Printf("API RESPONSE BODY LENGTH: %d bytes", len(body))
+
+		if resp.StatusCode != http.StatusOK {
+			if d.isRetryableError(nil, resp.StatusCode) {
+				log.Printf("API RESPONSE BODY: %s", string(body))
+				return fmt.Errorf("API returned retryable status %d", resp.StatusCode)
+			}
+			return fmt.Errorf("API returned permanent status %d: %s", resp.StatusCode, string(body))
+		}
+
+		// Parse response
+		if err := json.Unmarshal(body, &response); err != nil {
+			return fmt.Errorf("failed to unmarshal response: %w", err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	return &response, nil
@@ -183,40 +199,85 @@ func (d *DeepSeekAdapter) ValidateRequest(request DeepSeekChatRequest) error {
 	return nil
 }
 
+// Retry configuration
+var deepSeekRetryConfig = struct {
+	MaxAttempts int
+	BaseDelay   time.Duration
+	MaxDelay    time.Duration
+}{
+	MaxAttempts: 3,
+	BaseDelay:   1 * time.Second,
+	MaxDelay:    30 * time.Second,
+}
+
+// isRetryableError determines if an error is worth retrying
+func (d *DeepSeekAdapter) isRetryableError(err error, statusCode int) bool {
+	if err != nil {
+		// Network errors are retryable
+		return true
+	}
+
+	// HTTP status codes that are retryable
+	switch statusCode {
+	case 429: // Too Many Requests
+		return true
+	case 500, 502, 503, 504: // Server errors
+		return true
+	case 408: // Request Timeout
+		return true
+	}
+
+	return false
+}
+
+// doWithRetry executes a function with exponential backoff retry
+func (d *DeepSeekAdapter) doWithRetry(ctx context.Context, operation func() error) error {
+	var lastErr error
+
+	for attempt := 1; attempt <= deepSeekRetryConfig.MaxAttempts; attempt++ {
+		log.Printf("DeepSeek attempt %d/%d", attempt, deepSeekRetryConfig.MaxAttempts)
+
+		err := operation()
+		if err == nil {
+			if attempt > 1 {
+				log.Printf("DeepSeek operation succeeded on attempt %d", attempt)
+			}
+			return nil
+		}
+
+		lastErr = err
+		log.Printf("DeepSeek attempt %d failed: %v", attempt, err)
+
+		// Don't retry on last attempt
+		if attempt == deepSeekRetryConfig.MaxAttempts {
+			break
+		}
+
+		// Calculate delay with exponential backoff
+		delay := time.Duration(float64(deepSeekRetryConfig.BaseDelay) * math.Pow(2, float64(attempt-1)))
+		if delay > deepSeekRetryConfig.MaxDelay {
+			delay = deepSeekRetryConfig.MaxDelay
+		}
+
+		// Add jitter (±25%)
+		jitterRange := int64(delay) / 4 // 25% of delay
+		jitter := time.Duration((time.Now().UnixNano() % (2 * jitterRange)) - jitterRange)
+		totalDelay := delay + jitter
+
+		log.Printf("DeepSeek retrying in %v...", totalDelay)
+		select {
+		case <-time.After(totalDelay):
+			// Continue to next attempt
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+
+	return fmt.Errorf("DeepSeek operation failed after %d attempts, last error: %w", deepSeekRetryConfig.MaxAttempts, lastErr)
+}
+
 // GetModelInfo retrieves model information from DeepSeek
 func (d *DeepSeekAdapter) GetModelInfo(ctx context.Context, model string) (*ModelInfo, error) {
-	url := fmt.Sprintf("%s/models/%s", d.endpoint, model)
-	log.Printf("API REQUEST: GET %s", url)
-	log.Printf("API REQUEST HEADERS: %v", d.headers)
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	for key, value := range d.headers {
-		req.Header.Set(key, value)
-	}
-
-	resp, err := d.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to make request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	log.Printf("API RESPONSE STATUS: %d", resp.StatusCode)
-	log.Printf("API RESPONSE HEADERS: %v", resp.Header)
-	log.Printf("API RESPONSE BODY: %s", string(body))
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("DeepSeek API error: %d - %s", resp.StatusCode, string(body))
-	}
-
 	var modelResp struct {
 		ID      string `json:"id"`
 		Object  string `json:"object"`
@@ -224,8 +285,52 @@ func (d *DeepSeekAdapter) GetModelInfo(ctx context.Context, model string) (*Mode
 		OwnedBy string `json:"owned_by"`
 	}
 
-	if err := json.Unmarshal(body, &modelResp); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	err := d.doWithRetry(ctx, func() error {
+		url := fmt.Sprintf("%s/models/%s", d.endpoint, model)
+		log.Printf("API REQUEST: GET %s", url)
+		log.Printf("API REQUEST HEADERS: %v", d.headers)
+
+		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		if err != nil {
+			return fmt.Errorf("failed to create request: %w", err)
+		}
+
+		for key, value := range d.headers {
+			req.Header.Set(key, value)
+		}
+
+		resp, err := d.client.Do(req)
+		if err != nil {
+			log.Printf("API RESPONSE ERROR: %v", err)
+			return fmt.Errorf("failed to make request: %w", err)
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("failed to read response body: %w", err)
+		}
+
+		log.Printf("API RESPONSE STATUS: %d", resp.StatusCode)
+		log.Printf("API RESPONSE HEADERS: %v", resp.Header)
+		log.Printf("API RESPONSE BODY LENGTH: %d bytes", len(body))
+
+		if resp.StatusCode != http.StatusOK {
+			if d.isRetryableError(nil, resp.StatusCode) {
+				return fmt.Errorf("API returned retryable status %d", resp.StatusCode)
+			}
+			return fmt.Errorf("API returned permanent status %d: %s", resp.StatusCode, string(body))
+		}
+
+		if err := json.Unmarshal(body, &modelResp); err != nil {
+			return fmt.Errorf("failed to decode response: %w", err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	return &ModelInfo{

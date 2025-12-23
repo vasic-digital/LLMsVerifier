@@ -45,6 +45,8 @@ type ModelInfo struct {
 	SupportsAudio     bool           `json:"supports_audio,omitempty"`
 	SupportsVideo     bool           `json:"supports_video,omitempty"`
 	SupportsReasoning bool           `json:"supports_reasoning,omitempty"`
+	SupportsHTTP3     bool           `json:"supports_http3,omitempty"`
+	SupportsToon      bool           `json:"supports_toon,omitempty"`
 	OpenSource        bool           `json:"open_source,omitempty"`
 	Deprecated        bool           `json:"deprecated,omitempty"`
 	Tags              []string       `json:"tags,omitempty"`
