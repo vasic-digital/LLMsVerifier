@@ -26,7 +26,7 @@
       "binary": "llm-verifier",
       "script": "challenge_runners/model_verification/run.sh",
       "config_template": "challenge_runners/model_verification/config_template.yaml",
-      "dependencies": ["provider_models_discovery"],
+      "dependencies": [],
       "estimated_duration": "15-30 minutes",
       "outputs": [
         "models_verification_opencode.json",
@@ -42,7 +42,7 @@
       "binary": "llm-verifier",
       "script": "challenge_runners/feature_integration/run.sh",
       "config_template": "challenge_runners/feature_integration/config_template.yaml",
-      "dependencies": ["provider_models_discovery", "model_verification"],
+      "dependencies": [],
       "estimated_duration": "20-40 minutes",
       "outputs": [
         "integration_test_opencode.json",
@@ -58,7 +58,7 @@
       "binary": "llm-verifier",
       "script": "challenge_runners/performance_benchmark/run.sh",
       "config_template": "challenge_runners/performance_benchmark/config_template.yaml",
-      "dependencies": ["provider_models_discovery", "model_verification"],
+      "dependencies": [],
       "estimated_duration": "30-60 minutes",
       "outputs": [
         "benchmark_opencode.json",
@@ -72,7 +72,7 @@
       "name": "REST API Testing",
       "description": "Test all REST API endpoints and verify functionality",
       "platforms": ["rest-api"],
-      "binary": "llm-verifier-api",
+      "binary": "llm-verifier",
       "script": "challenge_runners/rest_api_testing/run.sh",
       "config_template": "challenge_runners/rest_api_testing/config_template.yaml",
       "dependencies": [],
@@ -88,7 +88,7 @@
       "name": "TUI Functionality",
       "description": "Test Terminal User Interface features and workflows",
       "platforms": ["tui"],
-      "binary": "llm-verifier-tui",
+      "binary": "llm-verifier",
       "script": "challenge_runners/tui_functionality/run.sh",
       "config_template": "challenge_runners/tui_functionality/config_template.yaml",
       "dependencies": [],
@@ -104,7 +104,7 @@
       "name": "Desktop Application Testing",
       "description": "Test desktop application features and integrations",
       "platforms": ["desktop"],
-      "binary": "llm-verifier-desktop",
+      "binary": "llm-verifier",
       "script": "challenge_runners/desktop_app_testing/run.sh",
       "config_template": "challenge_runners/desktop_app_testing/config_template.yaml",
       "dependencies": [],
@@ -120,7 +120,7 @@
       "name": "Mobile Application Testing",
       "description": "Test mobile application features and integrations",
       "platforms": ["mobile"],
-      "binary": "llm-verifier-mobile",
+      "binary": "llm-verifier",
       "script": "challenge_runners/mobile_app_testing/run.sh",
       "config_template": "challenge_runners/mobile_app_testing/config_template.yaml",
       "dependencies": [],
@@ -139,7 +139,7 @@
       "binary": "llm-verifier",
       "script": "challenge_runners/config_export_import/run.sh",
       "config_template": "challenge_runners/config_export_import/config_template.yaml",
-      "dependencies": ["provider_models_discovery"],
+      "dependencies": [],
       "estimated_duration": "5-10 minutes",
       "outputs": [
         "ai_config_opencode.json",
@@ -155,19 +155,19 @@
       "description": "Command Line Interface"
     },
     "rest-api": {
-      "binary": "llm-verifier-api",
+      "binary": "llm-verifier",
       "description": "REST API Server"
     },
     "tui": {
-      "binary": "llm-verifier-tui",
+      "binary": "llm-verifier",
       "description": "Terminal User Interface"
     },
     "desktop": {
-      "binary": "llm-verifier-desktop",
+      "binary": "llm-verifier",
       "description": "Desktop Application"
     },
     "mobile": {
-      "binary": "llm-verifier-mobile",
+      "binary": "llm-verifier",
       "description": "Mobile Application"
     },
     "web": {
