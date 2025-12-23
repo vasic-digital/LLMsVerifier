@@ -1,0 +1,8 @@
+# API Keys - NEVER COMMIT
+api_keys.json
+*_api_keys.json
+*_secrets.json
+*.env
+
+# Challenge results will be versioned
+!/name_of_the_challenge
