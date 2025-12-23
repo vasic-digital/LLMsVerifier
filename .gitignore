@@ -164,3 +164,13 @@ monitoring/data/
 .local/
 local/
 dev/
+
+# Environment variables with API keys
+.env
+.env.local
+*.env
+
+# API keys files (double-check protection)
+*_api_keys.json
+*_secrets.json
+*_keys.json
