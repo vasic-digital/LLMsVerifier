@@ -8,8 +8,8 @@
       "description": "Discover all available providers, their models, and verify features",
       "platforms": ["cli", "rest-api", "tui", "desktop"],
       "binary": "llm-verifier",
-      "script": "challenge_runners/provider_models_discovery/run.sh",
-      "config_template": "challenge_runners/provider_models_discovery/config_template.yaml",
+      "script": "run_actual_binary_challenge.sh",
+      "config_template": "run_actual_binary_challenge.sh",
       "dependencies": [],
       "estimated_duration": "5-10 minutes",
       "outputs": [

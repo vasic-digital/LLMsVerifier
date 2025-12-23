@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -62,11 +63,14 @@ func (o *OpenAIAdapter) StreamChatCompletion(ctx context.Context, request OpenAI
 		req.Header.Set("Cache-Control", "no-cache")
 
 		// Make request
+		log.Printf("<-- %s %s", req.Method, req.URL.String())
 		resp, err := o.client.Do(req)
 		if err != nil {
+			log.Printf("<-- %s %s --> ERROR %v", req.Method, req.URL.String(), err)
 			errorChan <- fmt.Errorf("failed to make request: %w", err)
 			return
 		}
+		log.Printf("<-- %s %s --> %d %s", req.Method, req.URL.String(), resp.StatusCode, resp.Status)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -186,10 +190,13 @@ func (o *OpenAIAdapter) GetModelInfo(ctx context.Context, model string) (*ModelI
 		req.Header.Set(key, value)
 	}
 
+	log.Printf("<-- %s %s", req.Method, req.URL.String())
 	resp, err := o.client.Do(req)
 	if err != nil {
+		log.Printf("<-- %s %s --> ERROR %v", req.Method, req.URL.String(), err)
 		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
+	log.Printf("<-- %s %s --> %d %s", req.Method, req.URL.String(), resp.StatusCode, resp.Status)
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
