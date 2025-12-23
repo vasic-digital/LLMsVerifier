@@ -1,0 +1,104 @@
+{
+  "challenge_name": "model_verification",
+  "date": "2025-12-24",
+  "providers": [
+    {
+      "endpoint": "",
+      "failed_count": 0,
+      "name": "HuggingFace",
+      "success_count": 50,
+      "test_time": "2025-12-24T02:28:53+03:00",
+      "type": ""
+    },
+    {
+      "endpoint": "",
+      "failed_count": 0,
+      "name": "Nvidia",
+      "success_count": 2,
+      "test_time": "2025-12-24T02:28:53+03:00",
+      "type": ""
+    },
+    {
+      "endpoint": "",
+      "failed_count": 0,
+      "name": "Chutes",
+      "success_count": 0,
+      "test_time": "2025-12-24T02:28:53+03:00",
+      "type": ""
+    },
+    {
+      "endpoint": "",
+      "failed_count": 0,
+      "name": "SiliconFlow",
+      "success_count": 0,
+      "test_time": "2025-12-24T02:28:53+03:00",
+      "type": ""
+    },
+    {
+      "endpoint": "",
+      "failed_count": 0,
+      "name": "Kimi",
+      "success_count": 3,
+      "test_time": "2025-12-24T02:28:53+03:00",
+      "type": ""
+    },
+    {
+      "endpoint": "",
+      "failed_count": 0,
+      "name": "Gemini",
+      "success_count": 3,
+      "test_time": "2025-12-24T02:28:53+03:00",
+      "type": ""
+    },
+    {
+      "endpoint": "",
+      "failed_count": 0,
+      "name": "OpenRouter",
+      "success_count": 353,
+      "test_time": "2025-12-24T02:28:53+03:00",
+      "type": ""
+    },
+    {
+      "endpoint": "",
+      "failed_count": 0,
+      "name": "Z.AI",
+      "success_count": 3,
+      "test_time": "2025-12-24T02:28:54+03:00",
+      "type": ""
+    },
+    {
+      "endpoint": "",
+      "failed_count": 0,
+      "name": "DeepSeek",
+      "success_count": 3,
+      "test_time": "2025-12-24T02:28:54+03:00",
+      "type": ""
+    },
+    {
+      "endpoint": "",
+      "failed_count": 0,
+      "name": "Qwen",
+      "success_count": 0,
+      "test_time": "2025-12-24T02:28:54+03:00",
+      "type": ""
+    },
+    {
+      "endpoint": "",
+      "failed_count": 0,
+      "name": "Claude",
+      "success_count": 0,
+      "test_time": "2025-12-24T02:28:54+03:00",
+      "type": ""
+    }
+  ],
+  "summary": {
+    "total_models": 417,
+    "verified_models": 417,
+    "models_with_streaming": 2,
+    "models_with_function_calling": 1,
+    "models_with_vision": 0,
+    "models_with_embeddings": 2,
+    "free_models": 58,
+    "paid_models": 359
+  }
+}
