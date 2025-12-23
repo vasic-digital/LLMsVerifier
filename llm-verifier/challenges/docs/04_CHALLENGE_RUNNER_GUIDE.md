@@ -504,7 +504,7 @@ git commit -m "Challenge results: <challenge_name> on YYYY-MM-DD"
 git push
 ```
 
-**Note:** Never git-commit `api_keys.yaml` or any file with API keys!
+**Note:** API keys are loaded from environment variables (ApiKey_*), never store them in files or commit them!
 
 ### 5. Clean Up Old Results
 

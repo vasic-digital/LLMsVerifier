@@ -272,23 +272,23 @@ main()
 
 ### Prerequisites
 1. Build production binary: `go build -o llm-verifier ./cmd/server`
-2. Create `challenges/api_keys.json` with API keys (NOT in git)
+2. Set API key environment variables (see below)
 3. Run challenge: `go run challenges/run_provider_challenge.go`
 
-### API Keys Format
+### API Keys Environment Variables
 
-```json
-{
-  "huggingface": "your-huggingface-key",
-  "nvidia": "your-nvidia-key",
-  "chutes": "your-chutes-key",
-  "siliconflow": "your-siliconflow-key",
-  "kimi": "your-kimi-key",
-  "gemini": "your-gemini-key",
-  "openrouter": "your-openrouter-key",
-  "zai": "your-zai-key",
-  "deepseek": "your-deepseek-key"
-}
+Set the following environment variables with your API keys:
+
+```bash
+export ApiKey_HuggingFace="your-huggingface-key"
+export ApiKey_Nvidia="your-nvidia-key"
+export ApiKey_Chutes="your-chutes-key"
+export ApiKey_SiliconFlow="your-siliconflow-key"
+export ApiKey_Kimi="your-kimi-key"
+export ApiKey_Gemini="your-gemini-key"
+export ApiKey_OpenRouter="your-openrouter-key"
+export ApiKey_Z_AI="your-z-ai-key"
+export ApiKey_DeepSeek="your-deepseek-key"
 ```
 
 ### Expected Output
