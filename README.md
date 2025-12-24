@@ -142,6 +142,21 @@ go run crush_config_converter.go path/to/discovery.json
 - **Streaming Enabled**: All compatible models have streaming support enabled by default
 - **Model Verification**: Configurations are validated to ensure consistency
 
+#### Sensitive File Handling
+
+The LLM Verifier implements secure configuration management:
+
+- **Full Files**: Contain actual API keys - **gitignored** (e.g., `*_config.json`)
+- **Redacted Files**: API keys as `""` - **versioned** (e.g., `*_config_redacted.json`)
+- **Platform Formats**: Generates Crush and OpenCode configs per official specs
+
+**Security**: Never commit files with real API keys. Use redacted versions for sharing.
+
+#### Platform Configuration Formats
+
+- **Crush**: Full JSON schema compliance with providers, models, costs, and options
+- **OpenCode**: Official format with `$schema`, `provider` object containing `options.apiKey` and empty `models`
+
 ### Running Challenges
 
 To run LLM verification challenges:
