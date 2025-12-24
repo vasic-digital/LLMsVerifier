@@ -117,8 +117,21 @@ func main() {
 		log.Fatalf("Failed to write redacted config: %v", err)
 	}
 
+	// Create OpenCode config
+	opencodeConfig := convertToOpenCodeConfig(result)
+	opencodeOutput, err := json.MarshalIndent(opencodeConfig, "", "  ")
+	if err != nil {
+		log.Fatalf("Failed to marshal OpenCode config: %v", err)
+	}
+
+	opencodeOutputFile := strings.TrimSuffix(discoveryFile, filepath.Ext(discoveryFile)) + "_opencode_config.json"
+	if err := ioutil.WriteFile(opencodeOutputFile, opencodeOutput, 0644); err != nil {
+		log.Fatalf("Failed to write OpenCode config: %v", err)
+	}
+
 	fmt.Printf("Crush config written to: %s\n", outputFile)
 	fmt.Printf("Redacted Crush config written to: %s\n", redactedOutputFile)
+	fmt.Printf("OpenCode config written to: %s\n", opencodeOutputFile)
 }
 
 func convertToCrushConfig(result DiscoveryResult) CrushConfig {
@@ -286,3 +299,26 @@ func createRedactedCrushConfig(config CrushConfig) CrushConfig {
 
 	return redacted
 }
+
+func convertToOpenCodeConfig(result DiscoveryResult) map[string]interface{} {
+	providers := make(map[string]interface{})
+
+	for name, provider := range result.Providers {
+		if len(provider.Models) == 0 {
+			continue // Skip providers with no models
+		}
+
+		providers[strings.ToLower(name)] = map[string]interface{}{
+			"options": map[string]interface{}{
+				"apiKey": provider.ApiKey,
+			},
+			"models": map[string]interface{}{},
+		}
+	}
+
+	return map[string]interface{}{
+		"$schema":  "https://opencode.ai/config.json",
+		"provider": providers,
+	}
+}
+

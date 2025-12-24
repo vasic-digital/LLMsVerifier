@@ -263,10 +263,13 @@ go run crush_config_converter.go results/provider_models_discovery/providers_cru
 
 #### OpenCode Configuration Management
 
-OpenCode configurations are maintained in `export_claude_code.json` with:
-- Verified model capabilities
-- Streaming support enabled where available
-- Consistent settings across all models
+OpenCode configurations are generated in official JSON format:
+- Schema: `https://opencode.ai/config.json`
+- Structure: `{"$schema": "...", "provider": {"provider_name": {"options": {"apiKey": "..."}, "models": {}}}}`
+- Includes API keys for all supported providers in options.apiKey
+- Models object is empty as per OpenCode spec
+- Valid JSON format accepted by OpenCode platform
+- Supports JSONC (JSON with comments) format
 
 ---
 

@@ -216,3 +216,54 @@ func TestConvertToCrushConfigMultipleProviders(t *testing.T) {
 		t.Error("Expected CanReason true for claude")
 	}
 }
+
+func TestConvertToOpenCodeConfig(t *testing.T) {
+	discovery := DiscoveryResult{
+		Providers: map[string]ProviderInfo{
+			"OpenAI": {
+				Name:        "OpenAI",
+				APIEndpoint: "https://api.openai.com/v1",
+				ApiKey:      "sk-test",
+				Models: []ModelInfo{
+					{
+						ID: "gpt-4-turbo",
+					},
+				},
+			},
+		},
+	}
+
+	config := convertToOpenCodeConfig(discovery)
+
+	if config["$schema"] != "https://opencode.ai/config.json" {
+		t.Error("Expected correct schema")
+	}
+
+	providers, ok := config["provider"].(map[string]interface{})
+	if !ok {
+		t.Error("Expected provider map")
+	}
+
+	openai, ok := providers["openai"].(map[string]interface{})
+	if !ok {
+		t.Error("Expected openai provider")
+	}
+
+	options, ok := openai["options"].(map[string]interface{})
+	if !ok {
+		t.Error("Expected options map")
+	}
+
+	if options["apiKey"] != "sk-test" {
+		t.Error("Expected apiKey to be sk-test")
+	}
+
+	models, ok := openai["models"].(map[string]interface{})
+	if !ok {
+		t.Error("Expected models map")
+	}
+
+	if len(models) != 0 {
+		t.Error("Expected empty models map")
+	}
+}
