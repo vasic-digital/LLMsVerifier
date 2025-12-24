@@ -1,0 +1,215 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "LLM Verifier - Brotli Compression Metrics",
+    "tags": ["llm", "verifier", "brotli", "compression"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Brotli Support Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "brotli_support_rate_percent",
+            "legendFormat": "Support Rate"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "red"
+                },
+                {
+                  "value": 50,
+                  "color": "yellow"
+                },
+                {
+                  "value": 80,
+                  "color": "green"
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Brotli Tests Performed",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "brotli_tests_performed",
+            "legendFormat": "Tests"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "id": 3,
+        "title": "Brotli Supported Models",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "brotli_supported_models",
+            "legendFormat": "Supported Models"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        }
+      },
+      {
+        "id": 4,
+        "title": "Brotli Cache Hit Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "brotli_cache_hit_rate",
+            "legendFormat": "Cache Hit Rate"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "red"
+                },
+                {
+                  "value": 70,
+                  "color": "yellow"
+                },
+                {
+                  "value": 90,
+                  "color": "green"
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        }
+      },
+      {
+        "id": 5,
+        "title": "Brotli Detection Performance",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "brotli_avg_detection_duration_seconds",
+            "legendFormat": "Avg Detection Time"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 16
+        }
+      },
+      {
+        "id": 6,
+        "title": "Brotli Cache Hits vs Misses",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "brotli_cache_hits",
+            "legendFormat": "Cache Hits"
+          },
+          {
+            "expr": "brotli_cache_misses",
+            "legendFormat": "Cache Misses"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 24
+        }
+      }
+    ],
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timepicker": {
+      "time_options": [
+        "5m",
+        "15m",
+        "1h",
+        "6h",
+        "12h",
+        "24h",
+        "2d",
+        "7d",
+        "30d"
+      ],
+      "refresh_intervals": [
+        "5s",
+        "10s",
+        "30s",
+        "1m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "1d"
+      ]
+    },
+    "schemaVersion": 37,
+    "version": 1
+  }
+}
