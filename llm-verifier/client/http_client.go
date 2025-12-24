@@ -227,3 +227,56 @@ func DetectErrorType(statusCode int, body []byte) string {
 		return "unknown_error"
 	}
 }
+
+// TestBrotliSupport tests if a model supports Brotli compression
+func (c *HTTPClient) TestBrotliSupport(ctx context.Context, provider, apiKey, modelID string) (bool, error) {
+	endpoint := getModelEndpoint(provider, modelID)
+
+	// Create a minimal request body
+	requestBody := map[string]interface{}{
+		"model": modelID,
+		"messages": []map[string]interface{}{
+			{
+				"role":    "user",
+				"content": "test",
+			},
+		},
+		"max_tokens": 1,
+	}
+
+	jsonBody, err := json.Marshal(requestBody)
+	if err != nil {
+		return false, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, strings.NewReader(string(jsonBody)))
+	if err != nil {
+		return false, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+	req.Header.Set("Content-Type", "application/json")
+	// Request Brotli compression
+	req.Header.Set("Accept-Encoding", "br")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Check if response indicates Brotli support
+	contentEncoding := resp.Header.Get("Content-Encoding")
+
+	// Brotli compression is indicated by "br" in Content-Encoding header
+	supportsBrotli := strings.Contains(contentEncoding, "br")
+
+	// Also check if server accepts Brotli requests
+	var encodingAccepted bool
+	if acceptEncoding := resp.Header.Get("Accept-Encoding"); acceptEncoding != "" {
+		encodingAccepted = strings.Contains(acceptEncoding, "br")
+	}
+
+	// If either the response is compressed with Brotli or the server accepts Brotli requests
+	return supportsBrotli || encodingAccepted, nil
+}

@@ -48,6 +48,7 @@ type CrushModel struct {
 	DefaultReasoningEffort string            `json:"default_reasoning_effort,omitempty"`
 	SupportsAttachments    bool              `json:"supports_attachments"`
 	Streaming              bool              `json:"streaming,omitempty"`
+	SupportsBrotli         bool              `json:"supports_brotli,omitempty"`
 	Options                CrushModelOptions `json:"options"`
 }
 
@@ -163,6 +164,7 @@ func convertToCrushConfig(result DiscoveryResult) CrushConfig {
 				CanReason:           hasCapability(model.Capabilities, "reasoning"),
 				SupportsAttachments: hasCapability(model.Capabilities, "multimodal"),
 				Streaming:           getStreamingSupport(model),
+				SupportsBrotli:      getBrotliSupport(model),
 				Options:             CrushModelOptions{}, // Default empty options
 			}
 
@@ -287,6 +289,16 @@ func getStreamingSupport(model ModelInfo) bool {
 	return false
 }
 
+func getBrotliSupport(model ModelInfo) bool {
+	if brotli, ok := model.Features["brotli"]; ok {
+		if b, ok := brotli.(bool); ok {
+			return b
+		}
+	}
+	// Default to false if not specified
+	return false
+}
+
 func createRedactedCrushConfig(config CrushConfig) CrushConfig {
 	redacted := config
 	redacted.Providers = make(map[string]CrushProvider)
@@ -308,11 +320,21 @@ func convertToOpenCodeConfig(result DiscoveryResult) map[string]interface{} {
 			continue // Skip providers with no models
 		}
 
+		models := make(map[string]interface{})
+		for _, model := range provider.Models {
+			models[model.ID] = map[string]interface{}{
+				"name":               model.Name,
+				"capabilities":       model.Capabilities,
+				"supports_brotli":    getBrotliSupport(model),
+				"supports_streaming": getStreamingSupport(model),
+			}
+		}
+
 		providers[strings.ToLower(name)] = map[string]interface{}{
 			"options": map[string]interface{}{
 				"apiKey": provider.ApiKey,
 			},
-			"models": map[string]interface{}{},
+			"models": models,
 		}
 	}
 
@@ -321,4 +343,3 @@ func convertToOpenCodeConfig(result DiscoveryResult) map[string]interface{} {
 		"provider": providers,
 	}
 }
-

@@ -87,6 +87,7 @@ func (v *Verifier) generateSummary(results []VerificationResult) Summary {
 
 	var totalScore float64
 	var allPerformers []TopPerformer
+	var brotliSupported int
 
 	for i, result := range results {
 		if result.Error != "" {
@@ -94,6 +95,11 @@ func (v *Verifier) generateSummary(results []VerificationResult) Summary {
 		} else {
 			summary.AvailableModels++
 			totalScore += result.PerformanceScores.OverallScore
+
+			// Count Brotli support
+			if result.FeatureDetection.SupportsBrotli {
+				brotliSupported++
+			}
 
 			// Add to performers list for rankings
 			allPerformers = append(allPerformers, TopPerformer{
@@ -106,8 +112,10 @@ func (v *Verifier) generateSummary(results []VerificationResult) Summary {
 
 	if summary.AvailableModels > 0 {
 		summary.AverageScore = totalScore / float64(summary.AvailableModels)
+		summary.BrotliSupportRate = float64(brotliSupported) / float64(summary.AvailableModels) * 100
 	} else {
 		summary.AverageScore = 0
+		summary.BrotliSupportRate = 0
 	}
 
 	// Generate category rankings
@@ -239,6 +247,7 @@ func (v *Verifier) writeSummary(file *os.File, summary Summary) {
 	fmt.Fprintf(file, "- Available Models: %d\n", summary.AvailableModels)
 	fmt.Fprintf(file, "- Failed Models: %d\n", summary.FailedModels)
 	fmt.Fprintf(file, "- Average Overall Score: %.2f\n", summary.AverageScore)
+	fmt.Fprintf(file, "- Brotli Support Rate: %.2f%%\n", summary.BrotliSupportRate)
 	fmt.Fprintf(file, "\n")
 
 	// Show top performers by overall score
@@ -310,6 +319,7 @@ func (v *Verifier) writeModelReport(file *os.File, result VerificationResult) {
 	fmt.Fprintf(file, "- **Structured Output**: %t\n", result.FeatureDetection.StructuredOutput)
 	fmt.Fprintf(file, "- **Reasoning**: %t\n", result.FeatureDetection.Reasoning)
 	fmt.Fprintf(file, "- **Parallel Tool Use**: %t (Max %d calls)\n", result.FeatureDetection.ParallelToolUse, result.FeatureDetection.MaxParallelCalls)
+	fmt.Fprintf(file, "- **Brotli Compression**: %t\n", result.FeatureDetection.SupportsBrotli)
 	fmt.Fprintf(file, "\n")
 
 	// Code capabilities

@@ -263,7 +263,7 @@ func TestConvertToOpenCodeConfig(t *testing.T) {
 		t.Error("Expected models map")
 	}
 
-	if len(models) != 0 {
-		t.Error("Expected empty models map")
+	if len(models) == 0 {
+		t.Error("Expected non-empty models map")
 	}
 }

@@ -181,12 +181,12 @@ func copyTableData(sourceDB, destDB *sql.DB, tableName string) error {
 	if err != nil {
 		return fmt.Errorf("invalid table name: %w", err)
 	}
-	
+
 	quotedColumns, err := QuoteColumnNames(columns)
 	if err != nil {
 		return fmt.Errorf("invalid column names: %w", err)
 	}
-	
+
 	selectQuery := fmt.Sprintf("SELECT %s FROM %s", strings.Join(quotedColumns, ", "), quotedTable)
 	insertQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
 		quotedTable,
@@ -525,9 +525,10 @@ func (d *Database) initializeSchema() error {
 		supports_reasoning BOOLEAN DEFAULT 0,
 		supports_parallel_tool_use BOOLEAN DEFAULT 0,
 		max_parallel_calls INTEGER DEFAULT 0,
-		supports_batch_processing BOOLEAN DEFAULT 0,
-		code_language_support TEXT,
-		code_debugging BOOLEAN DEFAULT 0,
+	supports_batch_processing BOOLEAN DEFAULT 0,
+	supports_brotli BOOLEAN DEFAULT 0,
+	code_language_support TEXT,
+	code_debugging BOOLEAN DEFAULT 0,
 		code_optimization BOOLEAN DEFAULT 0,
 		test_generation BOOLEAN DEFAULT 0,
 		documentation_generation BOOLEAN DEFAULT 0,
@@ -839,6 +840,7 @@ type VerificationResult struct {
 	SupportsParallelToolUse  bool       `json:"supports_parallel_tool_use"`
 	MaxParallelCalls         int        `json:"max_parallel_calls"`
 	SupportsBatchProcessing  bool       `json:"supports_batch_processing"`
+	SupportsBrotli           bool       `json:"supports_brotli"`
 	CodeLanguageSupport      []string   `json:"code_language_support"`
 	CodeDebugging            bool       `json:"code_debugging"`
 	CodeOptimization         bool       `json:"code_optimization"`
@@ -1156,16 +1158,16 @@ func (d *Database) createVerificationResultTx(tx *sql.Tx, verificationResult *Ve
 			supports_video_generation, supports_mcps, supports_lsps, supports_multimodal,
 			supports_streaming, supports_json_mode, supports_structured_output,
 			supports_reasoning, supports_parallel_tool_use, max_parallel_calls,
-			supports_batch_processing, code_language_support, code_debugging,
-			code_optimization, test_generation, documentation_generation, refactoring,
-			error_resolution, architecture_design, security_assessment,
-			pattern_recognition, debugging_accuracy, max_handled_depth,
-			code_quality_score, logic_correctness_score, runtime_efficiency_score,
-			overall_score, code_capability_score, responsiveness_score,
-			reliability_score, feature_richness_score, value_proposition_score,
-			score_details, avg_latency_ms, p95_latency_ms, min_latency_ms,
-			max_latency_ms, throughput_rps, raw_request, raw_response
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		supports_batch_processing, supports_brotli, code_language_support, code_debugging,
+		code_optimization, test_generation, documentation_generation, refactoring,
+		error_resolution, architecture_design, security_assessment,
+		pattern_recognition, debugging_accuracy, max_handled_depth,
+		code_quality_score, logic_correctness_score, runtime_efficiency_score,
+		overall_score, code_capability_score, responsiveness_score,
+		reliability_score, feature_richness_score, value_proposition_score,
+		score_details, avg_latency_ms, p95_latency_ms, min_latency_ms,
+		max_latency_ms, throughput_rps, raw_request, raw_response
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := tx.Exec(query,
@@ -1200,6 +1202,7 @@ func (d *Database) createVerificationResultTx(tx *sql.Tx, verificationResult *Ve
 		verificationResult.SupportsParallelToolUse,
 		verificationResult.MaxParallelCalls,
 		verificationResult.SupportsBatchProcessing,
+		verificationResult.SupportsBrotli,
 		string(langSupportJSON),
 		verificationResult.CodeDebugging,
 		verificationResult.CodeOptimization,

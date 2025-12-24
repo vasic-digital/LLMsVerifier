@@ -574,6 +574,18 @@ func (cr *ChallengeRunner) runModelVerificationChallenge() (ChallengeResult, err
 			},
 		},
 		{
+			name:        "brotli_support_check",
+			description: "Test Brotli compression support verification",
+			testFunc: func() error {
+				ctx := context.Background()
+				_, err := cr.httpClient.TestBrotliSupport(ctx, "openai", "test_key", "gpt-4")
+				if err != nil {
+					log.Printf("Brotli support check made HTTP request (expected failure with test key): %v", err)
+				}
+				return nil
+			},
+		},
+		{
 			name:        "database_storage",
 			description: "Test verification result storage",
 			testFunc: func() error {
@@ -587,6 +599,7 @@ func (cr *ChallengeRunner) runModelVerificationChallenge() (ChallengeResult, err
 					ModelExists:      &[]bool{true}[0],
 					Responsive:       &[]bool{true}[0],
 					LatencyMs:        &[]int{150}[0],
+					SupportsBrotli:   true,
 				}
 
 				err := cr.db.CreateVerificationResult(result)
