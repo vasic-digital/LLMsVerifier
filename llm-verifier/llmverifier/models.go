@@ -47,6 +47,7 @@ type ModelInfo struct {
 	SupportsReasoning bool           `json:"supports_reasoning,omitempty"`
 	SupportsHTTP3     bool           `json:"supports_http3,omitempty"`
 	SupportsToon      bool           `json:"supports_toon,omitempty"`
+	SupportsBrotli    bool           `json:"supports_brotli,omitempty"`
 	OpenSource        bool           `json:"open_source,omitempty"`
 	Deprecated        bool           `json:"deprecated,omitempty"`
 	Tags              []string       `json:"tags,omitempty"`
@@ -158,6 +159,7 @@ type FeatureDetectionResult struct {
 	MaxParallelCalls int                  `json:"max_parallel_calls"`
 	Modalities       []string             `json:"modalities"`
 	BatchProcessing  bool                 `json:"batch_processing"`
+	SupportsBrotli   bool                 `json:"supports_brotli"`
 }
 
 type FunctionDefinition struct {
@@ -273,15 +275,16 @@ type ReliabilityBreakdown struct {
 
 // Summary represents the summary of all verification results
 type Summary struct {
-	TotalModels      int              `json:"total_models"`
-	AvailableModels  int              `json:"available_models"`
-	FailedModels     int              `json:"failed_models"`
-	StartTime        time.Time        `json:"start_time"`
-	EndTime          time.Time        `json:"end_time"`
-	Duration         time.Duration    `json:"duration"`
-	AverageScore     float64          `json:"average_score"`
-	TopPerformers    []TopPerformer   `json:"top_performers"`
-	CategoryRankings CategoryRankings `json:"category_rankings"`
+	TotalModels       int              `json:"total_models"`
+	AvailableModels   int              `json:"available_models"`
+	FailedModels      int              `json:"failed_models"`
+	StartTime         time.Time        `json:"start_time"`
+	EndTime           time.Time        `json:"end_time"`
+	Duration          time.Duration    `json:"duration"`
+	AverageScore      float64          `json:"average_score"`
+	BrotliSupportRate float64          `json:"brotli_support_rate"`
+	TopPerformers     []TopPerformer   `json:"top_performers"`
+	CategoryRankings  CategoryRankings `json:"category_rankings"`
 }
 
 type TopPerformer struct {

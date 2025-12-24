@@ -382,4 +382,38 @@ func (mm *MigrationManager) SetupDefaultMigrations() {
 			return nil
 		},
 	})
+
+	// Migration 5: Add Brotli compression support field
+	mm.AddMigration(Migration{
+		Version:     5,
+		Description: "Add Brotli compression support field to verification_results table",
+		Up: func(tx *sql.Tx) error {
+			// Check if supports_brotli column already exists
+			var columnExists bool
+			err := tx.QueryRow(`
+				SELECT COUNT(*) > 0 
+				FROM pragma_table_info('verification_results') 
+				WHERE name = 'supports_brotli'
+			`).Scan(&columnExists)
+			if err != nil {
+				return fmt.Errorf("failed to check if column exists: %w", err)
+			}
+
+			// Only add the column if it doesn't exist
+			if !columnExists {
+				if _, err := tx.Exec(`
+					ALTER TABLE verification_results 
+					ADD COLUMN supports_brotli BOOLEAN DEFAULT 0
+				`); err != nil {
+					return fmt.Errorf("failed to add supports_brotli column: %w", err)
+				}
+			}
+			return nil
+		},
+		Down: func(tx *sql.Tx) error {
+			// Remove supports_brotli column (SQLite doesn't support DROP COLUMN, so we need to recreate the table)
+			// This is a complex operation, so we'll just note that rolling back this migration is not supported
+			return fmt.Errorf("rolling back Brotli support migration is not supported")
+		},
+	})
 }

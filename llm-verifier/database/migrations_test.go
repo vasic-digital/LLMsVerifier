@@ -290,8 +290,8 @@ func TestSetupDefaultMigrations(t *testing.T) {
 	// Setup default migrations
 	mm.SetupDefaultMigrations()
 
-	// Should have 4 default migrations
-	assert.Len(t, mm.migrations, 4)
+	// Should have 5 default migrations
+	assert.Len(t, mm.migrations, 5)
 
 	// Check migration versions
 	versions := []int{}
@@ -337,7 +337,7 @@ func TestMigrationError_Up(t *testing.T) {
 }
 
 func TestMigrationError_Down(t *testing.T) {
-	db := setupEmptyTestDatabase(t)  // Use empty DB to avoid default migrations
+	db := setupEmptyTestDatabase(t) // Use empty DB to avoid default migrations
 	defer db.Close()
 
 	mm := NewMigrationManager(db)

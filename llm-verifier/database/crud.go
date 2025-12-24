@@ -620,16 +620,16 @@ func (d *Database) CreateVerificationResult(verificationResult *VerificationResu
 			supports_video_generation, supports_mcps, supports_lsps, supports_multimodal,
 			supports_streaming, supports_json_mode, supports_structured_output,
 			supports_reasoning, supports_parallel_tool_use, max_parallel_calls,
-			supports_batch_processing, code_language_support, code_debugging,
-			code_optimization, test_generation, documentation_generation, refactoring,
-			error_resolution, architecture_design, security_assessment,
-			pattern_recognition, debugging_accuracy, max_handled_depth,
-			code_quality_score, logic_correctness_score, runtime_efficiency_score,
-			overall_score, code_capability_score, responsiveness_score,
-			reliability_score, feature_richness_score, value_proposition_score,
-			score_details, avg_latency_ms, p95_latency_ms, min_latency_ms,
-			max_latency_ms, throughput_rps, raw_request, raw_response
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	supports_batch_processing, supports_brotli, code_language_support, code_debugging,
+	code_optimization, test_generation, documentation_generation, refactoring,
+	error_resolution, architecture_design, security_assessment,
+	pattern_recognition, debugging_accuracy, max_handled_depth,
+	code_quality_score, logic_correctness_score, runtime_efficiency_score,
+	overall_score, code_capability_score, responsiveness_score,
+	reliability_score, feature_richness_score, value_proposition_score,
+	score_details, avg_latency_ms, p95_latency_ms, min_latency_ms,
+	max_latency_ms, throughput_rps, raw_request, raw_response
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := d.conn.Exec(query,
@@ -664,6 +664,7 @@ func (d *Database) CreateVerificationResult(verificationResult *VerificationResu
 		verificationResult.SupportsParallelToolUse,
 		verificationResult.MaxParallelCalls,
 		verificationResult.SupportsBatchProcessing,
+		verificationResult.SupportsBrotli,
 		string(langSupportJSON),
 		verificationResult.CodeDebugging,
 		verificationResult.CodeOptimization,
@@ -719,7 +720,7 @@ func (d *Database) GetVerificationResult(id int64) (*VerificationResult, error) 
 			supports_video_generation, supports_mcps, supports_lsps, supports_multimodal,
 			supports_streaming, supports_json_mode, supports_structured_output,
 			supports_reasoning, supports_parallel_tool_use, max_parallel_calls,
-			supports_batch_processing, code_language_support, code_debugging,
+			supports_batch_processing, supports_brotli, code_language_support, code_debugging,
 			code_optimization, test_generation, documentation_generation, refactoring,
 			error_resolution, architecture_design, security_assessment,
 			pattern_recognition, debugging_accuracy, max_handled_depth,
@@ -768,6 +769,7 @@ func (d *Database) GetVerificationResult(id int64) (*VerificationResult, error) 
 		&result.SupportsParallelToolUse,
 		&result.MaxParallelCalls,
 		&result.SupportsBatchProcessing,
+		&result.SupportsBrotli,
 		&langSupportJSON,
 		&result.CodeDebugging,
 		&result.CodeOptimization,
@@ -831,7 +833,7 @@ func (d *Database) ListVerificationResults(filters map[string]interface{}) ([]*V
 			supports_video_generation, supports_mcps, supports_lsps, supports_multimodal,
 			supports_streaming, supports_json_mode, supports_structured_output,
 			supports_reasoning, supports_parallel_tool_use, max_parallel_calls,
-			supports_batch_processing, code_language_support, code_debugging,
+			supports_batch_processing, supports_brotli, code_language_support, code_debugging,
 			code_optimization, test_generation, documentation_generation, refactoring,
 			error_resolution, architecture_design, security_assessment,
 			pattern_recognition, debugging_accuracy, max_handled_depth,
@@ -1142,9 +1144,10 @@ func (d *Database) UpdateVerificationResult(verificationResult *VerificationResu
 			supports_reasoning = ?,
 			supports_parallel_tool_use = ?,
 			max_parallel_calls = ?,
-			supports_batch_processing = ?,
-			code_language_support = ?,
-			code_debugging = ?,
+		supports_batch_processing = ?,
+		supports_brotli = ?,
+		code_language_support = ?,
+		code_debugging = ?,
 			code_optimization = ?,
 			test_generation = ?,
 			documentation_generation = ?,
@@ -1221,6 +1224,7 @@ func (d *Database) UpdateVerificationResult(verificationResult *VerificationResu
 		verificationResult.SupportsParallelToolUse,
 		verificationResult.MaxParallelCalls,
 		verificationResult.SupportsBatchProcessing,
+		verificationResult.SupportsBrotli,
 		langSupportJSON,
 		verificationResult.CodeDebugging,
 		verificationResult.CodeOptimization,
@@ -1248,7 +1252,7 @@ func (d *Database) UpdateVerificationResult(verificationResult *VerificationResu
 	)
 
 	if err != nil {
-	log.Printf("UpdateVerificationResult error: %v", err)
+		log.Printf("UpdateVerificationResult error: %v", err)
 		return fmt.Errorf("failed to update verification result: %w", err)
 	}
 
