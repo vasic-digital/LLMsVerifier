@@ -18,6 +18,14 @@ type HTTPClient struct {
 	brotliCache      map[string]bool
 	brotliCacheMutex sync.RWMutex
 	cacheTTL         time.Duration
+	metricsTracker   MetricsTrackerInterface
+}
+
+// MetricsTrackerInterface defines the interface for tracking metrics
+type MetricsTrackerInterface interface {
+	RecordBrotliTest(supportsBrotli bool, duration time.Duration)
+	RecordBrotliCacheHit()
+	RecordBrotliCacheMiss()
 }
 
 func NewHTTPClient(timeout time.Duration) *HTTPClient {
@@ -25,9 +33,15 @@ func NewHTTPClient(timeout time.Duration) *HTTPClient {
 		client: &http.Client{
 			Timeout: timeout,
 		},
-		brotliCache: make(map[string]bool),
-		cacheTTL:    24 * time.Hour, // Cache results for 24 hours
+		brotliCache:    make(map[string]bool),
+		cacheTTL:       24 * time.Hour, // Cache results for 24 hours
+		metricsTracker: nil,            // Default to nil - can be set later
 	}
+}
+
+// SetMetricsTracker sets the metrics tracker for the HTTP client
+func (c *HTTPClient) SetMetricsTracker(tracker MetricsTrackerInterface) {
+	c.metricsTracker = tracker
 }
 
 // TestModelExists checks if a model is available on provider's API
@@ -243,10 +257,20 @@ func (c *HTTPClient) TestBrotliSupport(ctx context.Context, provider, apiKey, mo
 	c.brotliCacheMutex.RLock()
 	if cachedResult, exists := c.brotliCache[cacheKey]; exists {
 		c.brotliCacheMutex.RUnlock()
+		// Track cache hit
+		if c.metricsTracker != nil {
+			c.metricsTracker.RecordBrotliCacheHit()
+		}
 		return cachedResult, nil
 	}
 	c.brotliCacheMutex.RUnlock()
 
+	// Track cache miss
+	if c.metricsTracker != nil {
+		c.metricsTracker.RecordBrotliCacheMiss()
+	}
+
+	startTime := time.Now()
 	endpoint := getModelEndpoint(provider, modelID)
 
 	// Create a minimal request body
@@ -301,6 +325,12 @@ func (c *HTTPClient) TestBrotliSupport(ctx context.Context, provider, apiKey, mo
 	c.brotliCacheMutex.Lock()
 	c.brotliCache[cacheKey] = result
 	c.brotliCacheMutex.Unlock()
+
+	// Track Brotli test result
+	if c.metricsTracker != nil {
+		duration := time.Since(startTime)
+		c.metricsTracker.RecordBrotliTest(result, duration)
+	}
 
 	return result, nil
 }
