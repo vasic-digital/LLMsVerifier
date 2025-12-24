@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -377,7 +376,6 @@ func CalculateCodingCapabilityScore(benchmarks map[string]int) (int, string) {
 		category = "chat_only"
 	}
 
-	evidenceJSON, _ := json.Marshal(evidence)
 	return finalScore, category
 }
 

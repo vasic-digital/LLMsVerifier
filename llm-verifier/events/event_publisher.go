@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/milosvasic/LLMsVerifier/llm-verifier/database"
+	"llm-verifier/database"
 )
 
 // EventPublisher provides high-level event publishing functions
