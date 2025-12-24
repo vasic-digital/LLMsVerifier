@@ -601,6 +601,31 @@ grep "response.*time" logs/llm-verifier.log
 3. **Use strong, unique JWT secrets**
 4. **Regularly rotate API keys**
 
+#### LLM Configuration Tools
+
+The LLM Verifier provides specialized tools for managing configurations across different platforms:
+
+**Crush Configuration Generator:**
+```bash
+# Generate Crush config from latest discovery
+go run crush_config_converter.go challenges/results/provider_models_discovery/.../results/providers_crush.json
+
+# The output will be a valid Crush config with:
+# - Streaming flags set for compatible models
+# - Accurate cost estimates
+# - Provider-specific settings
+```
+
+**OpenCode Configuration:**
+- Located in `test_exports/export_claude_code.json`
+- Automatically includes streaming support for all compatible models
+- Verified model capabilities and settings
+
+**Best Practices:**
+- Run configuration generation after each discovery challenge
+- Verify streaming flags are correctly set
+- Test configurations before deployment
+
 ### Performance Optimization
 
 1. **Enable caching for frequently accessed data**

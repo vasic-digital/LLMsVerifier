@@ -238,7 +238,33 @@ The system validates all configurations on startup:
 - **Dependency Checks**: Verifies configuration consistency
 - **Security**: Validates sensitive configuration and security settings
 
+### Configuration Tools
+
+#### Crush Configuration Converter
+
+The system includes a dedicated tool for generating valid Crush configurations:
+
+```bash
+# Convert discovery results to Crush config
+go run crush_config_converter.go discovery_results.json
+```
+
+**Features:**
+- Automatically detects streaming capabilities
+- Calculates realistic cost estimates
+- Generates provider-specific configurations
+- Includes LSP and options sections
+
+#### OpenCode Configuration Management
+
+OpenCode configurations are maintained in `export_claude_code.json` with:
+- Verified model capabilities
+- Streaming support enabled where available
+- Consistent settings across all models
+
 ---
+
+## Challenges and Verification
 
 ## API Documentation
 
