@@ -34,17 +34,29 @@ type ChallengeResult struct {
 
 // Crush config structures
 type CrushModel struct {
-	ID                  string  `json:"id"`
-	Name                string  `json:"name"`
-	CostPer1MIn         float64 `json:"cost_per_1m_in"`
-	CostPer1MOut        float64 `json:"cost_per_1m_out"`
-	CostPer1MInCached   float64 `json:"cost_per_1m_in_cached"`
-	CostPer1MOutCached  float64 `json:"cost_per_1m_out_cached"`
-	ContextWindow       int     `json:"context_window"`
-	DefaultMaxTokens    int     `json:"default_max_tokens"`
-	CanReason           bool    `json:"can_reason"`
-	Streaming           bool    `json:"streaming,omitempty"`
-	SupportsAttachments bool    `json:"supports_attachments,omitempty"`
+	ID                     string            `json:"id"`
+	Name                   string            `json:"name"`
+	CostPer1MIn            float64           `json:"cost_per_1m_in"`
+	CostPer1MOut           float64           `json:"cost_per_1m_out"`
+	CostPer1MInCached      float64           `json:"cost_per_1m_in_cached"`
+	CostPer1MOutCached     float64           `json:"cost_per_1m_out_cached"`
+	ContextWindow          int               `json:"context_window"`
+	DefaultMaxTokens       int               `json:"default_max_tokens"`
+	CanReason              bool              `json:"can_reason"`
+	ReasoningLevels        []string          `json:"reasoning_levels,omitempty"`
+	DefaultReasoningEffort string            `json:"default_reasoning_effort,omitempty"`
+	SupportsAttachments    bool              `json:"supports_attachments"`
+	Streaming              bool              `json:"streaming,omitempty"`
+	Options                CrushModelOptions `json:"options"`
+}
+
+type CrushModelOptions struct {
+	Temperature      float64     `json:"temperature,omitempty"`
+	TopP             float64     `json:"top_p,omitempty"`
+	TopK             int         `json:"top_k,omitempty"`
+	FrequencyPenalty float64     `json:"frequency_penalty,omitempty"`
+	PresencePenalty  float64     `json:"presence_penalty,omitempty"`
+	ProviderOptions  interface{} `json:"provider_options,omitempty"`
 }
 
 type CrushProvider struct {
@@ -110,16 +122,18 @@ func convertToCrushConfig(result ChallengeResult) CrushConfig {
 
 		for _, model := range provider.Models {
 			crushModel := CrushModel{
-				ID:                 model.ID,
-				Name:               model.Name,
-				CostPer1MIn:        getCostPer1MIn(provider.Name, model.FreeToUse),
-				CostPer1MOut:       getCostPer1MOut(provider.Name, model.FreeToUse),
-				CostPer1MInCached:  getCostPer1MInCached(provider.Name, model.FreeToUse),
-				CostPer1MOutCached: getCostPer1MOutCached(provider.Name, model.FreeToUse),
-				ContextWindow:      getContextWindow(model.ID),
-				DefaultMaxTokens:   getDefaultMaxTokens(model.ID),
-				CanReason:          hasCapability(model.Capabilities, "reasoning"),
-				Streaming:          getStreamingSupport(model),
+				ID:                  model.ID,
+				Name:                model.Name,
+				CostPer1MIn:         getCostPer1MIn(provider.Name, model.FreeToUse),
+				CostPer1MOut:        getCostPer1MOut(provider.Name, model.FreeToUse),
+				CostPer1MInCached:   getCostPer1MInCached(provider.Name, model.FreeToUse),
+				CostPer1MOutCached:  getCostPer1MOutCached(provider.Name, model.FreeToUse),
+				ContextWindow:       getContextWindow(model.ID),
+				DefaultMaxTokens:    getDefaultMaxTokens(model.ID),
+				CanReason:           hasCapability(model.Capabilities, "reasoning"),
+				SupportsAttachments: hasCapability(model.Capabilities, "multimodal"),
+				Streaming:           getStreamingSupport(model),
+				Options:             CrushModelOptions{}, // Default empty options
 			}
 
 			if hasCapability(model.Capabilities, "multimodal") {

@@ -15,7 +15,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": true
+          "can_reason": true,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepseek-reasoner",
@@ -26,7 +28,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": true
+          "can_reason": true,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepseek-coder",
@@ -37,7 +41,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         }
       ]
     },
@@ -55,7 +61,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "gemini-1.5-pro",
@@ -66,7 +74,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "gemini-1.5-flash",
@@ -77,7 +87,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         }
       ]
     },
@@ -95,7 +107,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "Falconsai/nsfw_image_detection",
@@ -106,7 +120,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/electra-base-discriminator",
@@ -117,7 +133,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google-bert/bert-base-uncased",
@@ -128,7 +146,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "dima806/fairface_age_image_detection",
@@ -139,7 +159,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "sentence-transformers/all-mpnet-base-v2",
@@ -150,7 +172,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
@@ -161,7 +185,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "timm/mobilenetv3_small_100.lamb_in1k",
@@ -172,7 +198,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "FacebookAI/roberta-large",
@@ -183,7 +211,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/clip-vit-base-patch32",
@@ -194,7 +224,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "pyannote/segmentation-3.0",
@@ -205,7 +237,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "laion/clap-htsat-fused",
@@ -216,7 +250,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "pyannote/speaker-diarization-3.1",
@@ -227,7 +263,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "pyannote/wespeaker-voxceleb-resnet34-LM",
@@ -238,7 +276,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "colbert-ir/colbertv2.0",
@@ -249,7 +289,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "Bingsu/adetailer",
@@ -260,7 +302,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "prajjwal1/bert-tiny",
@@ -271,7 +315,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "omni-research/Tarsier2-Recap-7b",
@@ -282,7 +328,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "meta-llama/Llama-3.1-8B-Instruct",
@@ -293,7 +341,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "magic-leap-community/superpoint",
@@ -304,7 +354,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "ETH-CVG/lightglue_superpoint",
@@ -315,7 +367,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "Qwen/Qwen2.5-3B-Instruct",
@@ -326,7 +380,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/clip-vit-large-patch14",
@@ -337,7 +393,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "BAAI/bge-m3",
@@ -348,7 +406,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai-community/gpt2",
@@ -359,7 +419,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "FacebookAI/roberta-base",
@@ -370,7 +432,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "distilbert/distilbert-base-uncased",
@@ -381,7 +445,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "Qwen/Qwen3-0.6B",
@@ -392,7 +458,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "facebook/contriever",
@@ -403,7 +471,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "autogluon/chronos-bolt-small",
@@ -414,7 +484,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "timm/resnet50.a1_in1k",
@@ -425,7 +497,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-oss-20b",
@@ -436,7 +510,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "Qwen/Qwen2.5-7B-Instruct",
@@ -447,7 +523,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "FacebookAI/xlm-roberta-base",
@@ -458,7 +536,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/siglip-so400m-patch14-384",
@@ -469,7 +549,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "coqui/XTTS-v2",
@@ -480,7 +562,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged",
@@ -491,7 +575,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/whisper-large-v3",
@@ -502,7 +588,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn",
@@ -513,7 +601,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "cross-encoder/ms-marco-MiniLM-L6-v2",
@@ -524,7 +614,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
@@ -535,7 +627,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "Kijai/WanVideo_comfy",
@@ -546,7 +640,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "Qwen/Qwen3-1.7B",
@@ -557,7 +653,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/clip-vit-large-patch14-336",
@@ -568,7 +666,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google-bert/bert-base-multilingual-uncased",
@@ -579,7 +679,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/vit-base-patch16-224",
@@ -590,7 +692,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "lpiccinelli/unidepth-v2-vitl14",
@@ -601,7 +705,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "jinaai/jina-embeddings-v3",
@@ -612,7 +718,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "jonatasgrosman/wav2vec2-large-xlsr-53-russian",
@@ -623,7 +731,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "Qwen/Qwen2.5-Coder-0.5B-Instruct",
@@ -634,7 +744,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         }
       ]
     },
@@ -652,7 +764,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "moonshot-v1-32k",
@@ -663,7 +777,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "moonshot-v1-128k",
@@ -674,7 +790,9 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         }
       ]
     },
@@ -693,7 +811,9 @@
           "context_window": 4096,
           "default_max_tokens": 4096,
           "can_reason": false,
-          "streaming": true
+          "supports_attachments": false,
+          "streaming": true,
+          "options": {}
         },
         {
           "id": "meta-llama3-70b-instruct",
@@ -705,7 +825,9 @@
           "context_window": 4096,
           "default_max_tokens": 4096,
           "can_reason": false,
-          "streaming": true
+          "supports_attachments": false,
+          "streaming": true,
+          "options": {}
         }
       ]
     },
@@ -723,7 +845,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "bytedance-seed/seed-1.6",
@@ -734,7 +858,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "minimax/minimax-m2.1",
@@ -745,7 +871,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "z-ai/glm-4.7",
@@ -756,7 +884,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemini-3-flash-preview",
@@ -767,7 +897,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/mistral-small-creative",
@@ -778,7 +910,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "allenai/olmo-3.1-32b-think:free",
@@ -789,7 +923,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "xiaomi/mimo-v2-flash:free",
@@ -800,7 +936,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "nvidia/nemotron-3-nano-30b-a3b:free",
@@ -811,7 +949,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "nvidia/nemotron-3-nano-30b-a3b",
@@ -822,7 +962,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-5.2-chat",
@@ -833,7 +975,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-5.2-pro",
@@ -844,7 +988,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-5.2",
@@ -855,7 +1001,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/devstral-2512:free",
@@ -866,7 +1014,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/devstral-2512",
@@ -877,7 +1027,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "relace/relace-search",
@@ -888,7 +1040,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "z-ai/glm-4.6v",
@@ -899,7 +1053,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "nex-agi/deepseek-v3.1-nex-n1:free",
@@ -910,7 +1066,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "essentialai/rnj-1-instruct",
@@ -921,7 +1079,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openrouter/bodybuilder",
@@ -932,7 +1092,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-5.1-codex-max",
@@ -943,7 +1105,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "amazon/nova-2-lite-v1",
@@ -954,7 +1118,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/ministral-14b-2512",
@@ -965,7 +1131,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/ministral-8b-2512",
@@ -976,7 +1144,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/ministral-3b-2512",
@@ -987,7 +1157,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/mistral-large-2512",
@@ -998,7 +1170,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "arcee-ai/trinity-mini:free",
@@ -1009,7 +1183,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "arcee-ai/trinity-mini",
@@ -1020,7 +1196,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepseek/deepseek-v3.2-speciale",
@@ -1031,7 +1209,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepseek/deepseek-v3.2",
@@ -1042,7 +1222,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "prime-intellect/intellect-3",
@@ -1053,7 +1235,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "tngtech/tng-r1t-chimera:free",
@@ -1064,7 +1248,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "tngtech/tng-r1t-chimera",
@@ -1075,7 +1261,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "anthropic/claude-opus-4.5",
@@ -1086,7 +1274,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "allenai/olmo-3-32b-think:free",
@@ -1097,7 +1287,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "allenai/olmo-3-7b-instruct",
@@ -1108,7 +1300,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "allenai/olmo-3-7b-think",
@@ -1119,7 +1313,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemini-3-pro-image-preview",
@@ -1130,7 +1326,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "x-ai/grok-4.1-fast",
@@ -1141,7 +1339,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemini-3-pro-preview",
@@ -1152,7 +1352,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepcogito/cogito-v2.1-671b",
@@ -1163,7 +1365,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-5.1",
@@ -1174,7 +1378,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-5.1-chat",
@@ -1185,7 +1391,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-5.1-codex",
@@ -1196,7 +1404,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-5.1-codex-mini",
@@ -1207,7 +1417,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "kwaipilot/kat-coder-pro:free",
@@ -1218,7 +1430,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "moonshotai/kimi-k2-thinking",
@@ -1229,7 +1443,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "amazon/nova-premier-v1",
@@ -1240,7 +1456,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "perplexity/sonar-pro-search",
@@ -1251,7 +1469,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/voxtral-small-24b-2507",
@@ -1262,7 +1482,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-oss-safeguard-20b",
@@ -1273,7 +1495,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "nvidia/nemotron-nano-12b-v2-vl:free",
@@ -1284,7 +1508,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "nvidia/nemotron-nano-12b-v2-vl",
@@ -1295,7 +1521,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "minimax/minimax-m2",
@@ -1306,7 +1534,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-vl-32b-instruct",
@@ -1317,7 +1547,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "liquid/lfm2-8b-a1b",
@@ -1328,7 +1560,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "liquid/lfm-2.2-6b",
@@ -1339,7 +1573,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "ibm-granite/granite-4.0-h-micro",
@@ -1350,7 +1586,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepcogito/cogito-v2-preview-llama-405b",
@@ -1361,7 +1599,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-5-image-mini",
@@ -1372,7 +1612,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "anthropic/claude-haiku-4.5",
@@ -1383,7 +1625,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-vl-8b-thinking",
@@ -1394,7 +1638,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-vl-8b-instruct",
@@ -1405,7 +1651,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-5-image",
@@ -1416,7 +1664,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/o3-deep-research",
@@ -1427,7 +1677,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/o4-mini-deep-research",
@@ -1438,7 +1690,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "nvidia/llama-3.3-nemotron-super-49b-v1.5",
@@ -1449,7 +1703,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "baidu/ernie-4.5-21b-a3b-thinking",
@@ -1460,7 +1716,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemini-2.5-flash-image",
@@ -1471,7 +1729,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-vl-30b-a3b-thinking",
@@ -1482,7 +1742,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-vl-30b-a3b-instruct",
@@ -1493,7 +1755,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-5-pro",
@@ -1504,7 +1768,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "z-ai/glm-4.6",
@@ -1515,7 +1781,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "z-ai/glm-4.6:exacto",
@@ -1526,7 +1794,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "anthropic/claude-sonnet-4.5",
@@ -1537,7 +1807,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepseek/deepseek-v3.2-exp",
@@ -1548,7 +1820,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "thedrummer/cydonia-24b-v4.1",
@@ -1559,7 +1833,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "relace/relace-apply-3",
@@ -1570,7 +1846,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemini-2.5-flash-preview-09-2025",
@@ -1581,7 +1859,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemini-2.5-flash-lite-preview-09-2025",
@@ -1592,7 +1872,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-vl-235b-a22b-thinking",
@@ -1603,7 +1885,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-vl-235b-a22b-instruct",
@@ -1614,7 +1898,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-max",
@@ -1625,7 +1911,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-coder-plus",
@@ -1636,7 +1924,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-5-codex",
@@ -1647,7 +1937,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepseek/deepseek-v3.1-terminus:exacto",
@@ -1658,7 +1950,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepseek/deepseek-v3.1-terminus",
@@ -1669,7 +1963,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "x-ai/grok-4-fast",
@@ -1680,7 +1976,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "alibaba/tongyi-deepresearch-30b-a3b:free",
@@ -1691,7 +1989,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "alibaba/tongyi-deepresearch-30b-a3b",
@@ -1702,7 +2002,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-coder-flash",
@@ -1713,7 +2015,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "opengvlab/internvl3-78b",
@@ -1724,7 +2028,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-next-80b-a3b-thinking",
@@ -1735,7 +2041,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-next-80b-a3b-instruct",
@@ -1746,7 +2054,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "meituan/longcat-flash-chat",
@@ -1757,7 +2067,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen-plus-2025-07-28",
@@ -1768,7 +2080,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen-plus-2025-07-28:thinking",
@@ -1779,7 +2093,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "nvidia/nemotron-nano-9b-v2:free",
@@ -1790,7 +2106,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "nvidia/nemotron-nano-9b-v2",
@@ -1801,7 +2119,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "moonshotai/kimi-k2-0905",
@@ -1812,7 +2132,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "moonshotai/kimi-k2-0905:exacto",
@@ -1823,7 +2145,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepcogito/cogito-v2-preview-llama-70b",
@@ -1834,7 +2158,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepcogito/cogito-v2-preview-llama-109b-moe",
@@ -1845,7 +2171,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "stepfun-ai/step3",
@@ -1856,7 +2184,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-30b-a3b-thinking-2507",
@@ -1867,7 +2197,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "x-ai/grok-code-fast-1",
@@ -1878,7 +2210,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "nousresearch/hermes-4-70b",
@@ -1889,7 +2223,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "nousresearch/hermes-4-405b",
@@ -1900,7 +2236,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemini-2.5-flash-image-preview",
@@ -1911,7 +2249,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepseek/deepseek-chat-v3.1",
@@ -1922,7 +2262,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-4o-audio-preview",
@@ -1933,7 +2275,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 128000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/mistral-medium-3.1",
@@ -1944,7 +2288,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "baidu/ernie-4.5-21b-a3b",
@@ -1955,7 +2301,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "baidu/ernie-4.5-vl-28b-a3b",
@@ -1966,7 +2314,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "z-ai/glm-4.5v",
@@ -1977,7 +2327,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "ai21/jamba-mini-1.7",
@@ -1988,7 +2340,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "ai21/jamba-large-1.7",
@@ -1999,7 +2353,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-5-chat",
@@ -2010,7 +2366,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-5",
@@ -2021,7 +2379,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-5-mini",
@@ -2032,7 +2392,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-5-nano",
@@ -2043,7 +2405,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-oss-120b:free",
@@ -2054,7 +2418,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-oss-120b",
@@ -2065,7 +2431,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-oss-120b:exacto",
@@ -2076,7 +2444,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-oss-20b:free",
@@ -2087,7 +2457,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-oss-20b",
@@ -2098,7 +2470,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "anthropic/claude-opus-4.1",
@@ -2109,7 +2483,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/codestral-2508",
@@ -2120,7 +2496,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-coder-30b-a3b-instruct",
@@ -2131,7 +2509,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-30b-a3b-instruct-2507",
@@ -2142,7 +2522,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "z-ai/glm-4.5",
@@ -2153,7 +2535,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "z-ai/glm-4.5-air:free",
@@ -2164,7 +2548,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "z-ai/glm-4.5-air",
@@ -2175,7 +2561,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-235b-a22b-thinking-2507",
@@ -2186,7 +2574,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "z-ai/glm-4-32b",
@@ -2197,7 +2587,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-coder:free",
@@ -2208,7 +2600,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-coder",
@@ -2219,7 +2613,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-coder:exacto",
@@ -2230,7 +2626,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "bytedance/ui-tars-1.5-7b",
@@ -2241,7 +2639,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemini-2.5-flash-lite",
@@ -2252,7 +2652,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-235b-a22b-2507",
@@ -2263,7 +2665,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "switchpoint/router",
@@ -2274,7 +2678,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "moonshotai/kimi-k2:free",
@@ -2285,7 +2691,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "moonshotai/kimi-k2",
@@ -2296,7 +2704,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "thudm/glm-4.1v-9b-thinking",
@@ -2307,7 +2717,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/devstral-medium",
@@ -2318,7 +2730,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/devstral-small",
@@ -2329,7 +2743,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
@@ -2340,7 +2756,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "x-ai/grok-4",
@@ -2351,7 +2769,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemma-3n-e2b-it:free",
@@ -2362,7 +2782,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "tencent/hunyuan-a13b-instruct",
@@ -2373,7 +2795,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "tngtech/deepseek-r1t2-chimera:free",
@@ -2384,7 +2808,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "tngtech/deepseek-r1t2-chimera",
@@ -2395,7 +2821,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "morph/morph-v3-large",
@@ -2406,7 +2834,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "morph/morph-v3-fast",
@@ -2417,7 +2847,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "baidu/ernie-4.5-vl-424b-a47b",
@@ -2428,7 +2860,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "baidu/ernie-4.5-300b-a47b",
@@ -2439,7 +2873,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "inception/mercury",
@@ -2450,7 +2886,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/mistral-small-3.2-24b-instruct",
@@ -2461,7 +2899,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "minimax/minimax-m1",
@@ -2472,7 +2912,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemini-2.5-flash",
@@ -2483,7 +2925,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemini-2.5-pro",
@@ -2494,7 +2938,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "moonshotai/kimi-dev-72b",
@@ -2505,7 +2951,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/o3-pro",
@@ -2516,7 +2964,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "x-ai/grok-3-mini",
@@ -2527,7 +2977,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "x-ai/grok-3",
@@ -2538,7 +2990,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemini-2.5-pro-preview",
@@ -2549,7 +3003,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepseek/deepseek-r1-0528-qwen3-8b",
@@ -2560,7 +3016,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepseek/deepseek-r1-0528:free",
@@ -2571,7 +3029,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepseek/deepseek-r1-0528",
@@ -2582,7 +3042,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "anthropic/claude-opus-4",
@@ -2593,7 +3055,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "anthropic/claude-sonnet-4",
@@ -2604,7 +3068,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/devstral-small-2505",
@@ -2615,7 +3081,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemma-3n-e4b-it:free",
@@ -2626,7 +3094,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemma-3n-e4b-it",
@@ -2637,7 +3107,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/codex-mini",
@@ -2648,7 +3120,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "nousresearch/deephermes-3-mistral-24b-preview",
@@ -2659,7 +3133,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/mistral-medium-3",
@@ -2670,7 +3146,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemini-2.5-pro-preview-05-06",
@@ -2681,7 +3159,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "arcee-ai/spotlight",
@@ -2692,7 +3172,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "arcee-ai/maestro-reasoning",
@@ -2703,7 +3185,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "arcee-ai/virtuoso-large",
@@ -2714,7 +3198,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "arcee-ai/coder-large",
@@ -2725,7 +3211,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "microsoft/phi-4-reasoning-plus",
@@ -2736,7 +3224,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "inception/mercury-coder",
@@ -2747,7 +3237,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-4b:free",
@@ -2758,7 +3250,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepseek/deepseek-prover-v2",
@@ -2769,7 +3263,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "meta-llama/llama-guard-4-12b",
@@ -2780,7 +3276,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-30b-a3b",
@@ -2791,7 +3289,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-8b",
@@ -2802,7 +3302,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-14b",
@@ -2813,7 +3315,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-32b",
@@ -2824,7 +3328,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen3-235b-a22b",
@@ -2835,7 +3341,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "tngtech/deepseek-r1t-chimera:free",
@@ -2846,7 +3354,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "tngtech/deepseek-r1t-chimera",
@@ -2857,7 +3367,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/o4-mini-high",
@@ -2868,7 +3380,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/o3",
@@ -2879,7 +3393,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/o4-mini",
@@ -2890,7 +3406,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen2.5-coder-7b-instruct",
@@ -2901,7 +3419,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-4.1",
@@ -2912,7 +3432,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 128000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-4.1-mini",
@@ -2923,7 +3445,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 128000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-4.1-nano",
@@ -2934,7 +3458,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 128000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "eleutherai/llemma_7b",
@@ -2945,7 +3471,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "alfredpros/codellama-7b-instruct-solidity",
@@ -2956,7 +3484,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "arliai/qwq-32b-arliai-rpr-v1",
@@ -2967,7 +3497,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "x-ai/grok-3-mini-beta",
@@ -2978,7 +3510,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "x-ai/grok-3-beta",
@@ -2989,7 +3523,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
@@ -3000,7 +3536,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "meta-llama/llama-4-maverick",
@@ -3011,7 +3549,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "meta-llama/llama-4-scout",
@@ -3022,7 +3562,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen2.5-vl-32b-instruct",
@@ -3033,7 +3575,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepseek/deepseek-chat-v3-0324",
@@ -3044,7 +3588,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/o1-pro",
@@ -3055,7 +3601,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/mistral-small-3.1-24b-instruct:free",
@@ -3066,7 +3614,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/mistral-small-3.1-24b-instruct",
@@ -3077,7 +3627,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "allenai/olmo-2-0325-32b-instruct",
@@ -3088,7 +3640,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemma-3-4b-it:free",
@@ -3099,7 +3653,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemma-3-4b-it",
@@ -3110,7 +3666,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemma-3-12b-it:free",
@@ -3121,7 +3679,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemma-3-12b-it",
@@ -3132,7 +3692,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "cohere/command-a",
@@ -3143,7 +3705,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-4o-mini-search-preview",
@@ -3154,7 +3718,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 128000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-4o-search-preview",
@@ -3165,7 +3731,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 128000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemma-3-27b-it:free",
@@ -3176,7 +3744,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemma-3-27b-it",
@@ -3187,7 +3757,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "thedrummer/skyfall-36b-v2",
@@ -3198,7 +3770,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "microsoft/phi-4-multimodal-instruct",
@@ -3209,7 +3783,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "perplexity/sonar-reasoning-pro",
@@ -3220,7 +3796,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "perplexity/sonar-pro",
@@ -3231,7 +3809,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "perplexity/sonar-deep-research",
@@ -3242,7 +3822,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwq-32b",
@@ -3253,7 +3835,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemini-2.0-flash-lite-001",
@@ -3264,7 +3848,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "anthropic/claude-3.7-sonnet:thinking",
@@ -3275,7 +3861,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 200000,
           "default_max_tokens": 8192,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "anthropic/claude-3.7-sonnet",
@@ -3286,7 +3874,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 200000,
           "default_max_tokens": 8192,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/mistral-saba",
@@ -3297,7 +3887,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "meta-llama/llama-guard-3-8b",
@@ -3308,7 +3900,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/o3-mini-high",
@@ -3319,7 +3913,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemini-2.0-flash-001",
@@ -3330,7 +3926,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen-vl-plus",
@@ -3341,7 +3939,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "aion-labs/aion-1.0",
@@ -3352,7 +3952,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "aion-labs/aion-1.0-mini",
@@ -3363,7 +3965,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "aion-labs/aion-rp-llama-3.1-8b",
@@ -3374,7 +3978,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen-vl-max",
@@ -3385,7 +3991,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen-turbo",
@@ -3396,7 +4004,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen2.5-vl-72b-instruct",
@@ -3407,7 +4017,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen-plus",
@@ -3418,7 +4030,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen-max",
@@ -3429,7 +4043,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/o3-mini",
@@ -3440,7 +4056,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/mistral-small-24b-instruct-2501",
@@ -3451,7 +4069,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepseek/deepseek-r1-distill-qwen-32b",
@@ -3462,7 +4082,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepseek/deepseek-r1-distill-qwen-14b",
@@ -3473,7 +4095,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "perplexity/sonar-reasoning",
@@ -3484,7 +4108,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "perplexity/sonar",
@@ -3495,7 +4121,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepseek/deepseek-r1-distill-llama-70b",
@@ -3506,7 +4134,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepseek/deepseek-r1",
@@ -3517,7 +4147,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "minimax/minimax-01",
@@ -3528,7 +4160,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "microsoft/phi-4",
@@ -3539,7 +4173,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "sao10k/l3.1-70b-hanami-x1",
@@ -3550,7 +4186,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "deepseek/deepseek-chat",
@@ -3561,7 +4199,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "sao10k/l3.3-euryale-70b",
@@ -3572,7 +4212,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/o1",
@@ -3583,7 +4225,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "cohere/command-r7b-12-2024",
@@ -3594,7 +4238,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemini-2.0-flash-exp:free",
@@ -3605,7 +4251,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "meta-llama/llama-3.3-70b-instruct:free",
@@ -3616,7 +4264,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "meta-llama/llama-3.3-70b-instruct",
@@ -3627,7 +4277,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "amazon/nova-lite-v1",
@@ -3638,7 +4290,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "amazon/nova-micro-v1",
@@ -3649,7 +4303,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "amazon/nova-pro-v1",
@@ -3660,7 +4316,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-4o-2024-11-20",
@@ -3671,7 +4329,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 128000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/mistral-large-2411",
@@ -3682,7 +4342,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/mistral-large-2407",
@@ -3693,7 +4355,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/pixtral-large-2411",
@@ -3704,7 +4368,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen-2.5-coder-32b-instruct",
@@ -3715,7 +4381,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "raifle/sorcererlm-8x22b",
@@ -3726,7 +4394,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "thedrummer/unslopnemo-12b",
@@ -3737,7 +4407,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "anthropic/claude-3.5-haiku-20241022",
@@ -3748,7 +4420,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 200000,
           "default_max_tokens": 8192,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "anthropic/claude-3.5-haiku",
@@ -3759,7 +4433,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 200000,
           "default_max_tokens": 8192,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "anthropic/claude-3.5-sonnet",
@@ -3770,7 +4446,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 200000,
           "default_max_tokens": 8192,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "anthracite-org/magnum-v4-72b",
@@ -3781,7 +4459,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/ministral-8b",
@@ -3792,7 +4472,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/ministral-3b",
@@ -3803,7 +4485,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen-2.5-7b-instruct",
@@ -3814,7 +4498,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "nvidia/llama-3.1-nemotron-70b-instruct",
@@ -3825,7 +4511,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "inflection/inflection-3-pi",
@@ -3836,7 +4524,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "inflection/inflection-3-productivity",
@@ -3847,7 +4537,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "thedrummer/rocinante-12b",
@@ -3858,7 +4550,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "meta-llama/llama-3.2-3b-instruct:free",
@@ -3869,7 +4563,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "meta-llama/llama-3.2-3b-instruct",
@@ -3880,7 +4576,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "meta-llama/llama-3.2-1b-instruct",
@@ -3891,7 +4589,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "meta-llama/llama-3.2-90b-vision-instruct",
@@ -3902,7 +4602,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "meta-llama/llama-3.2-11b-vision-instruct",
@@ -3913,7 +4615,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen-2.5-72b-instruct",
@@ -3924,7 +4628,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "neversleep/llama-3.1-lumimaid-8b",
@@ -3935,7 +4641,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/pixtral-12b",
@@ -3946,7 +4654,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "cohere/command-r-08-2024",
@@ -3957,7 +4667,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "cohere/command-r-plus-08-2024",
@@ -3968,7 +4680,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen-2.5-vl-7b-instruct:free",
@@ -3979,7 +4693,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "qwen/qwen-2.5-vl-7b-instruct",
@@ -3990,7 +4706,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "sao10k/l3.1-euryale-70b",
@@ -4001,7 +4719,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "microsoft/phi-3.5-mini-128k-instruct",
@@ -4012,7 +4732,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "nousresearch/hermes-3-llama-3.1-70b",
@@ -4023,7 +4745,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "nousresearch/hermes-3-llama-3.1-405b:free",
@@ -4034,7 +4758,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "nousresearch/hermes-3-llama-3.1-405b",
@@ -4045,7 +4771,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/chatgpt-4o-latest",
@@ -4056,7 +4784,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 128000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "sao10k/l3-lunaris-8b",
@@ -4067,7 +4797,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-4o-2024-08-06",
@@ -4078,7 +4810,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 128000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "meta-llama/llama-3.1-405b",
@@ -4089,7 +4823,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "meta-llama/llama-3.1-70b-instruct",
@@ -4100,7 +4836,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "meta-llama/llama-3.1-8b-instruct",
@@ -4111,7 +4849,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "meta-llama/llama-3.1-405b-instruct:free",
@@ -4122,7 +4862,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "meta-llama/llama-3.1-405b-instruct",
@@ -4133,7 +4875,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/mistral-nemo",
@@ -4144,7 +4888,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-4o-mini-2024-07-18",
@@ -4155,7 +4901,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 128000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-4o-mini",
@@ -4166,7 +4914,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 128000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemma-2-27b-it",
@@ -4177,7 +4927,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "google/gemma-2-9b-it",
@@ -4188,7 +4940,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "sao10k/l3-euryale-70b",
@@ -4199,7 +4953,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/mistral-7b-instruct:free",
@@ -4210,7 +4966,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/mistral-7b-instruct",
@@ -4221,7 +4979,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/mistral-7b-instruct-v0.3",
@@ -4232,7 +4992,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "nousresearch/hermes-2-pro-llama-3-8b",
@@ -4243,7 +5005,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "microsoft/phi-3-mini-128k-instruct",
@@ -4254,7 +5018,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "microsoft/phi-3-medium-128k-instruct",
@@ -4265,7 +5031,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-4o",
@@ -4276,7 +5044,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 128000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-4o:extended",
@@ -4287,7 +5057,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 128000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-4o-2024-05-13",
@@ -4298,7 +5070,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 128000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "meta-llama/llama-guard-2-8b",
@@ -4309,7 +5083,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "meta-llama/llama-3-70b-instruct",
@@ -4320,7 +5096,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "meta-llama/llama-3-8b-instruct",
@@ -4331,7 +5109,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 8000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/mixtral-8x22b-instruct",
@@ -4342,7 +5122,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "microsoft/wizardlm-2-8x22b",
@@ -4353,7 +5135,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-4-turbo",
@@ -4364,7 +5148,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 128000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "anthropic/claude-3-haiku",
@@ -4375,7 +5161,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 200000,
           "default_max_tokens": 8192,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "anthropic/claude-3-opus",
@@ -4386,7 +5174,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 200000,
           "default_max_tokens": 8192,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/mistral-large",
@@ -4397,7 +5187,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-4-turbo-preview",
@@ -4408,7 +5200,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 128000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-3.5-turbo-0613",
@@ -4419,7 +5213,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/mistral-tiny",
@@ -4430,7 +5226,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/mistral-7b-instruct-v0.2",
@@ -4441,7 +5239,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/mixtral-8x7b-instruct",
@@ -4452,7 +5252,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "neversleep/noromaid-20b",
@@ -4463,7 +5265,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "alpindale/goliath-120b",
@@ -4474,7 +5278,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openrouter/auto",
@@ -4485,7 +5291,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-4-1106-preview",
@@ -4496,7 +5304,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 128000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-3.5-turbo-instruct",
@@ -4507,7 +5317,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mistralai/mistral-7b-instruct-v0.1",
@@ -4518,7 +5330,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-3.5-turbo-16k",
@@ -4529,7 +5343,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "mancer/weaver",
@@ -4540,7 +5356,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "undi95/remm-slerp-l2-13b",
@@ -4551,7 +5369,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "gryphe/mythomax-l2-13b",
@@ -4562,7 +5382,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-4-0314",
@@ -4573,7 +5395,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 128000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-4",
@@ -4584,7 +5408,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 128000,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "openai/gpt-3.5-turbo",
@@ -4595,7 +5421,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         }
       ]
     },
@@ -4613,7 +5441,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": true
+          "can_reason": true,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "glm-4.6",
@@ -4624,7 +5454,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         },
         {
           "id": "glm-4.5",
@@ -4635,7 +5467,9 @@
           "cost_per_1m_out_cached": 2.5,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "supports_attachments": false,
+          "options": {}
         }
       ]
     }
