@@ -8,12 +8,16 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
 // HTTPClient represents an HTTP client for making LLM API requests
 type HTTPClient struct {
-	client *http.Client
+	client           *http.Client
+	brotliCache      map[string]bool
+	brotliCacheMutex sync.RWMutex
+	cacheTTL         time.Duration
 }
 
 func NewHTTPClient(timeout time.Duration) *HTTPClient {
@@ -21,6 +25,8 @@ func NewHTTPClient(timeout time.Duration) *HTTPClient {
 		client: &http.Client{
 			Timeout: timeout,
 		},
+		brotliCache: make(map[string]bool),
+		cacheTTL:    24 * time.Hour, // Cache results for 24 hours
 	}
 }
 
@@ -230,6 +236,17 @@ func DetectErrorType(statusCode int, body []byte) string {
 
 // TestBrotliSupport tests if a model supports Brotli compression
 func (c *HTTPClient) TestBrotliSupport(ctx context.Context, provider, apiKey, modelID string) (bool, error) {
+	// Create cache key
+	cacheKey := fmt.Sprintf("%s:%s:%s", provider, modelID, apiKey)
+
+	// Check cache first
+	c.brotliCacheMutex.RLock()
+	if cachedResult, exists := c.brotliCache[cacheKey]; exists {
+		c.brotliCacheMutex.RUnlock()
+		return cachedResult, nil
+	}
+	c.brotliCacheMutex.RUnlock()
+
 	endpoint := getModelEndpoint(provider, modelID)
 
 	// Create a minimal request body
@@ -278,5 +295,19 @@ func (c *HTTPClient) TestBrotliSupport(ctx context.Context, provider, apiKey, mo
 	}
 
 	// If either the response is compressed with Brotli or the server accepts Brotli requests
-	return supportsBrotli || encodingAccepted, nil
+	result := supportsBrotli || encodingAccepted
+
+	// Cache the result
+	c.brotliCacheMutex.Lock()
+	c.brotliCache[cacheKey] = result
+	c.brotliCacheMutex.Unlock()
+
+	return result, nil
+}
+
+// ClearBrotliCache clears the Brotli support cache
+func (c *HTTPClient) ClearBrotliCache() {
+	c.brotliCacheMutex.Lock()
+	c.brotliCache = make(map[string]bool)
+	c.brotliCacheMutex.Unlock()
 }

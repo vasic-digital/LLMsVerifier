@@ -78,10 +78,16 @@ type CrushConfig struct {
 
 func main() {
 	if len(os.Args) < 2 {
-		log.Fatal("Usage: go run converter.go <discovery_json_file>")
+		log.Fatal("Usage: go run converter.go <discovery_json_file> [--brotli-only]")
 	}
 
 	discoveryFile := os.Args[1]
+	brotliOnly := false
+
+	if len(os.Args) > 2 && os.Args[2] == "--brotli-only" {
+		brotliOnly = true
+		fmt.Println("Generating Brotli-optimized configuration...")
+	}
 
 	data, err := ioutil.ReadFile(discoveryFile)
 	if err != nil {
@@ -93,6 +99,12 @@ func main() {
 		log.Fatalf("Failed to parse JSON: %v", err)
 	}
 
+	// Filter for Brotli-only if requested
+	if brotliOnly {
+		filteredResult := filterForBrotliOnly(result)
+		result = filteredResult
+	}
+
 	crushConfig := convertToCrushConfig(result)
 
 	output, err := json.MarshalIndent(crushConfig, "", "  ")
@@ -101,7 +113,12 @@ func main() {
 	}
 
 	// Write full config (with API keys)
-	outputFile := strings.TrimSuffix(discoveryFile, filepath.Ext(discoveryFile)) + "_crush_config.json"
+	baseName := strings.TrimSuffix(discoveryFile, filepath.Ext(discoveryFile))
+	if brotliOnly {
+		baseName += "_brotli_optimized"
+	}
+
+	outputFile := baseName + "_crush_config.json"
 	if err := ioutil.WriteFile(outputFile, output, 0644); err != nil {
 		log.Fatalf("Failed to write config: %v", err)
 	}
@@ -113,7 +130,7 @@ func main() {
 		log.Fatalf("Failed to marshal redacted config: %v", err)
 	}
 
-	redactedOutputFile := strings.TrimSuffix(discoveryFile, filepath.Ext(discoveryFile)) + "_crush_config_redacted.json"
+	redactedOutputFile := baseName + "_crush_config_redacted.json"
 	if err := ioutil.WriteFile(redactedOutputFile, redactedOutput, 0644); err != nil {
 		log.Fatalf("Failed to write redacted config: %v", err)
 	}
@@ -125,14 +142,28 @@ func main() {
 		log.Fatalf("Failed to marshal OpenCode config: %v", err)
 	}
 
-	opencodeOutputFile := strings.TrimSuffix(discoveryFile, filepath.Ext(discoveryFile)) + "_opencode_config.json"
+	opencodeOutputFile := baseName + "_opencode_config.json"
 	if err := ioutil.WriteFile(opencodeOutputFile, opencodeOutput, 0644); err != nil {
 		log.Fatalf("Failed to write OpenCode config: %v", err)
 	}
 
+	// Generate Brotli statistics
+	brotliStats := generateBrotliStatistics(result)
+	statsOutput, _ := json.MarshalIndent(brotliStats, "", "  ")
+	statsFile := baseName + "_brotli_stats.json"
+	ioutil.WriteFile(statsFile, statsOutput, 0644)
+
 	fmt.Printf("Crush config written to: %s\n", outputFile)
 	fmt.Printf("Redacted Crush config written to: %s\n", redactedOutputFile)
 	fmt.Printf("OpenCode config written to: %s\n", opencodeOutputFile)
+	fmt.Printf("Brotli statistics written to: %s\n", statsFile)
+
+	if brotliOnly {
+		fmt.Printf("\nBrotli-optimized configuration generated:\n")
+		fmt.Printf("- Total providers: %d\n", brotliStats.TotalProviders)
+		fmt.Printf("- Brotli-supported providers: %d\n", brotliStats.BrotliSupportedProviders)
+		fmt.Printf("- Brotli support rate: %.2f%%\n", brotliStats.BrotliSupportRate)
+	}
 }
 
 func convertToCrushConfig(result DiscoveryResult) CrushConfig {
@@ -297,6 +328,77 @@ func getBrotliSupport(model ModelInfo) bool {
 	}
 	// Default to false if not specified
 	return false
+}
+
+func filterForBrotliOnly(result DiscoveryResult) DiscoveryResult {
+	filtered := DiscoveryResult{
+		Providers: make(map[string]ProviderInfo),
+	}
+
+	for name, provider := range result.Providers {
+		filteredProvider := ProviderInfo{
+			Name:        provider.Name,
+			Type:        provider.Type,
+			APIEndpoint: provider.APIEndpoint,
+			ApiKey:      provider.ApiKey,
+			Models:      []ModelInfo{},
+			Status:      provider.Status,
+			FreeToUse:   provider.FreeToUse,
+		}
+
+		// Filter models that support Brotli
+		for _, model := range provider.Models {
+			if getBrotliSupport(model) {
+				filteredProvider.Models = append(filteredProvider.Models, model)
+			}
+		}
+
+		// Only include provider if it has Brotli-supported models
+		if len(filteredProvider.Models) > 0 {
+			filtered.Providers[name] = filteredProvider
+		}
+	}
+
+	return filtered
+}
+
+func generateBrotliStatistics(result DiscoveryResult) BrotliStats {
+	stats := BrotliStats{
+		TotalProviders:           len(result.Providers),
+		BrotliSupportedProviders: 0,
+		TotalModels:              0,
+		BrotliSupportedModels:    0,
+	}
+
+	for _, provider := range result.Providers {
+		stats.TotalModels += len(provider.Models)
+
+		providerHasBrotli := false
+		for _, model := range provider.Models {
+			if getBrotliSupport(model) {
+				stats.BrotliSupportedModels++
+				providerHasBrotli = true
+			}
+		}
+
+		if providerHasBrotli {
+			stats.BrotliSupportedProviders++
+		}
+	}
+
+	if stats.TotalModels > 0 {
+		stats.BrotliSupportRate = float64(stats.BrotliSupportedModels) / float64(stats.TotalModels) * 100
+	}
+
+	return stats
+}
+
+type BrotliStats struct {
+	TotalProviders           int     `json:"total_providers"`
+	BrotliSupportedProviders int     `json:"brotli_supported_providers"`
+	TotalModels              int     `json:"total_models"`
+	BrotliSupportedModels    int     `json:"brotli_supported_models"`
+	BrotliSupportRate        float64 `json:"brotli_support_rate"`
 }
 
 func createRedactedCrushConfig(config CrushConfig) CrushConfig {
