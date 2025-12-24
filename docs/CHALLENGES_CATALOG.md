@@ -176,10 +176,474 @@ Each challenge provides:
 - **Error Reporting**: Comprehensive failure analysis
 - **Audit Trails**: Complete execution logs
 
-## Future Challenges
+## Platform-Specific Challenges
 
-The challenge framework is designed to be extensible. Future challenges may include:
+### 4. CLI Platform Comprehensive Challenge
+
+#### Overview
+Validates complete functionality of the LLM Verifier CLI client, ensuring all features work correctly from the command line interface.
+
+#### Test Scenarios
+1. Basic Model Discovery CLI Challenge
+2. Model Verification CLI Challenge
+3. Database Query CLI Challenge
+4. Limits and Pricing CLI Challenge
+5. Configuration Export CLI Challenge
+6. Event Subscription CLI Challenge
+7. Scheduled Re-test CLI Challenge
+8. Multi-provider Failover CLI Challenge
+9. Context Management CLI Challenge
+10. Report Generation CLI Challenge
+
+#### Documentation
+See: `challenges/docs/cli_platform_challenge.md`
+
+---
+
+### 5. TUI Platform Comprehensive Challenge
+
+#### Overview
+Validates complete functionality of the LLM Verifier TUI (Terminal User Interface) client, ensuring all features work correctly with interactive terminal-based UI.
+
+#### Test Scenarios
+1. TUI Navigation Challenge
+2. Model Discovery TUI Challenge
+3. Model Verification TUI Challenge
+4. Database Query and Filter TUI Challenge
+5. Real-time Event Monitoring TUI Challenge
+6. Scheduling Management TUI Challenge
+7. Provider Health Monitoring TUI Challenge
+8. Log Viewing and Filtering TUI Challenge
+9. Configuration Management TUI Challenge
+10. Dashboard Overview TUI Challenge
+
+#### Documentation
+See: `challenges/docs/tui_platform_challenge.md`
+
+---
+
+### 6. REST API Comprehensive Challenge
+
+#### Overview
+Validates complete functionality of the LLM Verifier REST API, ensuring all endpoints work correctly with proper authentication, validation, and error handling.
+
+#### Test Scenarios
+1. API Authentication Challenge
+2. Model Discovery API Challenge
+3. Model Verification API Challenge
+4. Database Query API Challenge
+5. Limits and Pricing API Challenge
+6. Configuration Export API Challenge
+7. Event Subscription API Challenge
+8. Scheduling API Challenge
+9. Health and Monitoring API Challenge
+10. Reporting API Challenge
+
+#### Documentation
+See: `challenges/docs/rest_api_platform_challenge.md`
+
+---
+
+### 7. Web Platform Comprehensive Challenge
+
+#### Overview
+Validates complete functionality of the LLM Verifier Web interface (Angular), ensuring all features work correctly in a browser environment.
+
+#### Test Scenarios
+1. Web Application Loading Challenge
+2. Authentication Web Challenge
+3. Model Discovery Web Challenge
+4. Model Verification Web Challenge
+5. Database Query Web Challenge
+6. Real-time Events Web Challenge
+7. Scheduling Management Web Challenge
+8. Provider Health Web Challenge
+9. Configuration Export Web Challenge
+10. Dashboard Web Challenge
+
+#### Documentation
+See: `challenges/docs/web_platform_challenge.md`
+
+---
+
+### 8. Mobile Platform Comprehensive Challenge
+
+#### Overview
+Validates complete functionality of the LLM Verifier mobile applications (iOS, Android, HarmonyOS, Aurora OS), ensuring all features work correctly on mobile devices.
+
+#### Test Scenarios
+1. Mobile App Installation and Launch Challenge
+2. Mobile Authentication Challenge
+3. Mobile Model Discovery Challenge
+4. Mobile Model Verification Challenge
+5. Mobile Real-time Events Challenge
+6. Mobile Offline Mode Challenge
+7. Mobile Push Notifications Challenge
+8. Mobile Dashboard Challenge
+9. Mobile Platform-Specific Features Challenge
+10. Mobile Performance Challenge
+
+#### Documentation
+See: `challenges/docs/mobile_platform_challenge.md`
+
+---
+
+### 9. Desktop Platform Comprehensive Challenge
+
+#### Overview
+Validates complete functionality of the LLM Verifier desktop applications (Electron and Tauri), ensuring all features work correctly on desktop operating systems (Windows, macOS, Linux).
+
+#### Test Scenarios
+1. Desktop App Installation and Launch Challenge
+2. Desktop Authentication Challenge
+3. Desktop Model Discovery Challenge
+4. Desktop System Integration Challenge
+5. Desktop Window Management Challenge
+6. Desktop Offline Mode Challenge
+7. Desktop Auto-Update Challenge
+8. Desktop Configuration Management Challenge
+9. Desktop Keyboard Shortcuts Challenge
+10. Desktop Performance Challenge
+
+#### Documentation
+See: `challenges/docs/desktop_platform_challenge.md`
+
+---
+
+## Core Functionality Challenges
+
+### 10. Model Verification Comprehensive Challenge
+
+#### Overview
+Validates complete model verification system, ensuring models are checked for existence, responsiveness, overload status, and capabilities.
+
+#### Test Scenarios
+1. Model Existence Verification Challenge
+2. Model Responsiveness Verification Challenge
+3. Model Overload Detection Challenge
+4. Feature Detection Challenge (MCPs, LSPs, Rerankings, Embeddings)
+5. Category Classification Challenge
+6. Model Capability Verification Challenge
+7. Streaming Capability Challenge
+8. Tool/Function Calling Challenge
+9. Multimodal Capability Challenge (Vision, Audio, Video)
+10. Embeddings Generation Challenge
+
+#### Documentation
+See: `challenges/docs/model_verification_challenge.md`
+
+---
+
+### 11. Scoring and Usability Comprehensive Challenge
+
+#### Overview
+Validates scoring system that evaluates model usability from 0-100% based on multiple criteria (strength, speed, reliability, features, cost).
+
+#### Test Scenarios
+1. Scoring Algorithm Validation Challenge
+2. Multi-Criteria Scoring Challenge
+3. Score Ranking Challenge
+4. Score Calculation Edge Cases Challenge
+5. Usability Classification Challenge
+6. Score Trend Analysis Challenge
+7. Real-World Usability Score Challenge
+8. Confidence Score Challenge
+9. Score Aggregation Challenge
+10. Score Report Generation Challenge
+
+#### Documentation
+See: `challenges/docs/scoring_usability_challenge.md`
+
+---
+
+### 12. Limits and Pricing Comprehensive Challenge
+
+#### Overview
+Validates system's ability to detect and report rate limits, quotas, remaining limits, and pricing information for all models.
+
+#### Test Scenarios
+1. Rate Limits Detection Challenge
+2. Remaining Limits Calculation Challenge
+3. Quota Reset Detection Challenge
+4. Pricing Detection Challenge
+5. Cost Estimation Challenge
+6. Provider-Specific Limit Handling Challenge
+7. Limit Exceeded Handling Challenge
+8. Pricing Comparison Challenge
+9. Limits and Pricing Export Challenge
+10. Real-Time Limit Monitoring Challenge
+
+#### Documentation
+See: `challenges/docs/limits_pricing_challenge.md`
+
+---
+
+### 13. Database Comprehensive Challenge
+
+#### Overview
+Validates SQLite database with SQL Cipher encryption, log database, proper indexing, and all database operations.
+
+#### Test Scenarios
+1. SQLite with SQL Cipher Challenge
+2. Database Schema Challenge
+3. Database Indexing Challenge
+4. CRUD Operations Challenge
+5. Log Database Challenge
+6. Database Migration Challenge
+7. Database Backup and Restore Challenge
+8. Database Query Optimization Challenge
+9. Database Concurrency Challenge
+10. Database Performance Challenge
+
+#### Documentation
+See: `challenges/docs/database_challenge.md`
+
+---
+
+### 14. Configuration Export Comprehensive Challenge
+
+#### Overview
+Validates system's ability to export configurations for OpenCode, Crush, Claude Code, and other AI coding agents.
+
+#### Test Scenarios
+1. OpenCode Configuration Export Challenge
+2. Crush Configuration Export Challenge
+3. Claude Code Configuration Export Challenge
+4. Multiple Platforms Export Challenge
+5. API Key Redaction Challenge
+6. Score-Based Prioritization Challenge
+7. Provider-Specific Export Challenge
+8. Feature-Based Export Challenge
+9. Configuration Validation Challenge
+10. Export History Challenge
+
+#### Documentation
+See: `challenges/docs/configuration_export_challenge.md`
+
+---
+
+### 15. Event System Comprehensive Challenge
+
+#### Overview
+Validates event system including WebSocket, gRPC, notifications (Slack, Email, Telegram, Matrix, WhatsApp), and event subscription management.
+
+#### Test Scenarios
+1. WebSocket Event Subscription Challenge
+2. gRPC Event Streaming Challenge
+3. Slack Notification Challenge
+4. Email Notification Challenge
+5. Telegram Notification Challenge
+6. Matrix Notification Challenge
+7. WhatsApp Notification Challenge
+8. Multi-Channel Notification Challenge
+9. Event Registration Challenge
+10. Event Filtering Challenge
+
+#### Documentation
+See: `challenges/docs/event_system_challenge.md`
+
+---
+
+### 16. Scheduling and Periodic Re-test Comprehensive Challenge
+
+#### Overview
+Validates scheduling system that allows periodic re-testing of models and providers at configurable intervals (hourly, daily, weekly, monthly).
+
+#### Test Scenarios
+1. Scheduled Task Creation Challenge
+2. Multiple Scheduling Configuration Challenge
+3. Scheduled Task Execution Challenge
+4. Task Cancellation Challenge
+5. Task Rescheduling Challenge
+6. Score Change Re-trigger Challenge
+7. Scheduled Task History Challenge
+8. Task Dependencies Challenge
+9. Task Timezone Handling Challenge
+10. Maximal Flexibility Challenge
+
+#### Documentation
+See: `challenges/docs/scheduling_challenge.md`
+
+---
+
+## Resilience and Monitoring Challenges
+
+### 17. Failover and Resilience Comprehensive Challenge
+
+#### Overview
+Validates multi-provider failover, circuit breaker, latency-based routing, and health checking mechanisms.
+
+#### Test Scenarios
+1. Circuit Breaker Challenge
+2. Multi-Provider Failover Challenge
+3. Latency-Based Routing Challenge
+4. Weighted Routing Challenge
+5. Health Probe Challenge
+6. Provider Recovery Challenge
+7. Exponential Backoff Challenge
+8. Timeout Handling Challenge
+9. Concurrent Failover Challenge
+10. State Persistence Challenge
+
+#### Documentation
+See: `challenges/docs/failover_resilience_challenge.md`
+
+---
+
+### 18. Context Management and Checkpointing Comprehensive Challenge
+
+#### Overview
+Validates context management, summarization, long-term memory (Cognee), and checkpointing system.
+
+#### Test Scenarios
+1. Short-Term Context Challenge
+2. Conversation Summarization Challenge
+3. Long-Term Memory Integration Challenge
+4. Context Trimming Challenge
+5. Checkpoint Creation Challenge
+6. Checkpoint Frequency Challenge
+7. Checkpoint Restore Challenge
+8. Disaster Recovery Challenge
+9. Memory Summarization Challenge
+10. Checkpoint Cleanup Challenge
+
+#### Documentation
+See: `challenges/docs/context_checkpointing_challenge.md`
+
+---
+
+### 19. Monitoring and Observability Comprehensive Challenge
+
+#### Overview
+Validates monitoring and observability stack including Prometheus metrics, Grafana dashboards, Jaeger tracing, and alerting.
+
+#### Test Scenarios
+1. Prometheus Metrics Challenge
+2. Grafana Dashboard Challenge
+3. Jaeger Distributed Tracing Challenge
+4. Alerting Challenge
+5. Metric Collection Challenge
+6. Dashboard Panel Configuration Challenge
+7. Health Endpoint Challenge
+8. Log Aggregation Challenge
+9. Performance Monitoring Challenge
+10. Observability Stack Integration Challenge
+
+#### Documentation
+See: `challenges/docs/monitoring_observability_challenge.md`
+
+---
+
+### 20. Security and Authentication Comprehensive Challenge
+
+#### Overview
+Validates security and authentication including RBAC, multi-tenancy, audit logging, SSO integration, and API key management.
+
+#### Test Scenarios
+1. API Key Authentication Challenge
+2. JWT Token Authentication Challenge
+3. Role-Based Access Control (RBAC) Challenge
+4. Multi-Tenancy Challenge
+5. Audit Logging Challenge
+6. SSO Integration Challenge
+7. API Key Management Challenge
+8. Password Security Challenge
+9. Session Management Challenge
+10. Security Headers Challenge
+
+#### Documentation
+See: `challenges/docs/security_authentication_challenge.md`
+
+---
+
+## Challenge Dependencies
+
+### Platform Challenges
+All platform challenges (CLI, TUI, Web, REST API, Mobile, Desktop) are independent and can be executed in parallel.
+
+### Core Functionality Challenges
+```
+Model Verification → Scoring → Limits & Pricing → Database → Configuration Export
+                                        ↓
+                                 Event System
+```
+
+### Resilience and Monitoring Challenges
+```
+Failover → Checkpointing → Monitoring → Security
+```
+
+## Challenge Execution Strategy
+
+### Phase 1: Platform Verification
+Execute all platform challenges (CLI, TUI, Web, REST API, Mobile, Desktop) to ensure each platform derivative works correctly.
+
+### Phase 2: Core Functionality
+Execute core functionality challenges to verify the system's main features work correctly.
+
+### Phase 3: Resilience & Monitoring
+Execute resilience and monitoring challenges to verify production readiness.
+
+## Future Enhancements
+
+The challenge framework is designed to be extensible. Future enhancements may include:
 - **Performance Benchmarking**: Comparative model performance testing
 - **Security Analysis**: Model vulnerability assessments
 - **Cost Optimization**: Usage pattern analysis and recommendations
-- **Integration Testing**: End-to-end workflow validation
+- **Integration Testing**: Cross-platform integration validation
+## Platform-Specific Challenges
+
+### 4. CLI Platform Comprehensive Challenge
+Validates complete functionality of LLM Verifier CLI client. Documentation: challenges/docs/cli_platform_challenge.md
+
+### 5. TUI Platform Comprehensive Challenge  
+Validates complete functionality of LLM Verifier TUI client. Documentation: challenges/docs/tui_platform_challenge.md
+
+### 6. REST API Comprehensive Challenge
+Validates complete functionality of LLM Verifier REST API. Documentation: challenges/docs/rest_api_platform_challenge.md
+
+### 7. Web Platform Comprehensive Challenge
+Validates complete functionality of LLM Verifier Web interface. Documentation: challenges/docs/web_platform_challenge.md
+
+### 8. Mobile Platform Comprehensive Challenge
+Validates complete functionality of LLM Verifier mobile applications (iOS, Android, HarmonyOS, Aurora OS). Documentation: challenges/docs/mobile_platform_challenge.md
+
+### 9. Desktop Platform Comprehensive Challenge
+Validates complete functionality of LLM Verifier desktop applications (Electron, Tauri). Documentation: challenges/docs/desktop_platform_challenge.md
+
+## Core Functionality Challenges
+
+### 10. Model Verification Comprehensive Challenge
+Validates complete model verification system. Documentation: challenges/docs/model_verification_challenge.md
+
+### 11. Scoring and Usability Comprehensive Challenge
+Validates scoring system (0-100% usability). Documentation: challenges/docs/scoring_usability_challenge.md
+
+### 12. Limits and Pricing Comprehensive Challenge
+Validates rate limits and pricing detection. Documentation: challenges/docs/limits_pricing_challenge.md
+
+### 13. Database Comprehensive Challenge
+Validates SQLite with SQL Cipher, log database, indexing. Documentation: challenges/docs/database_challenge.md
+
+### 14. Configuration Export Comprehensive Challenge
+Validates export to OpenCode, Crush, Claude Code. Documentation: challenges/docs/configuration_export_challenge.md
+
+### 15. Event System Comprehensive Challenge
+Validates WebSocket, gRPC, notifications (Slack, Email, Telegram, Matrix, WhatsApp). Documentation: challenges/docs/event_system_challenge.md
+
+### 16. Scheduling and Periodic Re-test Comprehensive Challenge
+Validates scheduling (hourly, daily, weekly, monthly). Documentation: challenges/docs/scheduling_challenge.md
+
+## Resilience and Monitoring Challenges
+
+### 17. Failover and Resilience Comprehensive Challenge
+Validates multi-provider failover, circuit breaker, latency-based routing. Documentation: challenges/docs/failover_resilience_challenge.md
+
+### 18. Context Management and Checkpointing Comprehensive Challenge
+Validates context management, summarization, long-term memory, checkpointing. Documentation: challenges/docs/context_checkpointing_challenge.md
+
+### 19. Monitoring and Observability Comprehensive Challenge
+Validates Prometheus, Grafana, Jaeger, alerting. Documentation: challenges/docs/monitoring_observability_challenge.md
+
+### 20. Security and Authentication Comprehensive Challenge
+Validates RBAC, multi-tenancy, audit logging, SSO, API key management. Documentation: challenges/docs/security_authentication_challenge.md
