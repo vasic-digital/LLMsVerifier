@@ -124,6 +124,36 @@ api:
   jwt_secret: "your-jwt-secret"
   enable_cors: true
 
+### Configuration Management
+
+The LLM Verifier includes tools for managing LLM configurations for different platforms:
+
+#### Crush Configuration
+- **Auto-Generated Configs**: Use the built-in converter to generate valid Crush configurations from discovery results
+- **Streaming Support**: Configurations automatically include streaming flags when LLMs support it
+- **Cost Estimation**: Realistic cost calculations based on provider and model type
+
+```bash
+# Generate Crush config from discovery
+go run crush_config_converter.go path/to/discovery.json
+```
+
+#### OpenCode Configuration
+- **Streaming Enabled**: All compatible models have streaming support enabled by default
+- **Model Verification**: Configurations are validated to ensure consistency
+
+### Running Challenges
+
+To run LLM verification challenges:
+
+```bash
+# Run provider discovery
+go run llm-verifier/challenges/codebase/go_files/provider_models_discovery.go
+
+# Run model verification
+go run llm-verifier/challenges/codebase/go_files/run_model_verification.go
+```
+
 monitoring:
   enabled: true
   prometheus:
