@@ -1,0 +1,46 @@
+# Brotli Test Configuration with Real API Keys
+global:
+  base_url: "https://api.openai.com/v1"
+  api_key: "${OPENAI_API_KEY}"
+  max_retries: 3
+  request_delay: 1s
+  timeout: 30s
+
+database:
+  path: "./brotli_test.db"
+  encryption_key: ""
+
+api:
+  port: "8080"
+  jwt_secret: "test-secret-key"
+  rate_limit: 100
+  enable_cors: true
+
+# Test with providers that likely support Brotli
+llms:
+  - name: "OpenAI GPT-4"
+    endpoint: "https://api.openai.com/v1"
+    api_key: "${OPENAI_API_KEY}"
+    model: "gpt-4-turbo"
+    features:
+      tool_calling: true
+      embeddings: false
+
+  - name: "Google Gemini"
+    endpoint: "https://generativelanguage.googleapis.com/v1beta"
+    api_key: "${GEMINI_API_KEY}"
+    model: "gemini-pro"
+    features:
+      tool_calling: true
+      embeddings: false
+
+  - name: "HuggingFace"
+    endpoint: "https://api-inference.huggingface.co"
+    api_key: "${HUGGINGFACE_API_KEY}"
+    model: "mistralai/Mistral-7B-Instruct-v0.1"
+    features:
+      tool_calling: false
+      embeddings: true
+
+concurrency: 3
+timeout: 60s

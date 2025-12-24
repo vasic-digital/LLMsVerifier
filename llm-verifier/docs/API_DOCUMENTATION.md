@@ -12,6 +12,7 @@ The LLM Verifier REST API provides programmatic access to all functionality of t
 - **Configuration**: Runtime configuration management
 - **Authentication**: JWT-based secure authentication
 - **Rate Limiting**: Built-in protection against abuse
+- **Brotli Compression Support**: Detect and report Brotli compression capabilities
 - **Swagger Documentation**: Interactive API documentation at `/swagger/index.html`
 
 ### Architecture
@@ -213,6 +214,8 @@ GET /models/{model_id}
     "supports_audio": false,
     "supports_video": false,
     "supports_reasoning": true,
+    "supports_brotli": true,
+    "supports_brotli": true,
     "open_source": false,
     "deprecated": false,
     "tags": ["gpt", "openai", "turbo"],
