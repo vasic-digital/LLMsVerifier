@@ -7,63 +7,30 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
+
+	"github.com/milosvasic/LLMsVerifier/llm-verifier/client"
 )
 
-// Model Verification Challenge
-// Verifies model capabilities based on provider configuration
-
-type ProviderConfig struct {
-	Name      string        `json:"name"`
-	Type      string        `json:"type"`
-	Endpoint  string        `json:"endpoint"`
-	Status    string        `json:"status"`
-	FreeToUse bool          `json:"free_to_use"`
-	Features  Features      `json:"features"`
-	Models    []ModelConfig `json:"models"`
-}
-
-type ModelConfig struct {
-	ID           string        `json:"id"`
-	Name         string        `json:"name"`
-	ContextSize  int           `json:"context_size,omitempty"`
-	Capabilities []string      `json:"capabilities"`
-	Features     ModelFeatures `json:"features"`
-	FreeToUse    bool          `json:"free_to_use"`
-}
-
-type ModelFeatures struct {
-	MCPs            []string `json:"mcps,omitempty"`
-	LSPs            []string `json:"lsps,omitempty"`
-	Embeddings      []string `json:"embeddings,omitempty"`
-	Streaming       bool     `json:"streaming"`
-	FunctionCalling bool     `json:"function_calling"`
-	Vision          bool     `json:"vision"`
-	Tools           bool     `json:"tools"`
-}
-
-type Features struct {
-	MCPs            bool `json:"mcps"`
-	LSPs            bool `json:"lsps"`
-	Embeddings      bool `json:"embeddings"`
-	Streaming       bool `json:"streaming"`
-	FunctionCalling bool `json:"function_calling"`
-	Vision          bool `json:"vision"`
-	Tools           bool `json:"tools"`
-}
-
 type VerificationResult struct {
-	ModelID          string   `json:"model_id"`
-	ModelName        string   `json:"model_name"`
-	ProviderName     string   `json:"provider_name"`
-	FeaturesVerified Features `json:"features_verified"`
-	Latency          string   `json:"latency"`
-	TestTime         string   `json:"test_time"`
-	OverallStatus    string   `json:"overall_status"`
+	ModelID       string `json:"model_id"`
+	ModelName     string `json:"model_name"`
+	ProviderName  string `json:"provider_name"`
+	Exists        bool   `json:"exists"`
+	ExistsError   string `json:"exists_error,omitempty"`
+	Responsive    bool   `json:"responsive"`
+	ResponseError string `json:"response_error,omitempty"`
+	Latency       string `json:"latency"`
+	TTFT          string `json:"time_to_first_token"`
+	OverallStatus string `json:"overall_status"`
+	TestTime      string `json:"test_time"`
+	StatusCode    int    `json:"status_code,omitempty"`
 }
 
 type ChallengeResult struct {
 	ChallengeName string           `json:"challenge_name"`
+	Date          string           `json:"date"`
 	StartTime     string           `json:"start_time"`
 	EndTime       string           `json:"end_time"`
 	Duration      string           `json:"duration"`
@@ -78,52 +45,46 @@ type ProviderResult struct {
 	VerificationResults []VerificationResult `json:"verification_results"`
 	SuccessCount        int                  `json:"success_count"`
 	FailedCount         int                  `json:"failed_count"`
+	SkippedCount        int                  `json:"skipped_count"`
 	TestTime            string               `json:"test_time"`
 }
 
 type ChallengeSummary struct {
-	TotalModels               int `json:"total_models"`
-	VerifiedModels            int `json:"verified_models"`
-	ModelsWithStreaming       int `json:"models_with_streaming"`
-	ModelsWithFunctionCalling int `json:"models_with_function_calling"`
-	ModelsWithVision          int `json:"models_with_vision"`
-	ModelsWithEmbeddings      int `json:"models_with_embeddings"`
-	FreeModels                int `json:"free_models"`
-	PaidModels                int `json:"paid_models"`
+	TotalModels      int     `json:"total_models"`
+	VerifiedModels   int     `json:"verified_models"`
+	ModelsExist      int     `json:"models_exist"`
+	ModelsResponsive int     `json:"models_responsive"`
+	SuccessRate      float64 `json:"success_rate"`
 }
 
-var (
-	logger       *log.Logger
-	verboseLevel int = 3
-)
+var logger *log.Logger
+var httpClient *client.HTTPClient
 
 func initLogger(logDir string) *log.Logger {
 	os.MkdirAll(logDir, 0755)
-	_, err := os.OpenFile(filepath.Join(logDir, "challenge.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	logFile, err := os.OpenFile(filepath.Join(logDir, "challenge.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
 		log.Printf("Failed to create log file: %v", err)
 		return log.New(os.Stdout, "[CHALLENGE] ", log.Ldate|log.Ltime)
 	}
-	multiWriter := os.Stdout
+	multiWriter := io.MultiWriter(os.Stdout, logFile)
 	return log.New(multiWriter, "[CHALLENGE] ", log.Ldate|log.Ltime|log.Lmicroseconds)
 }
 
 func main() {
 	timestamp := time.Now().Unix()
-	challengeDir := filepath.Join("challenges", "model_verification",
+	challengeDir := filepath.Join("challenges", "model_verification_real",
 		time.Now().Format("2006"), time.Now().Format("01"), time.Now().Format("02"),
 		fmt.Sprintf("%d", timestamp))
-
 	logDir := filepath.Join(challengeDir, "logs")
 	resultsDir := filepath.Join(challengeDir, "results")
 
 	logger = initLogger(logDir)
+	httpClient = client.NewHTTPClient(30 * time.Second)
 
 	logger.Println("======================================================")
-	logger.Println("MODEL VERIFICATION CHALLENGE")
+	logger.Println("MODEL VERIFICATION CHALLENGE (REAL API TESTING)")
 	logger.Println("======================================================")
-	logger.Printf("Challenge Directory: %s", challengeDir)
-	logger.Printf("Timestamp: %s", time.Now().Format(time.RFC3339))
 
 	providers, err := loadProviderConfig()
 	if err != nil {
@@ -132,7 +93,8 @@ func main() {
 		return
 	}
 
-	logger.Printf("Loaded %d providers from config", len(providers))
+	logger.Printf("Loaded %d providers from discovery results\n", len(providers))
+	logger.Printf("Timestamp: %s\n", time.Now().Format(time.RFC3339))
 
 	result := runChallenge(providers)
 
@@ -143,27 +105,27 @@ func main() {
 	logger.Println("======================================================")
 	logger.Println("CHALLENGE COMPLETE")
 	logger.Println("======================================================")
-	logger.Printf("Duration: %s", result.Duration)
-	logger.Printf("Results saved to: %s", resultsDir)
+	logger.Printf("Duration: %s\n", result.Duration)
+	logger.Printf("Results saved to: %s\n", resultsDir)
 }
 
-func runChallenge(providers []ProviderConfig) ChallengeResult {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+func runChallenge(providers []provider.ProviderConfig) ChallengeResult {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
 	startTime := time.Now()
 	result := ChallengeResult{
-		ChallengeName: "model_verification",
+		ChallengeName: "model_verification_real",
 		StartTime:     startTime.Format(time.RFC3339),
+		Date:          time.Now().Format("2006-01-02"),
 	}
 
-	loggerVerbose(1, "Starting model verification...")
-	loggerVerbose(1, "Models to verify: %d", countModelsConfig(providers))
+	logger.Println("\nStarting model verification with REAL API calls...")
 
 	for _, provider := range providers {
 		logger.Printf("\n======================================================")
-		logger.Printf("Verifying Provider: %s", provider.Name)
-		logger.Printf("======================================================")
+		logger.Printf("Verifying Provider: %s (%d models)\n", provider.Name, len(provider.Models))
+		logger.Printf("======================================================\n")
 
 		providerResult := verifyProvider(ctx, provider)
 		result.Providers = append(result.Providers, providerResult)
@@ -176,7 +138,7 @@ func runChallenge(providers []ProviderConfig) ChallengeResult {
 	return result
 }
 
-func verifyProvider(ctx context.Context, provider ProviderConfig) ProviderResult {
+func verifyProvider(ctx context.Context, provider provider.ProviderConfig) ProviderResult {
 	startTime := time.Now()
 	result := ProviderResult{
 		Name:     provider.Name,
@@ -186,10 +148,6 @@ func verifyProvider(ctx context.Context, provider ProviderConfig) ProviderResult
 	}
 
 	for _, model := range provider.Models {
-		if provider.Status != "success" {
-			continue
-		}
-
 		verification := verifyModel(ctx, provider, model)
 		result.VerificationResults = append(result.VerificationResults, verification)
 
@@ -200,44 +158,63 @@ func verifyProvider(ctx context.Context, provider ProviderConfig) ProviderResult
 		}
 	}
 
-	loggerVerbose(1, "Provider %s: %d verified in %s",
-		provider.Name, result.SuccessCount, time.Since(startTime).String())
+	duration := time.Since(startTime)
+	logger.Printf("Provider %s completed in %s: %d passed, %d failed\n",
+		provider.Name, duration, result.SuccessCount, result.FailedCount)
 
 	return result
 }
 
-func verifyModel(ctx context.Context, provider ProviderConfig, model ModelConfig) VerificationResult {
-	logger.Printf("\n--- Verifying Model: %s (%s) ---", model.Name, model.ID)
-
+func verifyModel(ctx context.Context, provider provider.ProviderConfig, model provider.ModelConfig) VerificationResult {
+	logger.Printf("\n--- Verifying Model: %s ---", model.Name)
 	startTime := time.Now()
 
-	// Verify features based on model configuration
-	featuresVerified := Features{
-		Streaming:       model.Features.Streaming,
-		FunctionCalling: model.Features.FunctionCalling,
-		Vision:          model.Features.Vision,
-		Embeddings:      len(model.Features.Embeddings) > 0,
-		MCPs:            len(model.Features.MCPs) > 0,
-		LSPs:            len(model.Features.LSPs) > 0,
-		Tools:           model.Features.Tools,
+	verification := VerificationResult{
+		ModelID:       model.ID,
+		ModelName:     model.Name,
+		ProviderName:  provider.Name,
+		TestTime:      time.Now().Format(time.RFC3339),
+		OverallStatus: "unknown",
 	}
 
-	status := "success"
-	loggerVerbose(1, "  Features verified from configuration:")
-	loggerVerbose(1, "    Streaming: %v", featuresVerified.Streaming)
-	loggerVerbose(1, "    Function Calling: %v", featuresVerified.FunctionCalling)
-	loggerVerbose(1, "    Vision: %v", featuresVerified.Vision)
-	loggerVerbose(1, "    Embeddings: %v", featuresVerified.Embeddings)
-	loggerVerbose(1, "    Tools: %v", featuresVerified.Tools)
+	logger.Println("  Test 1: Existence (HTTP HEAD/GET)...")
+	existsResp, existsErr := httpClient.TestModelExists(ctx, provider.Name, provider.APIKey, model.ID)
+	verification.Exists = existsResp != nil && existsResp.Exists
+	if existsErr != nil {
+		verification.ExistsError = existsErr.Error()
+		verification.StatusCode = existsResp.Status
+		logger.Printf("  ✗ Existence failed: %s\n", existsErr.Error())
+	} else if existsResp != nil && existsResp.Exists {
+		verification.StatusCode = existsResp.Status
+		logger.Printf("  ✓ Exists (HTTP %d, latency: %s)\n", verification.StatusCode, existsResp.Latency)
+	}
 
-	verification := VerificationResult{
-		ModelID:          model.ID,
-		ModelName:        model.Name,
-		ProviderName:     provider.Name,
-		FeaturesVerified: featuresVerified,
-		Latency:          time.Since(startTime).String(),
-		TestTime:         time.Now().Format(time.RFC3339),
-		OverallStatus:    status,
+	logger.Println("  Test 2: Responsiveness (HTTP POST with latency)...")
+	respResp, respErr := httpClient.TestResponsiveness(ctx, provider.Name, provider.APIKey, model.ID, "test")
+	verification.Responsive = respErr == nil && respResp.Success
+	if respErr != nil {
+		verification.ResponseError = respErr.Error()
+		verification.StatusCode = respResp.StatusCode
+		logger.Printf("  ✗ Responsiveness failed: %s\n", respErr.Error())
+	} else if respResp.Success {
+		verification.StatusCode = respResp.StatusCode
+		verification.Latency = respResp.TotalTime.String()
+		verification.TTFT = respResp.TTFT.String()
+		logger.Printf("  ✓ Responsive (TTFT: %s, total: %s)\n", respResp.TTFT, respResp.TotalTime)
+	}
+
+	if verification.Exists && verification.Responsive {
+		verification.OverallStatus = "success"
+		logger.Println("  ✓ Overall status: SUCCESS\n")
+	} else if !verification.Exists {
+		verification.OverallStatus = "failed"
+		logger.Println("  ✗ Overall status: FAILED (model does not exist)\n")
+	} else if !verification.Responsive {
+		verification.OverallStatus = "failed"
+		logger.Println("  ✗ Overall status: FAILED (model not responsive)\n")
+	} else {
+		verification.OverallStatus = "failed"
+		logger.Println("  ✗ Overall status: FAILED (unknown error)\n")
 	}
 
 	return verification
@@ -245,196 +222,216 @@ func verifyModel(ctx context.Context, provider ProviderConfig, model ModelConfig
 
 func generateSummary(result ChallengeResult) ChallengeSummary {
 	summary := ChallengeSummary{
-		TotalModels: countResults(result.Providers),
+		TotalModels:      0,
+		VerifiedModels:   0,
+		ModelsExist:      0,
+		ModelsResponsive: 0,
+		SuccessRate:      0.0,
 	}
 
 	for _, provider := range result.Providers {
-		summary.VerifiedModels += provider.SuccessCount
-
-		for _, v := range provider.VerificationResults {
-			if v.FeaturesVerified.Streaming {
-				summary.ModelsWithStreaming++
+		summary.TotalModels += len(provider.VerificationResults)
+		for _, verification := range provider.VerificationResults {
+			summary.VerifiedModels++
+			if verification.Exists {
+				summary.ModelsExist++
 			}
-			if v.FeaturesVerified.FunctionCalling {
-				summary.ModelsWithFunctionCalling++
-			}
-			if v.FeaturesVerified.Vision {
-				summary.ModelsWithVision++
-			}
-			if v.FeaturesVerified.Embeddings {
-				summary.ModelsWithEmbeddings++
+			if verification.Responsive {
+				summary.ModelsResponsive++
 			}
 		}
 	}
 
-	// Count free/paid models from provider config
-	for _, provider := range result.Providers {
-		for _, v := range provider.VerificationResults {
-			for _, p := range loadProviders() {
-				if p.Name == v.ProviderName {
-					for _, m := range p.Models {
-						if m.ID == v.ModelID {
-							if m.FreeToUse {
-								summary.FreeModels++
-							} else {
-								summary.PaidModels++
-							}
-						}
+	if summary.TotalModels > 0 {
+		summary.SuccessRate = float64(summary.ModelsResponsive) / float64(summary.TotalModels) * 100
+	}
+
+	return summary
+}
+
+func loadProviderConfig() ([]provider.ProviderConfig, error) {
+	discoveryDir := "challenges/providers_models_discovery/20251224"
+
+	dirs, err := os.ReadDir(discoveryDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read discovery dir: %w", err)
+	}
+
+	if len(dirs) == 0 {
+		return nil, fmt.Errorf("no discovery results found in %s", discoveryDir)
+	}
+
+	latestDir := dirs[len(dirs)-1].Name()
+	discoveryFile := filepath.Join(discoveryDir, latestDir, "results", "providers_opencode.json")
+
+	data, err := os.ReadFile(discoveryFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read discovery results: %w", err)
+	}
+
+	var discoveryData map[string]interface{}
+	if err := json.Unmarshal(data, &discoveryData); err != nil {
+		return nil, fmt.Errorf("failed to parse discovery JSON: %w", err)
+	}
+
+	providersArray, ok := discoveryData["providers"]
+	if !ok {
+		return nil, fmt.Errorf("providers array not found in discovery data")
+	}
+
+	providers, ok := providersArray.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("providers is not an array")
+	}
+
+	config := make([]provider.ProviderConfig, 0)
+	for _, p := range providers {
+		provider, ok := p.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		name, _ := provider["name"].(string)
+		apiEndpoint, _ := provider["api_endpoint"].(string)
+		freeToUse, _ := provider["free_to_use"].(bool)
+
+		modelsArray, ok := provider["models"].([]interface{})
+		if !ok {
+			continue
+		}
+
+		models := make([]provider.ModelConfig, 0)
+		for _, m := range modelsArray {
+			model, ok := m.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			id, _ := model["id"].(string)
+			modelName, _ := model["name"].(string)
+			modelFreeToUse, _ := model["free_to_use"].(bool)
+
+			models = append(models, provider.ModelConfig{
+				ID:        id,
+				Name:      modelName,
+				FreeToUse: modelFreeToUse,
+			})
+		}
+
+		features, ok := provider["features"].(map[string]interface{})
+		var modelFeatures provider.ModelFeatures
+		if ok {
+			streaming, _ := features["streaming"].(bool)
+			functionCalling, _ := features["function_calling"].(bool)
+			vision, _ := features["vision"].(bool)
+			embeddingsArray, _ := features["embeddings"].([]interface{})
+			embeddings := make([]string, 0)
+			for _, e := range embeddingsArray {
+				if eStr, ok := e.(string); ok {
+					embeddings = append(embeddings, eStr)
+				}
+			}
+
+			modelFeatures = provider.ModelFeatures{
+				Streaming:       streaming,
+				FunctionCalling: functionCalling,
+				Vision:          vision,
+				Embeddings:      embeddings,
+			}
+		}
+
+		config = append(config, provider.ProviderConfig{
+			Name:      name,
+			Type:      "openai-compatible",
+			Endpoint:  apiEndpoint,
+			Status:    "success",
+			FreeToUse: freeToUse,
+			APIKey:    "", // Will be loaded separately
+			Features:  modelFeatures,
+			Models:    models,
+		})
+	}
+
+	logger.Printf("Loaded %d providers with %d total models\n", len(config), countModels(config))
+
+	// Load API keys from config
+	apiKeys := loadAPIKeys()
+	for i := range config {
+		providerName := strings.ToLower(config[i].Name)
+		if apiKey, ok := apiKeys[providerName]; ok {
+			config[i].APIKey = apiKey
+			logger.Printf("API key loaded for %s: %s...\n", config[i].Name, strings.Repeat("*", len(apiKey)))
+		}
+	}
+
+	return config, nil
+}
+
+func loadAPIKeys() map[string]string {
+	apiKeys := make(map[string]string)
+
+	configFile := "config.yaml.example"
+	data, err := os.ReadFile(configFile)
+	if err != nil {
+		return apiKeys
+	}
+
+	if err := yaml.Unmarshal(data, &config); err == nil {
+		for providerName, providerData := range config.Providers {
+			if p, ok := providerData.(map[string]interface{}); ok {
+				if apiKey, ok := p["api_key"]; ok {
+					if keyStr, ok := apiKey.(string); ok {
+						apiKeys[strings.ToLower(providerName)] = keyStr
 					}
 				}
 			}
 		}
 	}
 
-	return summary
+	return apiKeys
 }
 
-func countResults(providers []ProviderResult) int {
-	total := 0
-	for _, p := range providers {
-		total += len(p.VerificationResults)
+func countModels(config []provider.ProviderConfig) int {
+	count := 0
+	for _, provider := range config {
+		count += len(provider.Models)
 	}
-	return total
-}
-
-func countModelsConfig(providers []ProviderConfig) int {
-	total := 0
-	for _, p := range providers {
-		total += len(p.Models)
-	}
-	return total
+	return count
 }
 
 func saveResults(resultsDir string, result ChallengeResult) error {
 	os.MkdirAll(resultsDir, 0755)
 
-	opencodeData := map[string]interface{}{
-		"challenge_name": result.ChallengeName,
-		"date":           time.Now().Format("2006-01-02"),
-		"summary":        result.Summary,
-		"providers":      make([]interface{}, 0),
+	resultFile := filepath.Join(resultsDir, "verification_results.json")
+	resultData, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal results: %w", err)
 	}
 
+	if err := os.WriteFile(resultFile, resultData, 0644); err != nil {
+		return fmt.Errorf("failed to write results: %w", err)
+	}
+
+	summaryFile := filepath.Join(resultsDir, "summary.md")
+	summary := fmt.Sprintf("# Model Verification Challenge Results (Real API Testing)\n\n")
+	summary += fmt.Sprintf("**Date**: %s\n\n", result.Date)
+	summary += fmt.Sprintf("**Duration**: %s\n\n", result.Duration)
+	summary += "## Providers\n\n"
 	for _, provider := range result.Providers {
-		providerMap := map[string]interface{}{
-			"name":          provider.Name,
-			"type":          provider.Type,
-			"endpoint":      provider.Endpoint,
-			"success_count": provider.SuccessCount,
-			"failed_count":  provider.FailedCount,
-			"test_time":     provider.TestTime,
-		}
-		opencodeData["providers"] = append(opencodeData["providers"].([]interface{}), providerMap)
+		summary += fmt.Sprintf("### %s\n", provider.Name)
+		summary += fmt.Sprintf("- **Status**: %d tested, %d passed, %d failed\n",
+			provider.SuccessCount+provider.FailedCount,
+			provider.SuccessCount, provider.FailedCount)
 	}
+	summary += "\n## Summary\n\n"
+	summary += fmt.Sprintf("- **Total Models**: %d\n", result.Summary.TotalModels)
+	summary += fmt.Sprintf("- **Models Exist**: %d\n", result.Summary.ModelsExist)
+	summary += fmt.Sprintf("- **Models Responsive**: %d\n", result.Summary.ModelsResponsive)
+	summary += fmt.Sprintf("- **Success Rate**: %.1f%%\n", result.Summary.SuccessRate)
 
-	opencodeBytes, err := json.MarshalIndent(opencodeData, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal opencode: %w", err)
+	if err := os.WriteFile(summaryFile, []byte(summary), 0644); err != nil {
+		return fmt.Errorf("failed to write summary: %w", err)
 	}
-
-	if err := os.WriteFile(filepath.Join(resultsDir, "models_opencode.json"), opencodeBytes, 0644); err != nil {
-		return fmt.Errorf("failed to write opencode: %w", err)
-	}
-
-	crushBytes, err := json.MarshalIndent(result, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal crush: %w", err)
-	}
-
-	if err := os.WriteFile(filepath.Join(resultsDir, "models_crush.json"), crushBytes, 0644); err != nil {
-		return fmt.Errorf("failed to write crush: %w", err)
-	}
-
-	loggerVerbose(1, "Results saved:")
-	loggerVerbose(1, "  - models_opencode.json")
-	loggerVerbose(1, "  - models_crush.json")
 
 	return nil
-}
-
-func loadProviderConfig() ([]ProviderConfig, error) {
-	latestDir, err := findLatestChallenge("provider_models_discovery")
-	if err != nil {
-		return nil, fmt.Errorf("failed to find provider challenge: %w", err)
-	}
-
-	configFile := filepath.Join(latestDir, "providers_opencode.json")
-	data, err := os.ReadFile(configFile)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read provider config: %w", err)
-	}
-
-	var config map[string]interface{}
-	if err := json.Unmarshal(data, &config); err != nil {
-		return nil, fmt.Errorf("failed to parse provider config: %w", err)
-	}
-
-	var providers []ProviderConfig
-	providersData, _ := config["providers"].([]interface{})
-	for _, p := range providersData {
-		pData := p.(map[string]interface{})
-		providerJSON, _ := json.Marshal(pData)
-		var provider ProviderConfig
-		json.Unmarshal(providerJSON, &provider)
-		providers = append(providers, provider)
-	}
-
-	return providers, nil
-}
-
-var cachedProviders []ProviderConfig
-
-func loadProviders() []ProviderConfig {
-	if len(cachedProviders) > 0 {
-		return cachedProviders
-	}
-
-	providers, err := loadProviderConfig()
-	if err != nil {
-		return []ProviderConfig{}
-	}
-
-	cachedProviders = providers
-	return providers
-}
-
-func findLatestChallenge(challengeName string) (string, error) {
-	baseDir := filepath.Join("results", challengeName)
-
-	// Find the latest results file recursively
-	var latestFile string
-	var latestTime int64 = 0
-
-	err := filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info.IsDir() {
-			return nil
-		}
-		if info.Name() == "providers_opencode.json" {
-			if info.ModTime().Unix() > latestTime {
-				latestTime = info.ModTime().Unix()
-				latestFile = path
-			}
-		}
-		return nil
-	})
-
-	if err != nil {
-		return "", fmt.Errorf("failed to walk directory: %w", err)
-	}
-
-	if latestFile == "" {
-		return "", fmt.Errorf("no providers_opencode.json file found")
-	}
-
-	// Return the directory containing the results file
-	return filepath.Dir(latestFile), nil
-}
-
-func loggerVerbose(level int, format string, args ...interface{}) {
-	if level <= verboseLevel {
-		logger.Printf(format, args...)
-	}
 }

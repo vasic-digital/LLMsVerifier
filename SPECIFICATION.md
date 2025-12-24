@@ -24,3 +24,107 @@ Configuration files and system will support turning on of the periodical re-test
 
 With proper flag set on (regenerate_configurations_on_score_changes) if score of provider or llm changes the configuration for (all cli agents or just chosen ones - for example: OpenCode, Crush) will be recreated. There is default path for generated cli agents configuration files, but it can be changed with configuration (global, per procider or llm).
 
+
+---
+
+## Model Verification System
+
+### Overview
+Validates that LLM models work correctly through actual API testing, not just configuration file parsing.
+
+### Validation Requirements
+
+Each model MUST pass the following tests to be considered verified:
+
+#### 1. Existence Test
+- **What**: Verify model is accessible on provider's API
+- **Validation**:
+  - HTTP HEAD or GET request to model endpoint returns 200 OK
+  - GET /models endpoint includes model in available models list
+  - Response includes valid model_id and model_name
+- **Pass Criteria**: HTTP 200 response + valid model data in response
+
+#### 2. Responsiveness Test  
+- **What**: Verify model responds to requests within acceptable time limits
+- **Validation**:
+  - HTTP POST request with test prompt completes successfully
+  - Time to First Token (TTFT) < 10 seconds
+  - Total response time < 60 seconds
+  - No timeout errors
+- **Pass Criteria**: Request completes within time limits without errors
+
+#### 3. Latency Test
+- **What**: Measure actual response performance for performance tracking
+- **Validation**:
+  - TTFT is measured and recorded to database
+  - Total response time is measured
+  - Average latency calculated from multiple requests
+- **Pass Criteria**: Latency data collected and within acceptable range (< 5 seconds preferred)
+
+#### 4. Feature Tests
+
+##### 4.1 Streaming
+- **What**: Verify streaming capability works
+- **Validation**:
+  - At least one chunk is received in streaming response
+  - Chunks are delivered in order
+  - No connection drops
+- **Pass Criteria**: Successfully receives streamed response
+
+##### 4.2 Function Calling
+- **What**: Verify tool/function calling capability works
+- **Validation**:
+  - Tool call is successfully parsed from response
+  - Tool parameters match expected schema
+  - Tool results are processed
+- **Pass Criteria**: Tool definition executes successfully
+
+##### 4.3 Vision
+- **What**: Verify multimodal image/vision input works
+- **Validation**:
+  - Image input is accepted by model
+  - Image is processed and analyzed
+  - Vision-related output is returned
+- **Pass Criteria**: Image successfully processed
+
+##### 4.4 Embeddings
+- **What**: Verify text embedding generation works
+- **Validation**:
+  - Embedding request is successful
+  - Embedding vector is returned
+- Vector dimension matches expected size
+- **Pass Criteria**: Valid embedding vector returned
+
+#### 5. Scoring & Coding Capability
+- **What**: Evaluate model's effectiveness for development tasks
+- **Validation**:
+  - Coding benchmark test passes with score > 80%
+  - Code quality test passes with score > 70%
+  - Code speed test passes
+  - Model can handle real-world coding tasks
+- **Pass Criteria**: Model achieves minimum coding capability score
+
+#### 6. Error Detection
+- **What**: Identify and categorize API errors
+- **Validation**:
+  - HTTP errors (4xx, 5xx) are detected and logged
+  - Rate limit errors (429) are identified
+  - Authentication errors (401) are detected
+  - Model not found errors (404) are detected
+  - Connection errors are detected
+- **Pass Criteria**: Errors are caught and properly categorized
+
+### Implementation Requirements
+
+- **Real API Calls**: Must make actual HTTP requests to provider APIs (not just config file parsing)
+- **Database Storage**: Test results must be stored in verification_results table
+- **Scoring System**: Models must have coding capability scores stored in verification_scores table
+- **Rate Limit Detection**: Must detect and log HTTP 429 responses
+- **Timeout Handling**: Must detect and log request timeouts
+
+### Related Documentation
+
+- [Model Verification Challenge](challenges/docs/model_verification_challenge.md)
+- [Provider Integration Documentation](llm-verifier/docs/PROVIDER_INTEGRATION.md)
+- [Database Schema Documentation](llm-verifier/database/schema.sql)
+
