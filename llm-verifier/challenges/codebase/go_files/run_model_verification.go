@@ -358,7 +358,7 @@ func loadProviderConfig() ([]ProviderConfig, error) {
 		return nil, fmt.Errorf("failed to find provider challenge: %w", err)
 	}
 
-	configFile := filepath.Join(latestDir, "results", "providers_opencode.json")
+	configFile := filepath.Join(latestDir, "providers_opencode.json")
 	data, err := os.ReadFile(configFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read provider config: %w", err)
@@ -430,7 +430,7 @@ func findLatestChallenge(challengeName string) (string, error) {
 	}
 
 	// Return the directory containing the results file
-	return filepath.Dir(filepath.Dir(latestFile)), nil
+	return filepath.Dir(latestFile), nil
 }
 
 func loggerVerbose(level int, format string, args ...interface{}) {
