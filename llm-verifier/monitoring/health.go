@@ -541,6 +541,35 @@ func (hc *HealthChecker) RegisterHealthEndpoints(router *gin.Engine) {
 		output += fmt.Sprintf("# TYPE llm_verifier_api_response_time_seconds gauge\n")
 		output += fmt.Sprintf("llm_verifier_api_response_time_seconds %f\n", metrics.APIMetrics.AverageResponseTime.Seconds())
 
+		// Brotli metrics
+		output += fmt.Sprintf("# HELP llm_verifier_brotli_tests_performed Total number of Brotli compression tests performed\n")
+		output += fmt.Sprintf("# TYPE llm_verifier_brotli_tests_performed counter\n")
+		output += fmt.Sprintf("llm_verifier_brotli_tests_performed %d\n", metrics.BrotliMetrics.TestsPerformed)
+
+		output += fmt.Sprintf("# HELP llm_verifier_brotli_supported_models Number of models supporting Brotli compression\n")
+		output += fmt.Sprintf("# TYPE llm_verifier_brotli_supported_models gauge\n")
+		output += fmt.Sprintf("llm_verifier_brotli_supported_models %d\n", metrics.BrotliMetrics.SupportedModels)
+
+		output += fmt.Sprintf("# HELP llm_verifier_brotli_support_rate_percent Percentage of models supporting Brotli compression\n")
+		output += fmt.Sprintf("# TYPE llm_verifier_brotli_support_rate_percent gauge\n")
+		output += fmt.Sprintf("llm_verifier_brotli_support_rate_percent %.2f\n", metrics.BrotliMetrics.SupportRatePercent)
+
+		output += fmt.Sprintf("# HELP llm_verifier_brotli_cache_hits Number of Brotli cache hits\n")
+		output += fmt.Sprintf("# TYPE llm_verifier_brotli_cache_hits counter\n")
+		output += fmt.Sprintf("llm_verifier_brotli_cache_hits %d\n", metrics.BrotliMetrics.CacheHits)
+
+		output += fmt.Sprintf("# HELP llm_verifier_brotli_cache_misses Number of Brotli cache misses\n")
+		output += fmt.Sprintf("# TYPE llm_verifier_brotli_cache_misses counter\n")
+		output += fmt.Sprintf("llm_verifier_brotli_cache_misses %d\n", metrics.BrotliMetrics.CacheMisses)
+
+		output += fmt.Sprintf("# HELP llm_verifier_brotli_cache_hit_rate Brotli cache hit rate percentage\n")
+		output += fmt.Sprintf("# TYPE llm_verifier_brotli_cache_hit_rate gauge\n")
+		output += fmt.Sprintf("llm_verifier_brotli_cache_hit_rate %.2f\n", metrics.BrotliMetrics.CacheHitRate)
+
+		output += fmt.Sprintf("# HELP llm_verifier_brotli_avg_detection_time_seconds Average Brotli detection time in seconds\n")
+		output += fmt.Sprintf("# TYPE llm_verifier_brotli_avg_detection_time_seconds gauge\n")
+		output += fmt.Sprintf("llm_verifier_brotli_avg_detection_time_seconds %f\n", metrics.BrotliMetrics.AvgDetectionTime.Seconds())
+
 		c.Header("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
 		c.String(http.StatusOK, output)
 	})
