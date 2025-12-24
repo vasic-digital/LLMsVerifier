@@ -41,6 +41,18 @@ type SystemMetrics struct {
 	DatabaseStats     DatabaseStats     `json:"database_stats"`
 	APIMetrics        APIMetrics        `json:"api_metrics"`
 	VerificationStats VerificationStats `json:"verification_stats"`
+	BrotliMetrics     BrotliMetrics     `json:"brotli_metrics"`
+}
+
+// BrotliMetrics represents Brotli compression performance metrics
+type BrotliMetrics struct {
+	TestsPerformed     int64         `json:"tests_performed"`
+	SupportedModels    int64         `json:"supported_models"`
+	SupportRatePercent float64       `json:"support_rate_percent"`
+	AvgDetectionTime   time.Duration `json:"avg_detection_time"`
+	CacheHits          int64         `json:"cache_hits"`
+	CacheMisses        int64         `json:"cache_misses"`
+	CacheHitRate       float64       `json:"cache_hit_rate"`
 }
 
 // MemoryStats represents memory usage statistics
@@ -107,14 +119,14 @@ type VerificationStats struct {
 
 // HealthChecker manages system health monitoring
 type HealthChecker struct {
-	database      *database.Database
-	components    map[string]*ComponentHealth
-	systemMetrics *SystemMetrics
+	database       *database.Database
+	components     map[string]*ComponentHealth
+	systemMetrics  *SystemMetrics
 	metricsTracker *MetricsTracker
-	startTime     time.Time
-	mu            sync.RWMutex
-	ctx           context.Context
-	cancel        context.CancelFunc
+	startTime      time.Time
+	mu             sync.RWMutex
+	ctx            context.Context
+	cancel         context.CancelFunc
 }
 
 // NewHealthChecker creates a new health checker
@@ -122,13 +134,13 @@ func NewHealthChecker(db *database.Database) *HealthChecker {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	hc := &HealthChecker{
-		database:      db,
-		components:    make(map[string]*ComponentHealth),
-		systemMetrics: &SystemMetrics{},
+		database:       db,
+		components:     make(map[string]*ComponentHealth),
+		systemMetrics:  &SystemMetrics{},
 		metricsTracker: NewMetricsTracker(),
-		startTime:     time.Now(),
-		ctx:           ctx,
-		cancel:        cancel,
+		startTime:      time.Now(),
+		ctx:            ctx,
+		cancel:         cancel,
 	}
 
 	// Initialize default components
@@ -205,6 +217,15 @@ func (hc *HealthChecker) GetComponentHealth() map[string]*ComponentHealth {
 	return components
 }
 
+// parseDuration parses a duration string safely
+func parseDuration(durationStr string) time.Duration {
+	duration, err := time.ParseDuration(durationStr)
+	if err != nil {
+		return 0
+	}
+	return duration
+}
+
 // GetSystemMetrics returns current system metrics
 func (hc *HealthChecker) GetSystemMetrics() *SystemMetrics {
 	hc.mu.RLock()
@@ -273,7 +294,7 @@ func (hc *HealthChecker) checkDatabaseHealth() {
 	if hc.database == nil {
 		hc.mu.Lock()
 		defer hc.mu.Unlock()
-		
+
 		component := hc.components["database"]
 		component.LastChecked = time.Now()
 		component.Status = HealthStatusUnhealthy
@@ -406,6 +427,18 @@ func (hc *HealthChecker) updateSystemMetrics() {
 
 	// Verification stats - get from tracker
 	hc.systemMetrics.VerificationStats = hc.metricsTracker.GetVerificationStats()
+
+	// Brotli metrics - get from tracker
+	brotliStats := hc.metricsTracker.GetBrotliMetrics()
+	hc.systemMetrics.BrotliMetrics = BrotliMetrics{
+		TestsPerformed:     brotliStats["tests_performed"].(int64),
+		SupportedModels:    brotliStats["supported_models"].(int64),
+		SupportRatePercent: brotliStats["support_rate_percent"].(float64),
+		AvgDetectionTime:   parseDuration(brotliStats["avg_detection_duration"].(string)),
+		CacheHits:          brotliStats["cache_hits"].(int64),
+		CacheMisses:        brotliStats["cache_misses"].(int64),
+		CacheHitRate:       brotliStats["cache_hit_rate"].(float64),
+	}
 }
 
 // RegisterHealthEndpoints registers health check endpoints with the API server

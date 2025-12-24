@@ -32,6 +32,13 @@ type MetricsTracker struct {
 	verSuccessRate         float64
 	verQueueLength         int
 
+	// Brotli compression metrics
+	brotliTestsPerformed    int64
+	brotliSupportedModels   int64
+	brotliDetectionDuration time.Duration
+	brotliCacheHits         int64
+	brotliCacheMisses       int64
+
 	// Notifications metrics
 	notifChannelsConfigured int
 	notifMessagesSent       int
@@ -53,7 +60,7 @@ type EndpointStatsInternal struct {
 func NewMetricsTracker() *MetricsTracker {
 	return &MetricsTracker{
 		apiEndpointStats: make(map[string]*EndpointStatsInternal),
-		startTime:       time.Now(),
+		startTime:        time.Now(),
 	}
 }
 
@@ -87,7 +94,7 @@ func (mt *MetricsTracker) RecordQuery(duration time.Duration) {
 	defer mt.mu.Unlock()
 
 	mt.dbQueryCount++
-	
+
 	// Update average duration
 	if mt.dbQueryCount == 1 {
 		mt.dbQueryDuration = duration
@@ -100,7 +107,7 @@ func (mt *MetricsTracker) RecordQuery(duration time.Duration) {
 func (mt *MetricsTracker) RecordQueryError() {
 	mt.mu.Lock()
 	defer mt.mu.Unlock()
-	
+
 	mt.dbErrorCount++
 }
 
@@ -118,7 +125,7 @@ func (mt *MetricsTracker) GetAPIMetrics() APIMetrics {
 		if stats.Requests > 0 {
 			avgResponse = stats.TotalDuration / time.Duration(stats.Requests)
 		}
-		
+
 		endpointStats[path] = EndpointStats{
 			Requests:        stats.Requests,
 			Errors:          stats.Errors,
@@ -152,7 +159,7 @@ func (mt *MetricsTracker) RecordAPIRequest(endpoint string) {
 		stats = &EndpointStatsInternal{}
 		mt.apiEndpointStats[endpoint] = stats
 	}
-	
+
 	stats.mu.Lock()
 	stats.Requests++
 	stats.LastRequest = time.Now()
@@ -235,7 +242,7 @@ func (mt *MetricsTracker) GetVerificationStats() VerificationStats {
 func (mt *MetricsTracker) RecordVerificationStarted() {
 	mt.mu.Lock()
 	defer mt.mu.Unlock()
-	
+
 	mt.verActiveVerifications++
 	if mt.verQueueLength > 0 {
 		mt.verQueueLength--
@@ -245,14 +252,14 @@ func (mt *MetricsTracker) RecordVerificationStarted() {
 func (mt *MetricsTracker) RecordVerificationCompleted(success bool, duration time.Duration) {
 	mt.mu.Lock()
 	defer mt.mu.Unlock()
-	
+
 	mt.verActiveVerifications--
 	mt.verCompletedToday++
-	
+
 	if !success {
 		mt.verFailedToday++
 	}
-	
+
 	// Update average duration
 	totalCompleted := mt.verCompletedToday
 	if totalCompleted == 1 {
@@ -260,7 +267,7 @@ func (mt *MetricsTracker) RecordVerificationCompleted(success bool, duration tim
 	} else {
 		mt.verAverageDuration = (mt.verAverageDuration*time.Duration(totalCompleted-1) + duration) / time.Duration(totalCompleted)
 	}
-	
+
 	// Update success rate
 	if totalCompleted > 0 {
 		mt.verSuccessRate = float64(totalCompleted-mt.verFailedToday) / float64(totalCompleted)
@@ -271,6 +278,63 @@ func (mt *MetricsTracker) QueueVerification() {
 	mt.mu.Lock()
 	defer mt.mu.Unlock()
 	mt.verQueueLength++
+}
+
+// Brotli Compression Stats Methods
+
+func (mt *MetricsTracker) RecordBrotliTest(supportsBrotli bool, duration time.Duration) {
+	mt.mu.Lock()
+	defer mt.mu.Unlock()
+
+	mt.brotliTestsPerformed++
+	if supportsBrotli {
+		mt.brotliSupportedModels++
+	}
+
+	// Update average detection duration
+	if mt.brotliTestsPerformed == 1 {
+		mt.brotliDetectionDuration = duration
+	} else {
+		mt.brotliDetectionDuration = (mt.brotliDetectionDuration*time.Duration(mt.brotliTestsPerformed-1) + duration) / time.Duration(mt.brotliTestsPerformed)
+	}
+}
+
+func (mt *MetricsTracker) RecordBrotliCacheHit() {
+	mt.mu.Lock()
+	defer mt.mu.Unlock()
+	mt.brotliCacheHits++
+}
+
+func (mt *MetricsTracker) RecordBrotliCacheMiss() {
+	mt.mu.Lock()
+	defer mt.mu.Unlock()
+	mt.brotliCacheMisses++
+}
+
+func (mt *MetricsTracker) GetBrotliMetrics() map[string]interface{} {
+	mt.mu.RLock()
+	defer mt.mu.RUnlock()
+
+	totalTests := mt.brotliTestsPerformed
+	cacheHitRate := 0.0
+	if totalTests > 0 {
+		cacheHitRate = float64(mt.brotliCacheHits) / float64(mt.brotliCacheHits+mt.brotliCacheMisses) * 100
+	}
+
+	supportRate := 0.0
+	if totalTests > 0 {
+		supportRate = float64(mt.brotliSupportedModels) / float64(totalTests) * 100
+	}
+
+	return map[string]interface{}{
+		"tests_performed":        totalTests,
+		"supported_models":       mt.brotliSupportedModels,
+		"support_rate_percent":   supportRate,
+		"avg_detection_duration": mt.brotliDetectionDuration.String(),
+		"cache_hits":             mt.brotliCacheHits,
+		"cache_misses":           mt.brotliCacheMisses,
+		"cache_hit_rate":         cacheHitRate,
+	}
 }
 
 // Notification Stats Methods
@@ -295,15 +359,15 @@ func (mt *MetricsTracker) SetNotificationChannels(count int) {
 func (mt *MetricsTracker) RecordNotificationSent(delivered bool) {
 	mt.mu.Lock()
 	defer mt.mu.Unlock()
-	
+
 	mt.notifMessagesSent++
-	
+
 	// Update delivery rate
 	totalSent := mt.notifMessagesSent
 	if totalSent > 0 {
 		deliveredCount := float64(totalSent)
 		if delivered {
-			deliveredCount = float64(mt.notifMessagesSent - 1) + 1
+			deliveredCount = float64(mt.notifMessagesSent-1) + 1
 		}
 		mt.notifDeliveryRate = deliveredCount / float64(totalSent)
 	}
