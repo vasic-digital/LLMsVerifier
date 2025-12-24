@@ -748,8 +748,6 @@ func discoverHuggingFaceModels(ctx context.Context, apiKey string, freeToUse boo
 			Capabilities: caps,
 			Features: ModelFeatures{
 				Embeddings: embeddings,
-				HTTP3:      http3,
-				ToonFormat: toon,
 			},
 			FreeToUse: freeToUse,
 		})
@@ -824,8 +822,6 @@ func discoverSiliconFlowModels(ctx context.Context, apiKey string, freeToUse boo
 			Name:         name,
 			Capabilities: []string{}, // Will be determined by testing
 			Features: ModelFeatures{
-				HTTP3:      http3,
-				ToonFormat: toon,
 			},
 			FreeToUse: freeToUse,
 		})
@@ -908,8 +904,6 @@ func discoverOpenRouterModels(ctx context.Context, apiKey string, freeToUse bool
 			Name:         name,
 			Capabilities: []string{}, // Will be determined by testing
 			Features: ModelFeatures{
-				HTTP3:      http3,
-				ToonFormat: toon,
 			},
 			FreeToUse: isFree,
 		})
@@ -995,11 +989,31 @@ func discoverOpenAIModels(ctx context.Context, endpoint, apiKey string, freeToUs
 			Name:         name,
 			Capabilities: []string{"chat"},
 			Features: ModelFeatures{
-				HTTP3:      http3,
-				ToonFormat: toon,
 			},
 			FreeToUse: freeToUse,
 		})
 	}
 	return models, nil
+}
+func getProviderNameFromEndpoint(endpoint string) string {
+	switch {
+	case strings.Contains(endpoint, "openrouter"):
+		return "OpenRouter"
+	case strings.Contains(endpoint, "chutes"):
+		return "Chutes"
+	case strings.Contains(endpoint, "siliconflow"):
+		return "SiliconFlow"
+	case strings.Contains(endpoint, "kimi"):
+		return "Kimi"
+	case strings.Contains(endpoint, "deepseek"):
+		return "DeepSeek"
+	case strings.Contains(endpoint, "z.ai"):
+		return "Z.AI"
+	case strings.Contains(endpoint, "qwen"):
+		return "Qwen"
+	case strings.Contains(endpoint, "claude"):
+		return "Claude"
+	default:
+		return "Unknown"
+	}
 }
