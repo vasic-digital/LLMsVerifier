@@ -10,15 +10,21 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"llm-verifier/monitoring"
 )
 
 // HTTPClient represents an HTTP client for making LLM API requests
 type HTTPClient struct {
 	client           *http.Client
-	brotliCache      map[string]bool
+	brotliCache      map[string]BrotliCacheEntry
 	brotliCacheMutex sync.RWMutex
-	cacheTTL         time.Duration
-	metricsTracker   MetricsTrackerInterface
+	metricsTracker   *monitoring.MetricsTracker
+}
+
+type BrotliCacheEntry struct {
+	Value      bool
+	Expiration time.Time
 }
 
 // MetricsTrackerInterface defines the interface for tracking metrics
@@ -33,14 +39,13 @@ func NewHTTPClient(timeout time.Duration) *HTTPClient {
 		client: &http.Client{
 			Timeout: timeout,
 		},
-		brotliCache:    make(map[string]bool),
-		cacheTTL:       24 * time.Hour, // Cache results for 24 hours
-		metricsTracker: nil,            // Default to nil - can be set later
+		brotliCache:    make(map[string]BrotliCacheEntry),
+		metricsTracker: nil, // Default to nil - can be set later
 	}
 }
 
 // SetMetricsTracker sets the metrics tracker for the HTTP client
-func (c *HTTPClient) SetMetricsTracker(tracker MetricsTrackerInterface) {
+func (c *HTTPClient) SetMetricsTracker(tracker *monitoring.MetricsTracker) {
 	c.metricsTracker = tracker
 }
 
@@ -255,15 +260,25 @@ func (c *HTTPClient) TestBrotliSupport(ctx context.Context, provider, apiKey, mo
 
 	// Check cache first
 	c.brotliCacheMutex.RLock()
-	if cachedResult, exists := c.brotliCache[cacheKey]; exists {
-		c.brotliCacheMutex.RUnlock()
-		// Track cache hit
-		if c.metricsTracker != nil {
-			c.metricsTracker.RecordBrotliCacheHit()
+	if cachedEntry, exists := c.brotliCache[cacheKey]; exists {
+		// Check if cache entry is still valid
+		if time.Now().Before(cachedEntry.Expiration) {
+			c.brotliCacheMutex.RUnlock()
+			// Track cache hit
+			if c.metricsTracker != nil {
+				c.metricsTracker.RecordBrotliCacheHit()
+			}
+			return cachedEntry.Value, nil
+		} else {
+			// Entry expired, remove it
+			c.brotliCacheMutex.RUnlock()
+			c.brotliCacheMutex.Lock()
+			delete(c.brotliCache, cacheKey)
+			c.brotliCacheMutex.Unlock()
 		}
-		return cachedResult, nil
+	} else {
+		c.brotliCacheMutex.RUnlock()
 	}
-	c.brotliCacheMutex.RUnlock()
 
 	// Track cache miss
 	if c.metricsTracker != nil {
@@ -321,9 +336,12 @@ func (c *HTTPClient) TestBrotliSupport(ctx context.Context, provider, apiKey, mo
 	// If either the response is compressed with Brotli or the server accepts Brotli requests
 	result := supportsBrotli || encodingAccepted
 
-	// Cache the result
+	// Cache the result with 24-hour TTL
 	c.brotliCacheMutex.Lock()
-	c.brotliCache[cacheKey] = result
+	c.brotliCache[cacheKey] = BrotliCacheEntry{
+		Value:      result,
+		Expiration: time.Now().Add(24 * time.Hour),
+	}
 	c.brotliCacheMutex.Unlock()
 
 	// Track Brotli test result
@@ -338,6 +356,6 @@ func (c *HTTPClient) TestBrotliSupport(ctx context.Context, provider, apiKey, mo
 // ClearBrotliCache clears the Brotli support cache
 func (c *HTTPClient) ClearBrotliCache() {
 	c.brotliCacheMutex.Lock()
-	c.brotliCache = make(map[string]bool)
+	c.brotliCache = make(map[string]BrotliCacheEntry)
 	c.brotliCacheMutex.Unlock()
 }
