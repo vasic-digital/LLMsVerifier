@@ -36,14 +36,11 @@ func (c *HTTPClient) TestModelExists(ctx context.Context, provider, apiKey, mode
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 	req.Header.Set("Content-Type", "application/json")
 
-	start := time.Now()
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return false, err
 	}
 	defer resp.Body.Close()
-
-	latency := time.Since(start)
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -84,12 +81,12 @@ func (c *HTTPClient) TestResponsiveness(ctx context.Context, provider, apiKey, m
 
 	jsonBody, err := json.Marshal(requestBody)
 	if err != nil {
-		return time.Duration(0), err, "", false, 0, nil
+		return time.Duration(0), time.Duration(0), err, "", false, 0, nil
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, strings.NewReader(string(jsonBody)))
 	if err != nil {
-		return time.Duration(0), err, "", false, 0, nil
+		return time.Duration(0), time.Duration(0), err, "", false, 0, nil
 	}
 
 	req.Header.Set("Authorization", "Bearer "+apiKey)
@@ -98,25 +95,31 @@ func (c *HTTPClient) TestResponsiveness(ctx context.Context, provider, apiKey, m
 	start := time.Now()
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return time.Duration(0), err, "", false, 0, err
+		return time.Duration(0), time.Duration(0), err, "", false, 0, err
 	}
 	defer resp.Body.Close()
 
 	totalTime := time.Since(start)
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return time.Duration(0), time.Duration(0), err, "", false, 0, nil
+	}
 
 	// Parse response for TTFT (time to first token)
 	var response map[string]interface{}
 	if err := json.Unmarshal(body, &response); err == nil {
 		// Estimate TTFT as 20% of total time for non-streaming
 		ttft := time.Duration(float64(totalTime) * 0.2)
-		statusCode := resp.StatusCode
 
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-			return totalTime, ttft, "", resp.StatusCode, true, ""
+			return totalTime, ttft, nil, "", true, resp.StatusCode, nil
 		}
 
-		return totalTime, ttft, "", resp.StatusCode, false, fmt.Sprintf("HTTP %d: %s", resp.StatusCode, string(body))
+		return totalTime, ttft, nil, fmt.Sprintf("HTTP %d", resp.StatusCode), false, resp.StatusCode, nil
 	}
+
+	return totalTime, time.Duration(0), nil, "Invalid response format", false, resp.StatusCode, nil
 }
 
 // TestStreaming tests if a model supports streaming responses
