@@ -44,6 +44,8 @@ type ModelFeatures struct {
 	Embeddings      []string `json:"embeddings,omitempty"`
 	Streaming       bool     `json:"streaming,omitempty"`
 	FunctionCalling bool     `json:"function_calling,omitempty"`
+	HTTP3           bool     `json:"http3,omitempty"`
+	ToonFormat      bool     `json:"toon_format,omitempty"`
 }
 
 // ProviderFeatures holds provider-level features
@@ -751,6 +753,8 @@ func discoverHuggingFaceModels(ctx context.Context, apiKey string, freeToUse boo
 			Capabilities: caps,
 			Features: ModelFeatures{
 				Embeddings: embeddings,
+				HTTP3:      http3,
+				ToonFormat: toon,
 			},
 			FreeToUse: freeToUse,
 		})
