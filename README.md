@@ -157,7 +157,13 @@ The LLM Verifier implements secure configuration management:
 - **Crush**: Full JSON schema compliance with providers, models, costs, and options
 - **OpenCode**: Official format with `$schema`, `provider` object containing `options.apiKey` and empty `models`
 
+### Challenges
+
+For detailed information about each challenge, its purpose, and implementation, see the [Challenges Catalog](docs/CHALLENGES_CATALOG.md).
+
 ### Running Challenges
+
+For a complete understanding of what each challenge does, see the [Challenges Catalog](docs/CHALLENGES_CATALOG.md).
 
 To run LLM verification challenges:
 
