@@ -29,14 +29,12 @@ type ProviderInfo struct {
 
 // ModelInfo holds information about a discovered model
 type ModelInfo struct {
-	ID            string        `json:"id"`
-	Name          string        `json:"name"`
-	ContextSize   int           `json:"context_size,omitempty"`
-	Capabilities  []string      `json:"capabilities"`
-	Features      ModelFeatures `json:"features"`
-	FreeToUse     bool          `json:"free_to_use"`
-	SupportsHTTP3 bool          `json:"supports_http3,omitempty"`
-	SupportsToon  bool          `json:"supports_toon,omitempty"`
+	ID           string        `json:"id"`
+	Name         string        `json:"name"`
+	ContextSize  int           `json:"context_size,omitempty"`
+	Capabilities []string      `json:"capabilities"`
+	Features     ModelFeatures `json:"features"`
+	FreeToUse    bool          `json:"free_to_use"`
 }
 
 // ModelFeatures holds feature information for a model
@@ -46,8 +44,6 @@ type ModelFeatures struct {
 	Embeddings      []string `json:"embeddings,omitempty"`
 	Streaming       bool     `json:"streaming,omitempty"`
 	FunctionCalling bool     `json:"function_calling,omitempty"`
-	HTTP3           bool     `json:"http3,omitempty"`
-	ToonFormat      bool     `json:"toon_format,omitempty"`
 }
 
 // ProviderFeatures holds provider-level features
@@ -275,12 +271,6 @@ func createCrushConfig(result ChallengeResult) map[string]interface{} {
 				}
 
 				// Add Crush-specific fields
-				if model.SupportsHTTP3 {
-					modelConfig["supports_http3"] = true
-				}
-				if model.SupportsToon {
-					modelConfig["supports_toon"] = true
-				}
 
 				models = append(models, modelConfig)
 			}
@@ -423,25 +413,15 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 
 		models = make([]ModelInfo, 0, len(nvidiaModels))
 		for _, m := range nvidiaModels {
-			// Detect advanced features
-			http3 := detectHTTP3Support(m.id, "Nvidia", m.capabilities)
-			toon := detectToonFormatSupport(m.id, "Nvidia", m.capabilities)
-
-			// Add detected features
-			m.features.HTTP3 = http3
-			m.features.ToonFormat = toon
-
-			// Build name with all suffixes
-			name := buildModelNameWithSuffixes(m.name, test.FreeToUse, http3, toon)
+			// Build name with suffixes
+			name := buildModelNameWithSuffixes(m.name, test.FreeToUse, false, false)
 
 			models = append(models, ModelInfo{
-				ID:            m.id,
-				Name:          name,
-				Capabilities:  m.capabilities,
-				Features:      m.features,
-				FreeToUse:     test.FreeToUse,
-				SupportsHTTP3: m.features.HTTP3,
-				SupportsToon:  m.features.ToonFormat,
+				ID:           m.id,
+				Name:         name,
+				Capabilities: m.capabilities,
+				Features:     m.features,
+				FreeToUse:    test.FreeToUse,
 			})
 		}
 		provider.APIEndpoint = "https://integrate.api.nvidia.com/v1"
@@ -469,15 +449,13 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 
 		models = make([]ModelInfo, 0, len(kimiModels))
 		for _, m := range kimiModels {
-			http3 := detectHTTP3Support(m.id, "Kimi", m.capabilities)
-			toon := detectToonFormatSupport(m.id, "Kimi", m.capabilities)
-			name := buildModelNameWithSuffixes(m.name, test.FreeToUse, http3, toon)
+			name := buildModelNameWithSuffixes(m.name, test.FreeToUse, false, false)
 
 			models = append(models, ModelInfo{
 				ID:           m.id,
 				Name:         name,
 				Capabilities: m.capabilities,
-				Features:     ModelFeatures{HTTP3: http3, ToonFormat: toon},
+				Features:     ModelFeatures{},
 				FreeToUse:    test.FreeToUse,
 			})
 		}
@@ -497,15 +475,13 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 
 		models = make([]ModelInfo, 0, len(geminiModels))
 		for _, m := range geminiModels {
-			http3 := detectHTTP3Support(m.id, "Gemini", m.capabilities)
-			toon := detectToonFormatSupport(m.id, "Gemini", m.capabilities)
-			name := buildModelNameWithSuffixes(m.name, test.FreeToUse, http3, toon)
+			name := buildModelNameWithSuffixes(m.name, test.FreeToUse, false, false)
 
 			models = append(models, ModelInfo{
 				ID:           m.id,
 				Name:         name,
 				Capabilities: m.capabilities,
-				Features:     ModelFeatures{HTTP3: http3, ToonFormat: toon},
+				Features:     ModelFeatures{},
 				FreeToUse:    test.FreeToUse,
 			})
 		}
@@ -529,15 +505,13 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 
 		models = make([]ModelInfo, 0, len(deepSeekModels))
 		for _, m := range deepSeekModels {
-			http3 := detectHTTP3Support(m.id, "DeepSeek", m.capabilities)
-			toon := detectToonFormatSupport(m.id, "DeepSeek", m.capabilities)
-			name := buildModelNameWithSuffixes(m.name, test.FreeToUse, http3, toon)
+			name := buildModelNameWithSuffixes(m.name, test.FreeToUse, false, false)
 
 			models = append(models, ModelInfo{
 				ID:           m.id,
 				Name:         name,
 				Capabilities: m.capabilities,
-				Features:     ModelFeatures{HTTP3: http3, ToonFormat: toon},
+				Features:     ModelFeatures{},
 				FreeToUse:    test.FreeToUse,
 			})
 		}
@@ -557,15 +531,13 @@ func testProvider(ctx context.Context, test ProviderTest, logDir string) Provide
 
 		models = make([]ModelInfo, 0, len(zaiModels))
 		for _, m := range zaiModels {
-			http3 := detectHTTP3Support(m.id, "Z.AI", m.capabilities)
-			toon := detectToonFormatSupport(m.id, "Z.AI", m.capabilities)
-			name := buildModelNameWithSuffixes(m.name, test.FreeToUse, http3, toon)
+			name := buildModelNameWithSuffixes(m.name, test.FreeToUse, false, false)
 
 			models = append(models, ModelInfo{
 				ID:           m.id,
 				Name:         name,
 				Capabilities: m.capabilities,
-				Features:     ModelFeatures{HTTP3: http3, ToonFormat: toon},
+				Features:     ModelFeatures{},
 				FreeToUse:    test.FreeToUse,
 			})
 		}
