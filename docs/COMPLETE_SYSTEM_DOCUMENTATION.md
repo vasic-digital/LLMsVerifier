@@ -246,7 +246,7 @@ The system includes a dedicated tool for generating valid Crush configurations:
 
 ```bash
 # Convert discovery results to Crush config
-go run crush_config_converter.go discovery_results.json
+go run crush_config_converter.go results/provider_models_discovery/providers_crush.json
 ```
 
 **Features:**
@@ -254,6 +254,12 @@ go run crush_config_converter.go discovery_results.json
 - Calculates realistic cost estimates
 - Generates provider-specific configurations
 - Includes LSP and options sections
+
+**Security Features:**
+- Creates both full and redacted versions of configuration files
+- Full versions contain actual API keys (automatically gitignored)
+- Redacted versions have API keys removed (safe for version control)
+- Prevents accidental secret exposure in repositories
 
 #### OpenCode Configuration Management
 

@@ -23,13 +23,14 @@ type ProviderInfo struct {
 	Name        string      `json:"name"`
 	Type        string      `json:"type"`
 	APIEndpoint string      `json:"api_endpoint"`
+	ApiKey      string      `json:"api_key"`
 	Models      []ModelInfo `json:"models"`
 	Status      string      `json:"status"`
 	FreeToUse   bool        `json:"free_to_use"`
 }
 
-type ChallengeResult struct {
-	Providers []ProviderInfo `json:"providers"`
+type DiscoveryResult struct {
+	Providers map[string]ProviderInfo `json:"providers"`
 }
 
 // Crush config structures
@@ -63,6 +64,7 @@ type CrushProvider struct {
 	Name    string       `json:"name"`
 	Type    string       `json:"type"`
 	BaseURL string       `json:"base_url"`
+	ApiKey  string       `json:"api_key,omitempty"`
 	Models  []CrushModel `json:"models"`
 }
 
@@ -85,7 +87,7 @@ func main() {
 		log.Fatalf("Failed to read discovery file: %v", err)
 	}
 
-	var result ChallengeResult
+	var result DiscoveryResult
 	if err := json.Unmarshal(data, &result); err != nil {
 		log.Fatalf("Failed to parse JSON: %v", err)
 	}
@@ -97,26 +99,41 @@ func main() {
 		log.Fatalf("Failed to marshal config: %v", err)
 	}
 
+	// Write full config (with API keys)
 	outputFile := strings.TrimSuffix(discoveryFile, filepath.Ext(discoveryFile)) + "_crush_config.json"
 	if err := ioutil.WriteFile(outputFile, output, 0644); err != nil {
 		log.Fatalf("Failed to write config: %v", err)
 	}
 
+	// Create redacted config (remove API keys)
+	redactedConfig := createRedactedCrushConfig(crushConfig)
+	redactedOutput, err := json.MarshalIndent(redactedConfig, "", "  ")
+	if err != nil {
+		log.Fatalf("Failed to marshal redacted config: %v", err)
+	}
+
+	redactedOutputFile := strings.TrimSuffix(discoveryFile, filepath.Ext(discoveryFile)) + "_crush_config_redacted.json"
+	if err := ioutil.WriteFile(redactedOutputFile, redactedOutput, 0644); err != nil {
+		log.Fatalf("Failed to write redacted config: %v", err)
+	}
+
 	fmt.Printf("Crush config written to: %s\n", outputFile)
+	fmt.Printf("Redacted Crush config written to: %s\n", redactedOutputFile)
 }
 
-func convertToCrushConfig(result ChallengeResult) CrushConfig {
+func convertToCrushConfig(result DiscoveryResult) CrushConfig {
 	providers := make(map[string]CrushProvider)
 
-	for _, provider := range result.Providers {
+	for name, provider := range result.Providers {
 		if len(provider.Models) == 0 {
 			continue // Skip providers with no models
 		}
 
 		crushProvider := CrushProvider{
-			Name:    provider.Name,
-			Type:    getProviderType(provider.Name),
+			Name:    name,
+			Type:    getProviderType(name),
 			BaseURL: provider.APIEndpoint,
+			ApiKey:  provider.ApiKey, // Keep API key for full config
 			Models:  make([]CrushModel, 0, len(provider.Models)),
 		}
 
@@ -124,10 +141,10 @@ func convertToCrushConfig(result ChallengeResult) CrushConfig {
 			crushModel := CrushModel{
 				ID:                  model.ID,
 				Name:                model.Name,
-				CostPer1MIn:         getCostPer1MIn(provider.Name, model.FreeToUse),
-				CostPer1MOut:        getCostPer1MOut(provider.Name, model.FreeToUse),
-				CostPer1MInCached:   getCostPer1MInCached(provider.Name, model.FreeToUse),
-				CostPer1MOutCached:  getCostPer1MOutCached(provider.Name, model.FreeToUse),
+				CostPer1MIn:         getCostPer1MIn(name, model.FreeToUse),
+				CostPer1MOut:        getCostPer1MOut(name, model.FreeToUse),
+				CostPer1MInCached:   getCostPer1MInCached(name, model.FreeToUse),
+				CostPer1MOutCached:  getCostPer1MOutCached(name, model.FreeToUse),
 				ContextWindow:       getContextWindow(model.ID),
 				DefaultMaxTokens:    getDefaultMaxTokens(model.ID),
 				CanReason:           hasCapability(model.Capabilities, "reasoning"),
@@ -136,14 +153,10 @@ func convertToCrushConfig(result ChallengeResult) CrushConfig {
 				Options:             CrushModelOptions{}, // Default empty options
 			}
 
-			if hasCapability(model.Capabilities, "multimodal") {
-				crushModel.SupportsAttachments = true
-			}
-
 			crushProvider.Models = append(crushProvider.Models, crushModel)
 		}
 
-		providers[strings.ToLower(provider.Name)] = crushProvider
+		providers[strings.ToLower(name)] = crushProvider
 	}
 
 	return CrushConfig{
@@ -259,4 +272,17 @@ func getStreamingSupport(model ModelInfo) bool {
 		}
 	}
 	return false
+}
+
+func createRedactedCrushConfig(config CrushConfig) CrushConfig {
+	redacted := config
+	redacted.Providers = make(map[string]CrushProvider)
+
+	for name, provider := range config.Providers {
+		redactedProvider := provider
+		redactedProvider.ApiKey = "" // Remove API key
+		redacted.Providers[name] = redactedProvider
+	}
+
+	return redacted
 }

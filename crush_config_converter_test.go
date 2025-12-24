@@ -6,9 +6,9 @@ import (
 
 func TestConvertToCrushConfig(t *testing.T) {
 	// Sample discovery data
-	discovery := ChallengeResult{
-		Providers: []ProviderInfo{
-			{
+	discovery := DiscoveryResult{
+		Providers: map[string]ProviderInfo{
+			"OpenAI": {
 				Name:        "OpenAI",
 				APIEndpoint: "https://api.openai.com/v1",
 				Models: []ModelInfo{
@@ -154,9 +154,9 @@ func TestGetProviderType(t *testing.T) {
 }
 
 func TestConvertToCrushConfigMultipleProviders(t *testing.T) {
-	discovery := ChallengeResult{
-		Providers: []ProviderInfo{
-			{
+	discovery := DiscoveryResult{
+		Providers: map[string]ProviderInfo{
+			"OpenAI": {
 				Name:        "OpenAI",
 				APIEndpoint: "https://api.openai.com/v1",
 				Models: []ModelInfo{
@@ -169,7 +169,7 @@ func TestConvertToCrushConfigMultipleProviders(t *testing.T) {
 					},
 				},
 			},
-			{
+			"Anthropic": {
 				Name:        "Anthropic",
 				APIEndpoint: "https://api.anthropic.com/v1",
 				Models: []ModelInfo{
