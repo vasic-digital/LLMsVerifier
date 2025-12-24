@@ -203,6 +203,38 @@ CREATE TABLE verification_results (
     FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE CASCADE
 );
 
+-- Verification scores table (coding capability scores)
+CREATE TABLE verification_scores (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    model_id INTEGER NOT NULL,
+    verification_result_id INTEGER,
+    score INTEGER NOT NULL CHECK (score >= 0 AND score <= 100),
+    score_type TEXT DEFAULT 'coding_capability', -- coding_capability, accuracy, speed, reliability
+    scoring_method TEXT DEFAULT 'benchmark', -- benchmark, manual, auto, hybrid
+    category TEXT, -- fully_coding_capable, coding_with_tools, chat_with_tooling, chat_only
+
+    -- Detailed benchmark scores (0-100 each)
+    code_correctness_score INTEGER,
+    code_quality_score INTEGER,
+    code_speed_score INTEGER,
+    error_handling_score INTEGER,
+    context_understanding_score INTEGER,
+
+    -- Evidence and metadata
+    evidence TEXT, -- JSON with test results and benchmarks
+    benchmark_version TEXT DEFAULT '1.0',
+    scored_by TEXT DEFAULT 'system',
+    confidence_level INTEGER CHECK (confidence_level >= 0 AND confidence_level <= 100),
+
+    scored_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP, -- When this score should be recalculated
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE CASCADE,
+    FOREIGN KEY (verification_result_id) REFERENCES verification_results(id) ON DELETE SET NULL
+);
+
 -- Issues table (documented problems with models)
 CREATE TABLE issues (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
