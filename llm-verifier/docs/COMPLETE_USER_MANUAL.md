@@ -608,13 +608,17 @@ The LLM Verifier provides specialized tools for managing configurations across d
 **Crush Configuration Generator:**
 ```bash
 # Generate Crush config from latest discovery
-go run crush_config_converter.go challenges/results/provider_models_discovery/.../results/providers_crush.json
+go run crush_config_converter.go results/provider_models_discovery/providers_crush.json
 
-# The output will be a valid Crush config with:
-# - Streaming flags set for compatible models
-# - Accurate cost estimates
-# - Provider-specific settings
+# Outputs:
+# - providers_crush_crush_config.json (full, with API keys - gitignored)
+# - providers_crush_crush_config_redacted.json (redacted, safe for sharing)
 ```
+
+**Sensitive Data Handling:**
+- Full configuration files containing API keys are automatically added to `.gitignore`
+- Redacted versions with empty API key fields are safe for version control
+- Never commit files containing actual secrets
 
 **OpenCode Configuration:**
 - Located in `test_exports/export_claude_code.json`
@@ -624,7 +628,8 @@ go run crush_config_converter.go challenges/results/provider_models_discovery/..
 **Best Practices:**
 - Run configuration generation after each discovery challenge
 - Verify streaming flags are correctly set
-- Test configurations before deployment
+- Use redacted versions for documentation and sharing
+- Keep full versions local and gitignored
 
 ### Performance Optimization
 
