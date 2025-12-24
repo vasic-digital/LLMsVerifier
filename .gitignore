@@ -179,3 +179,14 @@ dev/
 
 # Challenge results (may contain API keys)
 results/
+
+# API keys and credentials
+*api_key*
+*apikey*
+*api-key*
+opencode.json
+crush.json
+
+# Config exports with keys
+Downloads/opencode*.json
+Downloads/llm_verifier*with_keys*.json
