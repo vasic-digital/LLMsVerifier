@@ -237,3 +237,12 @@ func hasCapability(capabilities []string, cap string) bool {
 	}
 	return false
 }
+
+func getStreamingSupport(model ModelInfo) bool {
+	if streaming, ok := model.Features["streaming"]; ok {
+		if b, ok := streaming.(bool); ok {
+			return b
+		}
+	}
+	return false
+}

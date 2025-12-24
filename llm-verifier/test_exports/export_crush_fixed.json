@@ -692,7 +692,8 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "streaming": true
         },
         {
           "id": "meta-llama3-70b-instruct",
@@ -703,7 +704,8 @@
           "cost_per_1m_out_cached": 0,
           "context_window": 4096,
           "default_max_tokens": 4096,
-          "can_reason": false
+          "can_reason": false,
+          "streaming": true
         }
       ]
     },
