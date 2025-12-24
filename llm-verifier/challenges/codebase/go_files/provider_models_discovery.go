@@ -86,7 +86,10 @@ func init() {
 }
 
 func main() {
-	challengeDir := os.Args[1]
+	challengeDir := ""
+	if len(os.Args) > 1 {
+		challengeDir = os.Args[1]
+	}
 	if challengeDir == "" {
 		challengeDir = fmt.Sprintf("challenges/providers_models_discovery/%s/%s/%s/%d",
 			time.Now().Format("2006"), time.Now().Format("01"), time.Now().Format("02"), time.Now().Unix())
@@ -821,9 +824,8 @@ func discoverSiliconFlowModels(ctx context.Context, apiKey string, freeToUse boo
 			ID:           m.ID,
 			Name:         name,
 			Capabilities: []string{}, // Will be determined by testing
-			Features: ModelFeatures{
-			},
-			FreeToUse: freeToUse,
+			Features:     ModelFeatures{},
+			FreeToUse:    freeToUse,
 		})
 	}
 
@@ -903,9 +905,8 @@ func discoverOpenRouterModels(ctx context.Context, apiKey string, freeToUse bool
 			ID:           m.ID,
 			Name:         name,
 			Capabilities: []string{}, // Will be determined by testing
-			Features: ModelFeatures{
-			},
-			FreeToUse: isFree,
+			Features:     ModelFeatures{},
+			FreeToUse:    isFree,
 		})
 	}
 
@@ -988,9 +989,8 @@ func discoverOpenAIModels(ctx context.Context, endpoint, apiKey string, freeToUs
 			ID:           m.ID,
 			Name:         name,
 			Capabilities: []string{"chat"},
-			Features: ModelFeatures{
-			},
-			FreeToUse: freeToUse,
+			Features:     ModelFeatures{},
+			FreeToUse:    freeToUse,
 		})
 	}
 	return models, nil
