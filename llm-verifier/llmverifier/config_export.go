@@ -384,6 +384,26 @@ func createOpenCodeModelSettings(result VerificationResult, provider string) map
 		baseSettings["temperature"] = 0.9
 		baseSettings["model_family"] = "gemini"
 		baseSettings["streaming_supported"] = true
+	case "Groq":
+		baseSettings["temperature"] = 0.7
+		baseSettings["model_family"] = "groq"
+		baseSettings["streaming_supported"] = true
+	case "TogetherAI":
+		baseSettings["temperature"] = 0.7
+		baseSettings["model_family"] = "together"
+		baseSettings["streaming_supported"] = true
+	case "Fireworks":
+		baseSettings["temperature"] = 0.7
+		baseSettings["model_family"] = "fireworks"
+		baseSettings["streaming_supported"] = true
+	case "Poe":
+		baseSettings["temperature"] = 0.7
+		baseSettings["model_family"] = "poe"
+		baseSettings["streaming_supported"] = true
+	case "Navigator":
+		baseSettings["temperature"] = 0.7
+		baseSettings["model_family"] = "navigator"
+		baseSettings["streaming_supported"] = true
 	}
 
 	// Add reasoning-specific settings
@@ -543,6 +563,26 @@ func createCrushModelSettings(result VerificationResult, provider string) map[st
 		baseSettings["model_family"] = "gemini"
 		baseSettings["code_optimization"] = true
 		baseSettings["streaming_supported"] = true
+	case "Groq":
+		baseSettings["model_family"] = "groq"
+		baseSettings["code_optimization"] = true
+		baseSettings["streaming_supported"] = true
+	case "TogetherAI":
+		baseSettings["model_family"] = "together"
+		baseSettings["code_optimization"] = true
+		baseSettings["streaming_supported"] = true
+	case "Fireworks":
+		baseSettings["model_family"] = "fireworks"
+		baseSettings["code_optimization"] = true
+		baseSettings["streaming_supported"] = true
+	case "Poe":
+		baseSettings["model_family"] = "poe"
+		baseSettings["code_optimization"] = true
+		baseSettings["streaming_supported"] = true
+	case "Navigator":
+		baseSettings["model_family"] = "navigator"
+		baseSettings["code_optimization"] = true
+		baseSettings["streaming_supported"] = true
 	}
 
 	// Add advanced coding features
@@ -682,6 +722,21 @@ func createClaudeCodeModelSettings(result VerificationResult, provider string) m
 		baseSettings["conversation_memory"] = true
 	case "DeepSeek":
 		baseSettings["model_family"] = "deepseek"
+		baseSettings["streaming_supported"] = true
+	case "Groq":
+		baseSettings["model_family"] = "groq"
+		baseSettings["streaming_supported"] = true
+	case "TogetherAI":
+		baseSettings["model_family"] = "together"
+		baseSettings["streaming_supported"] = true
+	case "Fireworks":
+		baseSettings["model_family"] = "fireworks"
+		baseSettings["streaming_supported"] = true
+	case "Poe":
+		baseSettings["model_family"] = "poe"
+		baseSettings["streaming_supported"] = true
+	case "Navigator":
+		baseSettings["model_family"] = "navigator"
 		baseSettings["streaming_supported"] = true
 		baseSettings["temperature"] = 0.4 // Slightly lower for DeepSeek
 	case "Google":

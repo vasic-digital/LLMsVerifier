@@ -52,6 +52,16 @@ func (ld *LimitsDetector) DetectLimits(providerName, modelID string, headers htt
 		return ld.detectGoogleLimits(headers)
 	case "cohere":
 		return ld.detectCohereLimits(headers)
+	case "groq":
+		return ld.detectGroqLimits(headers)
+	case "togetherai":
+		return ld.detectTogetherAILimits(headers)
+	case "fireworks":
+		return ld.detectFireworksLimits(headers)
+	case "poe":
+		return ld.detectPoeLimits(headers)
+	case "navigator":
+		return ld.detectNavigatorLimits(headers)
 	default:
 		return ld.detectGenericLimits(headers)
 	}
@@ -235,6 +245,66 @@ func (ld *LimitsDetector) detectCohereLimits(headers http.Header) (*LimitsInfo, 
 		}
 	}
 
+	return limits, nil
+}
+
+// detectGroqLimits detects limits for Groq
+func (ld *LimitsDetector) detectGroqLimits(headers http.Header) (*LimitsInfo, error) {
+	rpm := 30
+	limits := &LimitsInfo{
+		RequestsPerMinute: &rpm,
+		IsHardLimit:       true,
+		CurrentUsage:      make(map[string]int),
+		AdditionalLimits:  make(map[string]interface{}),
+	}
+	return limits, nil
+}
+
+// detectTogetherAILimits detects limits for Together AI
+func (ld *LimitsDetector) detectTogetherAILimits(headers http.Header) (*LimitsInfo, error) {
+	rpm := 10
+	limits := &LimitsInfo{
+		RequestsPerMinute: &rpm,
+		IsHardLimit:       true,
+		CurrentUsage:      make(map[string]int),
+		AdditionalLimits:  make(map[string]interface{}),
+	}
+	return limits, nil
+}
+
+// detectFireworksLimits detects limits for Fireworks AI
+func (ld *LimitsDetector) detectFireworksLimits(headers http.Header) (*LimitsInfo, error) {
+	rpm := 100
+	limits := &LimitsInfo{
+		RequestsPerMinute: &rpm,
+		IsHardLimit:       true,
+		CurrentUsage:      make(map[string]int),
+		AdditionalLimits:  make(map[string]interface{}),
+	}
+	return limits, nil
+}
+
+// detectPoeLimits detects limits for Poe
+func (ld *LimitsDetector) detectPoeLimits(headers http.Header) (*LimitsInfo, error) {
+	rpm := 60
+	limits := &LimitsInfo{
+		RequestsPerMinute: &rpm,
+		IsHardLimit:       true,
+		CurrentUsage:      make(map[string]int),
+		AdditionalLimits:  make(map[string]interface{}),
+	}
+	return limits, nil
+}
+
+// detectNavigatorLimits detects limits for NaviGator AI
+func (ld *LimitsDetector) detectNavigatorLimits(headers http.Header) (*LimitsInfo, error) {
+	rpm := 20
+	limits := &LimitsInfo{
+		RequestsPerMinute: &rpm,
+		IsHardLimit:       true,
+		CurrentUsage:      make(map[string]int),
+		AdditionalLimits:  make(map[string]interface{}),
+	}
 	return limits, nil
 }
 

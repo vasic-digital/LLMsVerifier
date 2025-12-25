@@ -159,11 +159,16 @@ type ProductionLoggingConfig struct {
 
 // ProvidersConfig holds LLM provider configurations
 type ProvidersConfig struct {
-	OpenAI    ProviderConfig `yaml:"openai"`
-	Anthropic ProviderConfig `yaml:"anthropic"`
-	Google    ProviderConfig `yaml:"google"`
-	Meta      ProviderConfig `yaml:"meta"`
-	DeepSeek  ProviderConfig `yaml:"deepseek"`
+	OpenAI     ProviderConfig `yaml:"openai"`
+	Anthropic  ProviderConfig `yaml:"anthropic"`
+	Google     ProviderConfig `yaml:"google"`
+	Meta       ProviderConfig `yaml:"meta"`
+	DeepSeek   ProviderConfig `yaml:"deepseek"`
+	Groq       ProviderConfig `yaml:"groq"`
+	TogetherAI ProviderConfig `yaml:"togetherai"`
+	Fireworks  ProviderConfig `yaml:"fireworks"`
+	Poe        ProviderConfig `yaml:"poe"`
+	Navigator  ProviderConfig `yaml:"navigator"`
 }
 
 // ProviderConfig holds individual provider configuration
