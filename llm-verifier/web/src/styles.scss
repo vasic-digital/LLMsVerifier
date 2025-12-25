@@ -1,100 +1,272 @@
-/* You can add global styles to this file, and also import other style files */
+@import 'variables';
 
-html, body {
-  height: 100%;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 body {
-  margin: 0;
-  font-family: Roboto, "Helvetica Neue", sans-serif;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  background: var(--background-primary);
+  color: var(--text-primary);
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
-// Dark theme
-.dark-theme {
-  --primary-bg: #121212;
-  --secondary-bg: #1e1e1e;
-  --card-bg: #2d2d2d;
-  --text-primary: #ffffff;
-  --text-secondary: #b0b0b0;
-  --border-color: #404040;
-  --hover-bg: #3d3d3d;
+body.dark-theme {
+  background: var(--background-dark);
+  color: var(--text-primary-dark);
+}
 
-  background-color: var(--primary-bg) !important;
-  color: var(--text-primary) !important;
+body.light-theme {
+  background: var(--background-primary);
+  color: var(--text-primary);
+}
 
-  .mat-toolbar {
-    background-color: var(--secondary-bg) !important;
-    color: var(--text-primary) !important;
-  }
+::selection {
+  background: var(--primary-color);
+  color: white;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: var(--radius-md);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--secondary-color);
+}
+
+.sidenav-container {
+  height: 100vh;
 
   .mat-sidenav {
-    background-color: var(--secondary-bg) !important;
+    background: var(--background-secondary);
+    border-right: 1px solid var(--border-color);
+    width: 320px;
+    box-shadow: var(--shadow-lg);
   }
 
-  .mat-nav-list a {
-    color: var(--text-primary) !important;
-
-    &:hover {
-      background-color: var(--hover-bg) !important;
-    }
+  .dark-theme .mat-sidenav {
+    background: var(--background-secondary-dark);
+    border-right-color: var(--border-color-dark);
   }
 
-  .mat-card {
-    background-color: var(--card-bg) !important;
-    color: var(--text-primary) !important;
-    border: 1px solid var(--border-color);
+  .sidenav-content {
+    padding: var(--spacing-lg);
+  }
+}
+
+.main-content {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background: var(--card-background);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  border-bottom: 1px solid var(--border-color);
+
+  .dark-theme & {
+    background: var(--card-dark);
+    border-bottom-color: var(--border-color-dark);
   }
 
-  .mat-form-field {
-    .mat-form-field-label {
-      color: var(--text-secondary) !important;
-    }
-
-    .mat-input-element {
-      color: var(--text-primary) !important;
-    }
-
-    .mat-form-field-outline {
-      color: var(--border-color) !important;
-    }
+  .header-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xl);
   }
 
-  .mat-button, .mat-raised-button {
-    background-color: var(--secondary-bg) !important;
-    color: var(--text-primary) !important;
+  .logo-section {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
 
-    &:hover {
-      background-color: var(--hover-bg) !important;
-    }
-  }
+    .logo-text {
+      h1 {
+        font-size: var(--font-size-xl);
+        font-weight: var(--font-weight-bold);
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        color: transparent;
+      }
 
-  .mat-table {
-    background-color: var(--card-bg) !important;
-
-    .mat-header-cell {
-      background-color: var(--secondary-bg) !important;
-      color: var(--text-primary) !important;
-    }
-
-    .mat-row {
-      background-color: var(--card-bg) !important;
-      color: var(--text-primary) !important;
-
-      &:hover {
-        background-color: var(--hover-bg) !important;
+      .tagline {
+        color: var(--text-secondary);
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        margin-top: var(--spacing-xs);
       }
     }
   }
+
+  .stats-section {
+    display: flex;
+    gap: var(--spacing-lg);
+  }
+
+  .stat-card {
+    flex: 1;
+    background: var(--card-background);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    text-align: center;
+    transition: all var(--transition-base);
+
+    .dark-theme & {
+      background: var(--card-dark);
+    }
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .stat-value {
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--primary-color);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .stat-label {
+      color: var(--text-secondary);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .stat-icon {
+      font-size: var(--font-size-xl);
+      color: var(--secondary-color);
+      margin-bottom: var(--spacing-sm);
+    }
+  }
 }
 
-// Light theme (default)
-.light-theme {
-  --primary-bg: #fafafa;
-  --secondary-bg: #ffffff;
-  --card-bg: #ffffff;
-  --text-primary: #212121;
-  --text-secondary: #757575;
-  --border-color: #e0e0e0;
-  --hover-bg: #f5f5f5;
+.router-container {
+  flex: 1;
+  overflow: hidden;
+}
+
+// Material Design Customizations
+.mat-toolbar {
+  background: var(--card-background);
+  border-bottom: 1px solid var(--border-color);
+
+  .dark-theme & {
+    background: var(--card-dark);
+    border-bottom-color: var(--border-color-dark);
+  }
+}
+
+.mat-card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
+
+  .dark-theme & {
+    background: var(--card-dark);
+  }
+}
+
+.mat-list-item {
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
+
+  &:hover {
+    background: var(--chip-background);
+  }
+
+  .dark-theme & {
+    color: var(--text-primary-dark);
+  }
+}
+
+.mat-button {
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+// Animation classes
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.slide-up {
+  animation: slideUp 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Responsive
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sidenav-container .mat-sidenav {
+    width: 100%;
+    position: fixed;
+    z-index: var(--z-sticky);
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: var(--spacing-md) var(--spacing-lg);
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
 }

@@ -1,13 +1,122 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>LLM Verifier Web</title>
-  <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLM Verifier - Automated LLM Testing & Verification Platform</title>
+  <meta name="description" content="Automated LLM verification and testing platform with 395 verified models, Brotli compression support, and comprehensive monitoring.">
+  <meta name="keywords" content="LLM, verification, testing, AI, machine learning, Brotli compression, OpenAI, Anthropic, Google">
+  <meta name="author" content="LLM Verifier Team">
+  
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  
+  <!-- Preconnect to external fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Open Graph Meta Tags -->
+  <meta property="og:title" content="LLM Verifier - AI Model Verification Platform">
+  <meta property="og:description" content="Verify and test 395+ LLM models across 7 providers with automated verification, Brotli compression support, and comprehensive monitoring.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="assets/images/llm-verifier-preview.png">
+  
+  <!-- Twitter Card Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="LLM Verifier - AI Model Verification Platform">
+  <meta name="twitter:description" content="Verify and test 395+ LLM models with automated verification and monitoring.">
+  <meta name="twitter:image" content="assets/images/llm-verifier-preview.png">
+  
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "LLM Verifier",
+    "url": "https://llm-verifier.com",
+    "description": "Automated LLM verification and testing platform",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://llm-verifier.com/search"
+    }
+  }
+  </script>
 </head>
-<body>
-  <app-root></app-root>
+<body class="light-theme">
+  <app-root>
+    <!-- Loading State -->
+    <div id="loading">
+      <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading LLM Verifier...</p>
+      </div>
+    </div>
+    
+    <!-- Loading Styles -->
+    <style>
+      #loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+      
+      .loading-container {
+        text-align: center;
+        color: white;
+      }
+      
+      .loading-spinner {
+        width: 60px;
+        height: 60px;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      p {
+        margin-top: 2rem;
+        font-size: 1.25rem;
+        font-weight: 500;
+        font-family: 'Inter', sans-serif;
+      }
+    </style>
+  </app-root>
+  
+  <!-- Remove loading when app is ready -->
+  <script>
+    window.addEventListener('load', () => {
+      const loading = document.getElementById('loading');
+      if (loading) {
+        setTimeout(() => {
+          loading.style.opacity = '0';
+          setTimeout(() => {
+            loading.remove();
+          }, 300);
+        }, 500);
+      }
+    });
+  </script>
+  
+  <!-- App will inject: <script src="runtime.js" type="module"></script> -->
+  <!-- App will inject: <script src="polyfills.js" type="module"></script> -->
+  <!-- App will inject: <script src="main.js" type="module"></script> -->
 </body>
 </html>
