@@ -1,7 +1,9 @@
 package events
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"llm-verifier/database"
@@ -10,12 +12,14 @@ import (
 // EventPublisher provides high-level event publishing functions
 type EventPublisher struct {
 	eventManager *EventManager
+	db           *database.Database
 }
 
 // NewEventPublisher creates a new event publisher
 func NewEventPublisher(eventManager *EventManager, db *database.Database) *EventPublisher {
 	return &EventPublisher{
 		eventManager: eventManager,
+		db:           db,
 	}
 }
 
@@ -278,6 +282,39 @@ func (ep *EventPublisher) PublishDatabaseMigration(migrationVersion int, descrip
 
 // publishAndStoreEvent publishes an event and stores it in the database
 func (ep *EventPublisher) publishAndStoreEvent(event *Event) error {
+	// Store in database first
+	if ep.db != nil {
+		dbEvent := convertToDatabaseEvent(event)
+		if err := ep.db.CreateEvent(dbEvent); err != nil {
+			// Log error but don't fail the publish
+			log.Printf("Failed to store event in database: %v", err)
+		}
+	}
+
 	// Publish to subscribers
 	return ep.eventManager.PublishEvent(event)
+}
+
+// convertToDatabaseEvent converts an events.Event to database.Event
+func convertToDatabaseEvent(event *Event) *database.Event {
+	var details *string
+	if event.Details != nil {
+		// Convert map to JSON string
+		if detailsBytes, err := json.Marshal(event.Details); err == nil {
+			detailsStr := string(detailsBytes)
+			details = &detailsStr
+		}
+	}
+
+	return &database.Event{
+		EventType:            string(event.Type),
+		Severity:             string(event.Severity),
+		Title:                event.Title,
+		Message:              event.Message,
+		Details:              details,
+		ModelID:              event.ModelID,
+		ProviderID:           event.ProviderID,
+		VerificationResultID: event.VerificationID,
+		IssueID:              event.IssueID,
+	}
 }
