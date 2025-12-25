@@ -283,7 +283,7 @@ func (fm *FailoverManager) calculateCostWeight(provider *database.Provider) floa
 	case "google":
 		return 0.6 // Balanced
 	case "mistral":
-		return 0.4 // Cost-effective
+		return 0.7 // Established provider
 	case "meta":
 		return 0.3 // Cost-effective
 	case "groq":

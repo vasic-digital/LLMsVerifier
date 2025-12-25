@@ -169,6 +169,7 @@ type ProvidersConfig struct {
 	Fireworks  ProviderConfig `yaml:"fireworks"`
 	Poe        ProviderConfig `yaml:"poe"`
 	Navigator  ProviderConfig `yaml:"navigator"`
+	Mistral    ProviderConfig `yaml:"mistral"`
 }
 
 // ProviderConfig holds individual provider configuration
