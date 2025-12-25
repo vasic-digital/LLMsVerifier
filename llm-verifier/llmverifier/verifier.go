@@ -475,7 +475,7 @@ func (v *Verifier) checkOverload(client *LLMClient, modelName string) (bool, Res
 	responseTime.MinLatency = latencies[0]
 	responseTime.MaxLatency = latencies[len(latencies)-1]
 	// Calculate p95 latency
-	p95Index := int(math.Ceil(0.95 * float64(len(latencies)))) - 1
+	p95Index := int(math.Ceil(0.95*float64(len(latencies)))) - 1
 	if p95Index < 0 {
 		p95Index = 0
 	}
@@ -1833,7 +1833,7 @@ func (v *Verifier) runLanguageSpecificTests(client *LLMClient, modelName string)
 
 	var pythonSuccessCount int
 	for _, test := range pythonTests {
-		if v.runSingleLanguageTest(client, modelName, "python", test.task) {
+		if v.runSingleLanguageTest(client, modelName, test.task) {
 			pythonSuccessCount++
 		}
 	}
@@ -1851,7 +1851,7 @@ func (v *Verifier) runLanguageSpecificTests(client *LLMClient, modelName string)
 
 	var jsSuccessCount int
 	for _, test := range jsTests {
-		if v.runSingleLanguageTest(client, modelName, "javascript", test.task) {
+		if v.runSingleLanguageTest(client, modelName, test.task) {
 			jsSuccessCount++
 		}
 	}
@@ -1869,7 +1869,7 @@ func (v *Verifier) runLanguageSpecificTests(client *LLMClient, modelName string)
 
 	var goSuccessCount int
 	for _, test := range goTests {
-		if v.runSingleLanguageTest(client, modelName, "go", test.task) {
+		if v.runSingleLanguageTest(client, modelName, test.task) {
 			goSuccessCount++
 		}
 	}
@@ -1887,7 +1887,7 @@ func (v *Verifier) runLanguageSpecificTests(client *LLMClient, modelName string)
 
 	var javaSuccessCount int
 	for _, test := range javaTests {
-		if v.runSingleLanguageTest(client, modelName, "java", test.task) {
+		if v.runSingleLanguageTest(client, modelName, test.task) {
 			javaSuccessCount++
 		}
 	}
@@ -1905,7 +1905,7 @@ func (v *Verifier) runLanguageSpecificTests(client *LLMClient, modelName string)
 
 	var cppSuccessCount int
 	for _, test := range cppTests {
-		if v.runSingleLanguageTest(client, modelName, "cpp", test.task) {
+		if v.runSingleLanguageTest(client, modelName, test.task) {
 			cppSuccessCount++
 		}
 	}
@@ -1923,7 +1923,7 @@ func (v *Verifier) runLanguageSpecificTests(client *LLMClient, modelName string)
 
 	var tsSuccessCount int
 	for _, test := range tsTests {
-		if v.runSingleLanguageTest(client, modelName, "typescript", test.task) {
+		if v.runSingleLanguageTest(client, modelName, test.task) {
 			tsSuccessCount++
 		}
 	}
@@ -1938,7 +1938,7 @@ func (v *Verifier) runLanguageSpecificTests(client *LLMClient, modelName string)
 }
 
 // runSingleLanguageTest runs a single test for a specific language
-func (v *Verifier) runSingleLanguageTest(client *LLMClient, modelName, language, task string) bool {
+func (v *Verifier) runSingleLanguageTest(client *LLMClient, modelName, task string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), v.cfg.Timeout)
 	defer cancel()
 

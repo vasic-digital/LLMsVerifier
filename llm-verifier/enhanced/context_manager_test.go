@@ -18,7 +18,6 @@ func TestNewContextManager(t *testing.T) {
 	assert.NotNil(t, cm.verifier)
 	assert.NotNil(t, cm.lastActivity)
 	assert.NotNil(t, cm.stopCh)
-	assert.NotNil(t, cm.mu)
 	assert.Equal(t, 1000, cm.maxContexts)
 	assert.Equal(t, 24*time.Hour, cm.contextTTL)
 }
