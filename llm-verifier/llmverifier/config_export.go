@@ -421,6 +421,7 @@ func createOpenCodeModelSettings(result VerificationResult, provider string) map
 }
 
 // createCrushConfig creates configuration for Crush
+// createCrushConfig creates configuration for Crush (currently unused but kept for future integration)
 func createCrushConfig(results []VerificationResult, options *ExportOptions) (*AIConfig, error) {
 	models := make([]AIModel, 0, len(results))
 	var totalScore float64
@@ -1269,6 +1270,7 @@ func validateFormatSpecific(configPath string, config *AIConfig) error {
 }
 
 // validateOpenCodeConfig validates OpenCode-specific requirements
+// validateOpenCodeConfig validates OpenCode configuration (currently unused but kept for future integration)
 func validateOpenCodeConfig(config *AIConfig) error {
 	// OpenCode requires at least one model with coding capabilities
 	hasCodingModel := false
@@ -1444,7 +1446,7 @@ func validatePreferences(config *AIConfig) error {
 
 // validateCrushConfigStructure validates Crush configuration structure
 func validateCrushConfigStructure(config *CrushConfig) error {
-	if config.Providers == nil || len(config.Providers) == 0 {
+	if len(config.Providers) == 0 {
 		return fmt.Errorf("Crush config must have at least one provider")
 	}
 
@@ -1478,12 +1480,13 @@ func validateCrushConfigStructure(config *CrushConfig) error {
 }
 
 // validateOpenCodeConfigStructure validates OpenCode configuration structure
+// validateOpenCodeConfigStructure validates OpenCode config structure (currently unused but kept for future integration)
 func validateOpenCodeConfigStructure(config *OpenCodeConfig) error {
 	if config.Schema == "" {
 		return fmt.Errorf("OpenCode config missing $schema field")
 	}
 
-	if config.Provider == nil || len(config.Provider) == 0 {
+	if len(config.Provider) == 0 {
 		return fmt.Errorf("OpenCode config must have at least one provider")
 	}
 
@@ -1513,7 +1516,7 @@ func validateOpenCodeConfigStructure(config *OpenCodeConfig) error {
 
 // fetchVerificationResults fetches real verification results from database
 func fetchVerificationResults(db *database.Database, options *ExportOptions) ([]VerificationResult, error) {
-	filters := make(map[string]interface{})
+	filters := make(map[string]any)
 
 	// Apply filters based on options
 	if options != nil {
@@ -1642,7 +1645,9 @@ func fetchVerificationResults(db *database.Database, options *ExportOptions) ([]
 }
 
 // parseJSONField parses JSON string fields, returns empty slice if invalid
-func parseJSONField(jsonStr interface{}) []string {
+// parseJSONField parses JSON field values (currently unused but kept for future integration)
+// parseJSONField parses JSON field values (currently unused but kept for future integration)
+func parseJSONField(jsonStr any) []string {
 	if jsonStr == nil {
 		return []string{}
 	}

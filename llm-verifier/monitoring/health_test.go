@@ -20,10 +20,10 @@ func TestHealthStatusConstants(t *testing.T) {
 func TestComponentHealthStruct(t *testing.T) {
 	now := time.Now()
 	health := ComponentHealth{
-		Name:        "Test Component",
-		Status:      HealthStatusHealthy,
-		Message:     "Component is healthy",
-		LastChecked: now,
+		Name:         "Test Component",
+		Status:       HealthStatusHealthy,
+		Message:      "Component is healthy",
+		LastChecked:  now,
 		ResponseTime: time.Millisecond * 100,
 		Details: map[string]interface{}{
 			"key": "value",
@@ -42,7 +42,7 @@ func TestSystemMetricsStruct(t *testing.T) {
 		Timestamp: time.Now(),
 		Uptime:    time.Hour,
 		MemoryUsage: MemoryStats{
-			Alloc:     1024,
+			Alloc:      1024,
 			TotalAlloc: 2048,
 		},
 		Goroutines: 10,
@@ -55,10 +55,10 @@ func TestSystemMetricsStruct(t *testing.T) {
 
 func TestMemoryStatsStruct(t *testing.T) {
 	stats := MemoryStats{
-		Alloc:       1000,
-		HeapAlloc:   2000,
-		HeapSys:     3000,
-		NumGC:       2,
+		Alloc:     1000,
+		HeapAlloc: 2000,
+		HeapSys:   3000,
+		NumGC:     2,
 	}
 
 	assert.Equal(t, uint64(1000), stats.Alloc)
@@ -148,20 +148,6 @@ func TestNewHealthChecker(t *testing.T) {
 
 func TestHealthCheckerStart(t *testing.T) {
 	t.Skip("Skipping test due to nil database")
-	return
-	
-	db := (*database.Database)(nil)
-	hc := NewHealthChecker(db)
-
-	// Start health checking
-	hc.Start(time.Millisecond * 100)
-
-	// Wait a bit
-	time.Sleep(time.Millisecond * 150)
-
-	// Stop health checking
-	hc.Stop()
-
 }
 
 func TestHealthCheckerStop(t *testing.T) {
@@ -213,19 +199,6 @@ func TestHealthCheckerGetSystemMetrics(t *testing.T) {
 
 func TestHealthCheckerComponentDetails(t *testing.T) {
 	t.Skip("Skipping test due to nil database")
-	return
-	
-	db := (*database.Database)(nil)
-	hc := NewHealthChecker(db)
-
-	components := hc.GetComponentHealth()
-
-	for _, component := range components {
-		assert.NotEmpty(t, component.Name)
-		assert.NotZero(t, component.LastChecked)
-		assert.NotNil(t, component.Details)
-	}
-
 }
 
 func TestHealthCheckerInitializeComponents(t *testing.T) {
@@ -243,18 +216,6 @@ func TestHealthCheckerInitializeComponents(t *testing.T) {
 
 func TestHealthCheckerCheckAllComponents(t *testing.T) {
 	t.Skip("Skipping test due to nil database")
-	return
-	
-	db := (*database.Database)(nil)
-	hc := NewHealthChecker(db)
-
-	// Manually trigger component checks
-	hc.checkAllComponents()
-
-	components := hc.GetComponentHealth()
-	for _, component := range components {
-		assert.NotZero(t, component.LastChecked)
-	}
 
 }
 
@@ -273,18 +234,6 @@ func TestHealthCheckerUpdateSystemMetrics(t *testing.T) {
 
 func TestHealthCheckerDatabaseHealth(t *testing.T) {
 	t.Skip("Skipping test due to nil database")
-	return
-	
-	db := (*database.Database)(nil)
-	hc := NewHealthChecker(db)
-
-	hc.checkDatabaseHealth()
-
-	component := hc.GetComponentHealth()["database"]
-	assert.Equal(t, "Database", component.Name)
-	assert.NotZero(t, component.LastChecked)
-	assert.NotNil(t, component.Details)
-
 }
 
 func TestHealthCheckerAPIHealth(t *testing.T) {
@@ -334,9 +283,9 @@ func TestHealthCheckerMetricsFields(t *testing.T) {
 	hc.metricsTracker.UpdateDatabaseStats(5, 10, 15)
 	hc.metricsTracker.RecordQuery(time.Millisecond * 15)
 	hc.metricsTracker.RecordAPIRequest("/api/v1/test")
-	hc.metricsTracker.RecordAPIResponse("/api/v1/test", time.Millisecond * 50)
+	hc.metricsTracker.RecordAPIResponse("/api/v1/test", time.Millisecond*50)
 	hc.metricsTracker.RecordVerificationStarted()
-	hc.metricsTracker.RecordVerificationCompleted(true, time.Minute * 3)
+	hc.metricsTracker.RecordVerificationCompleted(true, time.Minute*3)
 	hc.metricsTracker.SetNotificationChannels(3)
 
 	hc.updateSystemMetrics()
@@ -397,40 +346,11 @@ func TestHealthCheckerConcurrentAccess(t *testing.T) {
 
 func TestHealthCheckerStartStopMultipleTimes(t *testing.T) {
 	t.Skip("Skipping test due to nil database")
-	return
-	
-	db := (*database.Database)(nil)
-	hc := NewHealthChecker(db)
-
-	// Start and stop multiple times
-	for i := 0; i < 3; i++ {
-		hc.Start(time.Millisecond * 50)
-		time.Sleep(time.Millisecond * 20)
-		hc.Stop()
-	}
 
 }
 
 func TestHealthCheckerLongRunning(t *testing.T) {
 	t.Skip("Skipping test due to nil database")
-	return
-	
-	db := (*database.Database)(nil)
-	hc := NewHealthChecker(db)
-
-	hc.Start(time.Millisecond * 10)
-
-	// Let it run for a bit
-	time.Sleep(time.Millisecond * 50)
-
-	hc.Stop()
-
-	// Check that components were updated
-	components := hc.GetComponentHealth()
-	for _, component := range components {
-		assert.NotZero(t, component.LastChecked)
-	}
-
 }
 
 func TestHealthCheckerRegisterHealthEndpoints(t *testing.T) {
@@ -487,16 +407,6 @@ func TestHealthCheckerRegisterHealthEndpoints(t *testing.T) {
 
 func TestHealthCheckerEmptyDatabase(t *testing.T) {
 	t.Skip("Skipping test due to nil database")
-	return
-	
-	db := (*database.Database)(nil)
-	hc := NewHealthChecker(db)
-
-	// Even with empty DB, should be healthy
-	hc.checkDatabaseHealth()
-
-	component := hc.GetComponentHealth()["database"]
-	assert.NotNil(t, component)
 
 }
 
@@ -522,7 +432,6 @@ func TestHealthCheckerAPIMetricsDetails(t *testing.T) {
 	db := (*database.Database)(nil)
 	hc := NewHealthChecker(db)
 
-
 	// Note: Since we now use real MetricsTracker, record test data first
 	// Note: Since we now use real MetricsTracker, record test data first
 	hc.metricsTracker.RecordAPIRequest("/api/v1/models")
@@ -532,11 +441,6 @@ func TestHealthCheckerAPIMetricsDetails(t *testing.T) {
 	hc.metricsTracker.RecordAPIRequest("/api/v1/models")
 	hc.metricsTracker.RecordAPIResponse("/api/v1/models", time.Millisecond*60)
 	hc.metricsTracker.RecordAPIError("/api/v1/models")
-
-
-
-
-
 
 	hc.updateSystemMetrics()
 	metrics := hc.GetSystemMetrics()
