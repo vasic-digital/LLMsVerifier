@@ -51,6 +51,16 @@ func (pd *PricingDetector) DetectPricing(providerName, modelID string) (*Pricing
 		return pd.detectGooglePricing(modelID)
 	case "cohere":
 		return pd.detectCoherePricing(modelID)
+	case "groq":
+		return pd.detectGroqPricing(modelID)
+	case "togetherai":
+		return pd.detectTogetherAIPricing(modelID)
+	case "fireworks":
+		return pd.detectFireworksPricing(modelID)
+	case "poe":
+		return pd.detectPoePricing(modelID)
+	case "navigator":
+		return pd.detectNavigatorPricing(modelID)
 	default:
 		return pd.detectGenericPricing(providerName, modelID)
 	}
@@ -517,6 +527,56 @@ func (pd *PricingDetector) detectCoherePricing(modelID string) (*PricingInfo, er
 		Currency:        "USD",
 		PricingModel:    "per_token",
 		EffectiveFrom:   "2024-01-01",
+	}, nil
+}
+
+// detectGroqPricing detects pricing for Groq models
+func (pd *PricingDetector) detectGroqPricing(modelID string) (*PricingInfo, error) {
+	return &PricingInfo{
+		InputTokenCost:  0.01, // $0.00001 per token = $0.01 per 1M tokens
+		OutputTokenCost: 0.02,
+		Currency:        "USD",
+		PricingModel:    "per_token",
+	}, nil
+}
+
+// detectTogetherAIPricing detects pricing for Together AI models
+func (pd *PricingDetector) detectTogetherAIPricing(modelID string) (*PricingInfo, error) {
+	return &PricingInfo{
+		InputTokenCost:  0.02,
+		OutputTokenCost: 0.02,
+		Currency:        "USD",
+		PricingModel:    "per_token",
+	}, nil
+}
+
+// detectFireworksPricing detects pricing for Fireworks AI models
+func (pd *PricingDetector) detectFireworksPricing(modelID string) (*PricingInfo, error) {
+	return &PricingInfo{
+		InputTokenCost:  0.01,
+		OutputTokenCost: 0.01,
+		Currency:        "USD",
+		PricingModel:    "per_token",
+	}, nil
+}
+
+// detectPoePricing detects pricing for Poe models
+func (pd *PricingDetector) detectPoePricing(modelID string) (*PricingInfo, error) {
+	return &PricingInfo{
+		InputTokenCost:  0.03,
+		OutputTokenCost: 0.06,
+		Currency:        "USD",
+		PricingModel:    "per_token",
+	}, nil
+}
+
+// detectNavigatorPricing detects pricing for NaviGator AI models
+func (pd *PricingDetector) detectNavigatorPricing(modelID string) (*PricingInfo, error) {
+	return &PricingInfo{
+		InputTokenCost:  0.005,
+		OutputTokenCost: 0.01,
+		Currency:        "USD",
+		PricingModel:    "per_token",
 	}, nil
 }
 
