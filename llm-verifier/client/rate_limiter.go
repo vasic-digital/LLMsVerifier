@@ -324,27 +324,24 @@ func (rl *RateLimiter) cleanupExpiredLimits() {
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 
-	for {
-		select {
-		case <-ticker.C:
-			rl.mutex.Lock()
-			now := time.Now()
+	for range ticker.C {
+		rl.mutex.Lock()
+		now := time.Now()
 
-			for clientID, limits := range rl.clientLimits {
-				// Reset expired backoffs
-				if limits.InBackoff && now.After(limits.BackoffUntil) {
-					limits.InBackoff = false
-					limits.BackoffCount = 0
-				}
-
-				// Reset old counters (keep last 24 hours)
-				if now.Sub(limits.LastDay) > 24*time.Hour {
-					delete(rl.clientLimits, clientID)
-				}
+		for clientID, limits := range rl.clientLimits {
+			// Reset expired backoffs
+			if limits.InBackoff && now.After(limits.BackoffUntil) {
+				limits.InBackoff = false
+				limits.BackoffCount = 0
 			}
 
-			rl.mutex.Unlock()
+			// Reset old counters (keep last 24 hours)
+			if now.Sub(limits.LastDay) > 24*time.Hour {
+				delete(rl.clientLimits, clientID)
+			}
 		}
+
+		rl.mutex.Unlock()
 	}
 }
 

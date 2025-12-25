@@ -110,7 +110,7 @@ func (d *DashboardScreen) renderStats() string {
 	statsStyle := lipgloss.NewStyle().
 		Padding(1, 0)
 
-	statBox := func(label string, value interface{}, color string) string {
+	statBox := func(label string, value any, color string) string {
 		return lipgloss.NewStyle().
 			BorderStyle(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color(color)).
@@ -234,7 +234,7 @@ func (d *DashboardScreen) renderScoreIndicator() string {
 	}
 
 	stars := ""
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		if float64(i) < score/20 {
 			stars += "★"
 		} else {
