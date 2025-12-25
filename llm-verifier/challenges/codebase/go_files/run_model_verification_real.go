@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"llm-verifier/client"
+	"llm-verifillm-verifier/client"
 	"llm-verifier/llmverifier"
 )
 

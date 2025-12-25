@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"llm-verifier/auth"
-	"llm-verifier/client"
+	"llm-verifillm-verifier/client"
 	"llm-verifier/database"
 )
 
