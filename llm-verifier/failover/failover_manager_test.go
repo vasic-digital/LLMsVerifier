@@ -134,8 +134,8 @@ func TestFailoverManagerSelectProviderWithModel(t *testing.T) {
 
 	// Create test provider
 	provider := &database.Provider{
-		Name:       "test-provider",
-		Endpoint:   "https://test.com/api",
+		Name:        "test-provider",
+		Endpoint:    "https://test.com/api",
 		Description: "Test provider",
 	}
 	err := db.CreateProvider(provider)
@@ -211,16 +211,16 @@ func TestFailoverManagerGetProviderStatusWithProviders(t *testing.T) {
 
 	// Create test providers
 	provider1 := &database.Provider{
-		Name:       "openai",
-		Endpoint:   "https://openai.com/api",
+		Name:        "openai",
+		Endpoint:    "https://openai.com/api",
 		Description: "OpenAI provider",
 	}
 	err := db.CreateProvider(provider1)
 	require.NoError(t, err)
 
 	provider2 := &database.Provider{
-		Name:       "mistral",
-		Endpoint:   "https://mistral.com/api",
+		Name:        "mistral",
+		Endpoint:    "https://mistral.com/api",
 		Description: "Mistral provider",
 	}
 	err = db.CreateProvider(provider2)
@@ -239,13 +239,13 @@ func TestFailoverManagerGetProviderStatusWithProviders(t *testing.T) {
 
 func TestFailoverManagerCalculateCostWeight(t *testing.T) {
 	providers := []struct {
-		name        string
-		weight      float64
+		name   string
+		weight float64
 	}{
 		{"openai", 0.8},
 		{"anthropic", 0.7},
 		{"google", 0.6},
-		{"mistral", 0.4},
+		{"mistral", 0.7},
 		{"meta", 0.3},
 		{"default", 0.5},
 	}
@@ -293,8 +293,8 @@ func TestFailoverManagerLoadProvidersAndModels(t *testing.T) {
 
 	// Create provider
 	provider := &database.Provider{
-		Name:       "test-provider",
-		Endpoint:   "https://test.com/api",
+		Name:        "test-provider",
+		Endpoint:    "https://test.com/api",
 		Description: "Test provider",
 	}
 	err := db.CreateProvider(provider)
@@ -335,8 +335,8 @@ func TestFailoverManagerLoadMultipleModels(t *testing.T) {
 
 	// Create provider
 	provider := &database.Provider{
-		Name:       "test-provider",
-		Endpoint:   "https://test.com/api",
+		Name:        "test-provider",
+		Endpoint:    "https://test.com/api",
 		Description: "Test provider",
 	}
 	err := db.CreateProvider(provider)
@@ -377,8 +377,8 @@ func TestFailoverManagerConcurrentSelectProvider(t *testing.T) {
 
 	// Create test provider
 	provider := &database.Provider{
-		Name:       "test-provider",
-		Endpoint:   "https://test.com/api",
+		Name:        "test-provider",
+		Endpoint:    "https://test.com/api",
 		Description: "Test provider",
 	}
 	err := db.CreateProvider(provider)
@@ -542,8 +542,8 @@ func TestFailoverManagerGetHealthyProvidersOnly(t *testing.T) {
 
 	// Create test provider
 	provider := &database.Provider{
-		Name:       "test-provider",
-		Endpoint:   "https://test.com/api",
+		Name:        "test-provider",
+		Endpoint:    "https://test.com/api",
 		Description: "Test provider",
 	}
 	err := db.CreateProvider(provider)

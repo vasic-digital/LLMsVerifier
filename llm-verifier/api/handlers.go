@@ -130,6 +130,18 @@ func (s *Server) ListProvidersHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(demoProviders)
 }
 
+// ProvidersHandler handles both GET (list) and POST (add) for providers
+func (s *Server) ProvidersHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		s.ListProvidersHandler(w, r)
+	case http.MethodPost:
+		s.AddProviderHandler(w, r)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
 // AddProviderHandler handles adding a new provider
 func (s *Server) AddProviderHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
