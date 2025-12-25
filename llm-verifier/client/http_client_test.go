@@ -94,6 +94,7 @@ func TestGetModelEndpoint(t *testing.T) {
 		{"fireworks", "llama-v2-7b", "https://api.fireworks.ai/inference/v1/chat/completions"},
 		{"poe", "GPT-4", "https://api.poe.com/v1/chat/completions"},
 		{"navigator", "mistral-small-3.1", "https://api.ai.it.ufl.edu/v1/chat/completions"},
+		{"replicate", "llama-2-70b", "https://api.replicate.com/v1"},
 		{"unknown", "model", ""},
 	}
 
@@ -122,6 +123,7 @@ func TestGetProviderEndpoint(t *testing.T) {
 		{"fireworks", "https://api.fireworks.ai/inference/v1/models"},
 		{"poe", "https://api.poe.com/v1/models"},
 		{"navigator", "https://api.ai.it.ufl.edu/v1/models"},
+		{"replicate", "https://api.replicate.com/v1"},
 		{"unknown", ""},
 	}
 

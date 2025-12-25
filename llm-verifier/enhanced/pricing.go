@@ -61,8 +61,8 @@ func (pd *PricingDetector) DetectPricing(providerName, modelID string) (*Pricing
 		return pd.detectPoePricing(modelID)
 	case "navigator":
 		return pd.detectNavigatorPricing(modelID)
-	case "mistral":
-		return pd.detectMistralPricing(modelID)
+	case "replicate":
+		return pd.detectReplicatePricing(modelID)
 	default:
 		return pd.detectGenericPricing(providerName, modelID)
 	}
@@ -579,6 +579,17 @@ func (pd *PricingDetector) detectNavigatorPricing(modelID string) (*PricingInfo,
 		OutputTokenCost: 0.01,
 		Currency:        "USD",
 		PricingModel:    "per_token",
+	}, nil
+}
+
+// detectReplicatePricing detects pricing for Replicate models
+func (pd *PricingDetector) detectReplicatePricing(modelID string) (*PricingInfo, error) {
+	// Replicate pricing varies by model, using approximate values
+	return &PricingInfo{
+		InputTokenCost:  0.0025, // $0.0025 per second for input processing
+		OutputTokenCost: 0.0075, // $0.0075 per second for generation
+		Currency:        "USD",
+		PricingModel:    "per_second",
 	}, nil
 }
 

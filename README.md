@@ -11,7 +11,7 @@
 
 ### Core Capabilities
 - **20+ LLM Verification Tests**: Comprehensive capability assessment across all major providers
-- **Multi-Provider Support**: OpenAI, Anthropic, Google, Cohere, Meta, Groq, Together AI, Fireworks AI, Poe, NaviGator AI, and more
+- **Multi-Provider Support**: OpenAI, Anthropic, Google, Cohere, Meta, Groq, Together AI, Fireworks AI, Poe, NaviGator AI, Mistral, xAI, Replicate, and more
 - **Real-Time Monitoring**: 99.9% uptime with intelligent failover and health checking
 - **Advanced Analytics**: AI-powered insights, trend analysis, and optimization recommendations
 

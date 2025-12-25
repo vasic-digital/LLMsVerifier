@@ -588,6 +588,10 @@ func createCrushModelSettings(result VerificationResult, provider string) map[st
 		baseSettings["model_family"] = "navigator"
 		baseSettings["code_optimization"] = true
 		baseSettings["streaming_supported"] = true
+	case "Replicate":
+		baseSettings["model_family"] = "replicate"
+		baseSettings["code_optimization"] = true
+		baseSettings["streaming_supported"] = true
 	case "Mistral":
 		baseSettings["model_family"] = "mistral"
 		baseSettings["code_optimization"] = true
@@ -746,6 +750,9 @@ func createClaudeCodeModelSettings(result VerificationResult, provider string) m
 		baseSettings["streaming_supported"] = true
 	case "Navigator":
 		baseSettings["model_family"] = "navigator"
+		baseSettings["streaming_supported"] = true
+	case "Replicate":
+		baseSettings["model_family"] = "replicate"
 		baseSettings["streaming_supported"] = true
 	case "Mistral":
 		baseSettings["model_family"] = "mistral"

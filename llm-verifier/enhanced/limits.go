@@ -64,6 +64,8 @@ func (ld *LimitsDetector) DetectLimits(providerName, modelID string, headers htt
 		return ld.detectNavigatorLimits(headers)
 	case "mistral":
 		return ld.detectMistralLimits(headers)
+	case "replicate":
+		return ld.detectReplicateLimits(headers)
 	default:
 		return ld.detectGenericLimits(headers)
 	}
@@ -304,6 +306,18 @@ func (ld *LimitsDetector) detectNavigatorLimits(headers http.Header) (*LimitsInf
 	limits := &LimitsInfo{
 		RequestsPerMinute: &rpm,
 		IsHardLimit:       true,
+		CurrentUsage:      make(map[string]int),
+		AdditionalLimits:  make(map[string]interface{}),
+	}
+	return limits, nil
+}
+
+// detectReplicateLimits detects limits for Replicate
+func (ld *LimitsDetector) detectReplicateLimits(headers http.Header) (*LimitsInfo, error) {
+	rpm := 1000 // Replicate has higher limits for paid accounts
+	limits := &LimitsInfo{
+		RequestsPerMinute: &rpm,
+		IsHardLimit:       false, // Can be increased with credits
 		CurrentUsage:      make(map[string]int),
 		AdditionalLimits:  make(map[string]interface{}),
 	}

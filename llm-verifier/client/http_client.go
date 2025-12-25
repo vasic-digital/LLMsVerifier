@@ -214,6 +214,7 @@ func getProviderEndpoint(provider string) string {
 		"fireworks":   "https://api.fireworks.ai/inference/v1/models",
 		"poe":         "https://api.poe.com/v1/models",
 		"navigator":   "https://api.ai.it.ufl.edu/v1/models",
+		"replicate":   "https://api.replicate.com/v1",
 	}
 
 	if endpoint, ok := providerEndpoints[strings.ToLower(provider)]; ok {
@@ -238,6 +239,7 @@ func getModelEndpoint(provider, modelID string) string {
 		"fireworks":   "https://api.fireworks.ai/inference/v1/chat/completions",
 		"poe":         "https://api.poe.com/v1/chat/completions",
 		"navigator":   "https://api.ai.it.ufl.edu/v1/chat/completions",
+		"replicate":   "https://api.replicate.com/v1",
 	}
 
 	if endpoint, ok := providerEndpoints[strings.ToLower(provider)]; ok {

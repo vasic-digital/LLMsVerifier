@@ -170,6 +170,7 @@ type ProvidersConfig struct {
 	Poe        ProviderConfig `yaml:"poe"`
 	Navigator  ProviderConfig `yaml:"navigator"`
 	Mistral    ProviderConfig `yaml:"mistral"`
+	Replicate  ProviderConfig `yaml:"replicate"`
 }
 
 // ProviderConfig holds individual provider configuration

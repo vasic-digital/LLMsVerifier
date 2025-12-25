@@ -13,6 +13,9 @@ LLM Verifier is a comprehensive tool to verify, test, and benchmark LLMs based o
 - **Fireworks AI**: Optimized inference for various models
 - **Poe**: Aggregated model access via OpenAI-compatible API
 - **NaviGator AI**: Research-focused models
+- **Mistral**: Established European provider with advanced models
+- **xAI**: Cutting-edge AI from Elon Musk's company
+- **Replicate**: Leading model hosting and deployment platform
 
 ## Features
 
