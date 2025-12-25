@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/smtp"
 	"strings"
+	"time"
 )
 
 // EmailNotifier handles email notifications

@@ -93,7 +93,7 @@
     </div>
 
     <!-- Empty State -->
-    <div *ngIf="providers && providers.length === 0" class="empty-state">
+    <div *ngIf="(providers$ | async)?.length === 0" class="empty-state">
       <mat-card>
         <mat-card-content>
           <mat-icon class="empty-icon">dns</mat-icon>

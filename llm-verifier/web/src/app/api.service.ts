@@ -26,6 +26,14 @@ export interface Provider {
   description?: string;
   status: string;
   created_at: string;
+  updated_at?: string;
+  api_key_encrypted?: string;
+  website?: string;
+  support_email?: string;
+  documentation_url?: string;
+  is_active?: boolean;
+  reliability_score?: number;
+  average_response_time_ms?: number;
 }
 
 export interface VerificationResult {

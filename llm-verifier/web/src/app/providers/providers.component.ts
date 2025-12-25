@@ -8,7 +8,7 @@ import { ApiService, Provider } from '../api.service';
   styleUrls: ['./providers.component.scss']
 })
 export class ProvidersComponent implements OnInit {
-  providers$: Observable<Provider[]>;
+  providers$!: Observable<Provider[]>;
   loading = true;
   error: string | null = null;
   selectedProvider: Provider | null = null;

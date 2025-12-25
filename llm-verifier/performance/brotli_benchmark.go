@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"llm-verifillm-verifier/client"
+	"llm-verifier/client"
 )
 
 // BrotliBenchmarkResult represents the result of a Brotli performance benchmark
