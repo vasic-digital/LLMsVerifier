@@ -3,15 +3,17 @@
 package api
 
 import (
+	"net/http"
+
 	"llm-verifier/config"
 	"llm-verifier/database"
 )
 
 // Server represents the REST API server
-// TODO: Update to use new event system and fix dependencies
 type Server struct {
 	config   *config.Config
 	database *database.Database
+	server   *http.Server
 }
 
 // NewServer creates a new API server
@@ -22,14 +24,30 @@ func NewServer(cfg *config.Config, db *database.Database) *Server {
 	}
 }
 
-// Start placeholder
+// Start starts the HTTP server
 func (s *Server) Start() error {
-	// TODO: Implement proper server startup
-	return nil
+	mux := http.NewServeMux()
+
+	// Register API endpoints
+	mux.HandleFunc("/api/health", s.HealthHandler)
+	mux.HandleFunc("/api/models", s.ListModelsHandler)
+	mux.HandleFunc("/api/models/", s.GetModelHandler)
+	mux.HandleFunc("/api/models/{id}/verify", s.VerifyModelHandler)
+	mux.HandleFunc("/api/providers", s.ListProvidersHandler)
+	mux.HandleFunc("/api/providers", s.AddProviderHandler)
+
+	s.server = &http.Server{
+		Addr:    ":8080",
+		Handler: mux,
+	}
+
+	return s.server.ListenAndServe()
 }
 
-// Stop placeholder
+// Stop stops the HTTP server
 func (s *Server) Stop() error {
-	// TODO: Implement proper server shutdown
+	if s.server != nil {
+		return s.server.Close()
+	}
 	return nil
 }
