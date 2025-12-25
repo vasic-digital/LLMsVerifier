@@ -1,0 +1,433 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: llm-verifier
+  labels:
+    name: llm-verifier
+    app: llm-verifier
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llm-verifier-config
+  namespace: llm-verifier
+data:
+  config.yaml: |
+    global:
+      base_url: "https://api.openai.com/v1"
+      api_key: "${OPENAI_API_KEY}"
+      max_retries: 3
+      request_delay: 1s
+      timeout: 30s
+
+    database:
+      path: "/app/data/llm-verifier.db"
+      encryption_key: "${DB_ENCRYPTION_KEY}"
+
+    api:
+      port: "8080"
+      jwt_secret: "${JWT_SECRET}"
+      rate_limit: 1000
+      enable_cors: true
+
+    monitoring:
+      prometheus_enabled: true
+      metrics_path: "/metrics"
+      health_check_path: "/health"
+
+    enterprise:
+      multi_region_enabled: true
+      region: "${REGION}"
+      cluster_name: "${CLUSTER_NAME}"
+
+    providers:
+      openai:
+        endpoint: "https://api.openai.com/v1"
+        rate_limits:
+          requests_per_minute: 500
+          requests_per_hour: 10000
+      anthropic:
+        endpoint: "https://api.anthropic.com/v1"
+        rate_limits:
+          requests_per_minute: 50
+          requests_per_hour: 1000
+      google:
+        endpoint: "https://generativelanguage.googleapis.com/v1beta"
+        rate_limits:
+          requests_per_minute: 60
+          requests_per_hour: 1000
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: llm-verifier-secrets
+  namespace: llm-verifier
+type: Opaque
+data:
+  # Base64 encoded secrets - replace with actual values
+  openai-api-key: "b3BlbmFpLWFwaS1rZXk="  # placeholder
+  anthropic-api-key: "YW50aHJvcGljLWFwaS1rZXk="  # placeholder
+  google-api-key: "Z29vZ2xlLWFwaS1rZXk="  # placeholder
+  jwt-secret: "andV3LXNlY3JldC1rZXk="  # placeholder
+  db-encryption-key: "ZGItZW5jcnlwdGlvbi1rZXk="  # placeholder
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llm-verifier
+  namespace: llm-verifier
+  labels:
+    app: llm-verifier
+    version: v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: llm-verifier
+  template:
+    metadata:
+      labels:
+        app: llm-verifier
+        version: v1
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - llm-verifier
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - name: llm-verifier
+        image: llm-verifier:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: REGION
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['topology.kubernetes.io/region']
+        - name: CLUSTER_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['cluster-name']
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        envFrom:
+        - secretRef:
+            name: llm-verifier-secrets
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+        - name: data
+          mountPath: /app/data
+        - name: cache
+          mountPath: /app/cache
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+      volumes:
+      - name: config
+        configMap:
+          name: llm-verifier-config
+      - name: data
+        persistentVolumeClaim:
+          claimName: llm-verifier-data
+      - name: cache
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llm-verifier
+  namespace: llm-verifier
+  labels:
+    app: llm-verifier
+  annotations:
+    # Regional load balancer
+    service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "2"
+    # GCP annotations
+    cloud.google.com/load-balancer-type: "Internal"
+    cloud.google.com/neg: '{"ingress": true}'
+    # Azure annotations
+    service.beta.kubernetes.io/azure-load-balancer-resource-group: "llm-verifier-rg"
+spec:
+  type: LoadBalancer
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  - name: https
+    port: 443
+    targetPort: 8080
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+  selector:
+    app: llm-verifier
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: llm-verifier-data
+  namespace: llm-verifier
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: fast-ssd  # Use appropriate storage class
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: llm-verifier-ingress
+  namespace: llm-verifier
+  annotations:
+    # Global load balancing
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "llm-verifier-global-ip"
+    networking.gke.io/managed-certificates: "llm-verifier-cert"
+    # AWS annotations
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: "/api/health"
+    # Azure annotations
+    appgw.ingress.kubernetes.io/health-probe-path: "/api/health"
+spec:
+  tls:
+  - hosts:
+    - api.llm-verifier.com
+    secretName: llm-verifier-tls
+  rules:
+  - host: api.llm-verifier.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: llm-verifier
+            port:
+              number: 80
+---
+# Multi-region ConfigMap for region-specific settings
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llm-verifier-region-config
+  namespace: llm-verifier
+data:
+  # US East (us-east-1)
+  us-east-config.yaml: |
+    region: us-east-1
+    preferred_providers:
+      - openai
+      - anthropic
+    backup_providers:
+      - google
+      - togetherai
+
+  # US West (us-west-2)
+  us-west-config.yaml: |
+    region: us-west-2
+    preferred_providers:
+      - anthropic
+      - openai
+    backup_providers:
+      - google
+      - cohere
+
+  # EU West (eu-west-1)
+  eu-west-config.yaml: |
+    region: eu-west-1
+    preferred_providers:
+      - anthropic
+      - openai
+    backup_providers:
+      - google
+      - mistral
+    data_residency: eu
+
+  # Asia Pacific (ap-southeast-1)
+  ap-southeast-config.yaml: |
+    region: ap-southeast-1
+    preferred_providers:
+      - google
+      - openai
+    backup_providers:
+      - anthropic
+      - togetherai
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: llm-verifier-pdb
+  namespace: llm-verifier
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: llm-verifier
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: llm-verifier-hpa
+  namespace: llm-verifier
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: llm-verifier
+  minReplicas: 3
+  maxReplicas: 50
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  - type: Pods
+    pods:
+      metric:
+        name: http_requests_per_second
+      target:
+        type: AverageValue
+        averageValue: 100
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+      - type: Pods
+        value: 5
+        periodSeconds: 60
+---
+# Network Policy for security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: llm-verifier-network-policy
+  namespace: llm-verifier
+spec:
+  podSelector:
+    matchLabels:
+      app: llm-verifier
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    - podSelector:
+        matchLabels:
+          app: prometheus
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 9090
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+  - to: []  # Allow external API calls
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80
+---
+# ServiceMonitor for Prometheus
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: llm-verifier-monitor
+  namespace: llm-verifier
+  labels:
+    app: llm-verifier
+spec:
+  selector:
+    matchLabels:
+      app: llm-verifier
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+---
+# Certificate for HTTPS
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: llm-verifier-tls
+  namespace: llm-verifier
+spec:
+  secretName: llm-verifier-tls-secret
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+  - api.llm-verifier.com
+  - "*.llm-verifier.com"
