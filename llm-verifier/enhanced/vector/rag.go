@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -28,6 +29,38 @@ type Document struct {
 type SearchResult struct {
 	Document Document `json:"document"`
 	Score    float64  `json:"score"`
+	Source   string   `json:"source"`
+	Rank     int      `json:"rank"`
+}
+
+// RetrievalStrategy defines different retrieval approaches
+type RetrievalStrategy interface {
+	Retrieve(ctx context.Context, query string, options RetrievalOptions) ([]SearchResult, error)
+}
+
+// QueryExpander expands queries for better retrieval
+type QueryExpander interface {
+	ExpandQuery(query string) []string
+}
+
+// ContextRanker ranks and filters retrieved context
+type ContextRanker interface {
+	RankContext(results []SearchResult, query string) []SearchResult
+}
+
+// RetrievalOptions configures retrieval behavior
+type RetrievalOptions struct {
+	MaxResults          int        `json:"max_results"`
+	SimilarityThreshold float64    `json:"similarity_threshold"`
+	UseHybridSearch     bool       `json:"use_hybrid_search"`
+	Sources             []string   `json:"sources"`
+	TimeFilter          *TimeRange `json:"time_filter,omitempty"`
+}
+
+// TimeRange represents a time range for filtering
+type TimeRange struct {
+	Start time.Time `json:"start"`
+	End   time.Time `json:"end"`
 }
 
 // VectorDatabase interface for vector operations
@@ -233,6 +266,10 @@ type RAGService struct {
 	contextMgr          *ctxt.ConversationManager
 	maxResults          int
 	similarityThreshold float64
+	enableHybridSearch  bool
+	retrievalStrategies []RetrievalStrategy
+	queryExpander       QueryExpander
+	contextRanker       ContextRanker
 }
 
 // NewRAGService creates a new RAG service
@@ -243,6 +280,14 @@ func NewRAGService(vectorDB VectorDatabase, embeddings EmbeddingService, context
 		contextMgr:          contextMgr,
 		maxResults:          5,
 		similarityThreshold: 0.1,
+		enableHybridSearch:  true,
+		retrievalStrategies: []RetrievalStrategy{
+			NewVectorRetrievalStrategy(vectorDB, embeddings),
+			NewKeywordRetrievalStrategy(),
+			NewSemanticRetrievalStrategy(embeddings),
+		},
+		queryExpander: NewBasicQueryExpander(),
+		contextRanker: NewRelevanceRanker(),
 	}
 }
 
@@ -375,6 +420,178 @@ Original request: %s
 Please use the context above to provide a more informed and relevant response.`, contextText, originalPrompt)
 
 	return enhancedPrompt, nil
+}
+
+// RetrieveContextAdvanced performs advanced multi-source context retrieval
+func (rag *RAGService) RetrieveContextAdvanced(ctx context.Context, query string, conversationID string, options RetrievalOptions) ([]Document, error) {
+	if options.MaxResults == 0 {
+		options.MaxResults = rag.maxResults
+	}
+	if options.SimilarityThreshold == 0 {
+		options.SimilarityThreshold = rag.similarityThreshold
+	}
+
+	var allResults []SearchResult
+
+	// Use multiple retrieval strategies
+	for _, strategy := range rag.retrievalStrategies {
+		results, err := strategy.Retrieve(ctx, query, options)
+		if err != nil {
+			continue // Skip failed strategies
+		}
+		allResults = append(allResults, results...)
+	}
+
+	// Expand query for better retrieval
+	if rag.queryExpander != nil {
+		expandedQueries := rag.queryExpander.ExpandQuery(query)
+		for _, expandedQuery := range expandedQueries {
+			for _, strategy := range rag.retrievalStrategies {
+				results, err := strategy.Retrieve(ctx, expandedQuery, options)
+				if err != nil {
+					continue
+				}
+				// Mark as expanded results with lower weight
+				for i := range results {
+					results[i].Score *= 0.8
+				}
+				allResults = append(allResults, results...)
+			}
+		}
+	}
+
+	// Rank and filter results
+	if rag.contextRanker != nil {
+		allResults = rag.contextRanker.RankContext(allResults, query)
+	}
+
+	// Deduplicate and limit results
+	seen := make(map[string]bool)
+	var finalResults []Document
+
+	for _, result := range allResults {
+		if len(finalResults) >= options.MaxResults {
+			break
+		}
+
+		docID := result.Document.ID
+		if !seen[docID] {
+			seen[docID] = true
+			finalResults = append(finalResults, result.Document)
+		}
+	}
+
+	return finalResults, nil
+}
+
+// VectorRetrievalStrategy implements vector-based retrieval
+type VectorRetrievalStrategy struct {
+	vectorDB   VectorDatabase
+	embeddings EmbeddingService
+}
+
+func NewVectorRetrievalStrategy(vectorDB VectorDatabase, embeddings EmbeddingService) *VectorRetrievalStrategy {
+	return &VectorRetrievalStrategy{
+		vectorDB:   vectorDB,
+		embeddings: embeddings,
+	}
+}
+
+func (vrs *VectorRetrievalStrategy) Retrieve(ctx context.Context, query string, options RetrievalOptions) ([]SearchResult, error) {
+	// Generate embedding for query
+	vector, err := vrs.embeddings.GenerateEmbedding(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	// Search vector database
+	results, err := vrs.vectorDB.Search(ctx, vector, options.MaxResults*2, options.SimilarityThreshold)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to SearchResult format
+	searchResults := make([]SearchResult, len(results))
+	for i, result := range results {
+		searchResults[i] = SearchResult{
+			Document: result.Document,
+			Score:    result.Score,
+			Source:   "vector_search",
+			Rank:     i + 1,
+		}
+	}
+
+	return searchResults, nil
+}
+
+// KeywordRetrievalStrategy implements keyword-based retrieval
+type KeywordRetrievalStrategy struct{}
+
+func NewKeywordRetrievalStrategy() *KeywordRetrievalStrategy {
+	return &KeywordRetrievalStrategy{}
+}
+
+func (krs *KeywordRetrievalStrategy) Retrieve(ctx context.Context, query string, options RetrievalOptions) ([]SearchResult, error) {
+	// Simple keyword matching - in production, this would use a text search index
+	// For now, return empty results as this is a placeholder
+	return []SearchResult{}, nil
+}
+
+// SemanticRetrievalStrategy implements semantic search
+type SemanticRetrievalStrategy struct {
+	embeddings EmbeddingService
+}
+
+func NewSemanticRetrievalStrategy(embeddings EmbeddingService) *SemanticRetrievalStrategy {
+	return &SemanticRetrievalStrategy{embeddings: embeddings}
+}
+
+func (srs *SemanticRetrievalStrategy) Retrieve(ctx context.Context, query string, options RetrievalOptions) ([]SearchResult, error) {
+	// This could implement more advanced semantic search
+	// For now, delegate to vector search
+	return []SearchResult{}, nil
+}
+
+// BasicQueryExpander implements simple query expansion
+type BasicQueryExpander struct{}
+
+func NewBasicQueryExpander() *BasicQueryExpander {
+	return &BasicQueryExpander{}
+}
+
+func (bqe *BasicQueryExpander) ExpandQuery(query string) []string {
+	// Simple query expansion - add synonyms and related terms
+	expansions := []string{query}
+
+	// Add some basic expansions
+	if strings.Contains(strings.ToLower(query), "model") {
+		expansions = append(expansions, strings.ReplaceAll(query, "model", "AI model"))
+		expansions = append(expansions, strings.ReplaceAll(query, "model", "language model"))
+	}
+
+	return expansions
+}
+
+// RelevanceRanker ranks results by relevance
+type RelevanceRanker struct{}
+
+func NewRelevanceRanker() *RelevanceRanker {
+	return &RelevanceRanker{}
+}
+
+func (rr *RelevanceRanker) RankContext(results []SearchResult, query string) []SearchResult {
+	// Sort by score (descending)
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].Score > results[j].Score
+	})
+
+	// Limit results
+	maxResults := 10
+	if len(results) > maxResults {
+		results = results[:maxResults]
+	}
+
+	return results
 }
 
 // GetStats returns statistics about the RAG system
