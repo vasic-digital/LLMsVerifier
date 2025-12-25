@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-"github.com/milosvasic/LLMsVerifier/llm-verifier/client"
+"github.com/milosvasic/LLMsVerifier/llm-verifillm-verifier/client"
 )
 
 type VerificationResult struct {

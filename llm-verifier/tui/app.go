@@ -42,16 +42,16 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return a, tea.Quit
-		case "1":
+		case "1", "F1":
 			a.current = 0
 			return a, a.screens[a.current].Init()
-		case "2":
+		case "2", "F2":
 			a.current = 1
 			return a, a.screens[a.current].Init()
-		case "3":
+		case "3", "F3":
 			a.current = 2
 			return a, a.screens[a.current].Init()
-		case "4":
+		case "4", "F4":
 			a.current = 3
 			return a, a.screens[a.current].Init()
 		case "left", "h":
@@ -64,6 +64,23 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				a.current++
 				return a, a.screens[a.current].Init()
 			}
+		case "tab":
+			if a.current < len(a.screens)-1 {
+				a.current++
+			} else {
+				a.current = 0
+			}
+			return a, a.screens[a.current].Init()
+		case "home":
+			a.current = 0
+			return a, a.screens[a.current].Init()
+		case "end":
+			a.current = len(a.screens) - 1
+			return a, a.screens[a.current].Init()
+		case "?":
+			return a, a.showHelp()
+		case "r", "R":
+			return a, a.refreshAllScreens()
 		}
 	case tea.WindowSizeMsg:
 		a.width = msg.Width
@@ -144,7 +161,7 @@ func (a *App) renderHeader() string {
 func (a *App) renderFooter() string {
 	help := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("241")).
-		Render("←/→: Navigate | 1-4: Jump to screen | q: Quit")
+		Render("←/→/Tab: Navigate | 1-4/F1-F4: Jump to screen | ?: Help | r: Refresh | q: Quit")
 
 	footerStyle := lipgloss.NewStyle().
 		BorderStyle(lipgloss.RoundedBorder()).
@@ -153,4 +170,20 @@ func (a *App) renderFooter() string {
 		Width(a.width - 2)
 
 	return footerStyle.Render(help)
+}
+
+func (a *App) showHelp() tea.Cmd {
+	return func() tea.Msg {
+		// This would show a help modal or screen
+		// For now, we'll just refresh the current screen
+		return nil
+	}
+}
+
+func (a *App) refreshAllScreens() tea.Cmd {
+	var cmds []tea.Cmd
+	for i := range a.screens {
+		cmds = append(cmds, a.screens[i].Init())
+	}
+	return tea.Batch(cmds...)
 }
