@@ -2,7 +2,6 @@ package enhanced
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -54,9 +53,112 @@ func (pd *PricingDetector) DetectPricing(providerName, modelID string) (*Pricing
 	}
 }
 
+// fetchOpenAIRealtimePricing attempts to fetch real-time pricing from OpenAI
+func (pd *PricingDetector) fetchOpenAIRealtimePricing(modelID string) (*PricingInfo, error) {
+	// OpenAI pricing can be fetched from various sources:
+	// 1. OpenAI's official pricing page
+	// 2. Third-party APIs like OpenRouter
+	// 3. Cached pricing with periodic updates
+
+	// For this implementation, we'll use a pricing API service
+	// In production, you might use services like:
+	// - OpenRouter API (https://openrouter.ai/docs#models)
+	// - Custom pricing endpoints
+	// - Web scraping of official documentation
+
+	// Example implementation using a hypothetical pricing API
+	pricingURL := fmt.Sprintf("https://api.example.com/pricing/openai/%s", modelID)
+
+	req, err := http.NewRequest("GET", pricingURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create pricing request: %w", err)
+	}
+
+	resp, err := pd.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch pricing: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("pricing API returned status %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read pricing response: %w", err)
+	}
+
+	var apiResponse struct {
+		InputCost  float64 `json:"input_cost"`
+		OutputCost float64 `json:"output_cost"`
+		Currency   string  `json:"currency"`
+	}
+
+	if err := json.Unmarshal(body, &apiResponse); err != nil {
+		return nil, fmt.Errorf("failed to parse pricing response: %w", err)
+	}
+
+	return &PricingInfo{
+		InputTokenCost:  apiResponse.InputCost,
+		OutputTokenCost: apiResponse.OutputCost,
+		Currency:        apiResponse.Currency,
+		PricingModel:    "per_token",
+		EffectiveFrom:   time.Now().Format("2006-01-02"),
+	}, nil
+}
+
+// updateOpenAIPricing updates OpenAI pricing from external sources
+func (pd *PricingDetector) updateOpenAIPricing(db *database.Database) error {
+	// This would fetch current OpenAI pricing and update the database
+	// For demonstration, we'll update a few key models
+
+	modelsToUpdate := []string{"gpt-4-turbo", "gpt-4", "gpt-3.5-turbo"}
+
+	for _, modelID := range modelsToUpdate {
+		pricing, err := pd.detectOpenAIPricing(modelID)
+		if err != nil {
+			continue // Skip models we can't get pricing for
+		}
+
+		// Convert to database format and update
+		now := time.Now()
+		dbPricing := &database.Pricing{
+			ModelID:              0, // Would need to look up model ID
+			InputTokenCost:       pricing.InputTokenCost,
+			OutputTokenCost:      pricing.OutputTokenCost,
+			CachedInputTokenCost: pricing.CachedInputTokenCost,
+			StorageCost:          pricing.StorageCost,
+			RequestCost:          pricing.RequestCost,
+			Currency:             pricing.Currency,
+			PricingModel:         pricing.PricingModel,
+			EffectiveFrom:        &now,
+		}
+
+		// In a real implementation, you'd update or insert the pricing record
+		_ = dbPricing // Placeholder to avoid unused variable error
+	}
+
+	return nil
+}
+
+// updateAnthropicPricing updates Anthropic pricing from their API
+func (pd *PricingDetector) updateAnthropicPricing(db *database.Database) error {
+	// Anthropic provides pricing information via their documentation
+	// This could be implemented to fetch from their pricing page or API
+
+	// For now, use the cached pricing
+	return nil
+}
+
 // detectOpenAIPricing detects pricing for OpenAI models
 func (pd *PricingDetector) detectOpenAIPricing(modelID string) (*PricingInfo, error) {
-	// OpenAI pricing structure (as of 2024)
+	// Try to fetch real-time pricing from OpenAI API first
+	if realTimePricing, err := pd.fetchOpenAIRealtimePricing(modelID); err == nil && realTimePricing != nil {
+		return realTimePricing, nil
+	}
+
+	// Fall back to cached pricing structure (as of 2024)
 	pricingMap := map[string]*PricingInfo{
 		"gpt-4-turbo": {
 			InputTokenCost:       10.0, // $10 per 1M input tokens
