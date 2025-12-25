@@ -1,0 +1,92 @@
+<!-- Mobile Navigation Toggle -->
+<button 
+  class="mobile-nav-toggle"
+  (click)="toggleNav()"
+  [class]="getNavClasses()"
+  aria-label="Toggle navigation">
+  <span class="hamburger-line"></span>
+  <span class="hamburger-line"></span>
+  <span class="hamburger-line"></span>
+</button>
+
+<!-- Mobile Navigation Backdrop -->
+<div 
+  class="mobile-nav-backdrop"
+  [class]="getBackdropClasses()"
+  (click)="closeNav()">
+</div>
+
+<!-- Mobile Navigation Menu -->
+<nav 
+  class="mobile-nav"
+  [class]="getNavClasses()"
+  role="navigation"
+  aria-label="Mobile navigation">
+  
+  <div class="nav-header">
+    <div class="nav-brand">
+      <mat-icon class="brand-icon">verified</mat-icon>
+      <span class="brand-text">LLM Verifier</span>
+    </div>
+    <button 
+      class="nav-close"
+      (click)="closeNav()"
+      aria-label="Close navigation">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="nav-content">
+    <div class="nav-section">
+      <div class="nav-section-label">Main Navigation</div>
+      <div class="nav-items">
+        <button 
+          *ngFor="let item of navItems"
+          class="nav-item"
+          [class.active]="isActiveRoute(item.route)"
+          (click)="navigateTo(item.route)"
+          role="menuitem">
+          <div class="nav-item-content">
+            <mat-icon class="nav-icon">{{item.icon}}</mat-icon>
+            <span class="nav-label">{{item.label}}</span>
+            <span *ngIf="item.badge" class="nav-badge">{{item.badge}}</span>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Quick Actions</div>
+      <div class="quick-actions">
+        <button class="quick-action" role="button">
+          <mat-icon>refresh</mat-icon>
+          <span>Refresh Data</span>
+        </button>
+        <button class="quick-action" role="button">
+          <mat-icon>download</mat-icon>
+          <span>Export Report</span>
+        </button>
+        <button class="quick-action" role="button">
+          <mat-icon>notifications</mat-icon>
+          <span>Alerts</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="nav-footer">
+      <div class="nav-stats">
+        <div class="nav-stat">
+          <span class="stat-value">395</span>
+          <span class="stat-label">Models</span>
+        </div>
+        <div class="nav-stat">
+          <span class="stat-value">96.8%</span>
+          <span class="stat-label">Success Rate</span>
+        </div>
+      </div>
+      <div class="nav-version">
+        <span>v1.0.0</span>
+      </div>
+    </div>
+  </div>
+</nav>

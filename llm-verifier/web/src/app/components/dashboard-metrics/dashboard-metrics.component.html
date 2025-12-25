@@ -1,0 +1,178 @@
+<div class="dashboard-metrics responsive-padding">
+  <!-- Header -->
+  <div class="metrics-header responsive-margin">
+    <div class="header-content">
+      <h2 class="responsive-text">Advanced Metrics Dashboard</h2>
+      <p class="responsive-text">Real-time analytics and performance insights</p>
+    </div>
+    
+    <div class="header-actions">
+      <button mat-raised-button 
+              [color]="autoRefresh ? 'primary' : 'basic'"
+              (click)="toggleAutoRefresh()"
+              class="refresh-toggle desktop-only">
+        <mat-icon>{{ autoRefresh ? 'pause' : 'play_arrow' }}</mat-icon>
+        Auto Refresh {{ autoRefresh ? 'ON' : 'OFF' }}
+      </button>
+      
+      <button mat-icon-button 
+              [color]="autoRefresh ? 'primary' : 'basic'"
+              (click)="toggleAutoRefresh()"
+              class="mobile-only"
+              [matTooltip]="'Auto Refresh ' + (autoRefresh ? 'ON' : 'OFF')">
+        <mat-icon>{{ autoRefresh ? 'pause' : 'play_arrow' }}</mat-icon>
+      </button>
+      
+      <button mat-raised-button 
+              color="primary" 
+              (click)="refreshMetrics()"
+              [disabled]="loading"
+              class="desktop-only">
+        <mat-icon>refresh</mat-icon>
+        Refresh Now
+      </button>
+      
+      <button mat-icon-button 
+              color="primary" 
+              (click)="refreshMetrics()"
+              [disabled]="loading"
+              class="mobile-only"
+              matTooltip="Refresh Now">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading Indicator -->
+  <div *ngIf="loading" class="loading-section">
+    <mat-spinner></mat-spinner>
+    <p>Loading metrics data...</p>
+  </div>
+
+  <!-- Metrics Grid -->
+  <div *ngIf="!loading" class="metrics-grid">
+    <!-- Verification Trends -->
+    <div class="metric-card large">
+      <div class="metric-header">
+        <h3>Verification Trends</h3>
+        <span class="metric-subtitle">Daily verification activity</span>
+      </div>
+      <app-chart 
+        [data]="metricsData.verificationTrends"
+        type="line"
+        title="Verification Trends"
+        height="300px">
+      </app-chart>
+    </div>
+
+    <!-- Provider Distribution -->
+    <div class="metric-card">
+      <div class="metric-header">
+        <h3>Provider Distribution</h3>
+        <span class="metric-subtitle">Models by provider</span>
+      </div>
+      <app-chart 
+        [data]="metricsData.providerDistribution"
+        type="pie"
+        title="Provider Distribution"
+        height="250px">
+      </app-chart>
+    </div>
+
+    <!-- Score Distribution -->
+    <div class="metric-card">
+      <div class="metric-header">
+        <h3>Score Distribution</h3>
+        <span class="metric-subtitle">Verification scores</span>
+      </div>
+      <app-chart 
+        [data]="metricsData.scoreDistribution"
+        type="bar"
+        title="Score Distribution"
+        height="250px">
+      </app-chart>
+    </div>
+
+    <!-- Performance Metrics -->
+    <div class="metric-card large">
+      <div class="metric-header">
+        <h3>Performance Metrics</h3>
+        <span class="metric-subtitle">Average latency by provider</span>
+      </div>
+      <app-chart 
+        [data]="metricsData.performanceMetrics"
+        type="bar"
+        title="Performance Metrics"
+        height="300px">
+      </app-chart>
+    </div>
+
+    <!-- Key Performance Indicators -->
+    <div class="metric-card kpi-grid">
+      <div class="metric-header">
+        <h3>Key Performance Indicators</h3>
+        <span class="metric-subtitle">Real-time metrics</span>
+      </div>
+      
+      <div class="kpi-container" *ngIf="dashboardStats$ | async as stats">
+        <div class="kpi-item">
+          <div class="kpi-value">{{ stats.totalModels }}</div>
+          <div class="kpi-label">Total Models</div>
+          <div class="kpi-trend positive">+12%</div>
+        </div>
+        
+        <div class="kpi-item">
+          <div class="kpi-value">{{ stats.verifiedModels }}</div>
+          <div class="kpi-label">Verified Models</div>
+          <div class="kpi-trend positive">+8%</div>
+        </div>
+        
+        <div class="kpi-item">
+          <div class="kpi-value">{{ stats.totalProviders }}</div>
+          <div class="kpi-label">Providers</div>
+          <div class="kpi-trend neutral">±0%</div>
+        </div>
+        
+        <div class="kpi-item">
+          <div class="kpi-value">{{ stats.averageScore.toFixed(1) }}</div>
+          <div class="kpi-label">Avg Score</div>
+          <div class="kpi-trend positive">+2.5%</div>
+        </div>
+        
+        <div class="kpi-item">
+          <div class="kpi-value">{{ stats.pendingModels }}</div>
+          <div class="kpi-label">Pending Verifications</div>
+          <div class="kpi-trend negative">-5%</div>
+        </div>
+        
+        <div class="kpi-item">
+          <div class="kpi-value">{{ stats.recentActivity.length }}</div>
+          <div class="kpi-label">Recent Activities</div>
+          <div class="kpi-trend positive">+15%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="metric-card">
+      <div class="metric-header">
+        <h3>Recent Activity</h3>
+        <span class="metric-subtitle">Latest verification events</span>
+      </div>
+      
+      <div class="activity-list" *ngIf="dashboardStats$ | async as stats">
+        <div *ngFor="let activity of stats.recentActivity.slice(0, 5)" 
+             class="activity-item"
+             [class]="activity.type">
+          <mat-icon class="activity-icon">
+            {{ activity.type === 'success' ? 'check_circle' : 'error' }}
+          </mat-icon>
+          <div class="activity-content">
+            <div class="activity-message">{{ activity.message }}</div>
+            <div class="activity-time">{{ activity.timestamp | date:'short' }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -2,18 +2,22 @@ import { Injectable } from '@angular/core';
 import { Subject, Observable } from 'rxjs';
 
 export interface WebSocketMessage {
-  type: string;
+  type: 'subscribe' | 'unsubscribe' | 'event' | 'verification_update' | 'system_health' | 'error' | 'heartbeat';
   data: any;
   timestamp: string;
+  id?: string;
 }
 
 export interface RealtimeEvent {
   id: string;
-  type: string;
+  type: 'model.verified' | 'model.verification.failed' | 'verification.started' | 'verification.completed' | 'system.health.changed';
   severity: 'info' | 'warning' | 'error' | 'critical';
   message: string;
   data?: any;
   timestamp: string;
+  modelId?: string;
+  provider?: string;
+  score?: number;
 }
 
 @Injectable({
@@ -27,6 +31,8 @@ export class WebSocketService {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
   private isConnecting = false;
+  private heartbeatInterval: any;
+  private heartbeatDelay = 30000; // 30 seconds
 
   public messages$: Observable<WebSocketMessage>;
   public events$: Observable<RealtimeEvent>;
@@ -66,6 +72,7 @@ export class WebSocketService {
     this.reconnectAttempts = 0;
     this.isConnecting = false;
     this.connected$.next(false);
+    this.stopHeartbeat();
   }
 
   send(message: WebSocketMessage): void {
@@ -117,6 +124,7 @@ export class WebSocketService {
       this.isConnecting = false;
       this.reconnectAttempts = 0;
       this.connected$.next(true);
+      this.startHeartbeat();
 
       // Subscribe to default events for real-time updates
       this.subscribe([
@@ -124,7 +132,9 @@ export class WebSocketService {
         'model.verification.failed',
         'verification.started',
         'verification.completed',
-        'system.health.changed'
+        'system.health.changed',
+        'provider.status.changed',
+        'brotli.test.completed'
       ]);
     };
 
@@ -145,6 +155,7 @@ export class WebSocketService {
       console.log('WebSocket disconnected:', event);
       this.connected$.next(false);
       this.isConnecting = false;
+      this.stopHeartbeat();
 
       if (!event.wasClean && this.reconnectAttempts < this.maxReconnectAttempts) {
         this.scheduleReconnect();
@@ -156,6 +167,27 @@ export class WebSocketService {
       this.isConnecting = false;
       this.connected$.next(false);
     };
+  }
+
+  private startHeartbeat(): void {
+    this.stopHeartbeat();
+    this.heartbeatInterval = setInterval(() => {
+      if (this.isConnected()) {
+        const heartbeatMessage: WebSocketMessage = {
+          type: 'heartbeat',
+          data: { timestamp: new Date().toISOString() },
+          timestamp: new Date().toISOString()
+        };
+        this.send(heartbeatMessage);
+      }
+    }, this.heartbeatDelay);
+  }
+
+  private stopHeartbeat(): void {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
   }
 
   private scheduleReconnect(): void {

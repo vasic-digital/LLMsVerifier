@@ -11,7 +11,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
-import { MatListItemModule } from '@angular/material/list';
+
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -26,17 +26,17 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatExpansionModule } from '@angular/material/expansion';
-import { MatIconModule } from '@angular/material/icon';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { MatDialogModule } from '@angular/material/dialog';
 
-// Lottie
-import { LottieModule } from 'ngx-lottie';
+// Custom Components
+import { DashboardMetricsModule } from './components/dashboard-metrics/dashboard-metrics.module';
+import { ChartModule } from './components/chart/chart.module';
+
+
 
 @NgModule({
-  declarations: [
-    AppComponent
-  ],
+  declarations: [],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
@@ -47,7 +47,7 @@ import { LottieModule } from 'ngx-lottie';
     MatIconModule,
     MatSidenavModule,
     MatListModule,
-    MatListItemModule,
+
     MatCardModule,
     MatTableModule,
     MatTabsModule,
@@ -64,14 +64,8 @@ import { LottieModule } from 'ngx-lottie';
     MatExpansionModule,
     MatGridListModule,
     MatDialogModule,
-    LottieModule.forRoot({
-      player: {
-        controls: true,
-        autoplay: true,
-        loop: true,
-        renderer: 'canvas'
-      }
-    })
+    DashboardMetricsModule,
+    ChartModule
   ],
   providers: [],
   bootstrap: [AppComponent]
