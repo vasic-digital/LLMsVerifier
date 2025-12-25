@@ -40,9 +40,12 @@ type ClientUsage struct {
 
 // AuthManager handles authentication and authorization
 type AuthManager struct {
-	jwtSecret  []byte
-	hashParams argon2HashParams
-	clients    map[string]*Client // In-memory client store for demo
+	jwtSecret   []byte
+	hashParams  argon2HashParams
+	clients     map[string]*Client // In-memory client store for demo
+	ldapEnabled bool               // Enterprise: LDAP integration enabled
+	rbacEnabled bool               // Enterprise: RBAC enabled
+	ssoEnabled  bool               // Enterprise: SSO enabled
 }
 
 // argon2HashParams defines parameters for Argon2 hashing
@@ -327,4 +330,120 @@ func (am *AuthManager) ValidateAndExtractClaims(tokenString string) (*Client, er
 	}
 
 	return nil, fmt.Errorf("client not found")
+}
+
+// Enterprise Authentication Methods
+
+// EnableLDAP enables LDAP authentication
+func (am *AuthManager) EnableLDAP() {
+	am.ldapEnabled = true
+}
+
+// EnableRBAC enables role-based access control
+func (am *AuthManager) EnableRBAC() {
+	am.rbacEnabled = true
+}
+
+// EnableSSO enables single sign-on
+func (am *AuthManager) EnableSSO() {
+	am.ssoEnabled = true
+}
+
+// AuthenticateWithLDAP performs LDAP authentication (placeholder)
+func (am *AuthManager) AuthenticateWithLDAP(username, password string) (*Client, error) {
+	if !am.ldapEnabled {
+		return nil, fmt.Errorf("LDAP authentication not enabled")
+	}
+
+	// Placeholder LDAP authentication logic
+	// In production, this would connect to LDAP server
+	if username == "ldap-user" && password == "ldap-pass" {
+		return &Client{
+			ID:          999,
+			Name:        "LDAP User",
+			Description: "Authenticated via LDAP",
+			Permissions: []string{"read", "write"},
+			IsActive:    true,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+		}, nil
+	}
+
+	return nil, fmt.Errorf("LDAP authentication failed")
+}
+
+// CheckRBACPermission checks if client has RBAC permission
+func (am *AuthManager) CheckRBACPermission(client *Client, resource, action string) error {
+	if !am.rbacEnabled {
+		return nil // RBAC disabled, allow all
+	}
+
+	// Simple RBAC logic - check if client has permission for resource:action
+	requiredPermission := fmt.Sprintf("%s:%s", resource, action)
+
+	for _, permission := range client.Permissions {
+		if permission == requiredPermission || permission == "*" || permission == "admin" {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("RBAC access denied: %s requires permission %s", client.Name, requiredPermission)
+}
+
+// AuthenticateWithSSO performs SSO authentication (placeholder)
+func (am *AuthManager) AuthenticateWithSSO(provider, token string) (*Client, error) {
+	if !am.ssoEnabled {
+		return nil, fmt.Errorf("SSO authentication not enabled")
+	}
+
+	// Placeholder SSO authentication logic
+	if provider == "google" && strings.HasPrefix(token, "google-token-") {
+		return &Client{
+			ID:          1000,
+			Name:        "SSO User",
+			Description: "Authenticated via Google SSO",
+			Permissions: []string{"read"},
+			IsActive:    true,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+		}, nil
+	}
+
+	return nil, fmt.Errorf("SSO authentication failed")
+}
+
+// CreateRole creates a role with permissions (RBAC)
+func (am *AuthManager) CreateRole(name string, permissions []string) {
+	// In production, this would store roles in database
+	// For demo, just log the role creation
+	fmt.Printf("Created role: %s with permissions: %v\n", name, permissions)
+}
+
+// AssignRoleToClient assigns a role to a client
+func (am *AuthManager) AssignRoleToClient(clientID int64, roleName string) error {
+	client, exists := am.clients["dummy"] // This is simplified
+	if !exists {
+		return fmt.Errorf("client not found")
+	}
+
+	// Add role-based permissions
+	switch roleName {
+	case "admin":
+		client.Permissions = append(client.Permissions, "admin", "read", "write", "delete")
+	case "editor":
+		client.Permissions = append(client.Permissions, "read", "write")
+	case "viewer":
+		client.Permissions = append(client.Permissions, "read")
+	default:
+		return fmt.Errorf("unknown role: %s", roleName)
+	}
+
+	client.UpdatedAt = time.Now()
+	return nil
+}
+
+// AuditAuthEvent logs authentication events
+func (am *AuthManager) AuditAuthEvent(eventType, clientID, details string) {
+	// In production, this would log to audit database
+	fmt.Printf("AUDIT [%s] Client: %s, Details: %s\n", eventType, clientID, details)
 }

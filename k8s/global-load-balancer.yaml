@@ -1,0 +1,397 @@
+# Global Load Balancer Configuration
+# This creates a global load balancer that routes traffic across regions
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: llm-verifier-global-ingress
+  namespace: llm-verifier
+  annotations:
+    # GCP Global Load Balancer
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "llm-verifier-global-ip"
+    networking.gke.io/managed-certificates: "llm-verifier-global-cert"
+    networking.gke.io/load-balancer-type: "GlobalExternal"
+
+    # AWS Global Accelerator annotations
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: "/api/health"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+
+    # Azure Front Door annotations
+    appgw.ingress.kubernetes.io/health-probe-path: "/api/health"
+    appgw.ingress.kubernetes.io/request-timeout: "30"
+
+    # Cloudflare Load Balancer
+    external-dns.alpha.kubernetes.io/hostname: "api.llm-verifier.com"
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+
+    # Geo-based routing
+    nginx.ingress.kubernetes.io/geo-ip: "true"
+    nginx.ingress.kubernetes.io/geo-ip-country: "$geoip_country_code"
+spec:
+  tls:
+  - hosts:
+    - api.llm-verifier.com
+    - "*.llm-verifier.com"
+    secretName: llm-verifier-global-tls
+  rules:
+  - host: api.llm-verifier.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: llm-verifier-global
+            port:
+              number: 80
+---
+# Global Service for cross-region load balancing
+apiVersion: v1
+kind: Service
+metadata:
+  name: llm-verifier-global
+  namespace: llm-verifier
+  annotations:
+    # Multi-cluster service discovery
+    multicluster.kubernetes.io/service-type: "global"
+    multicluster.kubernetes.io/global-service: "true"
+
+    # Istio annotations for service mesh
+    networking.istio.io/exportTo: "*"
+
+    # Linkerd annotations
+    linkerd.io/inject: "enabled"
+    config.linkerd.io/trace-collector: "jaeger.llm-verifier.svc.cluster.local:9411"
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app: llm-verifier
+---
+# Regional Gateway for Istio Service Mesh
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: llm-verifier-gateway
+  namespace: llm-verifier
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "api.llm-verifier.com"
+    tls:
+      httpsRedirect: true
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    hosts:
+    - "api.llm-verifier.com"
+    tls:
+      mode: SIMPLE
+      credentialName: llm-verifier-tls
+---
+# Virtual Service for traffic routing
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: llm-verifier-routing
+  namespace: llm-verifier
+spec:
+  hosts:
+  - "api.llm-verifier.com"
+  gateways:
+  - llm-verifier-gateway
+  http:
+  - match:
+    - uri:
+        prefix: "/api/v1/providers"
+    route:
+    - destination:
+        host: llm-verifier
+        subset: us-east
+      weight: 40
+    - destination:
+        host: llm-verifier
+        subset: us-west
+      weight: 30
+    - destination:
+        host: llm-verifier
+        subset: eu-west
+      weight: 20
+    - destination:
+        host: llm-verifier
+        subset: ap-southeast
+      weight: 10
+    corsPolicy:
+      allowOrigins:
+      - exact: "https://app.llm-verifier.com"
+      allowMethods: ["GET", "POST", "PUT", "DELETE"]
+      allowHeaders: ["*"]
+      allowCredentials: true
+  - match:
+    - uri:
+        prefix: "/api/v1/models"
+    route:
+    - destination:
+        host: llm-verifier
+        subset: us-east
+      weight: 50
+    - destination:
+        host: llm-verifier
+        subset: eu-west
+      weight: 30
+    - destination:
+        host: llm-verifier
+        subset: us-west
+      weight: 20
+  - match:
+    - headers:
+        x-region:
+          exact: "us"
+    route:
+    - destination:
+        host: llm-verifier
+        subset: us-east
+  - match:
+    - headers:
+        x-region:
+          exact: "eu"
+    route:
+    - destination:
+        host: llm-verifier
+        subset: eu-west
+  - match:
+    - headers:
+        x-region:
+          exact: "asia"
+    route:
+    - destination:
+        host: llm-verifier
+        subset: ap-southeast
+  - route:  # Default routing
+    - destination:
+        host: llm-verifier
+        subset: us-east
+      weight: 40
+    - destination:
+        host: llm-verifier
+        subset: us-west
+      weight: 35
+    - destination:
+        host: llm-verifier
+        subset: eu-west
+      weight: 20
+    - destination:
+        host: llm-verifier
+        subset: ap-southeast
+      weight: 5
+---
+# Destination Rules for subsets
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: llm-verifier-subsets
+  namespace: llm-verifier
+spec:
+  host: llm-verifier
+  subsets:
+  - name: us-east
+    labels:
+      topology.kubernetes.io/region: us-east-1
+  - name: us-west
+    labels:
+      topology.kubernetes.io/region: us-west-2
+  - name: eu-west
+    labels:
+      topology.kubernetes.io/region: eu-west-1
+  - name: ap-southeast
+    labels:
+      topology.kubernetes.io/region: ap-southeast-1
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+    outlierDetection:
+      consecutive5xxErrors: 3
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+---
+# Peer Authentication for mTLS
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: llm-verifier-mtls
+  namespace: llm-verifier
+spec:
+  selector:
+    matchLabels:
+      app: llm-verifier
+  mtls:
+    mode: PERMISSIVE  # Allow both mTLS and plain text
+---
+# Authorization Policy
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: llm-verifier-auth
+  namespace: llm-verifier
+spec:
+  selector:
+    matchLabels:
+      app: llm-verifier
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/llm-verifier/sa/llm-verifier"]
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/api/health", "/api/providers", "/api/models"]
+  - from:
+    - source:
+        principals: ["cluster.local/ns/monitoring/sa/prometheus"]
+    to:
+    - operation:
+        methods: ["GET"]
+        paths: ["/metrics"]
+  - to:
+    - operation:
+        methods: ["POST", "PUT", "DELETE"]
+        paths: ["/api/*"]
+    when:
+    - key: request.auth.claims[roles]
+      values: ["admin", "editor"]
+---
+# Fault Injection for Testing
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: llm-verifier-fault-injection
+  namespace: llm-verifier
+spec:
+  hosts:
+  - llm-verifier
+  http:
+  - fault:
+      delay:
+        percentage:
+          value: 0.1  # 0.1% of requests get 5s delay
+        fixedDelay: 5s
+    route:
+    - destination:
+        host: llm-verifier
+  - fault:
+      abort:
+        percentage:
+          value: 0.05  # 0.05% of requests get 503 error
+        httpStatus: 503
+    route:
+    - destination:
+        host: llm-verifier
+---
+# Cross-region failover configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llm-verifier-failover-config
+  namespace: llm-verifier
+data:
+  failover-rules.yaml: |
+    regions:
+      us-east-1:
+        primary: true
+        backup_regions:
+          - us-west-2
+          - eu-west-1
+        health_check_interval: 30s
+        failover_threshold: 3
+
+      us-west-2:
+        primary: false
+        backup_regions:
+          - us-east-1
+          - eu-west-1
+        health_check_interval: 30s
+
+      eu-west-1:
+        primary: false
+        backup_regions:
+          - us-east-1
+          - us-west-2
+        health_check_interval: 45s  # Longer interval for EU
+
+      ap-southeast-1:
+        primary: false
+        backup_regions:
+          - us-east-1
+          - us-west-2
+        health_check_interval: 60s  # Longest interval for APAC
+
+    global_settings:
+      max_failover_time: 300s
+      health_check_timeout: 10s
+      dns_ttl: 30s
+      traffic_drain_time: 120s
+---
+# Global DNS configuration (External-DNS)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: external-dns-config
+  namespace: llm-verifier
+  labels:
+    app: external-dns
+data:
+  # Global DNS settings
+  config: |
+    ---
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: external-dns
+    data:
+      # Geo-based DNS routing
+      geo-location-filter: "us-east1,us-west2,eu-west1,asia-southeast1"
+      health-check-region: "us-east1"
+      # Multi-region support
+      multi-region: "true"
+      # Load balancing
+      load-balancer-type: "global"
+      # DNS TTL settings
+      txt-owner-id: "llm-verifier-global"
+      txt-prefix: "llm-verifier-"
+      interval: "1m"
+      # Provider-specific settings
+      provider: "google"  # or aws, azure, etc.
+---
+# Certificate for global domain
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: llm-verifier-global-cert
+  namespace: llm-verifier
+spec:
+  secretName: llm-verifier-global-tls-secret
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+  - api.llm-verifier.com
+  - "*.llm-verifier.com"
+  - "us.api.llm-verifier.com"
+  - "eu.api.llm-verifier.com"
+  - "asia.api.llm-verifier.com"
