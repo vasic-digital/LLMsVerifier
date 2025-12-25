@@ -1,0 +1,155 @@
+# Default values for llm-verifier.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global configuration
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+
+# Application configuration
+image:
+  repository: llm-verifier
+  tag: "latest"
+  pullPolicy: Always
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+  annotations: {}
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: llm-verifier.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Database configuration
+database:
+  enabled: true
+  type: postgresql  # postgresql, mysql, or sqlite
+  host: ""
+  port: 5432
+  name: llm_verifier
+  user: llm_verifier
+  password: ""
+  sslMode: require
+  # For SQLite (when type is sqlite)
+  sqlite:
+    path: "/data/llm-verifier.db"
+
+# Redis configuration
+redis:
+  enabled: true
+  host: ""
+  port: 6379
+  password: ""
+  db: 0
+
+# API Keys and secrets
+secrets:
+  jwtSecret: ""
+  openaiApiKey: ""
+  anthropicApiKey: ""
+  encryptionKey: ""
+
+# Resource limits and requests
+resources:
+  requests:
+    memory: "1Gi"
+    cpu: "500m"
+  limits:
+    memory: "2Gi"
+    cpu: "2000m"
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values:
+            - llm-verifier
+        topologyKey: kubernetes.io/hostname
+
+# Monitoring configuration
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+    namespace: "llm_verifier"
+  grafana:
+    enabled: false
+    adminPassword: "admin"
+
+# Logging configuration
+logging:
+  level: "info"
+  format: "json"
+  output: "stdout"
+
+# Security configuration
+security:
+  runAsNonRoot: true
+  readOnlyRootFilesystem: false
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+
+# Horizontal Pod Autoscaler
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Persistence configuration
+persistence:
+  enabled: true
+  size: "50Gi"
+  accessModes:
+    - ReadWriteOnce
+  annotations: {}
+
+# Environment variables
+env: {}
+
+# Extra volumes
+extraVolumes: []
+
+# Extra volume mounts
+extraVolumeMounts: []
+
+# Additional labels
+labels: {}
+
+# Additional annotations
+annotations: {}
