@@ -3,7 +3,6 @@ package events
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 )
@@ -213,10 +212,6 @@ func (ns *NotificationSubscriber) ReceiveEvent(event *Event) error {
 
 // sendNotification sends the actual notification
 func (ns *NotificationSubscriber) sendNotification(event *Event) error {
-	// Implementation would integrate with actual services
-	// For now, just log the notification
-	log.Printf("[NOTIFICATION:%s] %s: %s", ns.ServiceType, event.Title, event.Message)
-
 	switch ns.ServiceType {
 	case "slack":
 		return ns.sendSlackNotification(event)
@@ -224,25 +219,140 @@ func (ns *NotificationSubscriber) sendNotification(event *Event) error {
 		return ns.sendEmailNotification(event)
 	case "telegram":
 		return ns.sendTelegramNotification(event)
+	case "matrix":
+		return ns.sendMatrixNotification(event)
+	case "whatsapp":
+		return ns.sendWhatsAppNotification(event)
 	default:
 		return fmt.Errorf("unsupported notification service: %s", ns.ServiceType)
 	}
 }
 
-// Placeholder implementations for different notification services
 func (ns *NotificationSubscriber) sendSlackNotification(event *Event) error {
-	// TODO: Implement Slack webhook integration
-	return fmt.Errorf("slack integration not implemented")
+	webhookURL, ok := ns.Config["webhook_url"].(string)
+	if !ok {
+		return fmt.Errorf("slack webhook_url not configured")
+	}
+
+	channel, _ := ns.Config["channel"].(string)
+	username, _ := ns.Config["username"].(string)
+
+	notifier := NewSlackNotifier(webhookURL, channel, username)
+	return notifier.SendNotification(event)
 }
 
 func (ns *NotificationSubscriber) sendEmailNotification(event *Event) error {
-	// TODO: Implement email sending
-	return fmt.Errorf("email integration not implemented")
+	smtpServer, ok := ns.Config["smtp_server"].(string)
+	if !ok {
+		return fmt.Errorf("email smtp_server not configured")
+	}
+
+	smtpPortFloat, ok := ns.Config["smtp_port"].(float64)
+	if !ok {
+		return fmt.Errorf("email smtp_port not configured")
+	}
+	smtpPort := int(smtpPortFloat)
+
+	username, ok := ns.Config["username"].(string)
+	if !ok {
+		return fmt.Errorf("email username not configured")
+	}
+
+	password, ok := ns.Config["password"].(string)
+	if !ok {
+		return fmt.Errorf("email password not configured")
+	}
+
+	fromAddress, ok := ns.Config["from_address"].(string)
+	if !ok {
+		return fmt.Errorf("email from_address not configured")
+	}
+
+	toAddressesInterface, ok := ns.Config["to_addresses"]
+	if !ok {
+		return fmt.Errorf("email to_addresses not configured")
+	}
+
+	var toAddresses []string
+	if toAddressesSlice, ok := toAddressesInterface.([]interface{}); ok {
+		for _, addr := range toAddressesSlice {
+			if addrStr, ok := addr.(string); ok {
+				toAddresses = append(toAddresses, addrStr)
+			}
+		}
+	}
+
+	notifier := NewEmailNotifier(smtpServer, smtpPort, username, password, fromAddress, toAddresses)
+	return notifier.SendNotification(event)
 }
 
 func (ns *NotificationSubscriber) sendTelegramNotification(event *Event) error {
-	// TODO: Implement Telegram bot integration
-	return fmt.Errorf("telegram integration not implemented")
+	botToken, ok := ns.Config["bot_token"].(string)
+	if !ok {
+		return fmt.Errorf("telegram bot_token not configured")
+	}
+
+	chatID, ok := ns.Config["chat_id"].(string)
+	if !ok {
+		return fmt.Errorf("telegram chat_id not configured")
+	}
+
+	notifier := NewTelegramNotifier(botToken, chatID)
+	return notifier.SendNotification(event)
+}
+
+func (ns *NotificationSubscriber) sendMatrixNotification(event *Event) error {
+	homeserverURL, ok := ns.Config["homeserver_url"].(string)
+	if !ok {
+		return fmt.Errorf("matrix homeserver_url not configured")
+	}
+
+	accessToken, ok := ns.Config["access_token"].(string)
+	if !ok {
+		return fmt.Errorf("matrix access_token not configured")
+	}
+
+	roomID, ok := ns.Config["room_id"].(string)
+	if !ok {
+		return fmt.Errorf("matrix room_id not configured")
+	}
+
+	notifier := NewMatrixNotifier(homeserverURL, accessToken, roomID)
+	return notifier.SendNotification(event)
+}
+
+func (ns *NotificationSubscriber) sendWhatsAppNotification(event *Event) error {
+	accountSID, ok := ns.Config["account_sid"].(string)
+	if !ok {
+		return fmt.Errorf("whatsapp account_sid not configured")
+	}
+
+	authToken, ok := ns.Config["auth_token"].(string)
+	if !ok {
+		return fmt.Errorf("whatsapp auth_token not configured")
+	}
+
+	fromNumber, ok := ns.Config["from_number"].(string)
+	if !ok {
+		return fmt.Errorf("whatsapp from_number not configured")
+	}
+
+	toNumbersInterface, ok := ns.Config["to_numbers"]
+	if !ok {
+		return fmt.Errorf("whatsapp to_numbers not configured")
+	}
+
+	var toNumbers []string
+	if toNumbersSlice, ok := toNumbersInterface.([]interface{}); ok {
+		for _, num := range toNumbersSlice {
+			if numStr, ok := num.(string); ok {
+				toNumbers = append(toNumbers, numStr)
+			}
+		}
+	}
+
+	notifier := NewWhatsAppNotifier(accountSID, authToken, fromNumber, toNumbers)
+	return notifier.SendNotification(event)
 }
 
 // GetID implements EventSubscriber interface
