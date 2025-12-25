@@ -66,7 +66,7 @@ func secureRandFloat64() (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	
+
 	// Convert bytes to uint64, then to float64 in [0,1)
 	randInt := new(big.Int).SetBytes(bytes).Uint64()
 	return float64(randInt) / float64(1<<64), nil
@@ -77,7 +77,7 @@ func secureRandIntn(n int) int {
 	if n <= 0 {
 		return 0
 	}
-	
+
 	// Generate random number and take modulo
 	bytes := make([]byte, 4)
 	_, err := rand.Read(bytes)
@@ -85,7 +85,7 @@ func secureRandIntn(n int) int {
 		// Fallback to time-based random (not ideal but functional)
 		return int(time.Now().UnixNano()) % n
 	}
-	
+
 	randInt := int(new(big.Int).SetBytes(bytes).Int64())
 	if randInt < 0 {
 		randInt = -randInt
@@ -164,7 +164,7 @@ func (fm *FailoverManager) selectWeightedProvider(providers []*database.Provider
 		log.Printf("Failed to generate secure random, using timestamp as fallback: %v", err)
 		r = float64(time.Now().UnixNano()%1000) / 1000.0
 	}
-	
+
 	if r < 0.7 && costEffectiveCount > 0 {
 		// Select from cost-effective providers (lower latency)
 		return providers[secureRandIntn(costEffectiveCount)]
@@ -283,9 +283,19 @@ func (fm *FailoverManager) calculateCostWeight(provider *database.Provider) floa
 	case "google":
 		return 0.6 // Balanced
 	case "mistral":
-		return 0.4 // Cost-effective
+		return 0.7 // Established provider
 	case "meta":
 		return 0.3 // Cost-effective
+	case "groq":
+		return 0.8 // High performance
+	case "togetherai":
+		return 0.6 // Balanced
+	case "fireworks":
+		return 0.6 // Balanced
+	case "poe":
+		return 0.5 // Standard
+	case "navigator":
+		return 0.4 // Research-focused
 	default:
 		return 0.5 // Default
 	}

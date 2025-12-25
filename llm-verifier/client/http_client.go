@@ -208,6 +208,12 @@ func getProviderEndpoint(provider string) string {
 		"cohere":      "https://api.cohere.ai/v1/models",
 		"openrouter":  "https://openrouter.ai/api/v1/models",
 		"deepseek":    "https://api.deepseek.com/v1/models",
+		"mistral":     "https://api.mistral.ai/v1/models",
+		"groq":        "https://api.groq.com/openai/v1/models",
+		"togetherai":  "https://api.together.xyz/v1/models",
+		"fireworks":   "https://api.fireworks.ai/inference/v1/models",
+		"poe":         "https://api.poe.com/v1/models",
+		"navigator":   "https://api.ai.it.ufl.edu/v1/models",
 	}
 
 	if endpoint, ok := providerEndpoints[strings.ToLower(provider)]; ok {
@@ -226,6 +232,12 @@ func getModelEndpoint(provider, modelID string) string {
 		"cohere":      "https://api.cohere.ai/v1/generate",
 		"openrouter":  "https://openrouter.ai/api/v1/chat/completions",
 		"deepseek":    "https://api.deepseek.com/chat/completions",
+		"mistral":     "https://api.mistral.ai/v1/chat/completions",
+		"groq":        "https://api.groq.com/openai/v1/chat/completions",
+		"togetherai":  "https://api.together.xyz/v1/chat/completions",
+		"fireworks":   "https://api.fireworks.ai/inference/v1/chat/completions",
+		"poe":         "https://api.poe.com/v1/chat/completions",
+		"navigator":   "https://api.ai.it.ufl.edu/v1/chat/completions",
 	}
 
 	if endpoint, ok := providerEndpoints[strings.ToLower(provider)]; ok {
