@@ -356,6 +356,21 @@ func configureConnectionPool(db *sql.DB, config ConnectionPoolConfig) error {
 		return fmt.Errorf("failed to set synchronous mode: %w", err)
 	}
 
+	// Optimize cache size for better performance
+	if _, err := db.Exec("PRAGMA cache_size=-64000"); err != nil { // 64MB cache
+		return fmt.Errorf("failed to set cache size: %w", err)
+	}
+
+	// Enable memory-mapped I/O for better performance
+	if _, err := db.Exec("PRAGMA mmap_size=268435456"); err != nil { // 256MB
+		return fmt.Errorf("failed to set mmap size: %w", err)
+	}
+
+	// Set busy timeout to handle concurrent access
+	if _, err := db.Exec("PRAGMA busy_timeout=30000"); err != nil { // 30 seconds
+		return fmt.Errorf("failed to set busy timeout: %w", err)
+	}
+
 	// Set cache size to 64MB
 	if _, err := db.Exec("PRAGMA cache_size=-65536"); err != nil {
 		return fmt.Errorf("failed to set cache size: %w", err)
