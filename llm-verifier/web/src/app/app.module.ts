@@ -13,8 +13,6 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 
 import { MatCardModule } from '@angular/material/card';
-import { MatTableModule } from '@angular/material/table';
-import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatChipsModule } from '@angular/material/chips';
@@ -26,8 +24,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatExpansionModule } from '@angular/material/expansion';
-import { MatGridListModule } from '@angular/material/grid-list';
-import { MatDialogModule } from '@angular/material/dialog';
 
 // Custom Components
 import { DashboardMetricsModule } from './components/dashboard-metrics/dashboard-metrics.module';
@@ -49,8 +45,6 @@ import { ChartModule } from './components/chart/chart.module';
     MatListModule,
 
     MatCardModule,
-    MatTableModule,
-    MatTabsModule,
     MatProgressSpinnerModule,
     MatProgressBarModule,
     MatChipsModule,
@@ -62,8 +56,6 @@ import { ChartModule } from './components/chart/chart.module';
     MatFormFieldModule,
     MatDividerModule,
     MatExpansionModule,
-    MatGridListModule,
-    MatDialogModule,
     DashboardMetricsModule,
     ChartModule
   ],
