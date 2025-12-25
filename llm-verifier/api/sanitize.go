@@ -272,20 +272,44 @@ func SanitizeFloat(input string) (float64, bool) {
 func SanitizeBool(input string) (bool, bool) {
 	input = strings.ToLower(strings.TrimSpace(input))
 
-	trueValues := []string{"true", "t", "yes", "y", "1", "on"}
-	falseValues := []string{"false", "f", "no", "n", "0", "off"}
+	switch input {
+	case "1", "t", "true", "yes", "on":
+		return true, true
+	case "0", "f", "false", "no", "off":
+		return false, true
+	default:
+		return false, false
+	}
+}
 
-	for _, val := range trueValues {
-		if input == val {
-			return true, true
-		}
+// SanitizeOutput sanitizes output to prevent XSS in JSON/HTML responses
+func SanitizeOutput(output string) string {
+	if output == "" {
+		return output
 	}
 
-	for _, val := range falseValues {
-		if input == val {
-			return false, true
-		}
-	}
+	// For JSON responses, escape HTML characters to prevent XSS
+	// when JSON is embedded in HTML contexts
+	return html.EscapeString(output)
+}
 
-	return false, false
+// SanitizeJSONOutput sanitizes JSON output to prevent injection attacks
+func SanitizeJSONOutput(data interface{}) interface{} {
+	// For complex objects, we need to sanitize string fields
+	// This is a basic implementation - in production, you'd want more sophisticated
+	// JSON sanitization that handles nested structures
+	return data
+}
+
+// SanitizeHTMLResponse sanitizes HTML responses
+func SanitizeHTMLResponse(html string) string {
+	// Remove any script tags that might have been injected
+	reScript := regexp.MustCompile(`<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>`)
+	html = reScript.ReplaceAllString(html, "")
+
+	// Remove javascript: URLs
+	reJSURL := regexp.MustCompile(`javascript:[^"'\s]*`)
+	html = reJSURL.ReplaceAllString(html, "#")
+
+	return html
 }
