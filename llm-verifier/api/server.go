@@ -33,8 +33,7 @@ func (s *Server) Router() http.Handler {
 	mux.HandleFunc("/api/models", s.ListModelsHandler)
 	mux.HandleFunc("/api/models/", s.GetModelHandler)
 	mux.HandleFunc("/api/models/{id}/verify", s.VerifyModelHandler)
-	mux.HandleFunc("/api/providers", s.ListProvidersHandler)
-	mux.HandleFunc("/api/providers", s.AddProviderHandler)
+	mux.HandleFunc("/api/providers", s.ProvidersHandler)
 
 	return mux
 }
@@ -48,8 +47,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/models", s.ListModelsHandler)
 	mux.HandleFunc("/api/models/", s.GetModelHandler)
 	mux.HandleFunc("/api/models/{id}/verify", s.VerifyModelHandler)
-	mux.HandleFunc("/api/providers", s.ListProvidersHandler)
-	mux.HandleFunc("/api/providers", s.AddProviderHandler)
+	mux.HandleFunc("/api/providers", s.ProvidersHandler)
 
 	s.server = &http.Server{
 		Addr:    ":8080",
