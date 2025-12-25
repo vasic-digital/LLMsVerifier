@@ -24,6 +24,21 @@ func NewServer(cfg *config.Config, db *database.Database) *Server {
 	}
 }
 
+// Router returns the HTTP router for testing purposes
+func (s *Server) Router() http.Handler {
+	mux := http.NewServeMux()
+
+	// Register API endpoints
+	mux.HandleFunc("/api/health", s.HealthHandler)
+	mux.HandleFunc("/api/models", s.ListModelsHandler)
+	mux.HandleFunc("/api/models/", s.GetModelHandler)
+	mux.HandleFunc("/api/models/{id}/verify", s.VerifyModelHandler)
+	mux.HandleFunc("/api/providers", s.ListProvidersHandler)
+	mux.HandleFunc("/api/providers", s.AddProviderHandler)
+
+	return mux
+}
+
 // Start starts the HTTP server
 func (s *Server) Start() error {
 	mux := http.NewServeMux()

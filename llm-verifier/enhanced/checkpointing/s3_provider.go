@@ -1,11 +1,12 @@
 package checkpointing
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"io"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -49,7 +50,7 @@ func (s3p *S3Provider) Upload(ctx context.Context, key string, data []byte) erro
 	_, err := s3p.uploader.UploadWithContext(ctx, &s3manager.UploadInput{
 		Bucket: aws.String(s3p.bucket),
 		Key:    aws.String(key),
-		Body:   aws.ReadSeekCloser(aws.NewReadSeeker(data)),
+		Body:   bytes.NewReader(data),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to upload to S3: %w", err)
@@ -115,7 +116,7 @@ func (s3p *S3Provider) Exists(ctx context.Context, key string) (bool, error) {
 	})
 	if err != nil {
 		// Check if it's a "not found" error
-		if _, ok := err.(*s3.ErrCodeNoSuchKey); ok {
+		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == s3.ErrCodeNoSuchKey {
 			return false, nil
 		}
 		return false, fmt.Errorf("failed to check S3 object existence: %w", err)
