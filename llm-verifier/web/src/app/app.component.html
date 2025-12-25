@@ -1,183 +1,36 @@
+<app-mobile-nav></app-mobile-nav>
+
 <mat-sidenav-container class="sidenav-container" [class.dark-theme]="isDarkMode">
   <mat-sidenav 
     #sidenav
     [opened]="isSidenavOpen"
-    [mode]="over"
+    mode="over"
     (opened)="toggleSidenav()"
     (closed)="toggleSidenav()">
     
     <mat-nav-list>
       <a mat-list-item [routerLink]="['/']" class="logo-link">
         <div class="logo-container">
-          <lottie-player 
-            [src]="getLottieAnimation('logo')"
-            [style]="{'width': '60px', 'height': '60px'}">
-          </lottie-player>
+          <mat-icon>verified</mat-icon>
           <span class="logo-text">LLM Verifier</span>
         </div>
       </a>
       
       <mat-divider></mat-divider>
-      <mat-subheader>Dashboard</mat-subheader>
+      <div class="section-header">Dashboard</div>
       
       <mat-list-item [routerLink]="['/dashboard']">
         <mat-icon matListIcon>dashboard</mat-icon>
         <span>Overview</span>
       </mat-list-item>
       
-      <mat-list-item [routerLink]="['/providers']">
-        <mat-icon matListIcon>dns</mat-icon>
-        <span>Providers</span>
+      <mat-list-item [routerLink]="['/models']">
+        <mat-icon matListIcon>smart_toy</mat-icon>
+        <span>Models</span>
       </mat-list-item>
       
       <mat-divider></mat-divider>
-      <mat-subheader>LLM Providers</mat-subheader>
-      
-      <mat-list-item [routerLink]="['/providers/openai']">
-        <img src="assets/icons/openai.png" class="provider-icon" alt="OpenAI">
-        <div class="provider-info">
-          <span class="provider-name">OpenAI</span>
-          <span class="provider-stats">98 Models</span>
-        </div>
-      </mat-list-item>
-      
-      <mat-list-item [routerLink]="['/providers/anthropic']">
-        <img src="assets/icons/anthropic.png" class="provider-icon" alt="Anthropic">
-        <div class="provider-info">
-          <span class="provider-name">Anthropic</span>
-          <span class="provider-stats">15 Models</span>
-        </div>
-      </mat-list-item>
-      
-      <mat-list-item [routerLink]="['/providers/google']">
-        <img src="assets/icons/google.png" class="provider-icon" alt="Google">
-        <div class="provider-info">
-          <span class="provider-name">Google</span>
-          <span class="provider-stats">42 Models</span>
-        </div>
-      </mat-list-item>
-      
-      <mat-list-item [routerLink]="['/providers/meta']">
-        <img src="assets/icons/meta.png" class="provider-icon" alt="Meta">
-        <div class="provider-info">
-          <span class="provider-name">Meta</span>
-          <span class="provider-stats">28 Models</span>
-        </div>
-      </mat-list-item>
-      
-      <mat-divider></mat-divider>
-      <mat-subheader>Verification</mat-subheader>
-      
-      <mat-list-item [routerLink]="['/verification']">
-        <mat-icon matListIcon>verified</mat-icon>
-        <span>All Models</span>
-      </mat-list-item>
-      
-      <mat-list-item [routerLink]="['/verification/quick']">
-        <mat-icon matListIcon>speed</mat-icon>
-        <span>Quick Check</span>
-      </mat-list-item>
-      
-      <mat-list-item [routerLink]="['/verification/features']">
-        <mat-icon matListIcon>features</mat-icon>
-        <span>Feature Test</span>
-      </mat-list-item>
-      
-      <mat-list-item [routerLink]="['/verification/brotli']">
-        <mat-icon matListIcon>compress</mat-icon>
-        <span>Brotli Test</span>
-      </mat-list-item>
-      
-      <mat-divider></mat-divider>
-      <mat-subheader>Brotli Compression</mat-subheader>
-      
-      <mat-list-item [routerLink]="['/brotli/overview']">
-        <mat-icon matListIcon>info</mat-icon>
-        <span>Overview</span>
-      </mat-list-item>
-      
-      <mat-list-item [routerLink]="['/brotli/configuration']">
-        <mat-icon matListIcon>settings</mat-icon>
-        <span>Configuration</span>
-      </mat-list-item>
-      
-      <mat-list-item [routerLink]="['/brotli/performance']">
-        <mat-icon matListIcon>analytics</mat-icon>
-        <span>Performance Metrics</span>
-      </mat-list-item>
-      
-      <mat-list-item [routerLink]="['/brotli/caching']">
-        <mat-icon matListIcon>storage</mat-icon>
-        <span>Cache Management</span>
-      </mat-list-item>
-      
-      <mat-divider></mat-divider>
-      <mat-subheader>Monitoring</mat-subheader>
-      
-      <mat-list-item [routerLink]="['/monitoring/overview']">
-        <mat-icon matListIcon>monitoring</mat-icon>
-        <span>System Health</span>
-      </mat-list-item>
-      
-      <mat-list-item [routerLink]="['/monitoring/metrics']">
-        <mat-icon matListIcon>insert_chart</mat-icon>
-        <span>Metrics Dashboard</span>
-      </mat-list-item>
-      
-      <mat-list-item [routerLink]="['/monitoring/alerts']">
-        <mat-icon matListIcon>notifications</mat-icon>
-        <span>Alerts</span>
-      </mat-list-item>
-      
-      <mat-list-item [routerLink]="['/monitoring/logs']">
-        <mat-icon matListIcon>list</mat-icon>
-        <span>Logs</span>
-      </mat-list-item>
-      
-      <mat-divider></mat-divider>
-      <mat-subheader>Documentation</mat-subheader>
-      
-      <mat-list-item [routerLink]="['/docs/getting-started']">
-        <mat-icon matListIcon>play_circle</mat-icon>
-        <span>Getting Started</span>
-      </mat-list-item>
-      
-      <mat-list-item [routerLink]="['/docs/installation']">
-        <mat-icon matListIcon>download</mat-icon>
-        <span>Installation</span>
-      </mat-list-item>
-      
-      <mat-list-item [routerLink]="['/docs/configuration']">
-        <mat-icon matListIcon>settings</mat-icon>
-        <span>Configuration</span>
-      </mat-list-item>
-      
-      <mat-list-item [routerLink]="['/docs/verification']">
-        <mat-icon matListIcon>verified</mat-icon>
-        <span>Verification</span>
-      </mat-list-item>
-      
-      <mat-list-item [routerLink]="['/docs/brotli']">
-        <mat-icon matListIcon>compress</mat-icon>
-        <span>Brotli Compression</span>
-      </mat-list-item>
-      
-      <mat-list-item [routerLink]="['/docs/monitoring']">
-        <mat-icon matListIcon>monitoring</mat-icon>
-        <span>Monitoring</span>
-      </mat-list-item>
-      
-      <mat-list-item [routerLink]="['/docs/api']">
-        <mat-icon matListIcon>api</mat-icon>
-        <span>API Reference</span>
-      </mat-list-item>
-      
-      <mat-list-item [routerLink]="['/docs/troubleshooting']">
-        <mat-icon matListIcon>help</mat-icon>
-        <span>Troubleshooting</span>
-      </mat-list-item>
-      
-      <mat-divider></mat-divider>
+      <div class="section-header">Settings</div>
       
       <mat-list-item (click)="toggleDarkMode()" class="theme-toggle">
         <mat-icon matListIcon>{{ isDarkMode ? 'light_mode' : 'dark_mode' }}</mat-icon>
@@ -200,10 +53,7 @@
       <div class="header">
         <div class="header-content">
           <div class="logo-section">
-            <lottie-player 
-              [src]="getLottieAnimation('logo')"
-              [style]="{'width': '80px', 'height': '80px'}">
-            </lottie-player>
+            <mat-icon class="logo-icon">verified</mat-icon>
             <div class="logo-text">
               <h1>LLM Verifier</h1>
               <p class="tagline">Automated LLM Verification & Testing Platform</p>
@@ -211,32 +61,32 @@
           </div>
           <div class="stats-section">
             <div class="stat-card stat-card-1">
-              <div class="stat-value">7</div>
+              <div class="stat-value">{{ stats.totalProviders }}</div>
               <div class="stat-label">Providers</div>
-              <div class="stat-icon">{{ providers.length }}</div>
+              <mat-icon class="stat-icon">dns</mat-icon>
             </div>
             <div class="stat-card stat-card-2">
-              <div class="stat-value">395</div>
+              <div class="stat-value">{{ stats.totalModels }}</div>
               <div class="stat-label">Models Verified</div>
-              <div class="stat-icon">{{ verifiedModels }}</div>
+              <mat-icon class="stat-icon">smart_toy</mat-icon>
             </div>
             <div class="stat-card stat-card-3">
-              <div class="stat-value">96.8%</div>
+              <div class="stat-value">{{ stats.successRate }}%</div>
               <div class="stat-label">Success Rate</div>
-              <div class="stat-icon">verified</div>
+              <mat-icon class="stat-icon">verified</mat-icon>
             </div>
             <div class="stat-card stat-card-4">
-              <div class="stat-value">312</div>
+              <div class="stat-value">{{ stats.brotliSupport }}</div>
               <div class="stat-label">Brotli Support</div>
-              <div class="stat-icon">compress</div>
+              <mat-icon class="stat-icon">compress</mat-icon>
             </div>
           </div>
         </div>
       </div>
+      
+      <div class="router-container">
+        <router-outlet></router-outlet>
+      </div>
     </div>
-    
-    <div class="router-container">
-      <router-outlet></router-outlet>
-    </div>
-  </div>
-</main>
+  </main>
+</div>

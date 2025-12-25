@@ -1,0 +1,31 @@
+<div class="chart-container">
+  <div class="chart-header" *ngIf="title">
+    <h3>{{title}}</h3>
+    <div class="chart-actions">
+      <button mat-icon-button (click)="exportAsImage()" title="Export as Image">
+        <mat-icon>download</mat-icon>
+      </button>
+      <button mat-icon-button (click)="resetView()" title="Reset View">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
+  </div>
+  
+  <div class="chart-wrapper" [style.height]="height">
+    <canvas [id]="chartId"></canvas>
+    
+    <!-- Fallback when no data -->
+    <div class="no-data" *ngIf="data.labels.length === 0 || data.datasets.length === 0">
+      <mat-icon>bar_chart</mat-icon>
+      <p>No data available</p>
+    </div>
+  </div>
+  
+  <!-- Legend -->
+  <div class="chart-legend" *ngIf="data.datasets.length > 0">
+    <div class="legend-item" *ngFor="let dataset of data.datasets">
+      <div class="legend-color" [style.background-color]="dataset.backgroundColor || '#2196F3'"></div>
+      <span class="legend-label">{{dataset.label}}</span>
+    </div>
+  </div>
+</div>

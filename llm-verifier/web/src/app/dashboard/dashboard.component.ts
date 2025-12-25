@@ -10,10 +10,10 @@ import { WebSocketService, RealtimeEvent } from '../websocket.service';
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   title = 'LLM Verifier Dashboard';
-  dashboardStats$: Observable<DashboardStats>;
-  models$: Observable<Model[]>;
-  providers$: Observable<Provider[]>;
-  recentVerifications$: Observable<VerificationResult[]>;
+  dashboardStats$!: Observable<DashboardStats>;
+  models$!: Observable<Model[]>;
+  providers$!: Observable<Provider[]>;
+  recentVerifications$!: Observable<VerificationResult[]>;
   
   loading = true;
   error: string | null = null;
@@ -24,7 +24,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   constructor(
     private apiService: ApiService,
-    private webSocketService: WebSocketService
+    public webSocketService: WebSocketService
   ) {}
 
   ngOnInit(): void {
@@ -36,7 +36,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.cleanup();
   }
 
-  private setupWebSocket(): void {
+  setupWebSocket(): void {
     // Connect to WebSocket for real-time updates
     const wsUrl = this.getWebSocketUrl();
     this.webSocketService.connect(wsUrl);
@@ -150,8 +150,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  formatDate(dateString: string): string {
-    return new Date(dateString).toLocaleString();
+  formatDate(dateString: string | Date): string {
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    return date.toLocaleString();
   }
 
   getVerificationStatusClass(status: string): string {
@@ -176,5 +177,4 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (score >= 60) return 'score-below-average';
     return 'score-poor';
   }
-}
 }

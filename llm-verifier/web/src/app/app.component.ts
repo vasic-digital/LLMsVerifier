@@ -1,4 +1,6 @@
-import { Component, OnInit, Renderer2, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, Renderer2, HostListener } from '@angular/core';
+import { ResponsiveService, ScreenSize } from './services/responsive.service';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Routes } from '@angular/router';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
@@ -14,10 +16,10 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
+import { MobileNavModule } from './components/mobile-nav/mobile-nav.module';
 
 @Component({
   selector: 'app-root',
@@ -31,7 +33,7 @@ import { MatSelectModule } from '@angular/material/select';
     MatIconModule,
     MatSidenavModule,
     MatListModule,
-    MatListItemModule,
+
     MatCardModule,
     MatTableModule,
     MatTabsModule,
@@ -41,16 +43,18 @@ import { MatSelectModule } from '@angular/material/select';
     MatTooltipModule,
     MatSnackBarModule,
     MatMenuModule,
-    MatSelectModule
+    MatSelectModule,
+    MobileNavModule
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   title = 'LLM Verifier';
   isDarkMode = false;
   selectedTab = 0;
   selectedProvider = 'openai';
+  isSidenavOpen = false;
   
   providers = [
     { id: 'openai', name: 'OpenAI', icon: 'openai', models: 98, status: '✅ Verified' },
@@ -72,16 +76,24 @@ export class AppComponent implements OnInit {
     avgLatency: '152ms'
   };
 
-  constructor(private renderer: Renderer2) {}
+  verifiedModels = 395;
+  screenSize: ScreenSize = 'lg';
+  private subscriptions: Subscription[] = [];
+
+  constructor(
+    private renderer: Renderer2,
+    private responsiveService: ResponsiveService
+  ) {}
 
   ngOnInit() {
     this.checkSystemThemePreference();
     this.checkSavedTheme();
+    this.setupResponsive();
   }
 
   @HostListener('document:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
-    if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'D')) {
+    if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'D') {
       event.preventDefault();
       this.toggleDarkMode();
     }
@@ -133,5 +145,41 @@ export class AppComponent implements OnInit {
         this.applyTheme();
       }
     });
+  }
+
+  getLottieAnimation(name: string): string {
+    // Return empty string for now since Lottie is not available
+    return '';
+  }
+
+  private setupResponsive(): void {
+    const screenSizeSub = this.responsiveService.screenSize$.subscribe(size => {
+      this.screenSize = size;
+      this.updateResponsiveClasses();
+    });
+    this.subscriptions.push(screenSizeSub);
+  }
+
+  private updateResponsiveClasses(): void {
+    // Remove existing responsive classes
+    ['screen-xs', 'screen-sm', 'screen-md', 'screen-lg', 'screen-xl'].forEach(cls => {
+      this.renderer.removeClass(document.body, cls);
+    });
+
+    // Add current screen size class
+    this.renderer.addClass(document.body, `screen-${this.screenSize}`);
+
+    // Add mobile/desktop classes
+    if (this.responsiveService.isMobile()) {
+      this.renderer.addClass(document.body, 'mobile-view');
+      this.renderer.removeClass(document.body, 'desktop-view');
+    } else {
+      this.renderer.addClass(document.body, 'desktop-view');
+      this.renderer.removeClass(document.body, 'mobile-view');
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 }
