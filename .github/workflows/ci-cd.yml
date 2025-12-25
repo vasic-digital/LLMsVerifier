@@ -1,18 +1,16 @@
 name: CI/CD Pipeline
 
 on:
-  workflow_dispatch: # Manual trigger
   push:
     branches: [ main, develop ]
-    tags: [ 'v*' ]
   pull_request:
     branches: [ main, develop ]
+  release:
+    types: [ published ]
 
 env:
   GO_VERSION: '1.21'
   DOCKER_BUILDKIT: 1
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   # Security and quality checks
@@ -254,6 +252,42 @@ jobs:
         name: sbom
         path: ./sbom.spdx.json
 
+  # Code Quality Checks
+  quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Run goimports
+      run: |
+        go install golang.org/x/tools/cmd/goimports@latest
+        goimports -w -local github.com/your-org/llm-verifier .
+
+    - name: Check formatting
+      run: |
+        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+          echo "The following files are not formatted:"
+          gofmt -s -l .
+          exit 1
+        fi
+
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+        args: --timeout=5m
+
+    - name: Check for security issues
+      run: |
+        go install golang.org/x/vuln/cmd/govulncheck@latest
+        govulncheck ./...
+
   # Performance tests
   performance:
     name: Performance Tests
@@ -290,6 +324,36 @@ jobs:
       with:
         name: k6-results
         path: results.json
+
+  # Dependency Updates
+  dependencies:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' && github.repository == 'your-org/llm-verifier'
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Update dependencies
+      run: |
+        go get -u ./...
+        go mod tidy
+
+    - name: Run tests after update
+      run: go test ./...
+
+    - name: Create pull request
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: "chore: update dependencies"
+        title: "Update Dependencies"
+        body: "Automated dependency updates"
+        branch: automated/dependency-updates
 
   # Deploy to staging
   deploy-staging:
