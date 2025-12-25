@@ -167,8 +167,8 @@ X-RateLimit-Reset: 1640995200
 
 ## Supported Providers
 
-The API supports verification across 17+ LLM providers:
+The API supports verification across 18+ LLM providers:
 - OpenAI, Anthropic, Google, Cohere, Meta
 - Groq, Together AI, Fireworks AI, Poe, NaviGator AI
-- Mistral, xAI, SiliconFlow
+- Mistral, xAI, SiliconFlow, Replicate
 - And extensible framework for additional providers

@@ -296,6 +296,8 @@ func (fm *FailoverManager) calculateCostWeight(provider *database.Provider) floa
 		return 0.5 // Standard
 	case "navigator":
 		return 0.4 // Research-focused
+	case "replicate":
+		return 0.8 // High performance, reliable
 	default:
 		return 0.5 // Default
 	}

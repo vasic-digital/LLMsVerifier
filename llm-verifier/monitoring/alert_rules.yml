@@ -1,0 +1,88 @@
+groups:
+  - name: llm_verifier_alerts
+    rules:
+      # API Health Alerts
+      - alert: LLMVerifierDown
+        expr: up{job="llm-verifier"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "LLM Verifier is down"
+          description: "LLM Verifier has been down for more than 5 minutes."
+
+      # Performance Alerts
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="llm-verifier"}[5m])) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is above 500ms for 10 minutes."
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5..", job="llm-verifier"}[5m]) / rate(http_requests_total{job="llm-verifier"}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is above 5% for 5 minutes."
+
+      # Database Alerts
+      - alert: DatabaseDown
+        expr: mysql_up == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database is down"
+          description: "Database has been unreachable for more than 5 minutes."
+
+      - alert: HighDatabaseConnections
+        expr: mysql_global_status_threads_connected > 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High database connections"
+          description: "Database connections are above 80% capacity."
+
+      # Provider Alerts
+      - alert: ProviderDown
+        expr: llm_verifier_provider_status{status="down"} == 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Provider is down"
+          description: "Provider {{ $labels.provider }} has been down for 5 minutes."
+
+      - alert: ProviderHighErrorRate
+        expr: rate(llm_verifier_provider_requests_total{status=~"error|timeout"}[5m]) / rate(llm_verifier_provider_requests_total[5m]) > 0.1
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Provider high error rate"
+          description: "Provider {{ $labels.provider }} error rate above 10%."
+
+      # System Resource Alerts
+      - alert: HighMemoryUsage
+        expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is above 85%."
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is above 90%."
