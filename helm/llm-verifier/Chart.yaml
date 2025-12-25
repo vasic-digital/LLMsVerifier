@@ -1,0 +1,22 @@
+apiVersion: v2
+name: llm-verifier
+description: Enterprise-grade LLM verification platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - llm
+  - ai
+  - verification
+  - benchmarking
+home: https://github.com/your-org/llm-verifier
+sources:
+  - https://github.com/your-org/llm-verifier
+maintainers:
+  - name: LLM Verifier Team
+    email: team@llm-verifier.com
+annotations:
+  artifacthub.io/category: "ai-machine-learning"
+  artifacthub.io/license: "Apache-2.0"
+  artifacthub.io/operator: "false"
+  artifacthub.io/operatorCapabilities: "Basic Install"
