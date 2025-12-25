@@ -425,7 +425,7 @@ func (m *ModelsScreen) loadModels() tea.Cmd {
 			}
 
 			// Parse capabilities
-			if caps, ok := apiModel["capabilities"].([]interface{}); ok {
+			if caps, ok := apiModel["capabilities"].([]any); ok {
 				for _, cap := range caps {
 					if capStr, ok := cap.(string); ok {
 						model.Capabilities = append(model.Capabilities, capStr)
@@ -488,7 +488,7 @@ type ModelsErrorMsg struct {
 	Error error
 }
 
-func getString(m map[string]interface{}, key string) string {
+func getString(m map[string]any, key string) string {
 	if val, ok := m[key]; ok {
 		if str, ok := val.(string); ok {
 			return str
@@ -497,7 +497,7 @@ func getString(m map[string]interface{}, key string) string {
 	return ""
 }
 
-func getFloat64(m map[string]interface{}, key string) float64 {
+func getFloat64(m map[string]any, key string) float64 {
 	if val, ok := m[key]; ok {
 		if num, ok := val.(float64); ok {
 			return num
@@ -506,7 +506,7 @@ func getFloat64(m map[string]interface{}, key string) float64 {
 	return 0.0
 }
 
-func getBool(m map[string]interface{}, key string) bool {
+func getBool(m map[string]any, key string) bool {
 	if val, ok := m[key]; ok {
 		if b, ok := val.(bool); ok {
 			return b

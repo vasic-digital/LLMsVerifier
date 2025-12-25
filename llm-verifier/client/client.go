@@ -44,7 +44,7 @@ func (c *Client) Login(username, password string) error {
 	}
 	defer resp.Body.Close()
 
-	var result map[string]interface{}
+	var result map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return fmt.Errorf("failed to decode login response: %w", err)
 	}
@@ -58,7 +58,7 @@ func (c *Client) Login(username, password string) error {
 }
 
 // doRequest makes an HTTP request to the API
-func (c *Client) doRequest(method, path string, body interface{}) (*http.Response, error) {
+func (c *Client) doRequest(method, path string, body any) (*http.Response, error) {
 	var reqBody io.Reader
 	if body != nil {
 		jsonData, err := json.Marshal(body)
@@ -94,7 +94,7 @@ func (c *Client) doRequest(method, path string, body interface{}) (*http.Respons
 }
 
 // GetModels retrieves a list of models
-func (c *Client) GetModels() ([]map[string]interface{}, error) {
+func (c *Client) GetModels() ([]map[string]any, error) {
 	resp, err := c.doRequest("GET", "/api/v1/models", nil)
 	if err != nil {
 		return nil, err
@@ -102,7 +102,7 @@ func (c *Client) GetModels() ([]map[string]interface{}, error) {
 	defer resp.Body.Close()
 
 	var response struct {
-		Models []map[string]interface{} `json:"models"`
+		Models []map[string]any `json:"models"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("failed to decode models response: %w", err)
@@ -112,14 +112,14 @@ func (c *Client) GetModels() ([]map[string]interface{}, error) {
 }
 
 // GetModel retrieves a specific model by ID
-func (c *Client) GetModel(id string) (map[string]interface{}, error) {
+func (c *Client) GetModel(id string) (map[string]any, error) {
 	resp, err := c.doRequest("GET", "/api/v1/models/"+id, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var model map[string]interface{}
+	var model map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&model); err != nil {
 		return nil, fmt.Errorf("failed to decode model response: %w", err)
 	}
@@ -128,14 +128,14 @@ func (c *Client) GetModel(id string) (map[string]interface{}, error) {
 }
 
 // CreateModel creates a new model
-func (c *Client) CreateModel(model map[string]interface{}) (map[string]interface{}, error) {
+func (c *Client) CreateModel(model map[string]any) (map[string]any, error) {
 	resp, err := c.doRequest("POST", "/api/v1/models", model)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var result map[string]interface{}
+	var result map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to decode create model response: %w", err)
 	}
@@ -144,14 +144,14 @@ func (c *Client) CreateModel(model map[string]interface{}) (map[string]interface
 }
 
 // VerifyModel triggers verification for a model
-func (c *Client) VerifyModel(id string) (map[string]interface{}, error) {
+func (c *Client) VerifyModel(id string) (map[string]any, error) {
 	resp, err := c.doRequest("POST", "/api/v1/models/"+id+"/verify", nil)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var result map[string]interface{}
+	var result map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to decode verify model response: %w", err)
 	}
@@ -160,7 +160,7 @@ func (c *Client) VerifyModel(id string) (map[string]interface{}, error) {
 }
 
 // GetProviders retrieves a list of providers
-func (c *Client) GetProviders() ([]map[string]interface{}, error) {
+func (c *Client) GetProviders() ([]map[string]any, error) {
 	resp, err := c.doRequest("GET", "/api/v1/providers", nil)
 	if err != nil {
 		return nil, err
@@ -168,7 +168,7 @@ func (c *Client) GetProviders() ([]map[string]interface{}, error) {
 	defer resp.Body.Close()
 
 	var response struct {
-		Providers []map[string]interface{} `json:"providers"`
+		Providers []map[string]any `json:"providers"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("failed to decode providers response: %w", err)
@@ -178,14 +178,14 @@ func (c *Client) GetProviders() ([]map[string]interface{}, error) {
 }
 
 // GetProvider retrieves a specific provider by ID
-func (c *Client) GetProvider(id string) (map[string]interface{}, error) {
+func (c *Client) GetProvider(id string) (map[string]any, error) {
 	resp, err := c.doRequest("GET", "/api/v1/providers/"+id, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var provider map[string]interface{}
+	var provider map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&provider); err != nil {
 		return nil, fmt.Errorf("failed to decode provider response: %w", err)
 	}
@@ -194,14 +194,14 @@ func (c *Client) GetProvider(id string) (map[string]interface{}, error) {
 }
 
 // GetVerificationResults retrieves verification results
-func (c *Client) GetVerificationResults() ([]map[string]interface{}, error) {
+func (c *Client) GetVerificationResults() ([]map[string]any, error) {
 	resp, err := c.doRequest("GET", "/api/v1/verification-results", nil)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var results []map[string]interface{}
+	var results []map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
 		return nil, fmt.Errorf("failed to decode verification results response: %w", err)
 	}
@@ -210,14 +210,14 @@ func (c *Client) GetVerificationResults() ([]map[string]interface{}, error) {
 }
 
 // GetVerificationResult retrieves a specific verification result by ID
-func (c *Client) GetVerificationResult(id string) (map[string]interface{}, error) {
+func (c *Client) GetVerificationResult(id string) (map[string]any, error) {
 	resp, err := c.doRequest("GET", "/api/v1/verification-results/"+id, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var result map[string]interface{}
+	var result map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to decode verification result response: %w", err)
 	}
@@ -226,7 +226,7 @@ func (c *Client) GetVerificationResult(id string) (map[string]interface{}, error
 }
 
 // GetPricing retrieves pricing information
-func (c *Client) GetPricing() ([]map[string]interface{}, error) {
+func (c *Client) GetPricing() ([]map[string]any, error) {
 	resp, err := c.doRequest("GET", "/api/v1/pricing", nil)
 	if err != nil {
 		return nil, err
@@ -234,7 +234,7 @@ func (c *Client) GetPricing() ([]map[string]interface{}, error) {
 	defer resp.Body.Close()
 
 	var response struct {
-		Pricing []map[string]interface{} `json:"pricing"`
+		Pricing []map[string]any `json:"pricing"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("failed to decode pricing response: %w", err)
@@ -244,14 +244,14 @@ func (c *Client) GetPricing() ([]map[string]interface{}, error) {
 }
 
 // GetLimits retrieves rate limit information
-func (c *Client) GetLimits() ([]map[string]interface{}, error) {
+func (c *Client) GetLimits() ([]map[string]any, error) {
 	resp, err := c.doRequest("GET", "/api/v1/limits", nil)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var limits []map[string]interface{}
+	var limits []map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&limits); err != nil {
 		return nil, fmt.Errorf("failed to decode limits response: %w", err)
 	}
@@ -260,14 +260,14 @@ func (c *Client) GetLimits() ([]map[string]interface{}, error) {
 }
 
 // GetIssues retrieves issue reports
-func (c *Client) GetIssues() ([]map[string]interface{}, error) {
+func (c *Client) GetIssues() ([]map[string]any, error) {
 	resp, err := c.doRequest("GET", "/api/v1/issues", nil)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var issues []map[string]interface{}
+	var issues []map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&issues); err != nil {
 		return nil, fmt.Errorf("failed to decode issues response: %w", err)
 	}
@@ -276,14 +276,14 @@ func (c *Client) GetIssues() ([]map[string]interface{}, error) {
 }
 
 // GetEvents retrieves system events
-func (c *Client) GetEvents() ([]map[string]interface{}, error) {
+func (c *Client) GetEvents() ([]map[string]any, error) {
 	resp, err := c.doRequest("GET", "/api/v1/events", nil)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var events []map[string]interface{}
+	var events []map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&events); err != nil {
 		return nil, fmt.Errorf("failed to decode events response: %w", err)
 	}
@@ -292,14 +292,14 @@ func (c *Client) GetEvents() ([]map[string]interface{}, error) {
 }
 
 // GetSchedules retrieves verification schedules
-func (c *Client) GetSchedules() ([]map[string]interface{}, error) {
+func (c *Client) GetSchedules() ([]map[string]any, error) {
 	resp, err := c.doRequest("GET", "/api/v1/schedules", nil)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var schedules []map[string]interface{}
+	var schedules []map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&schedules); err != nil {
 		return nil, fmt.Errorf("failed to decode schedules response: %w", err)
 	}
@@ -308,14 +308,14 @@ func (c *Client) GetSchedules() ([]map[string]interface{}, error) {
 }
 
 // GetConfigExports retrieves configuration exports
-func (c *Client) GetConfigExports() ([]map[string]interface{}, error) {
+func (c *Client) GetConfigExports() ([]map[string]any, error) {
 	resp, err := c.doRequest("GET", "/api/v1/exports", nil)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var exports []map[string]interface{}
+	var exports []map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&exports); err != nil {
 		return nil, fmt.Errorf("failed to decode config exports response: %w", err)
 	}
@@ -340,14 +340,14 @@ func (c *Client) DownloadConfigExport(id string) ([]byte, error) {
 }
 
 // GetLogs retrieves system logs
-func (c *Client) GetLogs() ([]map[string]interface{}, error) {
+func (c *Client) GetLogs() ([]map[string]any, error) {
 	resp, err := c.doRequest("GET", "/api/v1/logs", nil)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var logs []map[string]interface{}
+	var logs []map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&logs); err != nil {
 		return nil, fmt.Errorf("failed to decode logs response: %w", err)
 	}
@@ -356,14 +356,14 @@ func (c *Client) GetLogs() ([]map[string]interface{}, error) {
 }
 
 // GetConfig retrieves system configuration
-func (c *Client) GetConfig() (map[string]interface{}, error) {
+func (c *Client) GetConfig() (map[string]any, error) {
 	resp, err := c.doRequest("GET", "/api/v1/config", nil)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var config map[string]interface{}
+	var config map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&config); err != nil {
 		return nil, fmt.Errorf("failed to decode config response: %w", err)
 	}
@@ -372,7 +372,7 @@ func (c *Client) GetConfig() (map[string]interface{}, error) {
 }
 
 // ExportConfig exports configuration in specified format
-func (c *Client) ExportConfig(format string) (map[string]interface{}, error) {
+func (c *Client) ExportConfig(format string) (map[string]any, error) {
 	reqBody := map[string]string{"format": format}
 	resp, err := c.doRequest("POST", "/api/v1/config/export", reqBody)
 	if err != nil {
@@ -380,7 +380,7 @@ func (c *Client) ExportConfig(format string) (map[string]interface{}, error) {
 	}
 	defer resp.Body.Close()
 
-	var result map[string]interface{}
+	var result map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to decode export config response: %w", err)
 	}
