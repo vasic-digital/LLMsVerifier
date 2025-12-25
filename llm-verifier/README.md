@@ -2,6 +2,18 @@
 
 LLM Verifier is a comprehensive tool to verify, test, and benchmark LLMs based on their coding capabilities and other features. It supports OpenAI-compatible APIs and provides detailed analysis of model capabilities.
 
+## Supported Providers
+
+- **OpenAI**: GPT models with full API compatibility
+- **Anthropic**: Claude models via official API
+- **Google**: Gemini models via Vertex AI
+- **DeepSeek**: DeepSeek models with streaming support
+- **Groq**: Fast inference with Llama models
+- **Together AI**: Wide range of open-source models
+- **Fireworks AI**: Optimized inference for various models
+- **Poe**: Aggregated model access via OpenAI-compatible API
+- **NaviGator AI**: Research-focused models
+
 ## Features
 
 - **Model Discovery**: Automatically discover all available models from API endpoints

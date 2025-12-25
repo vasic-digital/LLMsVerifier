@@ -359,6 +359,7 @@ func validateProviderName(fl validator.FieldLevel) bool {
 	validProviders := []string{
 		"openai", "anthropic", "google", "cohere", "meta", "mistral",
 		"azure", "aws", "huggingface", "replicate",
+		"groq", "togetherai", "fireworks", "poe", "navigator",
 	}
 
 	for _, valid := range validProviders {
