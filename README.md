@@ -48,6 +48,60 @@
 - [System Documentation](docs/COMPLETE_SYSTEM_DOCUMENTATION.md)
 - [API Changelog](llm-verifier/docs/CHANGELOG.md)
 
+## 🤝 Contributing
+
+We welcome contributions from the community! LLM Verifier is an open-source project that benefits from diverse perspectives and expertise.
+
+### Getting Started
+- 📖 [Contributing Guide](CONTRIBUTING.md) - Complete contribution guidelines
+- 🐛 [Bug Reports](.github/ISSUE_TEMPLATE/bug-report.yml) - Report issues
+- ✨ [Feature Requests](.github/ISSUE_TEMPLATE/feature-request.yml) - Suggest improvements
+- 🛡️ [Security Policy](SECURITY.md) - Report security vulnerabilities
+
+### Development Quick Start
+```bash
+# Clone the repository
+git clone https://github.com/your-org/llm-verifier.git
+cd llm-verifier
+
+# Set up development environment
+make setup
+
+# Run tests
+make test
+
+# Build the project
+make build
+
+# Start development server
+make run
+```
+
+### Development Workflow
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Run tests (`make check test`)
+5. Commit your changes (`git commit -m "feat: add amazing feature"`)
+6. Push to your branch (`git push origin feature/amazing-feature`)
+7. Create a Pull Request
+
+### Code Quality Standards
+- ✅ **Linting**: `make lint`
+- ✅ **Formatting**: `make format`
+- ✅ **Testing**: `make test` (minimum 80% coverage)
+- ✅ **Security**: `make security`
+- ✅ **Documentation**: Update relevant docs for changes
+
+### Community
+- 💬 [GitHub Discussions](https://github.com/your-org/llm-verifier/discussions) - General discussions
+- 🆘 [Discord/Slack](#) - Real-time chat
+- 📧 [Mailing List](#) - Announcements
+
+---
+
+*LLM Verifier is proudly open source under the MIT License. Built with ❤️ by the community.*
+
 ### Deployment Guides
 - [Docker Deployment](llm-verifier/docs/deployment/docker.md)
 - [Kubernetes Deployment](llm-verifier/docs/deployment/kubernetes.md)
