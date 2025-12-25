@@ -127,6 +127,23 @@ type CrushMCP struct {
 	Headers       map[string]string `json:"headers,omitempty"`
 }
 
+// OpenCodeConfig represents the official OpenCode configuration format
+type OpenCodeConfig struct {
+	Schema   string                      `json:"$schema"`
+	Provider map[string]OpenCodeProvider `json:"provider"`
+}
+
+// OpenCodeProvider represents a provider in OpenCode config
+type OpenCodeProvider struct {
+	Options OpenCodeOptions `json:"options"`
+	Models  map[string]any  `json:"models"` // Empty object as per OpenCode spec
+}
+
+// OpenCodeOptions contains provider options for OpenCode
+type OpenCodeOptions struct {
+	APIKey string `json:"apiKey"`
+}
+
 // ExportConfig exports configuration to various formats (enhanced)
 func ExportConfig(db *database.Database, cfg *config.Config, format, outputPath string) error {
 	var data []byte
@@ -186,6 +203,23 @@ func ExportAIConfig(db *database.Database, cfg *config.Config, aiFormat, outputP
 	switch strings.ToLower(aiFormat) {
 	case "crush":
 		return exportCrushConfig(filteredModels, outputPath, options)
+	case "opencode":
+		// Use official OpenCode format
+		opencodeConfig, err := createOfficialOpenCodeConfig(filteredModels, options)
+		if err != nil {
+			return fmt.Errorf("failed to create OpenCode config: %w", err)
+		}
+
+		// Marshal to JSON
+		data, err := json.MarshalIndent(opencodeConfig, "", "  ")
+		if err != nil {
+			return fmt.Errorf("failed to marshal OpenCode config: %w", err)
+		}
+
+		// Write to file
+		if err := os.WriteFile(outputPath, data, 0644); err != nil {
+			return fmt.Errorf("failed to write OpenCode config file: %w", err)
+		}
 	default:
 		// Use generic AIConfig format for other tools
 		aiConfig, err := createGenericAIConfig(filteredModels, aiFormat, options)
@@ -1096,6 +1130,15 @@ func ValidateExportedConfig(configPath string) error {
 		return validateCrushConfigStructure(&crushConfig)
 	}
 
+	// Handle OpenCode format specially
+	if strings.Contains(filename, "opencode") {
+		var opencodeConfig OpenCodeConfig
+		if err := json.Unmarshal(data, &opencodeConfig); err != nil {
+			return fmt.Errorf("failed to parse OpenCode config: %w", err)
+		}
+		return validateOpenCodeConfigStructure(&opencodeConfig)
+	}
+
 	// Handle other formats as AIConfig
 	var config AIConfig
 	if err := json.Unmarshal(data, &config); err != nil {
@@ -1148,7 +1191,8 @@ func validateFormatSpecific(configPath string, config *AIConfig) error {
 
 	switch {
 	case strings.Contains(filename, "opencode"):
-		return validateOpenCodeConfig(config)
+		// OpenCode uses official format, validation is handled separately
+		return nil
 	case strings.Contains(filename, "crush"):
 		return validateCrushConfig(config)
 	case strings.Contains(filename, "claude"):
@@ -1361,6 +1405,40 @@ func validateCrushConfigStructure(config *CrushConfig) error {
 			if model.ContextWindow <= 0 {
 				return fmt.Errorf("provider '%s' model '%s' has invalid context window", providerName, model.ID)
 			}
+		}
+	}
+
+	return nil
+}
+
+// validateOpenCodeConfigStructure validates OpenCode configuration structure
+func validateOpenCodeConfigStructure(config *OpenCodeConfig) error {
+	if config.Schema == "" {
+		return fmt.Errorf("OpenCode config missing $schema field")
+	}
+
+	if config.Provider == nil || len(config.Provider) == 0 {
+		return fmt.Errorf("OpenCode config must have at least one provider")
+	}
+
+	// Validate schema URL
+	if config.Schema != "https://opencode.ai/config.json" {
+		return fmt.Errorf("invalid $schema URL: expected 'https://opencode.ai/config.json', got '%s'", config.Schema)
+	}
+
+	// Validate each provider
+	for providerName, provider := range config.Provider {
+		// Models must be empty object as per OpenCode spec
+		if provider.Models == nil {
+			return fmt.Errorf("provider '%s' missing models field", providerName)
+		}
+		if len(provider.Models) != 0 {
+			return fmt.Errorf("provider '%s' models field must be empty object per OpenCode spec", providerName)
+		}
+
+		// Options should contain API key
+		if provider.Options.APIKey == "" {
+			return fmt.Errorf("provider '%s' missing API key in options", providerName)
 		}
 	}
 
@@ -1741,6 +1819,44 @@ func createGenericAIConfig(results []VerificationResult, aiFormat string, option
 	default:
 		return createOpenCodeConfig(results, options) // Default to OpenCode format
 	}
+}
+
+// createOfficialOpenCodeConfig creates configuration in the official OpenCode format
+func createOfficialOpenCodeConfig(results []VerificationResult, options *ExportOptions) (*OpenCodeConfig, error) {
+	// Group models by provider
+	providerModels := make(map[string][]VerificationResult)
+
+	for _, result := range results {
+		if result.Error != "" {
+			continue
+		}
+
+		provider := extractProvider(result.ModelInfo.Endpoint)
+		providerModels[provider] = append(providerModels[provider], result)
+	}
+
+	// Create OpenCode config
+	config := &OpenCodeConfig{
+		Schema:   "https://opencode.ai/config.json",
+		Provider: make(map[string]OpenCodeProvider),
+	}
+
+	// Add providers
+	for providerName := range providerModels {
+		provider := OpenCodeProvider{
+			Options: OpenCodeOptions{},
+			Models:  make(map[string]any), // Empty as per OpenCode spec
+		}
+
+		// Add API key if requested
+		if options != nil && options.IncludeAPIKey {
+			provider.Options.APIKey = "$" + strings.ToUpper(strings.ReplaceAll(providerName, "-", "_")) + "_API_KEY"
+		}
+
+		config.Provider[strings.ToLower(providerName)] = provider
+	}
+
+	return config, nil
 }
 
 // getCrushProviderType returns the Crush provider type for a given provider name
