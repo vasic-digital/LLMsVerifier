@@ -61,6 +61,8 @@ func (pd *PricingDetector) DetectPricing(providerName, modelID string) (*Pricing
 		return pd.detectPoePricing(modelID)
 	case "navigator":
 		return pd.detectNavigatorPricing(modelID)
+	case "mistral":
+		return pd.detectMistralPricing(modelID)
 	default:
 		return pd.detectGenericPricing(providerName, modelID)
 	}
@@ -575,6 +577,16 @@ func (pd *PricingDetector) detectNavigatorPricing(modelID string) (*PricingInfo,
 	return &PricingInfo{
 		InputTokenCost:  0.005,
 		OutputTokenCost: 0.01,
+		Currency:        "USD",
+		PricingModel:    "per_token",
+	}, nil
+}
+
+// detectMistralPricing detects pricing for Mistral models
+func (pd *PricingDetector) detectMistralPricing(modelID string) (*PricingInfo, error) {
+	return &PricingInfo{
+		InputTokenCost:  0.0025,
+		OutputTokenCost: 0.0075,
 		Currency:        "USD",
 		PricingModel:    "per_token",
 	}, nil

@@ -62,6 +62,8 @@ func (ld *LimitsDetector) DetectLimits(providerName, modelID string, headers htt
 		return ld.detectPoeLimits(headers)
 	case "navigator":
 		return ld.detectNavigatorLimits(headers)
+	case "mistral":
+		return ld.detectMistralLimits(headers)
 	default:
 		return ld.detectGenericLimits(headers)
 	}
@@ -299,6 +301,18 @@ func (ld *LimitsDetector) detectPoeLimits(headers http.Header) (*LimitsInfo, err
 // detectNavigatorLimits detects limits for NaviGator AI
 func (ld *LimitsDetector) detectNavigatorLimits(headers http.Header) (*LimitsInfo, error) {
 	rpm := 20
+	limits := &LimitsInfo{
+		RequestsPerMinute: &rpm,
+		IsHardLimit:       true,
+		CurrentUsage:      make(map[string]int),
+		AdditionalLimits:  make(map[string]interface{}),
+	}
+	return limits, nil
+}
+
+// detectMistralLimits detects limits for Mistral
+func (ld *LimitsDetector) detectMistralLimits(headers http.Header) (*LimitsInfo, error) {
+	rpm := 50
 	limits := &LimitsInfo{
 		RequestsPerMinute: &rpm,
 		IsHardLimit:       true,
