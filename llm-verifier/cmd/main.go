@@ -144,7 +144,7 @@ func runServer(port string) error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	server, err := api.NewServer(cfg)
+	server := api.NewServer(cfg, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create server: %w", err)
 	}
@@ -157,7 +157,7 @@ func runServer(port string) error {
 		}
 	}
 
-	return server.Start(port)
+	return server.Start()
 }
 
 func runTUI() error {

@@ -11,7 +11,14 @@ const routes: Routes = [
     path: 'dashboard',
     loadChildren: () => import('./dashboard/dashboard.module').then(m => m.DashboardModule)
   },
-
+  {
+    path: 'providers',
+    loadChildren: () => import('./providers/providers.module').then(m => m.ProvidersModule)
+  },
+  {
+    path: 'verification',
+    loadChildren: () => import('./verification/verification.module').then(m => m.VerificationModule)
+  }
 ];
 
 @NgModule({

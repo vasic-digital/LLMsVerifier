@@ -12,7 +12,7 @@ export class ProviderFormComponent {
   @Output() saved = new EventEmitter<Provider>();
   @Output() cancelled = new EventEmitter<void>();
 
-  providerForm: FormGroup;
+  providerForm!: FormGroup;
   isEditing = false;
   loading = false;
   error: string | null = null;
@@ -37,9 +37,9 @@ export class ProviderFormComponent {
       endpoint: ['', [Validators.required, Validators.pattern(/^https?:\/\/.+/)]],
       api_key_encrypted: ['', [Validators.required, Validators.minLength(10)]],
       description: ['', Validators.maxLength(500)],
-      website: ['', Validators.pattern(/^https?:\/\/.+/)]],
+      website: ['', Validators.pattern('^https?:\\/\\/.+')],
       support_email: ['', [Validators.email]],
-      documentation_url: ['', Validators.pattern(/^https?:\/\/.+/)]],
+      documentation_url: ['', Validators.pattern('^https?:\\/\\/.+')],
       is_active: [true],
       reliability_score: [0, Validators.min(0), Validators.max(100)],
       average_response_time_ms: [0, Validators.min(0)]

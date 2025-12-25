@@ -8,9 +8,9 @@ import { ApiService, VerificationResult, Model, Provider } from '../api.service'
   styleUrls: ['./verification.component.scss']
 })
 export class VerificationComponent implements OnInit {
-  verificationResults$: Observable<VerificationResult[]>;
-  models$: Observable<Model[]>;
-  providers$: Observable<Provider[]>;
+  verificationResults$!: Observable<VerificationResult[]>;
+  models$!: Observable<Model[]>;
+  providers$!: Observable<Provider[]>;
   
   loading = true;
   error: string | null = null;

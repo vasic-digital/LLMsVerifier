@@ -2,7 +2,6 @@ package events
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"llm-verifier/database"
@@ -11,14 +10,12 @@ import (
 // EventPublisher provides high-level event publishing functions
 type EventPublisher struct {
 	eventManager *EventManager
-	eventStore   *EventStore
 }
 
 // NewEventPublisher creates a new event publisher
 func NewEventPublisher(eventManager *EventManager, db *database.Database) *EventPublisher {
 	return &EventPublisher{
 		eventManager: eventManager,
-		eventStore:   NewEventStore(db),
 	}
 }
 
@@ -95,7 +92,7 @@ func (ep *EventPublisher) PublishScoreChanged(modelID int64, oldScore, newScore 
 		return nil
 	}
 
-	event := CreateModelEvent(severity, title, message, modelID)
+	event := CreateModelEvent(EventScoreChanged, severity, title, message, modelID)
 
 	event.Details = map[string]interface{}{
 		"old_score":  oldScore,
@@ -110,6 +107,7 @@ func (ep *EventPublisher) PublishScoreChanged(modelID int64, oldScore, newScore 
 // PublishIssueDetected publishes an issue detection event
 func (ep *EventPublisher) PublishIssueDetected(modelID int64, issueType, severity, title, description string) error {
 	event := CreateModelEvent(
+		EventIssueDetected,
 		Severity(severity),
 		"Issue Detected",
 		fmt.Sprintf("%s: %s", title, description),
@@ -130,6 +128,7 @@ func (ep *EventPublisher) PublishIssueDetected(modelID int64, issueType, severit
 // PublishIssueResolved publishes an issue resolution event
 func (ep *EventPublisher) PublishIssueResolved(modelID int64, issueID int64, resolution string) error {
 	event := CreateModelEvent(
+		EventIssueResolved,
 		SeverityInfo,
 		"Issue Resolved",
 		fmt.Sprintf("Issue %d resolved: %s", issueID, resolution),
@@ -207,7 +206,7 @@ func (ep *EventPublisher) PublishSystemHealthChanged(healthStatus string, detail
 	}
 
 	message := fmt.Sprintf("System health status changed to: %s", healthStatus)
-	event := CreateEvent(severity, title, message)
+	event := CreateEvent(EventSystemHealthChanged, severity, title, message)
 
 	event.Details = details
 	event.Details["health_status"] = healthStatus
@@ -265,7 +264,7 @@ func (ep *EventPublisher) PublishDatabaseMigration(migrationVersion int, descrip
 		message = fmt.Sprintf("Failed to apply migration %d: %s", migrationVersion, description)
 	}
 
-	event := CreateEvent(severity, title, message)
+	event := CreateEvent(EventDatabaseMigration, severity, title, message)
 
 	event.Details = map[string]interface{}{
 		"migration_version": migrationVersion,
@@ -279,12 +278,6 @@ func (ep *EventPublisher) PublishDatabaseMigration(migrationVersion int, descrip
 
 // publishAndStoreEvent publishes an event and stores it in the database
 func (ep *EventPublisher) publishAndStoreEvent(event *Event) error {
-	// Store in database first
-	if err := ep.eventStore.StoreEvent(event); err != nil {
-		log.Printf("Failed to store event in database: %v", err)
-		// Continue publishing even if storage fails
-	}
-
 	// Publish to subscribers
 	return ep.eventManager.PublishEvent(event)
 }
