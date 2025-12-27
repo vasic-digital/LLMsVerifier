@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/llmverifier/llmverifier"
-	"github.com/llmverifier/llmverifier/config"
+	"llm-verifier/llmverifier"
+	"llm-verifier/config"
 )
 
 // TestACPsPerformanceBaseline establishes performance baselines for ACP detection

@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/llmverifier/llmverifier"
-	"github.com/llmverifier/llmverifier/config"
-	"github.com/llmverifier/llmverifier/providers"
+	"llm-verifier/llmverifier"
+	"llm-verifier/config"
+	"llm-verifier/providers"
 )
 
 // TestACPsWithRealProviders tests ACP detection with real LLM providers

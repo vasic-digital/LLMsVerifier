@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/llmverifier/llmverifier"
-	"github.com/llmverifier/llmverifier/config"
+	"llm-verifier/llmverifier"
+	"llm-verifier/config"
 )
 
 // TestACPsCapabilityDetection tests the ACP capability detection function

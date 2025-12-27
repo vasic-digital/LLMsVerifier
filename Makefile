@@ -30,6 +30,14 @@ build-all: ## Build for multiple platforms
 	GOOS=darwin GOARCH=amd64 go build -o bin/llm-verifier-darwin-amd64 ./cmd
 	GOOS=windows GOARCH=amd64 go build -o bin/llm-verifier-windows-amd64.exe ./cmd
 
+build-acp: ## Build ACP CLI tool
+	cd llm-verifier/cmd/acp-cli && go build -o ../../../bin/acp-cli .
+
+build-acp-all: ## Build ACP CLI for multiple platforms  
+	cd llm-verifier/cmd/acp-cli && GOOS=linux GOARCH=amd64 go build -o ../../../bin/acp-cli-linux-amd64 .
+	cd llm-verifier/cmd/acp-cli && GOOS=darwin GOARCH=amd64 go build -o ../../../bin/acp-cli-darwin-amd64 .
+	cd llm-verifier/cmd/acp-cli && GOOS=windows GOARCH=amd64 go build -o ../../../bin/acp-cli-windows-amd64.exe .
+
 # Testing
 test: ## Run unit tests
 	go test -v -race -coverprofile=coverage.out ./...
@@ -150,6 +158,29 @@ install-hooks: ## Install git hooks
 	cp scripts/pre-commit .git/hooks/pre-commit
 	chmod +x .git/hooks/pre-commit
 
+install-acp: build-acp ## Install ACP CLI to system
+	sudo cp bin/acp-cli /usr/local/bin/acp-cli
+	@echo "ACP CLI installed to /usr/local/bin/acp-cli"
+
+test-acp: ## Run ACP-specific tests
+	@echo "Running ACP unit tests..."
+	go test -v ./llm-verifier/tests/acp_test.go
+	@echo "Running ACP integration tests..."
+	go test -v -tags=integration ./llm-verifier/tests/acp_integration_test.go
+	@echo "Running ACP performance tests..."
+	go test -v -tags=performance ./llm-verifier/tests/acp_performance_test.go
+	@echo "Running ACP security tests..."
+	go test -v -tags=security ./llm-verifier/tests/acp_security_test.go
+	@echo "Running ACP automation tests..."
+	go test -v -tags=automation ./llm-verifier/tests/acp_automation_test.go
+
+# Development helpers for ACP
+run-acp-test: build-acp ## Run ACP CLI test quickly
+	./bin/acp-cli verify --model gpt-4 --provider openai
+
+run-acp-batch: build-acp ## Run ACP batch test
+	./bin/acp-cli batch --models gpt-4,claude-3-opus,deepseek-chat
+
 update-deps: ## Update all dependencies
 	go get -u ./...
 	go mod tidy
@@ -160,8 +191,11 @@ audit-deps: ## Audit dependencies for security issues
 # Help for specific targets
 help-build: ## Help for build targets
 	@echo "Build targets:"
-	@echo "  build      - Build for current platform"
-	@echo "  build-all  - Build for Linux, macOS, Windows"
+	@echo "  build          - Build for current platform"
+	@echo "  build-all      - Build for Linux, macOS, Windows"
+	@echo "  build-acp      - Build ACP CLI tool"
+	@echo "  build-acp-all  - Build ACP CLI for multiple platforms"
+	@echo "  docker-build   - Build Docker image"
 	@echo "  docker-build - Build Docker image"
 
 help-test: ## Help for test targets
