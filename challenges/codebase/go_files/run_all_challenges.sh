@@ -49,9 +49,9 @@ echo ""
 
 # Binary path - detect automatically
 LLM_VERIFIER_BIN=""
-for path in ./cmd ./llm-verifier ./cmd/main ./build/llm-verifier ./build/llm-verifier ./build/llm-verifier-server ./build/llm-verifier-desktop ./build/llm-verifier-mobile ./build/llm-verifier-llm-verifier-tui ./build/llm-verifier-web ./build/llm-verifier-rest-api; do
-    [ -f "$path" ]; then
-    LLM_VERIFIER_BIN="$path"
+for path in ./bin/llm-verifier ./build/llm-verifier ./cmd/llm-verifier ./llm-verifier/llm-verifier ./llm-verifier; do
+    if [ -f "$path" ]; then
+        LLM_VERIFIER_BIN="$path"
         echo "Found: $path"
         break
     fi
