@@ -295,7 +295,7 @@ func (ss *ScoringService) RefreshAllScores(ctx context.Context) error {
 	for i, ranking := range rankings {
 		// Convert ranking model ID back to string model ID
 		// This is a simplified implementation
-		modelIDs[i] = fmt.Sprintf("model_%d", ranking.ModelID)
+		modelIDs[i] = fmt.Sprintf("model_%s", ranking.ModelID)
 	}
 
 	_, err = ss.BatchCalculateScores(ctx, modelIDs, nil)
@@ -415,7 +415,7 @@ func (ss *ScoringService) exportScoresCSV(filters map[string]interface{}) ([]byt
 	csvData = append(csvData, []byte("Rank,Model ID,Model Name,Overall Score,Score Suffix,Category Score,Last Updated\n")...)
 	
 	for _, ranking := range filteredRankings {
-		line := fmt.Sprintf("%d,%d,%s,%.1f,%s,%.1f,%s\n",
+		line := fmt.Sprintf("%d,%s,%s,%.1f,%s,%.1f,%s\n",
 			ranking.Rank,
 			ranking.ModelID,
 			ranking.ModelName,

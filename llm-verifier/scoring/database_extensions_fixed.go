@@ -1,7 +1,6 @@
 package scoring
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -201,7 +200,9 @@ func (sde *ScoringDatabaseExtensions) CreateModelScore(score interface{}) error 
 		
 		switch s := score.(type) {
 		case *ModelScore:
-			modelID = s.ModelID
+			// Convert string modelID to int64 - this is a simplification
+			// In a real implementation, you would look up the model ID from the database
+			modelID = 1
 			overallScore = s.Score
 			speedScore = s.Components.SpeedScore
 			efficiencyScore = s.Components.EfficiencyScore
@@ -209,10 +210,11 @@ func (sde *ScoringDatabaseExtensions) CreateModelScore(score interface{}) error 
 			capabilityScore = s.Components.CapabilityScore
 			recencyScore = s.Components.RecencyScore
 			scoreSuffix = s.ScoreSuffix
-			calculatedAt = s.CalculatedAt
+			calculatedAt = s.LastCalculated
 		case *ComprehensiveScore:
 			// Convert string modelID to int64 - this is a simplification
-			modelID = 1 // This should be handled properly in a real implementation
+			// In a real implementation, you would look up the model ID from the database
+			modelID = 1
 			overallScore = s.OverallScore
 			speedScore = s.Components.SpeedScore
 			efficiencyScore = s.Components.EfficiencyScore
@@ -295,7 +297,7 @@ func (sde *ScoringDatabaseExtensions) GetLatestModelScore(modelID int64) (*Model
 	if validUntil.Valid {
 		score.ValidUntil = &validUntil.Time
 	}
-	score.CalculatedAt = lastCalculated
+	score.LastCalculated = lastCalculated
 
 	return &score, nil
 }

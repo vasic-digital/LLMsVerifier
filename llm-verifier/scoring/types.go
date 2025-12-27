@@ -1,6 +1,7 @@
 package scoring
 
 import (
+	"context"
 	"time"
 )
 
@@ -145,6 +146,13 @@ type ModelRanking struct {
 	Category      string     `json:"category"`
 	CategoryScore float64    `json:"category_score"`
 	LastUpdated   time.Time  `json:"last_updated"`
+}
+
+// ModelsDevClientInterface defines the interface for models.dev client
+type ModelsDevClientInterface interface {
+	FetchAllModels(ctx context.Context) (*ModelsDevAPIResponse, error)
+	FetchModelByID(ctx context.Context, modelID string) (*ModelsDevModel, error)
+	FetchModelsByProvider(ctx context.Context, providerID string) ([]ModelsDevModel, error)
 }
 
 // DefaultScoringConfig returns the default scoring configuration

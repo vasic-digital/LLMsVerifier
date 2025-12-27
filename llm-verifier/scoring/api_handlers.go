@@ -103,28 +103,25 @@ func (sah *ScoringAPIHandlers) CalculateModelScore(c *gin.Context) {
 	}
 
 	// Use provided configuration or default
-	_ = DefaultScoringConfig()
+	config := DefaultScoringConfig()
 	if request.Configuration != nil {
-		_ = *request.Configuration
+		config = *request.Configuration
 	}
 
-	_, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Simulate score calculation
-	score := &ComprehensiveScore{
-		ModelID:      modelID,
-		ModelName:    "GPT-4",
-		OverallScore: 8.5,
-		ScoreSuffix:  "(SC:8.5)",
-		Components: ScoreComponents{
-			SpeedScore:      8.0,
-			EfficiencyScore: 9.0,
-			CostScore:       8.5,
-			CapabilityScore: 8.5,
-			RecencyScore:    8.0,
-		},
-		LastCalculated: time.Now(),
+	// Calculate score using the scoring engine
+	score, err := sah.scoringEngine.CalculateComprehensiveScore(ctx, modelID, config)
+	if err != nil {
+		sah.logger.Error("Failed to calculate model score", map[string]interface{}{
+			"model_id": modelID,
+			"error":    err.Error(),
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to calculate model score",
+		})
+		return
 	}
 
 	// Format model name with score
@@ -159,28 +156,25 @@ func (sah *ScoringAPIHandlers) RecalculateModelScore(c *gin.Context) {
 	}
 
 	// Use provided configuration or default
-	_ = DefaultScoringConfig()
+	config := DefaultScoringConfig()
 	if request.Configuration != nil {
-		_ = *request.Configuration
+		config = *request.Configuration
 	}
 
-	_, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Simulate recalculation
-	score := &ComprehensiveScore{
-		ModelID:      modelID,
-		ModelName:    "GPT-4",
-		OverallScore: 8.5,
-		ScoreSuffix:  "(SC:8.5)",
-		Components: ScoreComponents{
-			SpeedScore:      8.0,
-			EfficiencyScore: 9.0,
-			CostScore:       8.5,
-			CapabilityScore: 8.5,
-			RecencyScore:    8.0,
-		},
-		LastCalculated: time.Now(),
+	// Recalculate score using the scoring engine
+	score, err := sah.scoringEngine.CalculateComprehensiveScore(ctx, modelID, config)
+	if err != nil {
+		sah.logger.Error("Failed to recalculate model score", map[string]interface{}{
+			"model_id": modelID,
+			"error":    err.Error(),
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to recalculate model score",
+		})
+		return
 	}
 
 	// Log the recalculation reason

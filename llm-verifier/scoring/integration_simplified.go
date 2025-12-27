@@ -250,7 +250,7 @@ func (ss *ScoringSystem) GetModelScore(modelID string) (*ComprehensiveScore, err
 			CapabilityScore: score.Components.CapabilityScore,
 			RecencyScore:    score.Components.RecencyScore,
 		},
-		LastCalculated:  score.CalculatedAt,
+		LastCalculated:  score.LastCalculated,
 		CalculationHash: score.CalculationHash,
 		ScoreSuffix:     score.ScoreSuffix,
 	}, nil
@@ -267,12 +267,12 @@ func (ss *ScoringSystem) GetModelRankings(category string, limit int) ([]ModelRa
 	for i, score := range scores {
 		ranking := ModelRanking{
 			Rank:          i + 1,
-			ModelID:       fmt.Sprintf("%d", score.ModelID),
-			ModelName:     fmt.Sprintf("Model %d", score.ModelID),
+			ModelID:       score.ModelID,
+			ModelName:     fmt.Sprintf("Model %s", score.ModelID),
 			OverallScore:  score.Score,
 			ScoreSuffix:   score.ScoreSuffix,
 			Category:      category,
-			LastUpdated:   score.CalculatedAt,
+			LastUpdated:   score.LastCalculated,
 		}
 
 		// Add component scores based on category
