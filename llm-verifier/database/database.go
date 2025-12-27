@@ -532,8 +532,9 @@ func (d *Database) initializeSchema() error {
 		supports_audio_generation BOOLEAN DEFAULT 0,
 		supports_video_generation BOOLEAN DEFAULT 0,
 		supports_mcps BOOLEAN DEFAULT 0,
-		supports_lsps BOOLEAN DEFAULT 0,
-		supports_multimodal BOOLEAN DEFAULT 0,
+					supports_lsps BOOLEAN DEFAULT 0,
+			supports_acps BOOLEAN DEFAULT 0,
+			supports_multimodal BOOLEAN DEFAULT 0,
 		supports_streaming BOOLEAN DEFAULT 0,
 		supports_json_mode BOOLEAN DEFAULT 0,
 		supports_structured_output BOOLEAN DEFAULT 0,
@@ -847,6 +848,7 @@ type VerificationResult struct {
 	SupportsVideoGeneration  bool       `json:"supports_video_generation"`
 	SupportsMCPs             bool       `json:"supports_mcps"`
 	SupportsLSPs             bool       `json:"supports_lsps"`
+	SupportsACPs             bool       `json:"supports_acps"`
 	SupportsMultimodal       bool       `json:"supports_multimodal"`
 	SupportsStreaming        bool       `json:"supports_streaming"`
 	SupportsJSONMode         bool       `json:"supports_json_mode"`

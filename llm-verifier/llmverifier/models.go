@@ -149,6 +149,7 @@ type FeatureDetectionResult struct {
 	VideoGeneration  bool                 `json:"video_generation"`
 	MCPs             bool                 `json:"mcps"`
 	LSPs             bool                 `json:"lsps"`
+	ACPs             bool                 `json:"acps"`
 	Multimodal       bool                 `json:"multimodal"`
 	Streaming        bool                 `json:"streaming"`
 	JSONMode         bool                 `json:"json_mode"`

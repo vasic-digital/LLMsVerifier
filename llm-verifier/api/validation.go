@@ -353,6 +353,7 @@ type CreateVerificationResultRequest struct {
 	SupportsVideoGeneration  bool       `json:"supports_video_generation"`
 	SupportsMCPs             bool       `json:"supports_mcps"`
 	SupportsLSPs             bool       `json:"supports_lsps"`
+	SupportsACPs             bool       `json:"supports_acps"`
 	SupportsMultimodal       bool       `json:"supports_multimodal"`
 	SupportsStreaming        bool       `json:"supports_streaming"`
 	SupportsJSONMode         bool       `json:"supports_json_mode"`
@@ -417,6 +418,7 @@ type UpdateVerificationResultRequest struct {
 	SupportsVideoGeneration  *bool      `json:"supports_video_generation"`
 	SupportsMCPs             *bool      `json:"supports_mcps"`
 	SupportsLSPs             *bool      `json:"supports_lsps"`
+	SupportsACPs             *bool      `json:"supports_acps"`
 	SupportsMultimodal       *bool      `json:"supports_multimodal"`
 	SupportsStreaming        *bool      `json:"supports_streaming"`
 	SupportsJSONMode         *bool      `json:"supports_json_mode"`

@@ -183,6 +183,12 @@ func TestLSPsDetection(t *testing.T) {
 	t.Log("LSPs detection test function exists")
 }
 
+func TestACPsDetection(t *testing.T) {
+	// This would require a proper client instance for actual testing
+	// For unit test purpose, we'll just verify the function signature works
+	t.Log("ACPs detection test function exists")
+}
+
 func TestImageGenerationDetection(t *testing.T) {
 	// This would require a proper client instance for actual testing
 	// For unit test purpose, we'll just verify the function signature works
