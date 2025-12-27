@@ -346,14 +346,12 @@ func (mc *MetricsCollector) filterScoreChanges(cutoff time.Time) []ScoreChangeMe
 }
 
 func (mc *MetricsCollector) filterAPIResponseTimes(cutoff time.Time) []time.Duration {
-	filtered := make([]time.Duration, 0)
 	// Note: We don't have timestamps for API response times in this simple implementation
 	// In a real implementation, you would store them with timestamps
 	return mc.apiResponseTimes
 }
 
 func (mc *MetricsCollector) filterDatabaseLatencies(cutoff time.Time) []time.Duration {
-	filtered := make([]time.Duration, 0)
 	// Note: We don't have timestamps for database latencies in this simple implementation
 	// In a real implementation, you would store them with timestamps
 	return mc.dbLatencies

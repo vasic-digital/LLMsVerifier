@@ -11,8 +11,8 @@ import (
 	"llm-verifier/logging"
 )
 
-// AlertManager handles sending alerts for various system events
-type AlertManager struct {
+// AlertManagerFixed handles sending alerts for various system events
+type AlertManagerFixed struct {
 	config         MonitoringConfig
 	logger         *logging.Logger
 	sentAlerts     map[string]time.Time
@@ -20,9 +20,9 @@ type AlertManager struct {
 	httpClient     *http.Client
 }
 
-// NewAlertManager creates a new alert manager
-func NewAlertManager(config MonitoringConfig) AlertManager {
-	return AlertManager{
+// NewAlertManagerFixed creates a new alert manager
+func NewAlertManagerFixed(config MonitoringConfig) *AlertManagerFixed {
+	return &AlertManagerFixed{
 		config:     config,
 		logger:     &logging.Logger{},
 		sentAlerts: make(map[string]time.Time),
@@ -33,7 +33,7 @@ func NewAlertManager(config MonitoringConfig) AlertManager {
 }
 
 // SendScoreChangeAlert sends an alert for significant score changes
-func (am *AlertManager) SendScoreChangeAlert(alert ScoreChangeAlert) error {
+func (am *AlertManagerFixed) SendScoreChangeAlert(alert ScoreChangeAlert) error {
 	if !am.config.Enabled {
 		return nil
 	}
@@ -41,28 +41,29 @@ func (am *AlertManager) SendScoreChangeAlert(alert ScoreChangeAlert) error {
 	// Check cooldown period
 	alertKey := fmt.Sprintf("score_change_%s", alert.ModelID)
 	if am.isInCooldown(alertKey) {
-		am.logger.Debug("Alert in cooldown period", "key", alertKey)
+		am.logger.Debug("Alert in cooldown period", map[string]interface{}{"key": alertKey})
 		return nil
 	}
 
-	am.logger.Info("Sending score change alert",
-		"model_id", alert.ModelID,
-		"old_score", alert.OldScore,
-		"new_score", alert.NewScore,
-		"change", alert.ScoreChange,
-		"severity", alert.Severity)
+	am.logger.Info("Sending score change alert", map[string]interface{}{
+		"model_id": alert.ModelID,
+		"old_score": alert.OldScore,
+		"new_score": alert.NewScore,
+		"change": alert.ScoreChange,
+		"severity": alert.Severity,
+	})
 
 	// Send email alert if enabled
 	if am.config.EnableEmailAlerts {
 		if err := am.sendEmailAlert(alert); err != nil {
-			am.logger.Error("Failed to send email alert", "error", err)
+			am.logger.Error("Failed to send email alert", map[string]interface{}{"error": err})
 		}
 	}
 
 	// Send webhook alert if enabled
 	if am.config.EnableWebhookAlerts && am.config.WebhookURL != "" {
 		if err := am.sendWebhookAlert(alert); err != nil {
-			am.logger.Error("Failed to send webhook alert", "error", err)
+			am.logger.Error("Failed to send webhook alert", map[string]interface{}{"error": err})
 		}
 	}
 
@@ -73,7 +74,7 @@ func (am *AlertManager) SendScoreChangeAlert(alert ScoreChangeAlert) error {
 }
 
 // SendAPIPerformanceAlert sends an alert for API performance issues
-func (am *AlertManager) SendAPIPerformanceAlert(alert APIPerformanceAlert) error {
+func (am *AlertManagerFixed) SendAPIPerformanceAlert(alert APIPerformanceAlert) error {
 	if !am.config.Enabled {
 		return nil
 	}
@@ -81,27 +82,28 @@ func (am *AlertManager) SendAPIPerformanceAlert(alert APIPerformanceAlert) error
 	// Check cooldown period
 	alertKey := fmt.Sprintf("api_performance_%s", alert.APIName)
 	if am.isInCooldown(alertKey) {
-		am.logger.Debug("Alert in cooldown period", "key", alertKey)
+		am.logger.Debug("Alert in cooldown period", map[string]interface{}{"key": alertKey})
 		return nil
 	}
 
-	am.logger.Warn("Sending API performance alert",
-		"api_name", alert.APIName,
-		"response_time", alert.ResponseTime,
-		"success", alert.Success,
-		"threshold", alert.Threshold)
+	am.logger.Info("Sending API performance alert", map[string]interface{}{
+		"api_name": alert.APIName,
+		"response_time": alert.ResponseTime,
+		"success": alert.Success,
+		"threshold": alert.Threshold,
+	})
 
 	// Send email alert if enabled
 	if am.config.EnableEmailAlerts {
 		if err := am.sendEmailAlert(alert); err != nil {
-			am.logger.Error("Failed to send email alert", "error", err)
+			am.logger.Error("Failed to send email alert", map[string]interface{}{"error": err})
 		}
 	}
 
 	// Send webhook alert if enabled
 	if am.config.EnableWebhookAlerts && am.config.WebhookURL != "" {
 		if err := am.sendWebhookAlert(alert); err != nil {
-			am.logger.Error("Failed to send webhook alert", "error", err)
+			am.logger.Error("Failed to send webhook alert", map[string]interface{}{"error": err})
 		}
 	}
 
@@ -112,7 +114,7 @@ func (am *AlertManager) SendAPIPerformanceAlert(alert APIPerformanceAlert) error
 }
 
 // SendDatabasePerformanceAlert sends an alert for database performance issues
-func (am *AlertManager) SendDatabasePerformanceAlert(alert DatabasePerformanceAlert) error {
+func (am *AlertManagerFixed) SendDatabasePerformanceAlert(alert DatabasePerformanceAlert) error {
 	if !am.config.Enabled {
 		return nil
 	}
@@ -120,27 +122,28 @@ func (am *AlertManager) SendDatabasePerformanceAlert(alert DatabasePerformanceAl
 	// Check cooldown period
 	alertKey := fmt.Sprintf("db_performance_%s", alert.Operation)
 	if am.isInCooldown(alertKey) {
-		am.logger.Debug("Alert in cooldown period", "key", alertKey)
+		am.logger.Debug("Alert in cooldown period", map[string]interface{}{"key": alertKey})
 		return nil
 	}
 
-	am.logger.Warn("Sending database performance alert",
-		"operation", alert.Operation,
-		"latency", alert.Latency,
-		"success", alert.Success,
-		"threshold", alert.Threshold)
+	am.logger.Info("Sending database performance alert", map[string]interface{}{
+		"operation": alert.Operation,
+		"latency": alert.Latency,
+		"success": alert.Success,
+		"threshold": alert.Threshold,
+	})
 
 	// Send email alert if enabled
 	if am.config.EnableEmailAlerts {
 		if err := am.sendEmailAlert(alert); err != nil {
-			am.logger.Error("Failed to send email alert", "error", err)
+			am.logger.Error("Failed to send email alert", map[string]interface{}{"error": err})
 		}
 	}
 
 	// Send webhook alert if enabled
 	if am.config.EnableWebhookAlerts && am.config.WebhookURL != "" {
 		if err := am.sendWebhookAlert(alert); err != nil {
-			am.logger.Error("Failed to send webhook alert", "error", err)
+			am.logger.Error("Failed to send webhook alert", map[string]interface{}{"error": err})
 		}
 	}
 
@@ -152,7 +155,7 @@ func (am *AlertManager) SendDatabasePerformanceAlert(alert DatabasePerformanceAl
 
 // Email alert methods
 
-func (am *AlertManager) sendEmailAlert(alert interface{}) error {
+func (am *AlertManagerFixed) sendEmailAlert(alert interface{}) error {
 	// This is a placeholder for email sending functionality
 	// In a real implementation, you would integrate with an email service
 	
@@ -172,21 +175,23 @@ func (am *AlertManager) sendEmailAlert(alert interface{}) error {
 		return fmt.Errorf("unknown alert type: %T", alert)
 	}
 
-	am.logger.Info("Email alert prepared",
-		"subject", subject,
-		"recipients", len(am.config.AlertRecipients))
+	am.logger.Info("Email alert prepared", map[string]interface{}{
+		"subject": subject,
+		"recipients": len(am.config.AlertRecipients),
+	})
 
 	// Log the email content for debugging
-	am.logger.Debug("Email alert content",
-		"subject", subject,
-		"body", body)
+	am.logger.Debug("Email alert content", map[string]interface{}{
+		"subject": subject,
+		"body": body,
+	})
 
 	// In a real implementation, you would send the email here
 	// For now, we'll just log it
 	return nil
 }
 
-func (am *AlertManager) formatScoreChangeEmail(alert ScoreChangeAlert) string {
+func (am *AlertManagerFixed) formatScoreChangeEmail(alert ScoreChangeAlert) string {
 	changeType := "increased"
 	if alert.ScoreChange < 0 {
 		changeType = "decreased"
@@ -227,7 +232,7 @@ Component Scores:
 	)
 }
 
-func (am *AlertManager) formatAPIPerformanceEmail(alert APIPerformanceAlert) string {
+func (am *AlertManagerFixed) formatAPIPerformanceEmail(alert APIPerformanceAlert) string {
 	status := "Successful"
 	if !alert.Success {
 		status = "Failed"
@@ -253,7 +258,7 @@ Time: %s
 	)
 }
 
-func (am *AlertManager) formatDatabasePerformanceEmail(alert DatabasePerformanceAlert) string {
+func (am *AlertManagerFixed) formatDatabasePerformanceEmail(alert DatabasePerformanceAlert) string {
 	status := "Successful"
 	if !alert.Success {
 		status = "Failed"
@@ -281,7 +286,7 @@ Time: %s
 
 // Webhook alert methods
 
-func (am *AlertManager) sendWebhookAlert(alert interface{}) error {
+func (am *AlertManagerFixed) sendWebhookAlert(alert interface{}) error {
 	if am.config.WebhookURL == "" {
 		return fmt.Errorf("webhook URL not configured")
 	}
@@ -314,11 +319,11 @@ func (am *AlertManager) sendWebhookAlert(alert interface{}) error {
 		return fmt.Errorf("webhook request failed with status %d", resp.StatusCode)
 	}
 
-	am.logger.Info("Webhook alert sent successfully", "status", resp.StatusCode)
+	am.logger.Info("Webhook alert sent successfully", map[string]interface{}{"status": resp.StatusCode})
 	return nil
 }
 
-func (am *AlertManager) createWebhookPayload(alert interface{}) (map[string]interface{}, error) {
+func (am *AlertManagerFixed) createWebhookPayload(alert interface{}) (map[string]interface{}, error) {
 	var payload map[string]interface{}
 	
 	switch a := alert.(type) {
@@ -367,7 +372,7 @@ func (am *AlertManager) createWebhookPayload(alert interface{}) (map[string]inte
 
 // Cooldown management
 
-func (am *AlertManager) isInCooldown(alertKey string) bool {
+func (am *AlertManagerFixed) isInCooldown(alertKey string) bool {
 	am.mu.RLock()
 	lastSent, exists := am.sentAlerts[alertKey]
 	am.mu.RUnlock()
@@ -379,7 +384,7 @@ func (am *AlertManager) isInCooldown(alertKey string) bool {
 	return time.Since(lastSent) < am.config.AlertCooldownPeriod
 }
 
-func (am *AlertManager) recordAlertSent(alertKey string) {
+func (am *AlertManagerFixed) recordAlertSent(alertKey string) {
 	am.mu.Lock()
 	defer am.mu.Unlock()
 
@@ -387,7 +392,7 @@ func (am *AlertManager) recordAlertSent(alertKey string) {
 }
 
 // Cleanup old alert records
-func (am *AlertManager) CleanupOldRecords(maxAge time.Duration) {
+func (am *AlertManagerFixed) CleanupOldRecords(maxAge time.Duration) {
 	am.mu.Lock()
 	defer am.mu.Unlock()
 
@@ -398,11 +403,11 @@ func (am *AlertManager) CleanupOldRecords(maxAge time.Duration) {
 		}
 	}
 
-	am.logger.Debug("Cleaned up old alert records", "max_age", maxAge)
+	am.logger.Debug("Cleaned up old alert records", map[string]interface{}{"max_age": maxAge})
 }
 
 // GetAlertStats returns statistics about sent alerts
-func (am *AlertManager) GetAlertStats() AlertStats {
+func (am *AlertManagerFixed) GetAlertStats() AlertStats {
 	am.mu.RLock()
 	defer am.mu.RUnlock()
 
