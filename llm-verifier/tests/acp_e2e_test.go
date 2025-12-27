@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/llmverifier/llmverifier"
-	"github.com/llmverifier/llmverifier/config"
+	"llm-verifier/llmverifier"
+	"llm-verifier/config"
 )
 
 // TestACPsCompleteWorkflow tests the complete ACP verification workflow

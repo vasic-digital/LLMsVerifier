@@ -585,7 +585,7 @@ func (v *Verifier) detectFeatures(client *LLMClient, modelName string) (*Feature
 	features.LSPs = lspSupported
 
 	// Check for ACPs (AI Coding Protocol) support - editor integration capabilities
-	acpSupported := v.testACPs(client, modelName, ctx)
+	acpSupported := v.TestACPs(client, modelName, ctx)
 	features.ACPs = acpSupported
 
 	// Test for image generation capabilities
@@ -1185,8 +1185,8 @@ def bubble_sort(arr):
 	return errorDetection || completionSuggestion || symbolNavigation
 }
 
-// testACPs checks for AI Coding Protocol support - editor integration capabilities
-func (v *Verifier) testACPs(client *LLMClient, modelName string, ctx context.Context) bool {
+// TestACPs checks for AI Coding Protocol support - editor integration capabilities
+func (v *Verifier) TestACPs(client *LLMClient, modelName string, ctx context.Context) bool {
 	// ACP features include JSON-RPC protocol understanding, tool calling, context management, and code assistance
 
 	// Test 1: JSON-RPC Protocol Comprehension
