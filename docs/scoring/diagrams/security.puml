@@ -1,0 +1,75 @@
+@startuml
+!define RECTANGLE class
+
+title Security Architecture Overview
+
+' Security Layers
+package "Network Security" {
+    [Firewall] as fw
+    [WAF] as waf
+    [VPN Gateway] as vpn
+    [DDoS Protection] as ddos
+}
+
+package "Application Security" {
+    [Authentication] as auth
+    [Authorization] as authz
+    [Rate Limiting] as rate
+    [Input Validation] as validation
+    [CORS Policy] as cors
+}
+
+package "Data Security" {
+    [TLS 1.3] as tls
+    [Database Encryption] as db_enc
+    [File System Encryption] as fs_enc
+    [Key Management] as kms
+}
+
+package "Infrastructure Security" {
+    [Host IDS] as hids
+    [Network IDS] as nids
+    [Vulnerability Scanning] as vuln_scan
+    [Patch Management] as patch
+}
+
+package "Monitoring & Compliance" {
+    [Audit Logging] as audit
+    [SIEM] as siem
+    [Compliance Checks] as compliance
+    [Security Metrics] as metrics
+}
+
+' Data Flow with Security
+actor User
+cloud "Internet" as internet
+
+User --> internet : HTTPS/TLS 1.3
+internet --> fw : Filtered Traffic
+fw --> waf : Clean Traffic
+waf --> rate : Rate Limited
+rate --> auth : Authenticated
+auth --> authz : Authorized
+authz --> validation : Validated Input
+validation --> tls : Encrypted Channel
+tls --> db_enc : Encrypted Data
+db_enc --> kms : Key Management
+
+' Security Monitoring
+auth --> audit : Audit Logs
+audit --> siem : Centralized Logging
+siem --> compliance : Compliance Checks
+compliance --> metrics : Security Metrics
+
+' Defense in Depth
+fw : #FF6B6B
+waf : #FF8E53
+rate : #FFA726
+auth : #66BB6A
+authz : #42A5F5
+validation : #AB47BC
+tls : #26C6DA
+db_enc : #FFA726
+kms : #EC407A
+
+@enduml

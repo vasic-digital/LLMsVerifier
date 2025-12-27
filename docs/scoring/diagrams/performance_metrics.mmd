@@ -1,0 +1,34 @@
+```mermaid
+graph LR
+    subgraph "Performance Metrics Collection"
+        A[Request Entry] --> B[Timer Start]
+        B --> C[Component Calculation]
+        C --> D[Timer End]
+        D --> E[Metrics Recording]
+    end
+    
+    subgraph "Key Performance Indicators"
+        E --> F[Response Time: < 150ms avg]
+        E --> G[Throughput: > 1000 req/sec]
+        E --> H[Error Rate: < 1%]
+        E --> I[Cache Hit Rate: > 80%]
+    end
+    
+    subgraph "Component Performance"
+        C --> J[Speed: 25% weight, < 50ms]
+        C --> K[Efficiency: 20% weight, < 40ms]
+        C --> L[Cost: 25% weight, < 60ms]
+        C --> M[Capability: 20% weight, < 45ms]
+        C --> N[Recency: 10% weight, < 30ms]
+    end
+    
+    subgraph "System Health"
+        E --> O[Database Connections: < 25]
+        E --> P[Memory Usage: < 80%]
+        E --> Q[CPU Usage: < 70%]
+        E --> R[Disk I/O: < 100MB/s]
+    end
+    
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style E fill:#9f9,stroke:#333,stroke-width:2px
+```

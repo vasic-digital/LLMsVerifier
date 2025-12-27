@@ -1,0 +1,92 @@
+@startuml
+!define RECTANGLE class
+
+title Production Deployment Architecture
+
+' Load Balancer and CDN
+cloud "CDN / Load Balancer" as cdn {
+    [CloudFlare] as cf
+    [AWS ALB] as alb
+}
+
+' DMZ Layer
+package "DMZ" {
+    [Nginx Proxy] as nginx
+    [WAF] as waf
+    [SSL Termination] as ssl
+}
+
+' Application Layer
+package "Application Tier" {
+    package "Kubernetes Cluster" {
+        [App Pod 1] as app1
+        [App Pod 2] as app2
+        [App Pod 3] as app3
+    }
+    
+    [HAProxy Load Balancer] as haproxy
+}
+
+' Data Layer
+package "Data Tier" {
+    package "Database Cluster" {
+        [(SQLite Primary)] as db_primary
+        [(SQLite Replica 1)] as db_replica1
+        [(SQLite Replica 2)] as db_replica2
+    }
+    
+    [(Redis Cluster)] as redis
+    [(Backup Storage)] as backup
+}
+
+' Monitoring Layer
+package "Monitoring Tier" {
+    [Prometheus] as prometheus
+    [Grafana] as grafana
+    [AlertManager] as alertmanager
+}
+
+' Connections
+User --> cf : HTTPS
+CF --> alb : HTTPS
+ALB --> waf : HTTP
+WAF --> nginx : HTTP
+NGINX --> ssl : SSL
+SSL --> haproxy : HTTP
+
+HAProxy --> app1 : HTTP
+HAProxy --> app2 : HTTP
+HAProxy --> app3 : HTTP
+
+APP1 --> redis
+APP1 --> db_primary
+APP2 --> redis
+APP2 --> db_replica1
+APP3 --> redis
+APP3 --> db_replica2
+
+DB_PRIMARY --> backup
+APP1 --> prometheus
+PROMETHEUS --> grafana
+GRAFANA --> alertmanager
+
+' Styling
+cf : #87CEEB
+alb : #87CEEB
+nginx : #90EE90
+waf : #FFB6C1
+ssl : #DDA0DD
+haproxy : #FFA07A
+app1 : #98FB98
+app2 : #98FB98
+app3 : #98FB98
+db_primary : #F0E68C
+db_replica1 : #F0E68C
+db_replica2 : #F0E68C
+redis : #FF6347
+backup : #D3D3D3
+prometheus : #FF69B4
+grafana : #FF69B4
+alertmanager : #FF69B4
+
+@enduml

@@ -1,0 +1,51 @@
+@startuml
+!define RECTANGLE class
+
+' Score Calculation Data Flow
+title Score Calculation Data Flow
+
+actor Client
+participant "REST API" as API
+participant "Scoring Engine" as Engine
+participant "Models.dev Client" as MDClient
+participant "Database" as DB
+participant "Cache" as Cache
+participant "Metrics" as Metrics
+
+title Score Calculation Flow
+
+Client -> API: POST /models/{id}/score/calculate
+API -> Engine: CalculateComprehensiveScore(modelID, config)
+
+alt Cache Hit
+    Engine -> Cache: Check cache for modelID
+    Cache --> Engine: Return cached score
+else Cache Miss
+    Engine -> DB: Get model data (provider, specs, etc.)
+    DB --> Engine: Return model record
+    
+    Engine -> MDClient: Fetch model data from models.dev
+    MDClient -> MDClient: HTTP/3 + Brotli request
+    MDClient --> Engine: Return model data (pricing, features, etc.)
+    
+    Engine -> Engine: Calculate 5 components:
+    note right
+        - Response Speed (25%)
+        - Model Efficiency (20%)
+        - Cost Effectiveness (25%)
+        - Capability (20%)
+        - Recency (10%)
+    end note
+    
+    Engine -> Engine: Apply weights and calculate overall score
+    Engine -> Engine: Generate score suffix (SC:X.X)
+    
+    Engine -> DB: Store calculated score
+    Engine -> Cache: Store in cache
+end
+
+Engine -> Metrics: Record performance metrics
+Engine -> API: Return ComprehensiveScore object
+API -> Client: JSON response with score
+
+@enduml
