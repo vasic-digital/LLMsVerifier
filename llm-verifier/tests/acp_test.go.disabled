@@ -2,11 +2,12 @@ package tests
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
-	"llm-verifier/llmverifier"
 	"llm-verifier/config"
+	"llm-verifier/llmverifier"
 )
 
 // TestACPsCapabilityDetection tests the ACP capability detection function
@@ -23,14 +24,14 @@ func TestACPsCapabilityDetection(t *testing.T) {
 			"jsonrpc": `{"jsonrpc":"2.0","result":{"items":[{"label":"print","kind":"function"}]},"id":1}`,
 			"tool":    `I'll use the file_read tool to analyze the Python file.`,
 			"context": `Based on your project structure, I recommend adding the utility module in src/utils/database.py and importing it as: from src.utils.database import DatabaseHelper`,
-			"code":    `def validate_users(users: List[Dict[str, str]]) -> List[Dict[str, str]]:
+			"code": `def validate_users(users: List[Dict[str, str]]) -> List[Dict[str, str]]:
 				"""Validate user data and return list of valid users."""
 				valid_users = []
 				for user in users:
 					if '@' in user.get('email', ''):
 						valid_users.append(user)
 				return valid_users`,
-			"error":   `Line 3: KeyError - missing 'email' key in user dictionary. Suggestion: Use user.get('email', '') with default value.`,
+			"error": `Line 3: KeyError - missing 'email' key in user dictionary. Suggestion: Use user.get('email', '') with default value.`,
 		},
 	}
 
@@ -39,7 +40,7 @@ func TestACPsCapabilityDetection(t *testing.T) {
 
 	// Test ACP detection
 	supportsACP := verifier.TestACPs(mockClient, modelName, ctx)
-	
+
 	if !supportsACP {
 		t.Error("Expected ACP support to be detected, but got false")
 	}
@@ -105,13 +106,13 @@ func TestACPsScoringIntegration(t *testing.T) {
 
 	// Test scoring with ACP support
 	scoreWithACP, breakdownWithACP := verifier.CalculateFeatureRichnessScore(featuresWithACP)
-	
+
 	// Test scoring without ACP support
 	scoreWithoutACP, breakdownWithoutACP := verifier.CalculateFeatureRichnessScore(featuresWithoutACP)
 
 	// Verify that ACP support increases the score
 	if scoreWithACP <= scoreWithoutACP {
-		t.Errorf("Expected higher score with ACP support (%.2f) vs without (%.2f)", 
+		t.Errorf("Expected higher score with ACP support (%.2f) vs without (%.2f)",
 			scoreWithACP, scoreWithoutACP)
 	}
 
@@ -263,7 +264,7 @@ func (m *MockLLMClient) ChatCompletion(ctx context.Context, request llmverifier.
 	// Simple mock implementation - return appropriate response based on request content
 	content := ""
 	for key, response := range m.Responses {
-		if contains(request.Messages[0].Content, key) {
+		if strings.Contains(request.Messages[0].Content, key) {
 			content = response
 			break
 		}
@@ -279,8 +280,4 @@ func (m *MockLLMClient) ChatCompletion(ctx context.Context, request llmverifier.
 			},
 		},
 	}, nil
-}
-
-func contains(text, substring string) bool {
-	return len(text) > 0 && len(substring) > 0 && strings.Contains(strings.ToLower(text), substring)
 }

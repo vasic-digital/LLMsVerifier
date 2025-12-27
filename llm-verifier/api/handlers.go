@@ -10,6 +10,10 @@ import (
 
 // HealthHandler handles health check requests
 func (s *Server) HealthHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
 		"status":    "healthy",
@@ -47,8 +51,9 @@ func (s *Server) ListModelsHandler(w http.ResponseWriter, r *http.Request) {
 			"capabilities": []string{"text", "multimodal", "reasoning"},
 		},
 	}
-
-	json.NewEncoder(w).Encode(demoModels)
+	json.NewEncoder(w).Encode(map[string]any{
+		"models": demoModels,
+	})
 }
 
 // GetModelHandler handles getting a single model
@@ -144,12 +149,24 @@ func (s *Server) ProvidersHandler(w http.ResponseWriter, r *http.Request) {
 
 // AddProviderHandler handles adding a new provider
 func (s *Server) AddProviderHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var providerData map[string]any
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&providerData); err != nil {
+		http.Error(w, "Invalid JSON: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
 	json.NewEncoder(w).Encode(map[string]any{
 		"status": "provider_added",
 		"id":     "new_provider",
-		"name":   "New Provider",
+		"name":   providerData["name"],
 	})
 }

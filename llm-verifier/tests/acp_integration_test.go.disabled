@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/llmverifier"
 	"llm-verifier/config"
+	"llm-verifier/llmverifier"
 	"llm-verifier/providers"
 )
 
@@ -21,9 +21,9 @@ func TestACPsWithRealProviders(t *testing.T) {
 	verifier := llmverifier.New(cfg)
 
 	// Test with multiple providers
-	providers := []string{"openai", "anthropic", "deepseek", "google"}
-	
-	for _, providerName := range providers {
+	providerNames := []string{"openai", "anthropic", "deepseek", "google"}
+
+	for _, providerName := range providerNames {
 		t.Run(providerName, func(t *testing.T) {
 			// Get provider configuration
 			registry := providers.NewProviderRegistry()
@@ -268,16 +268,6 @@ func getProviderModels(config *providers.ProviderConfig) []string {
 	return []string{config.DefaultModel}
 }
 
-func setupTestDatabase(t *testing.T) *Database {
-	// Setup test database
-	// Implementation would create test database
-	return &Database{}
-}
-
-func cleanupTestDatabase(t *testing.T) {
-	// Cleanup test database
-}
-
 // Mock implementations for testing
 
 type MockPerformanceClient struct {
@@ -352,7 +342,7 @@ func (m *MockProviderClient) ChatCompletion(ctx context.Context, request llmveri
 func generateACPResponse(requestContent string) string {
 	// Generate appropriate ACP-style response based on request content
 	content := strings.ToLower(requestContent)
-	
+
 	if strings.Contains(content, "jsonrpc") {
 		return `{"jsonrpc":"2.0","result":{"items":[{"label":"print","kind":"function","detail":"Built-in function"}]},"id":1}`
 	}
@@ -370,7 +360,7 @@ func generateACPResponse(requestContent string) string {
 	if strings.Contains(content, "error") {
 		return `Line 3: KeyError - missing 'email' key. Suggestion: Use user.get('email', '')`
 	}
-	
+
 	return "I understand your ACP request and can help with coding tasks."
 }
 

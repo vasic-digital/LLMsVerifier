@@ -1,17 +1,14 @@
 package tests
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
-	"llm-verifier/llmverifier"
 	"llm-verifier/config"
+	"llm-verifier/llmverifier"
 )
 
 // TestACPsFullAutomationWorkflow tests complete automated ACP workflow
@@ -58,7 +55,8 @@ func TestACPsFullAutomationWorkflow(t *testing.T) {
 	t.Logf("ACP candidates: %d", len(acpCandidateModels))
 	t.Logf("ACP results generated: %d", len(acpResults))
 	t.Logf("Reports generated: %d", len(reports))
-	t.Logf("Validation results: %d", len(validationResults))
+	t.Logf("Validation results valid: %t", validationResults.AllValid)
+	t.Logf("Validation errors: %d", len(validationResults.Errors))
 	t.Logf("Automated decisions: %d", len(decisions))
 
 	// Assert workflow success
@@ -101,7 +99,7 @@ func TestACPsAutomatedScheduling(t *testing.T) {
 	// Test scheduling logic
 	t.Run("Priority Scheduling", func(t *testing.T) {
 		sortedModels := scheduler.SortByPriority(schedule.Models)
-		
+
 		// Verify priority order
 		if sortedModels[0].ModelID != "gpt-4" {
 			t.Error("High priority model should be scheduled first")
@@ -113,7 +111,7 @@ func TestACPsAutomatedScheduling(t *testing.T) {
 
 	t.Run("Overdue Detection", func(t *testing.T) {
 		overdueModels := scheduler.GetOverdueModels(schedule.Models)
-		
+
 		// All models should be overdue since their next check times are in the past
 		if len(overdueModels) != len(schedule.Models) {
 			t.Errorf("Expected %d overdue models, got %d", len(schedule.Models), len(overdueModels))
@@ -123,15 +121,15 @@ func TestACPsAutomatedScheduling(t *testing.T) {
 	t.Run("Concurrent Execution", func(t *testing.T) {
 		// Test concurrent execution within limits
 		results := scheduler.ExecuteConcurrently(schedule.Models)
-		
+
 		if len(results) != len(schedule.Models) {
 			t.Errorf("Expected %d results, got %d", len(schedule.Models), len(results))
 		}
-		
+
 		// Verify no more than max concurrent executions
 		maxConcurrent := 0
 		currentConcurrent := 0
-		
+
 		for _, result := range results {
 			if result.StartTime.Sub(results[0].StartTime) < 1*time.Second {
 				currentConcurrent++
@@ -142,7 +140,7 @@ func TestACPsAutomatedScheduling(t *testing.T) {
 				currentConcurrent = 0
 			}
 		}
-		
+
 		if maxConcurrent > scheduler.Config.MaxConcurrent {
 			t.Errorf("Exceeded max concurrent limit: %d > %d", maxConcurrent, scheduler.Config.MaxConcurrent)
 		}
@@ -158,10 +156,10 @@ func TestACPsAutomatedMonitoring(t *testing.T) {
 	// Setup monitoring system
 	monitor := &ACPMonitor{
 		Config: &ACPMonitorConfig{
-			CheckInterval:      5 * time.Minute,
-			AlertThreshold:     0.7, // Alert if ACP support drops below 70%
+			CheckInterval:        5 * time.Minute,
+			AlertThreshold:       0.7,             // Alert if ACP support drops below 70%
 			PerformanceThreshold: 5 * time.Second, // Alert if ACP test takes > 5s
-			ErrorThreshold:     0.1, // Alert if error rate > 10%
+			ErrorThreshold:       0.1,             // Alert if error rate > 10%
 			NotificationChannels: []string{"email", "slack", "webhook"},
 		},
 		Metrics: make(map[string]ACPMetrics),
@@ -207,29 +205,29 @@ func TestACPsAutomatedMonitoring(t *testing.T) {
 
 	t.Run("Threshold Detection", func(t *testing.T) {
 		alerts := monitor.CheckThresholds()
-		
+
 		// Should detect claude-3-opus as below threshold
 		foundLowScoreAlert := false
 		foundHighErrorRateAlert := false
 		foundSlowPerformanceAlert := false
-		
+
 		for _, alert := range alerts {
 			switch alert.Type {
 			case "low_acp_score":
-				if alert.ModelID == "claude-3-opus" && alert.Value < 0.7 {
+				if val, ok := alert.Value.(float64); ok && alert.ModelID == "claude-3-opus" && val < 0.7 {
 					foundLowScoreAlert = true
 				}
 			case "high_error_rate":
-				if alert.ModelID == "claude-3-opus" && alert.Value > 0.1 {
+				if val, ok := alert.Value.(float64); ok && alert.ModelID == "claude-3-opus" && val > 0.1 {
 					foundHighErrorRateAlert = true
 				}
 			case "slow_performance":
-				if alert.ModelID == "claude-3-opus" && alert.Value > 5*time.Second {
+				if val, ok := alert.Value.(time.Duration); ok && alert.ModelID == "claude-3-opus" && val > 5*time.Second {
 					foundSlowPerformanceAlert = true
 				}
 			}
 		}
-		
+
 		if !foundLowScoreAlert {
 			t.Error("Should have detected low ACP score alert for claude-3-opus")
 		}
@@ -243,7 +241,7 @@ func TestACPsAutomatedMonitoring(t *testing.T) {
 
 	t.Run("Stale Data Detection", func(t *testing.T) {
 		staleModels := monitor.GetStaleModels(1 * time.Hour)
-		
+
 		// Should detect problematic-model as stale
 		foundStaleModel := false
 		for _, model := range staleModels {
@@ -252,19 +250,20 @@ func TestACPsAutomatedMonitoring(t *testing.T) {
 				break
 			}
 		}
-		
+
 		if !foundStaleModel {
 			t.Error("Should have detected stale model data")
 		}
 	})
 
 	t.Run("Notification Generation", func(t *testing.T) {
+		alerts := monitor.CheckThresholds()
 		notifications := monitor.GenerateNotifications(alerts)
-		
+
 		// Verify notification channels
 		emailNotifications := 0
 		slackNotifications := 0
-		
+
 		for _, notification := range notifications {
 			switch notification.Channel {
 			case "email":
@@ -273,7 +272,7 @@ func TestACPsAutomatedMonitoring(t *testing.T) {
 				slackNotifications++
 			}
 		}
-		
+
 		if emailNotifications == 0 {
 			t.Error("Should generate email notifications")
 		}
@@ -292,31 +291,31 @@ func TestACPsAutomatedRecovery(t *testing.T) {
 	// Setup recovery system
 	recovery := &ACPRecovery{
 		Config: &ACPRecoveryConfig{
-			MaxRetries:          3,
-			BackoffMultiplier:   2.0,
-			InitialBackoff:      1 * time.Second,
-			MaxBackoff:          30 * time.Second,
+			MaxRetries:              3,
+			BackoffMultiplier:       2.0,
+			InitialBackoff:          1 * time.Second,
+			MaxBackoff:              30 * time.Second,
 			CircuitBreakerThreshold: 5,
-			ResetTimeout:        5 * time.Minute,
+			ResetTimeout:            5 * time.Minute,
 		},
-		FailedModels: make(map[string]int),
+		FailedModels:   make(map[string]int),
 		CircuitBreaker: make(map[string]time.Time),
 	}
 
 	// Simulate failing models
 	failingModels := []string{"failing-model-1", "failing-model-2", "failing-model-3"}
-	
+
 	t.Run("Retry Mechanism", func(t *testing.T) {
 		for _, model := range failingModels {
 			success := recovery.RetryWithBackoff(model, func() error {
 				// Simulate failure
 				return fmt.Errorf("simulated failure")
 			})
-			
+
 			if success {
 				t.Errorf("Expected retry to fail for %s", model)
 			}
-			
+
 			retryCount := recovery.FailedModels[model]
 			if retryCount != recovery.Config.MaxRetries {
 				t.Errorf("Expected %d retries, got %d", recovery.Config.MaxRetries, retryCount)
@@ -327,25 +326,25 @@ func TestACPsAutomatedRecovery(t *testing.T) {
 	t.Run("Circuit Breaker", func(t *testing.T) {
 		// Reset for circuit breaker test
 		recovery.FailedModels = make(map[string]int)
-		
+
 		model := "circuit-breaker-model"
-		
+
 		// Trigger circuit breaker
 		for i := 0; i < recovery.Config.CircuitBreakerThreshold; i++ {
 			recovery.RecordFailure(model)
 		}
-		
+
 		// Should trigger circuit breaker
 		if !recovery.IsCircuitBreakerOpen(model) {
 			t.Error("Circuit breaker should be open after threshold failures")
 		}
-		
+
 		// Should prevent further attempts
 		canAttempt := recovery.CanAttempt(model)
 		if canAttempt {
 			t.Error("Should not allow attempts when circuit breaker is open")
 		}
-		
+
 		// Should reset after timeout
 		recovery.CircuitBreaker[model] = time.Now().Add(-6 * time.Minute)
 		canAttempt = recovery.CanAttempt(model)
@@ -356,20 +355,20 @@ func TestACPsAutomatedRecovery(t *testing.T) {
 
 	t.Run("Success Recovery", func(t *testing.T) {
 		model := "recovering-model"
-		
+
 		// Record some failures
 		recovery.RecordFailure(model)
 		recovery.RecordFailure(model)
-		
+
 		// Simulate success
 		success := recovery.RetryWithBackoff(model, func() error {
 			return nil // Success
 		})
-		
+
 		if !success {
 			t.Error("Expected successful recovery")
 		}
-		
+
 		// Should reset failure count
 		if recovery.FailedModels[model] != 0 {
 			t.Error("Failure count should be reset after success")
@@ -467,7 +466,7 @@ func TestACPsAutomatedReporting(t *testing.T) {
 		// Verify distribution succeeded
 		for _, result := range distributionResults {
 			if !result.Success {
-				t.Errorf("Distribution failed for channel %s: %v", 
+				t.Errorf("Distribution failed for channel %s: %v",
 					result.Channel, result.Error)
 			}
 		}
@@ -475,9 +474,9 @@ func TestACPsAutomatedReporting(t *testing.T) {
 
 	t.Run("Report Scheduling", func(t *testing.T) {
 		scheduler := &ACPReportScheduler{
-			Schedule: "0 9 * * MON", // Every Monday at 9 AM
+			Schedule:   "0 9 * * MON", // Every Monday at 9 AM
 			Recipients: []string{"team@company.com", "manager@company.com"},
-			Formats: []string{"html", "pdf"},
+			Formats:    []string{"html", "pdf"},
 		}
 
 		// Test schedule parsing
@@ -506,8 +505,10 @@ func TestACPsAutomatedReporting(t *testing.T) {
 
 func setupAutomationEnvironment(t *testing.T) *config.Config {
 	return &config.Config{
-		GlobalTimeout: 300 * time.Second,
-		MaxRetries:    5,
+		Global: config.GlobalConfig{
+			Timeout:    300 * time.Second,
+			MaxRetries: 5,
+		},
 		// Add automation-specific configuration
 	}
 }
@@ -525,7 +526,7 @@ func discoverModelsAutomatically(t *testing.T, verifier *llmverifier.Verifier) [
 		"gemini-pro",
 		"gemini-pro-vision",
 	}
-	
+
 	t.Logf("Automatically discovered %d models", len(models))
 	return models
 }
@@ -533,43 +534,43 @@ func discoverModelsAutomatically(t *testing.T, verifier *llmverifier.Verifier) [
 func filterModelsForACP(models []string) []string {
 	// Filter models based on ACP suitability criteria
 	var acpModels []string
-	
+
 	// Simple heuristic: exclude vision-only models
 	for _, model := range models {
 		if !strings.Contains(model, "vision") {
 			acpModels = append(acpModels, model)
 		}
 	}
-	
+
 	return acpModels
 }
 
 func runAutomatedACPVerification(t *testing.T, verifier *llmverifier.Verifier, models []string) []ACPResult {
 	var results []ACPResult
-	
+
 	for _, model := range models {
 		// Simulate ACP verification
 		result := ACPResult{
 			ModelID:      model,
 			Provider:     extractProvider(model),
-			ACPSupported: len(model)%2 == 0, // Simulate results
+			ACPSupported: len(model)%2 == 0,          // Simulate results
 			ACPScore:     float64(len(model)) / 20.0, // Simulate score
 			TestDuration: time.Duration(len(model)) * 100 * time.Millisecond,
 			Timestamp:    time.Now(),
 		}
-		
+
 		results = append(results, result)
 	}
-	
+
 	return results
 }
 
 func generateAutomatedReports(t *testing.T, results []ACPResult) []Report {
 	var reports []Report
-	
+
 	// Generate different report formats
 	reportTypes := []string{"summary", "detailed", "trends", "compliance"}
-	
+
 	for _, reportType := range reportTypes {
 		report := Report{
 			Type:      reportType,
@@ -579,7 +580,7 @@ func generateAutomatedReports(t *testing.T, results []ACPResult) []Report {
 		}
 		reports = append(reports, report)
 	}
-	
+
 	return reports
 }
 
@@ -588,34 +589,34 @@ func validateACPResultsAutomatically(t *testing.T, results []ACPResult, reports 
 		AllValid: true,
 		Errors:   []string{},
 	}
-	
+
 	// Validate result completeness
 	for _, result := range results {
 		if result.ACPScore < 0 || result.ACPScore > 1 {
 			validation.AllValid = false
-			validation.Errors = append(validation.Errors, 
+			validation.Errors = append(validation.Errors,
 				fmt.Sprintf("Invalid ACP score for %s: %f", result.ModelID, result.ACPScore))
 		}
-		
+
 		if result.TestDuration <= 0 {
 			validation.AllValid = false
 			validation.Errors = append(validation.Errors,
 				fmt.Sprintf("Invalid test duration for %s", result.ModelID))
 		}
 	}
-	
+
 	// Validate reports
 	if len(reports) == 0 {
 		validation.AllValid = false
 		validation.Errors = append(validation.Errors, "No reports generated")
 	}
-	
+
 	return validation
 }
 
 func makeAutomatedDecisions(t *testing.T, validation ValidationResults) []AutomatedDecision {
 	var decisions []AutomatedDecision
-	
+
 	if validation.AllValid {
 		decisions = append(decisions, AutomatedDecision{
 			Type:        "deployment_approved",
@@ -631,7 +632,7 @@ func makeAutomatedDecisions(t *testing.T, validation ValidationResults) []Automa
 			Timestamp:   time.Now(),
 		})
 	}
-	
+
 	return decisions
 }
 
@@ -732,18 +733,18 @@ type ACPNotification struct {
 }
 
 type ACPRecovery struct {
-	Config          *ACPRecoveryConfig
-	FailedModels    map[string]int
-	CircuitBreaker  map[string]time.Time
+	Config         *ACPRecoveryConfig
+	FailedModels   map[string]int
+	CircuitBreaker map[string]time.Time
 }
 
 type ACPRecoveryConfig struct {
-	MaxRetries             int
-	BackoffMultiplier      float64
-	InitialBackoff         time.Duration
-	MaxBackoff             time.Duration
+	MaxRetries              int
+	BackoffMultiplier       float64
+	InitialBackoff          time.Duration
+	MaxBackoff              time.Duration
 	CircuitBreakerThreshold int
-	ResetTimeout           time.Duration
+	ResetTimeout            time.Duration
 }
 
 type ACPReportGenerator struct {
@@ -800,7 +801,7 @@ func (s *ACPTestScheduler) SortByPriority(models []ACPModelSchedule) []ACPModelS
 	// Simple priority-based sorting
 	sorted := make([]ACPModelSchedule, len(models))
 	copy(sorted, models)
-	
+
 	// Sort by priority (lower number = higher priority)
 	for i := 0; i < len(sorted)-1; i++ {
 		for j := i + 1; j < len(sorted); j++ {
@@ -809,49 +810,49 @@ func (s *ACPTestScheduler) SortByPriority(models []ACPModelSchedule) []ACPModelS
 			}
 		}
 	}
-	
+
 	return sorted
 }
 
 func (s *ACPTestScheduler) GetOverdueModels(models []ACPModelSchedule) []ACPModelSchedule {
 	var overdue []ACPModelSchedule
 	now := time.Now()
-	
+
 	for _, model := range models {
 		if model.NextCheck.Before(now) {
 			overdue = append(overdue, model)
 		}
 	}
-	
+
 	return overdue
 }
 
 func (s *ACPTestScheduler) ExecuteConcurrently(models []ACPModelSchedule) []ACPExecutionResult {
 	// Simplified concurrent execution
 	var results []ACPExecutionResult
-	
+
 	for _, model := range models {
 		result := ACPExecutionResult{
 			ModelID:   model.ModelID,
 			StartTime: time.Now(),
 			Success:   true,
 		}
-		
+
 		// Simulate ACP test
 		time.Sleep(100 * time.Millisecond)
-		
+
 		result.EndTime = time.Now()
 		result.Duration = result.EndTime.Sub(result.StartTime)
-		
+
 		results = append(results, result)
 	}
-	
+
 	return results
 }
 
 func (m *ACPMonitor) CheckThresholds() []ACPAlert {
 	var alerts []ACPAlert
-	
+
 	for modelID, metrics := range m.Metrics {
 		// Check ACP score threshold
 		if metrics.ACPScore < m.Config.AlertThreshold {
@@ -860,11 +861,11 @@ func (m *ACPMonitor) CheckThresholds() []ACPAlert {
 				ModelID:  modelID,
 				Value:    metrics.ACPScore,
 				Severity: "warning",
-				Message:  fmt.Sprintf("ACP score %.2f below threshold %.2f", 
+				Message: fmt.Sprintf("ACP score %.2f below threshold %.2f",
 					metrics.ACPScore, m.Config.AlertThreshold),
 			})
 		}
-		
+
 		// Check performance threshold
 		if metrics.AverageDuration > m.Config.PerformanceThreshold {
 			alerts = append(alerts, ACPAlert{
@@ -872,11 +873,11 @@ func (m *ACPMonitor) CheckThresholds() []ACPAlert {
 				ModelID:  modelID,
 				Value:    metrics.AverageDuration,
 				Severity: "warning",
-				Message:  fmt.Sprintf("ACP test duration %v exceeds threshold %v",
+				Message: fmt.Sprintf("ACP test duration %v exceeds threshold %v",
 					metrics.AverageDuration, m.Config.PerformanceThreshold),
 			})
 		}
-		
+
 		// Check error rate threshold
 		if metrics.ErrorRate > m.Config.ErrorThreshold {
 			alerts = append(alerts, ACPAlert{
@@ -884,31 +885,31 @@ func (m *ACPMonitor) CheckThresholds() []ACPAlert {
 				ModelID:  modelID,
 				Value:    metrics.ErrorRate,
 				Severity: "error",
-				Message:  fmt.Sprintf("Error rate %.2f exceeds threshold %.2f",
+				Message: fmt.Sprintf("Error rate %.2f exceeds threshold %.2f",
 					metrics.ErrorRate, m.Config.ErrorThreshold),
 			})
 		}
 	}
-	
+
 	return alerts
 }
 
 func (m *ACPMonitor) GetStaleModels(maxAge time.Duration) []ACPMetrics {
 	var stale []ACPMetrics
 	cutoff := time.Now().Add(-maxAge)
-	
+
 	for _, metrics := range m.Metrics {
 		if metrics.LastTestTime.Before(cutoff) {
 			stale = append(stale, metrics)
 		}
 	}
-	
+
 	return stale
 }
 
 func (m *ACPMonitor) GenerateNotifications(alerts []ACPAlert) []ACPNotification {
 	var notifications []ACPNotification
-	
+
 	for _, alert := range alerts {
 		for _, channel := range m.Config.NotificationChannels {
 			notification := ACPNotification{
@@ -917,7 +918,7 @@ func (m *ACPMonitor) GenerateNotifications(alerts []ACPAlert) []ACPNotification 
 				Content: alert.Message,
 				Success: true,
 			}
-			
+
 			// Simulate notification sending
 			if channel == "email" {
 				// Simulate email sending
@@ -929,17 +930,17 @@ func (m *ACPMonitor) GenerateNotifications(alerts []ACPAlert) []ACPNotification 
 				// Simulate webhook call
 				notification.Success = true
 			}
-			
+
 			notifications = append(notifications, notification)
 		}
 	}
-	
+
 	return notifications
 }
 
 func (r *ACPRecovery) RetryWithBackoff(model string, testFunc func() error) bool {
 	backoff := r.Config.InitialBackoff
-	
+
 	for attempt := 0; attempt < r.Config.MaxRetries; attempt++ {
 		err := testFunc()
 		if err == nil {
@@ -947,16 +948,16 @@ func (r *ACPRecovery) RetryWithBackoff(model string, testFunc func() error) bool
 			delete(r.FailedModels, model)
 			return true
 		}
-		
+
 		// Record failure
 		r.FailedModels[model] = attempt + 1
-		
+
 		// Check if circuit breaker should open
 		if r.FailedModels[model] >= r.Config.CircuitBreakerThreshold {
 			r.CircuitBreaker[model] = time.Now()
 			return false
 		}
-		
+
 		// Wait with backoff
 		if attempt < r.Config.MaxRetries-1 {
 			time.Sleep(backoff)
@@ -966,7 +967,7 @@ func (r *ACPRecovery) RetryWithBackoff(model string, testFunc func() error) bool
 			}
 		}
 	}
-	
+
 	return false
 }
 
@@ -986,19 +987,19 @@ func (r *ACPRecovery) CanAttempt(model string) bool {
 	if r.IsCircuitBreakerOpen(model) {
 		return false
 	}
-	
+
 	return true
 }
 
 func (r *ACPReportGenerator) GenerateReports(results []ACPResult) ([]Report, error) {
 	var reports []Report
-	
+
 	for _, format := range r.OutputFormats {
 		report := Report{
 			Format:    format,
 			Generated: time.Now(),
 		}
-		
+
 		switch format {
 		case "json":
 			data, err := json.Marshal(results)
@@ -1013,16 +1014,16 @@ func (r *ACPReportGenerator) GenerateReports(results []ACPResult) ([]Report, err
 		default:
 			report.Content = fmt.Sprintf("Report for %d models", len(results))
 		}
-		
+
 		reports = append(reports, report)
 	}
-	
+
 	return reports, nil
 }
 
 func (d *ACPReportDistributor) Distribute(reports []Report) []ACPNotification {
 	var notifications []ACPNotification
-	
+
 	for _, report := range reports {
 		for _, channel := range d.Channels {
 			notification := ACPNotification{
@@ -1031,7 +1032,7 @@ func (d *ACPReportDistributor) Distribute(reports []Report) []ACPNotification {
 				Content: report.Content,
 				Success: true,
 			}
-			
+
 			// Simulate distribution
 			switch channel.Name {
 			case "email":
@@ -1041,11 +1042,11 @@ func (d *ACPReportDistributor) Distribute(reports []Report) []ACPNotification {
 			case "webhook":
 				notification.Success = true
 			}
-			
+
 			notifications = append(notifications, notification)
 		}
 	}
-	
+
 	return notifications
 }
 
@@ -1057,7 +1058,7 @@ func (s *ACPReportScheduler) GetNextRunTime() (time.Time, error) {
 		nextMonday := now.AddDate(0, 0, int(time.Monday-now.Weekday()+7)%7)
 		return time.Date(nextMonday.Year(), nextMonday.Month(), nextMonday.Day(), 9, 0, 0, 0, nextMonday.Location()), nil
 	}
-	
+
 	return time.Now().Add(24 * time.Hour), nil // Default to tomorrow
 }
 
@@ -1065,7 +1066,7 @@ func (s *ACPReportScheduler) GenerateScheduledReports(results []ACPResult) ([]Re
 	generator := &ACPReportGenerator{
 		OutputFormats: s.Formats,
 	}
-	
+
 	return generator.GenerateReports(results)
 }
 
@@ -1073,7 +1074,7 @@ func (s *ACPReportScheduler) GenerateScheduledReports(results []ACPResult) ([]Re
 func generateCSVReport(results []ACPResult) string {
 	var csv strings.Builder
 	csv.WriteString("Model,Provider,ACP_Supported,ACP_Score,Test_Duration,Timestamp\n")
-	
+
 	for _, result := range results {
 		csv.WriteString(fmt.Sprintf("%s,%s,%t,%.2f,%v,%s\n",
 			result.ModelID,
@@ -1083,7 +1084,7 @@ func generateCSVReport(results []ACPResult) string {
 			result.TestDuration,
 			result.Timestamp.Format(time.RFC3339)))
 	}
-	
+
 	return csv.String()
 }
 
@@ -1093,7 +1094,7 @@ func generateHTMLReport(results []ACPResult) string {
 	html.WriteString("<h1>ACP Verification Results</h1>")
 	html.WriteString("<table border='1'>")
 	html.WriteString("<tr><th>Model</th><th>Provider</th><th>ACP Supported</th><th>Score</th></tr>")
-	
+
 	for _, result := range results {
 		html.WriteString(fmt.Sprintf("<tr><td>%s</td><td>%s</td><td>%t</td><td>%.2f</td></tr>",
 			result.ModelID,
@@ -1101,7 +1102,7 @@ func generateHTMLReport(results []ACPResult) string {
 			result.ACPSupported,
 			result.ACPScore))
 	}
-	
+
 	html.WriteString("</table></body></html>")
 	return html.String()
 }
