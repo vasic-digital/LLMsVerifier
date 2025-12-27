@@ -186,10 +186,10 @@ func (c *ModelsDevClient) makeRequest(ctx context.Context, endpoint string) (*Mo
 		resp, err = c.doRequest(ctx, c.http3Client, endpoint)
 		if err == nil {
 			if c.logger != nil {
-				c.logger.Info("Successfully used HTTP/3 for models.dev API call")
+				c.logger.Info("Successfully used HTTP/3 for models.dev API call", map[string]any{})
 			}
 		} else if c.logger != nil {
-			c.logger.Warn("HTTP/3 request failed, falling back to HTTP/2", "error", err)
+			c.logger.Info("HTTP/3 request failed, falling back to HTTP/2", map[string]any{"error": err})
 		}
 	}
 
@@ -216,7 +216,7 @@ func (c *ModelsDevClient) makeRequest(ctx context.Context, endpoint string) (*Mo
 		if c.useBrotli {
 			reader = brotli.NewReader(resp.Body)
 			if c.logger != nil {
-				c.logger.Info("Successfully decoded Brotli compressed response")
+				c.logger.Info("Successfully decoded Brotli compressed response", map[string]any{})
 			}
 		}
 	case "gzip":

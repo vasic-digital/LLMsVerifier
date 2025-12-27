@@ -2,6 +2,7 @@ package scoring
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -61,13 +62,13 @@ func NewScoringService(db *database.Database, logger *logging.Logger, config Ser
 		config:  config,
 	}
 
-	logger.Info("Scoring service initialized successfully")
+	logger.Info("Scoring service initialized successfully", map[string]any{})
 	return service, nil
 }
 
 // Start starts the scoring service
 func (ss *ScoringService) Start(ctx context.Context) error {
-	ss.logger.Info("Starting scoring service")
+	ss.logger.Info("Starting scoring service", map[string]any{})
 
 	// Start scoring system
 	if err := ss.system.Start(ctx); err != nil {
@@ -84,20 +85,20 @@ func (ss *ScoringService) Start(ctx context.Context) error {
 		go ss.startMetricsServer()
 	}
 
-	ss.logger.Info("Scoring service started successfully")
+	ss.logger.Info("Scoring service started successfully", map[string]any{})
 	return nil
 }
 
 // Stop gracefully stops the scoring service
 func (ss *ScoringService) Stop() error {
-	ss.logger.Info("Stopping scoring service")
+	ss.logger.Info("Stopping scoring service", map[string]any{})
 
 	// Stop monitoring first
 	if err := ss.system.Stop(); err != nil {
-		ss.logger.Error("Failed to stop scoring system", "error", err)
+		ss.logger.Info("Failed to stop scoring system", map[string]any{"error": err})
 	}
 
-	ss.logger.Info("Scoring service stopped")
+	ss.logger.Info("Scoring service stopped", map[string]any{})
 	return nil
 }
 
@@ -107,7 +108,7 @@ func (ss *ScoringService) CalculateModelScore(ctx context.Context, modelID strin
 	defer func() {
 		duration := time.Since(startTime)
 		ss.monitor.metrics.RecordScoreCalculation(true)
-		ss.logger.Debug("Model score calculated", "model_id", modelID, "duration", duration)
+		ss.logger.Info("Model score calculated", map[string]any{"model_id": modelID, "duration": duration})
 	}()
 
 	score, err := ss.system.CalculateModelScore(ctx, modelID, config)
@@ -124,7 +125,7 @@ func (ss *ScoringService) BatchCalculateScores(ctx context.Context, modelIDs []s
 	startTime := time.Now()
 	defer func() {
 		duration := time.Since(startTime)
-		ss.logger.Debug("Batch scores calculated", "model_count", len(modelIDs), "duration", duration)
+		ss.logger.Info("Batch scores calculated", map[string]any{"model_count": len(modelIDs), "duration": duration})
 	}()
 
 	scores, err := ss.system.BatchCalculateScores(ctx, modelIDs, config)
@@ -170,7 +171,7 @@ func (ss *ScoringService) SyncWithModelsDev(ctx context.Context, providerID, mod
 	startTime := time.Now()
 	defer func() {
 		duration := time.Since(startTime)
-		ss.logger.Debug("Models.dev sync completed", "provider", providerID, "model", modelID, "duration", duration)
+		ss.logger.Info("Models.dev sync completed", map[string]any{"provider": providerID, "model": modelID, "duration": duration})
 	}()
 
 	if err := ss.system.SyncWithModelsDev(ctx, providerID, modelID, force); err != nil {
@@ -204,10 +205,15 @@ func (ss *ScoringService) GetServiceStatus() ServiceStatus {
 	health := ss.GetSystemHealth()
 	metrics := ss.GetMetricsSummary(5 * time.Minute)
 
+	rankings, err := ss.GetModelRankings("overall", 10000)
+	if err != nil {
+		rankings = []ModelRanking{}
+	}
+	
 	status := ServiceStatus{
 		Status:           health.OverallStatus,
 		Uptime:           time.Since(time.Now().Add(-24 * time.Hour)), // Placeholder
-		TotalModels:      int64(len(ss.GetModelRankings("overall", 10000))),
+		TotalModels:      int64(len(rankings)),
 		LastScoreCalc:    metrics.LastUpdated,
 		ScoreCalcRate:    ss.monitor.metrics.GetScoreCalculationRate(),
 		APIErrorRate:     ss.monitor.metrics.GetAPIErrorRate(),
@@ -234,7 +240,7 @@ type ServiceStatus struct {
 
 func (ss *ScoringService) startMetricsServer() {
 	// This would start a metrics server (e.g., Prometheus metrics endpoint)
-	ss.logger.Info("Starting metrics server", "port", ss.config.MetricsPort)
+	ss.logger.Info("Starting metrics server", map[string]any{"port": ss.config.MetricsPort})
 	// Implementation would depend on the metrics library being used
 }
 
@@ -277,10 +283,10 @@ func (ss *ScoringService) GetModelsByScoreRange(minScore, maxScore float64, limi
 
 // RefreshAllScores recalculates all model scores
 func (ss *ScoringService) RefreshAllScores(ctx context.Context) error {
-	ss.logger.Info("Refreshing all model scores")
+	ss.logger.Info("Refreshing all model scores", map[string]any{})
 
 	// Get all models
-	rankings, err := ss.GetModelRankings("overall", 10000) // Large limit
+	rankings, err := ss.GetModelRankings("overall", 10000)
 	if err != nil {
 		return fmt.Errorf("failed to get all models: %w", err)
 	}
@@ -297,7 +303,7 @@ func (ss *ScoringService) RefreshAllScores(ctx context.Context) error {
 		return fmt.Errorf("failed to refresh scores: %w", err)
 	}
 
-	ss.logger.Info("All model scores refreshed successfully", "count", len(modelIDs))
+	ss.logger.Info("All model scores refreshed successfully", map[string]any{"count": len(modelIDs)})
 	return nil
 }
 
@@ -389,7 +395,6 @@ func (ss *ScoringService) exportScoresJSON(filters map[string]interface{}) ([]by
 	}
 
 	// Convert to JSON
-	import "encoding/json"
 	return json.Marshal(filteredRankings)
 }
 

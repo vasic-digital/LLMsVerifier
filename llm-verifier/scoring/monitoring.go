@@ -13,7 +13,7 @@ import (
 type ScoringMonitor struct {
 	scoringSystem *ScoringSystem
 	logger        *logging.Logger
-	alerts        AlertManager
+	alerts        *AlertManagerFixed
 	metrics       MetricsCollector
 	config        MonitoringConfig
 	mu            sync.RWMutex
@@ -55,7 +55,7 @@ func NewScoringMonitor(scoringSystem *ScoringSystem, logger *logging.Logger, con
 	return &ScoringMonitor{
 		scoringSystem: scoringSystem,
 		logger:        logger,
-		alerts:        NewAlertManager(config),
+		alerts:        NewAlertManagerFixed(config),
 		metrics:       NewMetricsCollector(config),
 		config:        config,
 	}
@@ -64,11 +64,11 @@ func NewScoringMonitor(scoringSystem *ScoringSystem, logger *logging.Logger, con
 // Start begins monitoring processes
 func (sm *ScoringMonitor) Start(ctx context.Context) error {
 	if !sm.config.Enabled {
-		sm.logger.Info("Monitoring is disabled")
+		sm.logger.Info("Monitoring is disabled", map[string]any{})
 		return nil
 	}
 
-	sm.logger.Info("Starting scoring system monitoring")
+	sm.logger.Info("Starting scoring system monitoring", map[string]any{})
 
 	// Start background monitoring processes
 	go sm.monitorScoreChanges(ctx)
@@ -102,7 +102,7 @@ func (sm *ScoringMonitor) MonitorScoreChange(modelID string, oldScore, newScore 
 		}
 
 		if err := sm.alerts.SendScoreChangeAlert(alert); err != nil {
-			sm.logger.Error("Failed to send score change alert", "error", err, "model_id", modelID)
+			sm.logger.Error("Failed to send score change alert", map[string]interface{}{"error": err, "model_id": modelID})
 		}
 
 		// Record metric
@@ -129,7 +129,7 @@ func (sm *ScoringMonitor) MonitorAPIPerformance(apiName string, responseTime tim
 		}
 
 		if err := sm.alerts.SendAPIPerformanceAlert(alert); err != nil {
-			sm.logger.Error("Failed to send API performance alert", "error", err, "api", apiName)
+			sm.logger.Error("Failed to send API performance alert", map[string]interface{}{"error": err, "api": apiName})
 		}
 	}
 }
@@ -153,7 +153,7 @@ func (sm *ScoringMonitor) MonitorDatabasePerformance(operation string, latency t
 		}
 
 		if err := sm.alerts.SendDatabasePerformanceAlert(alert); err != nil {
-			sm.logger.Error("Failed to send database performance alert", "error", err, "operation", operation)
+			sm.logger.Error("Failed to send database performance alert", map[string]interface{}{"error": err, "operation": operation})
 		}
 	}
 }
@@ -297,22 +297,22 @@ func (sm *ScoringMonitor) cleanupOldMetrics(ctx context.Context) {
 
 func (sm *ScoringMonitor) checkForScoreChanges() {
 	// Implementation would check for recent score changes in database
-	sm.logger.Debug("Checking for score changes")
+	sm.logger.Debug("Checking for score changes", nil)
 }
 
 func (sm *ScoringMonitor) checkSystemPerformance() {
 	// Implementation would check system resource usage
-	sm.logger.Debug("Checking system performance")
+	sm.logger.Debug("Checking system performance", nil)
 }
 
 func (sm *ScoringMonitor) checkExternalAPIs() {
 	// Implementation would test external API connectivity
-	sm.logger.Debug("Checking external APIs")
+	sm.logger.Debug("Checking external APIs", nil)
 }
 
 func (sm *ScoringMonitor) checkDatabasePerformance() {
 	// Implementation would check database performance metrics
-	sm.logger.Debug("Checking database performance")
+	sm.logger.Debug("Checking database performance", nil)
 }
 
 func (sm *ScoringMonitor) determineAlertSeverity(change float64) string {
