@@ -7,6 +7,9 @@ LLM Verifier is the most comprehensive, enterprise-grade platform for verifying,
 ## Key Features
 
 - **50+ LLM Verification Tests**: Comprehensive capability assessment across 6 test types
+- **ACP Support Detection**: AI Coding Protocol compatibility verification for editor integrations
+- **MCP Support Testing**: Model Context Protocol capability validation
+- **LSP Feature Detection**: Language Server Protocol compatibility assessment
 - **18 Provider Support**: OpenAI, Anthropic, Google, Cohere, Meta, Groq, Together AI, Fireworks AI, Poe, NaviGator AI, Mistral, xAI, Replicate, SiliconFlow, Azure, AWS, Hugging Face
 - **Real-Time Monitoring**: 99.9% uptime with intelligent failover and health checking
 - **Advanced Analytics**: AI-powered insights, trend analysis, and cost optimization
@@ -42,6 +45,27 @@ LLM Verifier is the most comprehensive, enterprise-grade platform for verifying,
 - **Hugging Face**: Open-source models - Community-driven
 
 **Total: 18 providers with unlimited extensibility**
+
+## 🎯 Advanced Protocol Support
+
+### AI Coding Protocol (ACP)
+- **Editor Integration**: Seamless integration with Zed, JetBrains IDEs, Avante.nvim, CodeCompanion.nvim
+- **JSON-RPC Communication**: Standardized protocol over stdio for reliable editor-LLM communication
+- **Tool Support**: Built-in tools, custom tools, and slash commands
+- **Context Management**: Project-specific rules and conversation history retention
+- **Real-time Assistance**: Live code completion, error detection, and refactoring suggestions
+
+### Model Context Protocol (MCP)
+- **Context Window Management**: Advanced token handling and conversation persistence
+- **Multi-turn Conversations**: Maintains context across extended dialogues
+- **Memory Optimization**: Efficient context retention and summarization
+- **Token Limit Awareness**: Handles models with different context window sizes
+
+### Language Server Protocol (LSP)
+- **IDE-like Features**: Language analysis, error detection, code completion
+- **Symbol Navigation**: Go-to-definition, find-references capabilities
+- **Diagnostic Integration**: Real-time error reporting and suggestions
+- **Code Intelligence**: Syntax highlighting, formatting, and refactoring support
 
 ## Quick Start
 

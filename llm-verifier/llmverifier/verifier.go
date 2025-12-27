@@ -584,6 +584,10 @@ func (v *Verifier) detectFeatures(client *LLMClient, modelName string) (*Feature
 	lspSupported := v.testLSPs(client, modelName, ctx)
 	features.LSPs = lspSupported
 
+	// Check for ACPs (AI Coding Protocol) support - editor integration capabilities
+	acpSupported := v.testACPs(client, modelName, ctx)
+	features.ACPs = acpSupported
+
 	// Test for image generation capabilities
 	imageGenerationSupported := v.testImageGeneration(client, modelName, ctx)
 	features.ImageGeneration = imageGenerationSupported
@@ -1179,6 +1183,175 @@ def bubble_sort(arr):
 
 	// Return true if the model demonstrates any LSP-like capabilities
 	return errorDetection || completionSuggestion || symbolNavigation
+}
+
+// testACPs checks for AI Coding Protocol support - editor integration capabilities
+func (v *Verifier) testACPs(client *LLMClient, modelName string, ctx context.Context) bool {
+	// ACP features include JSON-RPC protocol understanding, tool calling, context management, and code assistance
+
+	// Test 1: JSON-RPC Protocol Comprehension
+	req1 := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role: "user",
+				Content: `You are an ACP-compatible AI coding agent. Please respond to this JSON-RPC request:
+{"jsonrpc":"2.0","method":"textDocument/completion","params":{"textDocument":{"uri":"file:///test.py"},"position":{"line":0,"character":10}},"id":1}
+
+What would be an appropriate response for a code completion request? Please provide a valid JSON-RPC response.`,
+			},
+		},
+	}
+
+	resp1, err1 := client.ChatCompletion(ctx, req1)
+	if err1 != nil || len(resp1.Choices) == 0 {
+		return false
+	}
+
+	responseText1 := strings.ToLower(resp1.Choices[0].Message.Content)
+	// Check for JSON-RPC response indicators
+	jsonrpcComprehension := strings.Contains(responseText1, "jsonrpc") ||
+		strings.Contains(responseText1, "2.0") ||
+		strings.Contains(responseText1, "result") ||
+		strings.Contains(responseText1, "completion") ||
+		strings.Contains(responseText1, "items")
+
+	// Test 2: Tool Calling Capability
+	req2 := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role: "user",
+				Content: `As an ACP agent, you have access to tools like "file_read", "file_write", and "execute_command". 
+Please demonstrate how you would call the "file_read" tool to read the content of a Python file named "main.py" 
+and then suggest improvements based on the content.`,
+			},
+		},
+	}
+
+	resp2, err2 := client.ChatCompletion(ctx, req2)
+	if err2 != nil || len(resp2.Choices) == 0 {
+		return false
+	}
+
+	responseText2 := strings.ToLower(resp2.Choices[0].Message.Content)
+	// Check for tool calling indicators
+	toolCallingCapable := strings.Contains(responseText2, "file_read") ||
+		strings.Contains(responseText2, "tool") ||
+		strings.Contains(responseText2, "function") ||
+		strings.Contains(responseText2, "parameters") ||
+		strings.Contains(responseText2, "arguments")
+
+	// Test 3: Context Management for Multi-turn Conversations
+	req3 := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role: "user",
+				Content: "I'm working on a Python project with the following structure: src/main.py, tests/test_main.py, requirements.txt. The main.py file contains a Flask web application. Remember this project structure and context.",
+			},
+			{
+				Role: "assistant",
+				Content: "I've noted your Python project structure: src/main.py (Flask web app), tests/test_main.py, requirements.txt. I'll remember this context for our conversation.",
+			},
+			{
+				Role: "user",
+				Content: "Based on this project structure, where should I add a new utility module for database operations, and what would be the appropriate import statement in my Flask app?",
+			},
+		},
+	}
+
+	resp3, err3 := client.ChatCompletion(ctx, req3)
+	if err3 != nil || len(resp3.Choices) == 0 {
+		return false
+	}
+
+	responseText3 := strings.ToLower(resp3.Choices[0].Message.Content)
+	// Check for context retention and appropriate suggestions
+	contextManagement := strings.Contains(responseText3, "src") ||
+		strings.Contains(responseText3, "utility") ||
+		strings.Contains(responseText3, "database") ||
+		strings.Contains(responseText3, "import") ||
+		strings.Contains(responseText3, "module")
+
+	// Test 4: Code Assistance and Generation
+	req4 := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role: "user",
+				Content: `As an ACP coding agent, help me write a Python function that:
+1. Takes a list of user dictionaries (each with 'name' and 'email' keys)
+2. Validates that all emails are in proper format
+3. Returns a list of valid users
+4. Includes proper error handling and type hints
+5. Has a comprehensive docstring
+
+Please provide the complete implementation.`,
+			},
+		},
+	}
+
+	resp4, err4 := client.ChatCompletion(ctx, req4)
+	if err4 != nil || len(resp4.Choices) == 0 {
+		return false
+	}
+
+	responseText4 := strings.ToLower(resp4.Choices[0].Message.Content)
+	// Check for code generation indicators
+	codeAssistance := strings.Contains(responseText4, "def") ||
+		strings.Contains(responseText4, "import") ||
+		strings.Contains(responseText4, "list") ||
+		strings.Contains(responseText4, "dict") ||
+		strings.Contains(responseText4, "->") || // Type hints
+		strings.Contains(responseText4, "\"\"\"") // Docstring
+
+	// Test 5: Error Detection and Diagnostics
+	req5 := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role: "user",
+				Content: `As an ACP agent, analyze this Python code and provide diagnostic information:
+def process_user_data(users):
+    valid_users = []
+    for user in users:
+        if user['email'].contains('@'):
+            valid_users.append(user)
+    return valid_users
+
+result = process_user_data([{'name': 'John', 'email': 'john@example.com'}, {'name': 'Jane'}])
+
+What errors or issues do you detect? Provide specific line numbers and suggestions.`,
+			},
+		},
+	}
+
+	resp5, err5 := client.ChatCompletion(ctx, req5)
+	if err5 != nil || len(resp5.Choices) == 0 {
+		return false
+	}
+
+	responseText5 := strings.ToLower(resp5.Choices[0].Message.Content)
+	// Check for error detection capabilities
+	errorDetection := strings.Contains(responseText5, "error") ||
+		strings.Contains(responseText5, "issue") ||
+		strings.Contains(responseText5, "keyerror") ||
+		strings.Contains(responseText5, "contains") ||
+		strings.Contains(responseText5, "missing") ||
+		strings.Contains(responseText5, "line")
+
+	// Return true if the model demonstrates multiple ACP-like capabilities
+	capabilities := []bool{jsonrpcComprehension, toolCallingCapable, contextManagement, codeAssistance, errorDetection}
+	supportedCapabilities := 0
+	for _, capability := range capabilities {
+		if capability {
+			supportedCapabilities++
+		}
+	}
+
+	// Require at least 3 out of 5 ACP capabilities for support
+	return supportedCapabilities >= 3
 }
 
 // testImageGeneration checks for image generation capabilities
@@ -2402,11 +2575,14 @@ func (v *Verifier) CalculateFeatureRichnessScore(features FeatureDetectionResult
 
 	// Count experimental or special features (20% weight)
 	experimentalFeatures := 0
-	totalExperimentalFeatures := 5 // MCPs, LSPs, reranking, image generation, audio generation
+	totalExperimentalFeatures := 6 // MCPs, LSPs, ACPs, reranking, image generation, audio generation
 	if features.MCPs {
 		experimentalFeatures++
 	}
 	if features.LSPs {
+		experimentalFeatures++
+	}
+	if features.ACPs {
 		experimentalFeatures++
 	}
 	if features.Reranking {
@@ -2490,11 +2666,14 @@ func (v *Verifier) calculateFeatureRichnessScoreFromResult(result VerificationRe
 
 	// Count experimental or special features (20% weight)
 	experimentalFeatures := 0
-	totalExperimentalFeatures := 5 // MCPs, LSPs, reranking, image generation, audio generation
+	totalExperimentalFeatures := 6 // MCPs, LSPs, ACPs, reranking, image generation, audio generation
 	if features.MCPs {
 		experimentalFeatures++
 	}
 	if features.LSPs {
+		experimentalFeatures++
+	}
+	if features.ACPs {
 		experimentalFeatures++
 	}
 	if features.Reranking {

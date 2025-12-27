@@ -151,6 +151,7 @@ CREATE TABLE verification_results (
     supports_video_generation BOOLEAN DEFAULT 0,
     supports_mcps BOOLEAN DEFAULT 0,
     supports_lsps BOOLEAN DEFAULT 0,
+    supports_acps BOOLEAN DEFAULT 0,
     supports_multimodal BOOLEAN DEFAULT 0,
     supports_streaming BOOLEAN DEFAULT 0,
     supports_json_mode BOOLEAN DEFAULT 0,

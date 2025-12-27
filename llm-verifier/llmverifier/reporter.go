@@ -313,6 +313,7 @@ func (v *Verifier) writeModelReport(file *os.File, result VerificationResult) {
 	fmt.Fprintf(file, "- **Video Generation**: %t\n", result.FeatureDetection.VideoGeneration)
 	fmt.Fprintf(file, "- **MCPs**: %t\n", result.FeatureDetection.MCPs)
 	fmt.Fprintf(file, "- **LSPs**: %t\n", result.FeatureDetection.LSPs)
+	fmt.Fprintf(file, "- **ACPs**: %t\n", result.FeatureDetection.ACPs)
 	fmt.Fprintf(file, "- **Multimodal**: %t\n", result.FeatureDetection.Multimodal)
 	fmt.Fprintf(file, "- **Streaming**: %t\n", result.FeatureDetection.Streaming)
 	fmt.Fprintf(file, "- **JSON Mode**: %t\n", result.FeatureDetection.JSONMode)
