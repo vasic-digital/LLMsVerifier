@@ -1,0 +1,72 @@
+@startuml
+!define RECTANGLE class
+
+' System Architecture Overview
+package "LLM Verifier Scoring System" {
+    
+    package "API Layer" {
+        [REST API Gateway] as api_gw
+        [Authentication Service] as auth_svc
+        [Rate Limiting] as rate_limit
+        [CORS Handler] as cors_handler
+    }
+    
+    package "Application Layer" {
+        [Scoring Engine] as scoring_engine
+        [Batch Processor] as batch_processor
+        [Model Naming Service] as naming_service
+        [Configuration Manager] as config_manager
+    }
+    
+    package "Integration Layer" {
+        [Models.dev Client] as md_client
+        [Database Extensions] as db_extensions
+        [Cache Manager] as cache_manager
+        [Metrics Collector] as metrics_collector
+    }
+    
+    package "Data Layer" {
+        [SQLite Database] as sqlite_db
+        [Redis Cache] as redis_cache
+        [File System Cache] as fs_cache
+        [Metrics Store] as metrics_store
+    }
+}
+
+package "External Systems" {
+    [Models.dev API] as md_api
+    [Monitoring Stack] as monitoring
+    [Log Aggregation] as log_agg
+}
+
+' Connections
+[Client Applications] --> [REST API Gateway]
+[REST API Gateway] --> [Authentication Service]
+[Authentication Service] --> [Rate Limiting]
+[Rate Limiting] --> [CORS Handler]
+
+[CORS Handler] --> [Scoring Engine]
+[CORS Handler] --> [Batch Processor]
+[CORS Handler] --> [Model Naming Service]
+[CORS Handler] --> [Configuration Manager]
+
+[Scoring Engine] --> [Models.dev Client]
+[Scoring Engine] --> [Database Extensions]
+[Scoring Engine] --> [Cache Manager]
+[Scoring Engine] --> [Metrics Collector]
+
+[Batch Processor] --> [Models.dev Client]
+[Batch Processor] --> [Database Extensions]
+[Batch Processor] --> [Cache Manager]
+
+[Models.dev Client] --> [Models.dev API]
+[Database Extensions] --> [SQLite Database]
+[Cache Manager] --> [Redis Cache]
+[Cache Manager] --> [File System Cache]
+[Metrics Collector] --> [Metrics Store]
+
+[SQLite Database] --> [Monitoring Stack]
+[Metrics Store] --> [Monitoring Stack]
+[REST API Gateway] --> [Log Aggregation]
+
+@enduml

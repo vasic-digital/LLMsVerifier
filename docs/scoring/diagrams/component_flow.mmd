@@ -1,0 +1,34 @@
+```mermaid
+graph TD
+    subgraph "Scoring Engine Core"
+        A[CalculateComprehensiveScore] --> B[Fetch Model Data]
+        B --> C[Calculate Components]
+        C --> D[Apply Weights]
+        D --> E[Generate Suffix]
+        E --> F[Store Results]
+    end
+    
+    subgraph "Component Calculators"
+        C --> G[Speed Score: 25%]
+        C --> H[Efficiency Score: 20%]
+        C --> I[Cost Score: 25%]
+        C --> J[Capability Score: 20%]
+        C --> K[Recency Score: 10%]
+    end
+    
+    subgraph "Data Sources"
+        B --> L[Models.dev API]
+        B --> M[SQLite Database]
+        B --> N[Cache Layer]
+    end
+    
+    subgraph "Output Processing"
+        F --> O[Database Storage]
+        F --> P[Cache Storage]
+        F --> Q[Metrics Collection]
+        F --> R[Score Suffix: (SC:X.X)]
+    end
+    
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style R fill:#9f9,stroke:#333,stroke-width:2px
+```
