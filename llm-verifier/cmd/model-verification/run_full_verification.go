@@ -9,14 +9,14 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
 	"llm-verifier/auth"
 	"llm-verifier/client"
 	"llm-verifier/database"
-	"llm-verifier/scoring"
+	"llm-verifier/verification"
+	"llm-verifier/logging"
 )
 
 type FullVerificationResult struct {
@@ -48,15 +48,16 @@ type ModelVerification struct {
 }
 
 type ModelFeatures struct {
-	Streaming      bool    `json:"streaming"`
-	ToolCalling    bool    `json:"tool_calling"`
-	Embeddings     bool    `json:"embeddings"`
-	Vision         bool    `json:"vision"`
-	MCP            bool    `json:"mcp"`      // Model Capability Protocol
-	LSP            bool    `json:"lsp"`      // Language Server Protocol
-	ACP            bool    `json:"acp"`      // AI Coding Protocol
-	Audio          bool    `json:"audio"`
-	Code           bool    `json:"code"`
+	Streaming         bool    `json:"streaming"`
+	ToolCalling       bool    `json:"tool_calling"`
+	Embeddings        bool    `json:"embeddings"`
+	Vision            bool    `json:"vision"`
+	MCP               bool    `json:"mcp"`               // Model Capability Protocol
+	LSP               bool    `json:"lsp"`               // Language Server Protocol
+	ACP               bool    `json:"acp"`               // AI Coding Protocol
+	Audio             bool    `json:"audio"`
+	Code              bool    `json:"code"`
+	StructuredOutput  bool    `json:"structured_output"` // Added for models.dev compatibility
 }
 
 type ModelScores struct {
@@ -68,21 +69,22 @@ type ModelScores struct {
 }
 
 type VerificationSummary struct {
-	TotalProviders    int    `json:"total_providers"`
-	ProvidersWithKeys int    `json:"providers_with_keys"`
-	TotalModels       int    `json:"total_models"`
-	VerifiedModels    int    `json:"verified_models"`
-	FailedModels      int    `json:"failed_models"`
+	TotalProviders    int     `json:"total_providers"`
+	ProvidersWithKeys int     `json:"providers_with_keys"`
+	TotalModels       int     `json:"total_models"`
+	VerifiedModels    int     `json:"verified_models"`
+	FailedModels      int     `json:"failed_models"`
 	AverageScore      float64 `json:"average_score"`
 }
 
 type VerificationRunner struct {
-	db           *database.Database
-	authMgr      *auth.AuthManager
-	httpClient   *client.HTTPClient
-	scorer       *scoring.Engine
-	results      FullVerificationResult
-	providerData map[string]providerInfo
+	db              *database.Database
+	authMgr         *auth.AuthManager
+	httpClient      *client.HTTPClient
+	modelsDevClient *verification.ModelsDevClient
+	logger          *logging.Logger
+	results         FullVerificationResult
+	providerData    map[string]providerInfo
 }
 
 type providerInfo struct {
@@ -99,17 +101,18 @@ func NewVerificationRunner() (*VerificationRunner, error) {
 
 	authMgr := auth.NewAuthManager("verification-secret-key")
 	httpClient := client.NewHTTPClient(30 * time.Second)
-	scorer := scoring.NewEngine()
-
+	modelsDevClient := verification.NewModelsDevClient()
+	
 	return &VerificationRunner{
-		db:           db,
-		authMgr:      authMgr,
-		httpClient:   httpClient,
-		scorer:       scorer,
-		providerData: make(map[string]providerInfo),
+		db:              db,
+		authMgr:         authMgr,
+		httpClient:      httpClient,
+		modelsDevClient: modelsDevClient,
+		providerData:    make(map[string]providerInfo),
 		results: FullVerificationResult{
 			Timestamp: time.Now(),
 			Providers: []ProviderVerification{},
+			Summary:   VerificationSummary{},
 		},
 	}, nil
 }
@@ -117,10 +120,16 @@ func NewVerificationRunner() (*VerificationRunner, error) {
 func (vr *VerificationRunner) LoadAPIKeys() error {
 	log.Println("Loading API keys from environment...")
 	
-	envFile := filepath.Join("..", ".env")
+	// Check in project root first
+	envFile := filepath.Join("../../../", ".env")
 	file, err := os.Open(envFile)
 	if err != nil {
-		return fmt.Errorf("failed to open .env file: %w", err)
+		// Try alternative location
+		envFile = filepath.Join("/media/milosvasic/DATA4TB/Projects/LLM/LLMsVerifier", ".env")
+		file, err = os.Open(envFile)
+		if err != nil {
+			return fmt.Errorf("failed to open .env file: %w", err)
+		}
 	}
 	defer file.Close()
 
@@ -245,8 +254,8 @@ func (vr *VerificationRunner) getProviderModels(provider string) []string {
 func (vr *VerificationRunner) VerifyAllProviders() error {
 	log.Printf("Starting verification of %d providers...", len(vr.providerData))
 	
-	vr.results.TotalProviders = len(vr.providerData)
-	vr.results.ProvidersWithKeys = len(vr.providerData)
+	vr.results.Summary.TotalProviders = len(vr.providerData)
+	vr.results.Summary.ProvidersWithKeys = len(vr.providerData)
 	
 	for providerName, info := range vr.providerData {
 		log.Printf("\n=== Verifying %s ===", providerName)
@@ -264,14 +273,28 @@ func (vr *VerificationRunner) VerifyAllProviders() error {
 			Endpoint:        info.endpoint,
 			APIKeyEncrypted: "ENCRYPTED_" + info.apiKey[:10], // Placeholder - real encryption needed
 			IsActive:        true,
-			LastChecked:     time.Now(),
+			LastChecked:     &[]time.Time{time.Now()}[0],
 		}
 		
-		err := vr.db.CreateProvider(provider)
-		if err != nil {
-			providerResult.Error = err.Error()
-			vr.results.Providers = append(vr.results.Providers, providerResult)
-			continue
+		// Check if provider already exists
+		existingProvider, err := vr.db.GetProviderByName(provider.Name)
+		if err == nil && existingProvider != nil {
+			// Provider exists, update it
+			provider.ID = existingProvider.ID
+			err = vr.db.UpdateProvider(provider)
+			if err != nil {
+				providerResult.Error = fmt.Sprintf("Failed to update provider: %v", err)
+				vr.results.Providers = append(vr.results.Providers, providerResult)
+				continue
+			}
+		} else {
+			// Provider doesn't exist, create new
+			err = vr.db.CreateProvider(provider)
+			if err != nil {
+				providerResult.Error = fmt.Sprintf("Failed to create provider: %v", err)
+				vr.results.Providers = append(vr.results.Providers, providerResult)
+				continue
+			}
 		}
 		
 		// Verify each model
@@ -281,9 +304,9 @@ func (vr *VerificationRunner) VerifyAllProviders() error {
 			vr.results.ModelCount++
 			
 			if modelResult.Verified {
-				vr.results.VerifiedModels++
+				vr.results.Summary.VerifiedModels++
 			} else {
-				vr.results.FailedModels++
+				vr.results.Summary.FailedModels++
 			}
 		}
 		
@@ -291,7 +314,7 @@ func (vr *VerificationRunner) VerifyAllProviders() error {
 	}
 	
 	// Calculate average score
-	if vr.results.VerifiedModels > 0 {
+	if vr.results.Summary.VerifiedModels > 0 {
 		totalScore := 0
 		for _, provider := range vr.results.Providers {
 			for _, model := range provider.Models {
@@ -300,7 +323,7 @@ func (vr *VerificationRunner) VerifyAllProviders() error {
 				}
 			}
 		}
-		vr.results.Summary.AverageScore = float64(totalScore) / float64(vr.results.VerifiedModels)
+		vr.results.Summary.AverageScore = float64(totalScore) / float64(vr.results.Summary.VerifiedModels)
 	}
 	
 	return nil
@@ -320,14 +343,22 @@ func (vr *VerificationRunner) verifyModel(providerID int64, providerName, modelI
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	
-	// Test model existence
+	// First try to fetch model info from models.dev for enhanced verification
+	modelsDevModel, err := vr.modelsDevClient.FindModel(ctx, modelID)
+	if err != nil {
+		log.Printf("  Warning: Could not fetch %s from models.dev: %v", modelID, err)
+	}
+	
+	// Test model existence - fresh HTTP call to provider's actual API
+	log.Printf("    Making fresh API call to %s/%s...", providerName, vr.hideApiKey(apiKey))
 	exists, err := vr.httpClient.TestModelExists(ctx, providerName, apiKey, modelID)
 	if err != nil || !exists {
 		result.Error = fmt.Sprintf("Model existence check failed: %v", err)
 		return result
 	}
 	
-	// Test responsiveness
+	// Test responsiveness - clean call with no caching
+	log.Printf("    Testing responsiveness...")
 	totalTime, ttft, err, errMsg, responsive, statusCode, httpErr := vr.httpClient.TestResponsiveness(
 		ctx, providerName, apiKey, modelID, "What is 2+2?")
 	
@@ -342,15 +373,22 @@ func (vr *VerificationRunner) verifyModel(providerID int64, providerName, modelI
 	result.ResponseTime = totalTime.Milliseconds()
 	result.TTFT = ttft.Milliseconds()
 	
-	// Test features
-	result.Features = vr.detectFeatures(ctx, providerName, modelID, apiKey)
-	
-	// Calculate scores
-	result.Scores = vr.calculateModelScores(result)
+	// Test features - if we have models.dev data, use it to enhance verification
+	if modelsDevModel != nil {
+		log.Printf("    Found in models.dev - enhancing verification data...")
+		result.Name = modelsDevModel.Model
+		result.Features = vr.enhanceFeaturesWithModelsDev(ctx, providerName, modelID, apiKey, modelsDevModel)
+		result.Scores = vr.calculateModelScoresWithMetadata(result, modelsDevModel)
+	} else {
+		// Fallback to heuristic detection
+		result.Features = vr.detectFeatures(ctx, providerName, modelID, apiKey)
+		result.Scores = vr.calculateModelScores(result)
+	}
 	
 	result.Verified = true
 	
 	// Store in database
+	log.Printf("    Storing verification results...")
 	vr.storeModelVerification(providerID, modelID, result)
 	
 	return result
@@ -513,7 +551,7 @@ func (vr *VerificationRunner) storeModelVerification(providerID int64, modelID s
 		Description:         "",
 		IsMultimodal:        verification.Features.Vision || verification.Features.Audio,
 		SupportsVision:      verification.Features.Vision,
-		LastVerified:        verification.LastVerified,
+		LastVerified:        &verification.LastVerified,
 		VerificationStatus:  map[bool]string{true: "verified", false: "failed"}[verification.Verified],
 		OverallScore:        float64(verification.Scores.Overall),
 		CodeCapabilityScore: float64(verification.Scores.CodeCapability),
@@ -544,10 +582,6 @@ func (vr *VerificationRunner) storeModelVerification(providerID int64, modelID s
 		Responsive:      &verification.Verified,
 		LatencyMs:       &[]int{int(verification.ResponseTime)}[0],
 		SupportsBrotli:  verification.Features.MCP || verification.Features.ACP,
-		ResponseFormat:  "",
-		ContextWindow:   nil,
-		MaxTokens:       nil,
-		RateLimitInfo:   nil,
 	}
 	
 	if verification.Error != "" {
@@ -593,6 +627,13 @@ func (vr *VerificationRunner) SaveResults() error {
 		return fmt.Errorf("failed to write CSV data: %w", err)
 	}
 	
+	// Save providers export
+	providersExport := vr.generateProvidersExport()
+	exportFile := filepath.Join(resultsDir, "providers_export.json")
+	if err := os.WriteFile(exportFile, providersExport, 0644); err != nil {
+		return fmt.Errorf("failed to write export data: %w", err)
+	}
+	
 	log.Printf("Saved results to: %s", resultsDir)
 	return nil
 }
@@ -613,11 +654,11 @@ func (vr *VerificationRunner) generateMarkdownSummary() string {
 ## Provider Details
 
 `, vr.results.Timestamp.Format(time.RFC3339),
-		vr.results.TotalProviders,
-		vr.results.ProvidersWithKeys,
+		vr.results.Summary.TotalProviders,
+		vr.results.Summary.ProvidersWithKeys,
 		vr.results.ModelCount,
-		vr.results.VerifiedModels,
-		vr.results.FailedModels,
+		vr.results.Summary.VerifiedModels,
+		vr.results.Summary.FailedModels,
 		vr.results.Summary.AverageScore)
 	
 	for _, provider := range vr.results.Providers {
@@ -707,6 +748,19 @@ func (vr *VerificationRunner) generateCSVData() string {
 	return csv
 }
 
+func (vr *VerificationRunner) generateProvidersExport() []byte {
+	// Export providers with all features in a format that can be used by other systems
+	export := map[string]interface{}{
+		"version": "1.0",
+		"timestamp": vr.results.Timestamp,
+		"providers": vr.results.Providers,
+		"summary": vr.results.Summary,
+	}
+	
+	data, _ := json.MarshalIndent(export, "", "  ")
+	return data
+}
+
 func main() {
 	log.Println("=== LLM Verifier - Full Provider and Model Verification ===")
 	log.Println("This will discover and verify all providers with configured API keys...")
@@ -740,8 +794,123 @@ func main() {
 	
 	log.Println("\n=== Verification Complete ===")
 	log.Printf("Duration: %v", duration)
-	log.Printf("Providers verified: %d/%d", runner.results.ProvidersWithKeys, runner.results.TotalProviders)
-	log.Printf("Models verified: %d/%d", runner.results.VerifiedModels, runner.results.ModelCount)
+	log.Printf("Providers verified: %d/%d", runner.results.Summary.ProvidersWithKeys, runner.results.Summary.TotalProviders)
+	log.Printf("Models verified: %d/%d", runner.results.Summary.VerifiedModels, runner.results.ModelCount)
 	log.Printf("Average score: %.1f", runner.results.Summary.AverageScore)
 	log.Printf("Results saved to: challenges/full_verification/ directory")
+}// enhanceFeaturesWithModelsDev uses models.dev metadata to enhance feature detection
+func (vr *VerificationRunner) enhanceFeaturesWithModelsDev(ctx context.Context, providerName, modelID, apiKey string, modelsDev *verification.ModelsDevModel) ModelFeatures {
+	features := ModelFeatures{}
+	
+	// Start with models.dev data
+	features.Streaming = true // Most modern models support streaming
+	features.ToolCalling = modelsDev.ToolCall
+	features.Embeddings = strings.Contains(strings.ToLower(modelID), "embedding")
+	features.Vision = strings.Contains(strings.ToLower(modelID), "vision") || strings.Contains(strings.ToLower(modelsDev.Model), "vision")
+	
+	// MCP/ACP/LSP support detection
+	features.MCP = vr.testACPSupport(ctx, providerName, modelID, apiKey)
+	features.LSP = features.MCP
+	features.ACP = features.MCP
+	
+	// Audio/Video support (basic heuristic)
+	audioKeywords := []string{"audio", "whisper", "tts", "speech"}
+	videoKeywords := []string{"video", "vision"}
+	
+	for _, keyword := range audioKeywords {
+		if strings.Contains(strings.ToLower(modelID), keyword) ||
+			strings.Contains(strings.ToLower(modelsDev.Model), keyword) {
+			features.Audio = true
+		}
+	}
+	
+	for _, keyword := range videoKeywords {
+		if strings.Contains(strings.ToLower(modelID), keyword) ||
+			strings.Contains(strings.ToLower(modelsDev.Model), keyword) {
+			features.Vision = true
+		}
+	}
+	
+	// Code capability detection
+	features.Code = vr.detectCodeCapability(providerName, modelID)
+	
+	return features
+}
+
+// calculateModelScoresWithMetadata uses models.dev data for more accurate scoring
+func (vr *VerificationRunner) calculateModelScoresWithMetadata(verification ModelVerification, modelsDev *verification.ModelsDevModel) ModelScores {
+	scores := ModelScores{}
+	
+	// Base score on responsiveness (0-30 points)
+	if verification.ResponseTime > 0 && verification.ResponseTime < 1000 {
+		scores.Responsiveness = 30
+	} else if verification.ResponseTime < 3000 {
+		scores.Responsiveness = 20
+	} else if verification.ResponseTime < 10000 {
+		scores.Responsiveness = 10
+	}
+	
+	// Feature richness score enhanced by models.dev data (0-25 points)
+	featureCount := 0
+	if verification.Features.Streaming {
+		featureCount++
+	}
+	if verification.Features.ToolCalling || modelsDev.ToolCall {
+		featureCount += 2
+	}
+	if verification.Features.Embeddings {
+		featureCount++
+	}
+	if verification.Features.Vision {
+		featureCount += 2
+	}
+	if verification.Features.MCP || verification.Features.ACP {
+		featureCount += 3
+	}
+	if verification.Features.Code || strings.Contains(strings.ToLower(modelsDev.Family), "coder") {
+		featureCount += 2
+	}
+	if verification.Features.StructuredOutput || modelsDev.StructuredOutput {
+		featureCount++
+	}
+	if verification.Features.Audio {
+		featureCount++
+	}
+	
+	scores.FeatureRichness = featureCount * 3
+	if scores.FeatureRichness > 25 {
+		scores.FeatureRichness = 25
+	}
+	
+	// Code capability score enhanced (0-25 points)
+	if strings.Contains(strings.ToLower(modelsDev.Family), "coder") ||
+		strings.Contains(strings.ToLower(modelsDev.Model), "code") {
+		scores.CodeCapability = 25
+	} else if verification.Features.ToolCalling && verification.Features.Streaming {
+		scores.CodeCapability = 20
+	} else if verification.Features.ToolCalling {
+		scores.CodeCapability = 15
+	}
+	
+	// Reliability score (0-20 points)
+	if verification.Verified {
+		scores.Reliability = 20
+	}
+	
+	// Overall score capped at 100
+	scores.Overall = scores.Responsiveness + scores.FeatureRichness + 
+		scores.CodeCapability + scores.Reliability
+	if scores.Overall > 100 {
+		scores.Overall = 100
+	}
+	
+	return scores
+}
+
+// hideApiKey returns a masked version of the API key for logging
+func (vr *VerificationRunner) hideApiKey(apiKey string) string {
+	if len(apiKey) < 8 {
+		return "***"
+	}
+	return apiKey[:4] + "***" + apiKey[len(apiKey)-4:]
 }
