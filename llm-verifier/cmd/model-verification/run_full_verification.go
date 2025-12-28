@@ -930,3 +930,66 @@ func (vr *VerificationRunner) hideApiKey(apiKey string) string {
 	}
 	return apiKey[:4] + "***" + apiKey[len(apiKey)-4:]
 }
+
+// fetchModelsFromProvider dynamically fetches models from provider's API
+func (vr *VerificationRunner) fetchModelsFromProvider(providerName, apiKey string) ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	
+	endpoint := vr.getProviderEndpoint(providerName)
+	modelsURL := fmt.Sprintf("%s/models", endpoint)
+	
+	log.Printf("    Fetching models from %s", modelsURL)
+	
+	req, err := http.NewRequestWithContext(ctx, "GET", modelsURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+	req.Header.Set("Content-Type", "application/json")
+	
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch models: %w", err)
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("API returned HTTP %d", resp.StatusCode)
+	}
+	
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+	
+	var result struct {
+		Data []struct {
+			ID      string `json:"id"`
+			Object  string `json:"object"`
+			OwnedBy string `json:"owned_by"`
+		} `json:"data"`
+	}
+	
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+	
+	// Extract model IDs
+	var models []string
+	for _, model := range result.Data {
+		if model.ID != "" {
+			models = append(models, model.ID)
+		}
+	}
+	
+	if len(models) == 0 {
+		log.Printf("    Warning: No models found for %s", providerName)
+		return []string{"default-model"}, nil
+	}
+	
+	log.Printf("    Found %d models", len(models))
+	return models, nil
+}
