@@ -1049,6 +1049,7 @@ func (d *Database) GetLatestVerificationResults(modelIDs []int64) ([]*Verificati
 			&result.SupportsVideoGeneration,
 			&result.SupportsMCPs,
 			&result.SupportsLSPs,
+			&result.SupportsACPs,
 			&result.SupportsMultimodal,
 			&result.SupportsStreaming,
 			&result.SupportsJSONMode,

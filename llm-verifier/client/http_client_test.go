@@ -88,13 +88,13 @@ func TestGetModelEndpoint(t *testing.T) {
 		{"google", "gemini-pro", "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"},
 		{"cohere", "command", "https://api.cohere.ai/v1/generate"},
 		{"openrouter", "gpt-4", "https://openrouter.ai/api/v1/chat/completions"},
-		{"deepseek", "deepseek-chat", "https://api.deepseek.com/chat/completions"},
+		{"deepseek", "deepseek-chat", "https://api.deepseek.com/v1/chat/completions"},
 		{"groq", "llama2-70b", "https://api.groq.com/openai/v1/chat/completions"},
 		{"togetherai", "llama-2-70b", "https://api.together.xyz/v1/chat/completions"},
-		{"fireworks", "llama-v2-7b", "https://api.fireworks.ai/inference/v1/chat/completions"},
+		{"fireworks", "llama-v2-7b", "https://api.fireworks.ai/v1/chat/completions"},
 		{"poe", "GPT-4", "https://api.poe.com/v1/chat/completions"},
 		{"navigator", "mistral-small-3.1", "https://api.ai.it.ufl.edu/v1/chat/completions"},
-		{"replicate", "llama-2-70b", "https://api.replicate.com/v1"},
+		{"replicate", "llama-2-70b", "https://api.replicate.com/v1/predictions"},
 		{"unknown", "model", ""},
 	}
 
@@ -120,10 +120,10 @@ func TestGetProviderEndpoint(t *testing.T) {
 		{"deepseek", "https://api.deepseek.com/v1/models"},
 		{"groq", "https://api.groq.com/openai/v1/models"},
 		{"togetherai", "https://api.together.xyz/v1/models"},
-		{"fireworks", "https://api.fireworks.ai/inference/v1/models"},
+		{"fireworks", "https://api.fireworks.ai/v1/models"},
 		{"poe", "https://api.poe.com/v1/models"},
 		{"navigator", "https://api.ai.it.ufl.edu/v1/models"},
-		{"replicate", "https://api.replicate.com/v1"},
+		{"replicate", "https://api.replicate.com/v1/models"},
 		{"unknown", ""},
 	}
 
