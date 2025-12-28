@@ -141,7 +141,10 @@ func generateUltimateOpenCode(allModels map[string][]providers.Model, service *p
 				"id":             model.ID,
 				"name":           model.Name,
 				"display_name":   displayName,
-				"provider":       model.ProviderID,
+				"provider":       map[string]interface{}{
+					"id":  model.ProviderID,
+					"npm": fmt.Sprintf("@openrouter/%s-provider", model.ProviderID),
+				},
 				"max_tokens":     model.MaxTokens,
 				"supports_http3": model.SupportsHTTP3,
 			}
