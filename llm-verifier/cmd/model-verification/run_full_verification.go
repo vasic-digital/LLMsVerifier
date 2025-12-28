@@ -297,7 +297,23 @@ func (vr *VerificationRunner) VerifyAllProviders() error {
 			}
 		}
 		
-		// Verify each model
+		// Store models in database BEFORE verification
+		log.Printf("  Storing %d models in database...", len(info.models))
+		for _, modelID := range info.models {
+			// First, store the model in database (regardless of verification outcome)
+			model := &database.Model{
+				ProviderID:         provider.ID,
+				ModelID:            modelID,
+				Name:               modelID,
+				VerificationStatus: "pending",
+			}
+			err := vr.db.CreateModel(model)
+			if err != nil {
+				log.Printf("  Warning: Failed to store model %s: %v", modelID, err)
+			}
+		}
+		
+		// Now verify each model
 		for _, modelID := range info.models {
 			modelResult := vr.verifyModel(provider.ID, providerName, modelID, info.apiKey)
 			providerResult.Models = append(providerResult.Models, modelResult)
@@ -329,16 +345,22 @@ func (vr *VerificationRunner) VerifyAllProviders() error {
 	return nil
 }
 
-func (vr *VerificationRunner) verifyModel(providerID int64, providerName, modelID, apiKey string) ModelVerification {
+func (vr *VerificationRunner) verifyModel(providerID int64, providerName, modelID, apiKey string) (result ModelVerification) {
 	log.Printf("  Verifying model: %s", modelID)
 	
-	result := ModelVerification{
+	result = ModelVerification{
 		ModelID:      modelID,
 		Name:         modelID,
 		Features:     ModelFeatures{},
 		Scores:       ModelScores{},
 		LastVerified: time.Now(),
 	}
+	
+	// Always store verification result at the end, even if it fails
+	defer func() {
+		log.Printf("    Storing verification results for %s...", modelID)
+		vr.storeModelVerification(providerID, modelID, result)
+	}()
 	
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -386,14 +408,8 @@ func (vr *VerificationRunner) verifyModel(providerID int64, providerName, modelI
 	}
 	
 	result.Verified = true
-	
-	// Store in database
-	log.Printf("    Storing verification results...")
-	vr.storeModelVerification(providerID, modelID, result)
-	
 	return result
 }
-
 func (vr *VerificationRunner) detectFeatures(ctx context.Context, providerName, modelID, apiKey string) ModelFeatures {
 	features := ModelFeatures{}
 	
