@@ -180,13 +180,81 @@ dev/
 # Challenge results (may contain API keys)
 results/
 
-# API keys and credentials
-*api_key*
-*apikey*
-*api-key*
-opencode.json
-crush.json
+# ========================================================================
+# CRITICAL SECURITY: API Keys and Sensitive Configuration Files
+# ========================================================================
+# These files contain embedded API keys and must NEVER be committed
+# ========================================================================
 
-# Config exports with keys
+# API keys and credentials patterns
+**/*api_key*
+**/*apikey*
+**/*api-key*
+**/*apikey*
+**/*api_key*
+**/*secret*
+**/*credential*
+**/*token*
+
+# Specific OpenCode configuration files (contain embedded API keys)
+opencode.json
+opencode_full.json
+opencode_with_keys.json
+opencode_*_with_keys.json
+**/*opencode*keys*.json
+llm-verifier-opencode-*.json
+
+# Crush configuration (may contain keys)
+crush.json
+crush_export.json
+crush_*_export.json
+
+# Export directories (may contain keys)
+exports/
+export/
+bulk_exports/
+config_exports/
+
+# User Downloads directory (common export location)
 Downloads/opencode*.json
 Downloads/llm_verifier*with_keys*.json
+Downloads/*_api_keys.json
+Downloads/*secrets*.json
+
+# Local configuration backups
+*.local.json
+*.local.yaml
+*.local.yml
+*.backup.json
+*.bak
+
+# Temporary credential files
+*credentials*.json
+*secrets*.json
+*keys*.json
+.env.credentials
+credentials.env
+
+# Challenge result exports with keys
+temp_challenge_results/"
+challenges/**/opencode*.json
+challenges/**/crush*.json
+challenges/**/llm-verifier*.json
+
+# Automated export directories
+daily_exports/
+weekly_exports/
+monthly_exports/
+auto_exports/
+
+# User home directory pattern backups
+~/.opencode/*.json
+~/.llm-verifier/*.json
+
+# IDE-specific credential caches (VSCode, JetBrains, etc)
+.vscode/llm-verifier-*.json
+.idea/llm-verifier-*.json
+
+# ========================================================================
+# END SECURITY SECTION
+# ========================================================================
