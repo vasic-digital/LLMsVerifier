@@ -203,6 +203,86 @@ func (pr *ProviderRegistry) registerDefaultProviders() {
 		},
 	}
 
+
+	// Groq configuration (NEW: High-performance inference, free tier)
+	pr.providers["groq"] = &ProviderConfig{
+		Name:            "groq",
+		Endpoint:        "https://api.groq.com/openai/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "llama3-8b-8192",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 30,
+			RequestsPerHour:   1000,
+			BurstLimit:        5,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 60 * time.Second,
+			StreamTimeout:  300 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"max_context_length": 8192,
+			"supported_models": []string{
+				"llama3-8b-8192",
+				"llama3-70b-8192",
+				"mixtral-8x7b-32768",
+				"gemma-7b-it",
+				"gemma2-9b-it",
+			},
+		},
+	}
+
+	// Together AI configuration (NEW: Free trial, 50+ models)
+	pr.providers["togetherai"] = &ProviderConfig{
+		Name:            "togetherai",
+		Endpoint:        "https://api.together.xyz/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "meta-llama/Llama-3-8b-chat-hf",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 60,
+			RequestsPerHour:   1000,
+			BurstLimit:        10,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 60 * time.Second,
+			StreamTimeout:  300 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"max_context_length": 4096,
+			"supported_models": []string{
+				"meta-llama/Llama-3-8b-chat-hf",
+				"meta-llama/Llama-3-70b-chat-hf",
+				"codellama/CodeLlama-34b-Instruct-hf",
+				"Qwen/Qwen1.5-72B-Chat",
+				"microsoft/WizardLM-2-8x22B",
+			},
+		},
+	}
 	// Generic configuration for unknown providers
 	pr.providers["generic"] = &ProviderConfig{
 		Name:            "generic",
