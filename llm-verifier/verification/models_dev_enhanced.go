@@ -114,12 +114,12 @@ func (c *EnhancedModelsDevClient) fetchProviders(ctx context.Context, forceFresh
 	// Check cache only if enabled and not forced fresh
 	if c.cacheEnabled && !forceFresh && c.cachedData != nil {
 		if time.Since(c.lastFetchTime) < 5*time.Minute {
-			c.logger.Info("Using cached models.dev data")
+			c.logger.Info("Using cached models.dev data", nil)
 			return *c.cachedData, nil
 		}
 	}
 
-	c.logger.Info("Fetching fresh data from models.dev API")
+	c.logger.Info("Fetching fresh data from models.dev API", nil)
 
 	// Create request with no-cache headers
 	req, err := http.NewRequestWithContext(ctx, "GET", c.baseURL+"/api.json", nil)
@@ -164,7 +164,7 @@ func (c *EnhancedModelsDevClient) fetchProviders(ctx context.Context, forceFresh
 		c.lastFetchTime = time.Now()
 	}
 
-	c.logger.Infof("Successfully fetched %d providers from models.dev", len(response))
+	c.logger.Info(fmt.Sprintf("Successfully fetched %d providers from models.dev", len(response)), nil)
 	return response, nil
 }
 
@@ -363,7 +363,7 @@ func (c *EnhancedModelsDevClient) GetModelsByProviderID(ctx context.Context, pro
 func (c *EnhancedModelsDevClient) GetProvidersByNPM(ctx context.Context, npmPackage string) []ProviderData {
 	providers, err := c.FetchAllProviders(ctx)
 	if err != nil {
-		c.logger.Errorf("Failed to fetch providers: %v", err)
+		c.logger.Error(fmt.Sprintf("Failed to fetch providers: %v", err), nil)
 		return nil
 	}
 

@@ -245,8 +245,8 @@ func TestModelCRUD(t *testing.T) {
 }
 
 // TestVerificationResultCRUD tests verification result CRUD operations
-func TestVerificationResultCRUD_skip(t *testing.T) {
-	t.Skip("Test disabled - database schema mismatch needs investigation")
+func TestVerificationResultCRUD(t *testing.T) {
+	// Test re-enabled after database column mismatch fix
 
 	db := setupTestDatabase(t)
 	defer cleanupTestDatabase(t, db)
