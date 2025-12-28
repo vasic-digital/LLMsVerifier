@@ -183,8 +183,11 @@ func (cl *ConfigLoader) LoadFromFile(path string) (*Config, error) {
 		return nil, err
 	}
 	
+	// Strip JSONC comments before parsing
+	cleanContent := stripJSONCComments(string(data))
+	
 	var config Config
-	if err := json.Unmarshal(data, &config); err != nil {
+	if err := json.Unmarshal([]byte(cleanContent), &config); err != nil {
 		return nil, err
 	}
 	

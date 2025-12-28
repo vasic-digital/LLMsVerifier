@@ -255,6 +255,11 @@ func LoadAndParse(path string) (*Config, error) {
 	return loader.LoadFromFile(path)
 }
 
+// LoadAndParseResolved loads and parses a configuration file with environment variable resolution
+func LoadAndParseResolved(path string, strict bool) (*Config, error) {
+	return LoadAndResolveConfig(path, strict)
+}
+
 // SaveConfig saves a configuration to a file in JSON format
 func SaveConfig(config *Config, path string) error {
 	loader := ConfigLoader{}
