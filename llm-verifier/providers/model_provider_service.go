@@ -598,3 +598,8 @@ func (mps *ModelProviderService) RefreshCache() error {
 	return err
 }
 
+
+// GetAllProviders returns all registered providers
+func (mps *ModelProviderService) GetAllProviders() map[string]*ProviderClient {
+	return mps.providerClients
+}
