@@ -1,117 +1,142 @@
 {
-  "fireworksai": {
-    "models_endpoint": "https://api.fireworks.ai/v1/models",
-    "chat_endpoint": "https://api.fireworks.ai/v1/chat/completions",
-    "docs_url": "https://docs.fireworks.ai/api-reference/introduction"
-  },
-  "chutes": {
-    "models_endpoint": "https://api.chutes.ai/v1/models",
-    "chat_endpoint": "https://api.chutes.ai/v1/chat/completions",
-    "docs_url": "https://docs.chutes.ai/"
-  },
-  "siliconflow": {
-    "models_endpoint": "https://api.siliconflow.cn/v1/models",
-    "chat_endpoint": "https://api.siliconflow.cn/v1/chat/completions",
-    "docs_url": "https://docs.siliconflow.cn/"
-  },
-  "kimi": {
-    "models_endpoint": "https://api.moonshot.cn/v1/models",
-    "chat_endpoint": "https://api.moonshot.cn/v1/chat/completions",
-    "docs_url": "https://platform.moonshot.cn/docs"
-  },
-  "moonshot": {
-    "models_endpoint": "https://api.moonshot.cn/v1/models",
-    "chat_endpoint": "https://api.moonshot.cn/v1/chat/completions",
-    "docs_url": "https://platform.moonshot.cn/docs"
-  },
-  "gemini": {
-    "models_endpoint": "https://generativelanguage.googleapis.com/v1beta/models",
-    "chat_endpoint": "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-    "docs_url": "https://ai.google.dev/gemini-api/docs"
-  },
-  "hyperbolic": {
-    "models_endpoint": "https://api.hyperbolic.xyz/v1/models",
-    "chat_endpoint": "https://api.hyperbolic.xyz/v1/chat/completions",
-    "docs_url": "https://docs.hyperbolic.xyz/"
-  },
-  "baseten": {
-    "models_endpoint": "https://api.baseten.co/v1/models",
-    "chat_endpoint": "https://api.baseten.co/v1/chat/completions",
-    "docs_url": "https://docs.baseten.co/"
-  },
-  "novita": {
-    "models_endpoint": "https://api.novita.ai/v1/models",
-    "chat_endpoint": "https://api.novita.ai/v1/chat/completions",
-    "docs_url": "https://docs.novita.ai/"
-  },
-  "upstage": {
-    "models_endpoint": "https://api.upstage.ai/v1/models",
-    "chat_endpoint": "https://api.upstage.ai/v1/chat/completions",
-    "docs_url": "https://developers.upstage.ai/docs"
-  },
-  "inference": {
-    "models_endpoint": "https://api.inference.net/v1/models",
-    "chat_endpoint": "https://api.inference.net/v1/chat/completions",
-    "docs_url": "https://docs.inference.net/"
-  },
-  "replicate": {
-    "models_endpoint": "https://api.replicate.com/v1/models",
-    "chat_endpoint": "https://api.replicate.com/v1/predictions",
-    "docs_url": "https://replicate.com/docs/reference/http"
-  },
-  "nvidia": {
-    "models_endpoint": "https://integrate.api.nvidia.com/v1/models",
-    "chat_endpoint": "https://integrate.api.nvidia.com/v1/chat/completions",
-    "docs_url": "https://docs.api.nvidia.com/nim/reference/"
-  },
-  "cerebras": {
-    "models_endpoint": "https://api.cerebras.ai/v1/models",
-    "chat_endpoint": "https://api.cerebras.ai/v1/chat/completions",
-    "docs_url": "https://docs.cerebras.ai/"
-  },
-  "cloudflare": {
-    "models_endpoint": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/models",
-    "chat_endpoint": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/{model_name}",
-    "docs_url": "https://developers.cloudflare.com/workers-ai/"
-  },
-  "codestral": {
-    "models_endpoint": "https://api.mistral.ai/v1/models",
-    "chat_endpoint": "https://api.mistral.ai/v1/chat/completions",
-    "docs_url": "https://docs.mistral.ai/"
-  },
-  "mistralaistudio": {
-    "models_endpoint": "https://api.mistral.ai/v1/models",
-    "chat_endpoint": "https://api.mistral.ai/v1/chat/completions",
-    "docs_url": "https://docs.mistral.ai/"
-  },
-  "zai": {
-    "models_endpoint": "https://api.z.ai/v1/models",
-    "chat_endpoint": "https://api.z.ai/v1/chat/completions",
-    "docs_url": "https://docs.z.ai/"
-  },
-  "nebius": {
-    "models_endpoint": "https://api.nebius.ai/v1/models",
-    "chat_endpoint": "https://api.nebius.ai/v1/chat/completions",
-    "docs_url": "https://docs.nebius.ai/"
-  },
-  "modal": {
-    "models_endpoint": "https://api.modal.com/v1/models",
-    "chat_endpoint": "https://api.modal.com/v1/chat/completions",
-    "docs_url": "https://modal.com/docs"
-  },
-  "sambanova": {
-    "models_endpoint": "https://api.sambanova.ai/v1/models",
-    "chat_endpoint": "https://api.sambanova.ai/v1/chat/completions",
-    "docs_url": "https://docs.sambanova.ai/"
-  },
-  "nlpcloud": {
-    "models_endpoint": "https://api.nlpcloud.com/v1/models",
-    "chat_endpoint": "https://api.nlpcloud.com/v1/gpu/{model}/{endpoint}",
-    "docs_url": "https://docs.nlpcloud.com/"
-  },
-  "vercelai": {
-    "models_endpoint": "https://api.vercel.ai/v1/models",
-    "chat_endpoint": "https://api.vercel.ai/v1/chat/completions",
-    "docs_url": "https://vercel.com/docs/ai"
-  }
+    "fireworksai": {
+        "models_endpoint": "https://api.fireworks.ai/v1/models",
+        "chat_endpoint": "https://api.fireworks.ai/v1/chat/completions",
+        "docs_url": "https://docs.fireworks.ai/api-reference/introduction"
+    },
+    "chutes": {
+        "models_endpoint": "https://api.chutes.ai/v1/models",
+        "chat_endpoint": "https://api.chutes.ai/v1/chat/completions",
+        "docs_url": "https://docs.chutes.ai/"
+    },
+    "siliconflow": {
+        "models_endpoint": "https://api.siliconflow.cn/v1/models",
+        "chat_endpoint": "https://api.siliconflow.cn/v1/chat/completions",
+        "docs_url": "https://docs.siliconflow.cn/"
+    },
+    "kimi": {
+        "models_endpoint": "https://api.moonshot.cn/v1/models",
+        "chat_endpoint": "https://api.moonshot.cn/v1/chat/completions",
+        "docs_url": "https://platform.moonshot.cn/docs"
+    },
+    "moonshot": {
+        "models_endpoint": "https://api.moonshot.cn/v1/models",
+        "chat_endpoint": "https://api.moonshot.cn/v1/chat/completions",
+        "docs_url": "https://platform.moonshot.cn/docs"
+    },
+    "gemini": {
+        "models_endpoint": "https://generativelanguage.googleapis.com/v1beta/models",
+        "chat_endpoint": "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+        "docs_url": "https://ai.google.dev/gemini-api/docs"
+    },
+    "hyperbolic": {
+        "models_endpoint": "https://api.hyperbolic.xyz/v1/models",
+        "chat_endpoint": "https://api.hyperbolic.xyz/v1/chat/completions",
+        "docs_url": "https://docs.hyperbolic.xyz/"
+    },
+    "baseten": {
+        "models_endpoint": "https://api.baseten.co/v1/models",
+        "chat_endpoint": "https://api.baseten.co/v1/chat/completions",
+        "docs_url": "https://docs.baseten.co/"
+    },
+    "novita": {
+        "models_endpoint": "https://api.novita.ai/v1/models",
+        "chat_endpoint": "https://api.novita.ai/v1/chat/completions",
+        "docs_url": "https://docs.novita.ai/"
+    },
+    "upstage": {
+        "models_endpoint": "https://api.upstage.ai/v1/models",
+        "chat_endpoint": "https://api.upstage.ai/v1/chat/completions",
+        "docs_url": "https://developers.upstage.ai/docs"
+    },
+    "inference": {
+        "models_endpoint": "https://api.inference.net/v1/models",
+        "chat_endpoint": "https://api.inference.net/v1/chat/completions",
+        "docs_url": "https://docs.inference.net/"
+    },
+    "replicate": {
+        "models_endpoint": "https://api.replicate.com/v1/models",
+        "chat_endpoint": "https://api.replicate.com/v1/predictions",
+        "docs_url": "https://replicate.com/docs/reference/http"
+    },
+    "nvidia": {
+        "models_endpoint": "https://integrate.api.nvidia.com/v1/models",
+        "chat_endpoint": "https://integrate.api.nvidia.com/v1/chat/completions",
+        "docs_url": "https://docs.api.nvidia.com/nim/reference/"
+    },
+    "cerebras": {
+        "models_endpoint": "https://api.cerebras.ai/v1/models",
+        "chat_endpoint": "https://api.cerebras.ai/v1/chat/completions",
+        "docs_url": "https://docs.cerebras.ai/"
+    },
+    "cloudflare": {
+        "models_endpoint": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/models",
+        "chat_endpoint": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/{model_name}",
+        "docs_url": "https://developers.cloudflare.com/workers-ai/"
+    },
+    "codestral": {
+        "models_endpoint": "https://api.mistral.ai/v1/models",
+        "chat_endpoint": "https://api.mistral.ai/v1/chat/completions",
+        "docs_url": "https://docs.mistral.ai/"
+    },
+    "mistralaistudio": {
+        "models_endpoint": "https://api.mistral.ai/v1/models",
+        "chat_endpoint": "https://api.mistral.ai/v1/chat/completions",
+        "docs_url": "https://docs.mistral.ai/"
+    },
+    "zai": {
+        "models_endpoint": "https://api.z.ai/v1/models",
+        "chat_endpoint": "https://api.z.ai/v1/chat/completions",
+        "docs_url": "https://docs.z.ai/"
+    },
+    "nebius": {
+        "models_endpoint": "https://api.nebius.ai/v1/models",
+        "chat_endpoint": "https://api.nebius.ai/v1/chat/completions",
+        "docs_url": "https://docs.nebius.ai/"
+    },
+    "modal": {
+        "models_endpoint": "https://api.modal.com/v1/models",
+        "chat_endpoint": "https://api.modal.com/v1/chat/completions",
+        "docs_url": "https://modal.com/docs"
+    },
+    "sambanova": {
+        "models_endpoint": "https://api.sambanova.ai/v1/models",
+        "chat_endpoint": "https://api.sambanova.ai/v1/chat/completions",
+        "docs_url": "https://docs.sambanova.ai/"
+    },
+    "nlpcloud": {
+        "models_endpoint": "https://api.nlpcloud.com/v1/models",
+        "chat_endpoint": "https://api.nlpcloud.com/v1/gpu/{model}/{endpoint}",
+        "docs_url": "https://docs.nlpcloud.com/"
+    },
+    "vercelai": {
+        "models_endpoint": "https://api.vercel.ai/v1/models",
+        "chat_endpoint": "https://api.vercel.ai/v1/chat/completions",
+        "docs_url": "https://vercel.com/docs/ai"
+    },
+    "huggingface": {
+        "models_endpoint": "https://huggingface.co/api/models",
+        "chat_endpoint": "https://api-inference.huggingface.co/models/{model}",
+        "docs_url": "https://huggingface.co/docs/api-inference/en/index"
+    },
+    "openrouter": {
+        "models_endpoint": "https://openrouter.ai/api/v1/models",
+        "chat_endpoint": "https://openrouter.ai/api/v1/chat/completions",
+        "docs_url": "https://openrouter.ai/docs"
+    },
+    "deepseek": {
+        "models_endpoint": "https://api.deepseek.com/v1/models",
+        "chat_endpoint": "https://api.deepseek.com/v1/chat/completions",
+        "docs_url": "https://platform.deepseek.com/docs"
+    },
+    "sarvam": {
+        "models_endpoint": "https://api.sarvam.ai/v1/models",
+        "chat_endpoint": "https://api.sarvam.ai/v1/chat/completions",
+        "docs_url": "https://docs.sarvam.ai/"
+    },
+    "vulavula": {
+        "models_endpoint": "https://api.lelapa.ai/v1/models",
+        "chat_endpoint": "https://api.lelapa.ai/v1/chat/completions",
+        "docs_url": "https://docs.lelapa.ai/"
+    }
 }
