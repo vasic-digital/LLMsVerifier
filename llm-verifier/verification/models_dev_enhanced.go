@@ -54,7 +54,8 @@ type ModelDetails struct {
 	Limits           ModelLimits         `json:"limit"`
 	StructuredOutput bool                `json:"structured_output,omitempty"`
 	Status           string              `json:"status,omitempty"`
-	Interleaved      *InterleavedConfig  `json:"interleaved,omitempty"`
+	ContextOver200k  bool                `json:"context_over_200k,omitempty"`
+	Interleaved      interface{}  `json:"interleaved,omitempty"`
 }
 
 // ModelModalities defines input/output modalities

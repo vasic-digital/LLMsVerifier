@@ -1,12 +1,10 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"llm-verifier/logging"
 	"llm-verifier/providers"
@@ -41,7 +39,6 @@ func main() {
 	totalModels := 0
 
 	for providerID := range allProviders {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		
 		fmt.Printf("  Testing %s... ", providerID)
 		models, err := service.GetModels(providerID)
@@ -52,8 +49,6 @@ func main() {
 			allModels[providerID] = models
 			totalModels += len(models)
 		}
-		
-		cancel()
 	}
 
 	fmt.Println()
