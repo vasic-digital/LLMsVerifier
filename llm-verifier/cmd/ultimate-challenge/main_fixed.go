@@ -41,7 +41,6 @@ func main() {
 	totalModels := 0
 
 	for providerID := range allProviders {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		
 		fmt.Printf("  Testing %s... ", providerID)
 		models, err := service.GetModels(providerID)
