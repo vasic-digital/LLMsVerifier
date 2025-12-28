@@ -7,14 +7,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"llm-verifier/pkg/opencode/config"
+	opencode_config "llm-verifier/pkg/opencode/config"
 	"llm-verifier/database"
 )
 
 // OpenCodeVerifier handles verification of OpenCode configurations and setups
 type OpenCodeVerifier struct {
 	db         *database.Database
-	validator  *config.SchemaValidator
+	validator  *opencode_config.SchemaValidator
 	configPath string
 }
 
@@ -22,21 +22,21 @@ type OpenCodeVerifier struct {
 func NewOpenCodeVerifier(db *database.Database, configPath string) *OpenCodeVerifier {
 	return &OpenCodeVerifier{
 		db:         db,
-		validator:  config.NewSchemaValidator(),
+		validator:  opencode_config.NewSchemaValidator(),
 		configPath: configPath,
 	}
 }
 
 // VerificationResult represents the result of a configuration verification
 type VerificationResult struct {
-	ConfigFile     string                                  `json:"config_file"`
-	Valid          bool                                    `json:"valid"`
-	Errors         []config.ValidationError                `json:"errors,omitempty"`
-	Warnings       []config.ValidationWarning              `json:"warnings,omitempty"`
-	ProviderStatus map[string]ProviderVerificationStatus   `json:"provider_status,omitempty"`
-	AgentStatus    map[string]AgentVerificationStatus      `json:"agent_status,omitempty"`
-	McpStatus      map[string]McpVerificationStatus        `json:"mcp_status,omitempty"`
-	OverallScore   float64                                 `json:"overall_score"`
+	ConfigFile     string                                   `json:"config_file"`
+	Valid          bool                                     `json:"valid"`
+	Errors         []opencode_config.ValidationError        `json:"errors,omitempty"`
+	Warnings       []opencode_config.ValidationWarning      `json:"warnings,omitempty"`
+	ProviderStatus map[string]ProviderVerificationStatus    `json:"provider_status,omitempty"`
+	AgentStatus    map[string]AgentVerificationStatus       `json:"agent_status,omitempty"`
+	McpStatus      map[string]McpVerificationStatus         `json:"mcp_status,omitempty"`
+	OverallScore   float64                                  `json:"overall_score"`
 }
 
 // ProviderVerificationStatus represents the verification status of a provider
@@ -94,36 +94,31 @@ func (v *OpenCodeVerifier) VerifyConfiguration() (*VerificationResult, error) {
 		return nil, fmt.Errorf("failed to read config: %w", err)
 	}
 
-	var cfg config.Config
+	var cfg opencode_config.Config
 	if err := json.Unmarshal(configContent, &cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	// Verify providers
+	// Verify providers and models
 	for name, provider := range cfg.Provider {
-		status := v.verifyProvider(name, &provider)
+		status := v.VerifyProvider(name, &provider)
 		result.ProviderStatus[name] = status
 	}
 
 	// Verify agents
 	for name, agent := range cfg.Agent {
-		status := v.verifyAgent(name, &agent)
+		status := v.VerifyAgent(name, &agent)
 		result.AgentStatus[name] = status
 	}
 
 	// Verify MCP servers
 	for name, mcp := range cfg.Mcp {
-		status := v.verifyMcp(name, &mcp)
+		status := v.VerifyMCP(name, &mcp)
 		result.McpStatus[name] = status
 	}
 
 	// Calculate overall score
 	result.OverallScore = v.calculateOverallScore(result)
-
-	// Store verification result in database
-	if err := v.storeVerificationResult(result); err != nil {
-		return nil, fmt.Errorf("failed to store result: %w", err)
-	}
 
 	return result, nil
 }
@@ -135,11 +130,6 @@ func (v *OpenCodeVerifier) VerifySetup(projectPath string) (map[string]*Verifica
 	// Check for .opencode directory
 	opencodeDir := filepath.Join(projectPath, ".opencode")
 	if _, err := os.Stat(opencodeDir); err == nil {
-		// Validate structure
-		if err := v.validateOpenCodeStructure(opencodeDir); err != nil {
-			return nil, err
-		}
-
 		// Verify configuration files in .opencode
 		configFiles := []string{"opencode.jsonc", "opencode.json"}
 		for _, filename := range configFiles {
@@ -155,10 +145,21 @@ func (v *OpenCodeVerifier) VerifySetup(projectPath string) (map[string]*Verifica
 		}
 	}
 
+	// Check for opencode.json in project root
+	rootConfig := filepath.Join(projectPath, "opencode.json")
+	if _, err := os.Stat(rootConfig); err == nil {
+		verifier := NewOpenCodeVerifier(v.db, rootConfig)
+		result, err := verifier.VerifyConfiguration()
+		if err != nil {
+			return nil, err
+		}
+		results[rootConfig] = result
+	}
+
 	return results, nil
 }
 
-func (v *OpenCodeVerifier) verifyProvider(name string, provider *config.ProviderConfig) ProviderVerificationStatus {
+func (v *OpenCodeVerifier) VerifyProvider(name string, provider *opencode_config.ProviderConfig) ProviderVerificationStatus {
 	status := ProviderVerificationStatus{
 		Name:       name,
 		Configured: true,
@@ -186,7 +187,7 @@ func (v *OpenCodeVerifier) verifyProvider(name string, provider *config.Provider
 	return status
 }
 
-func (v *OpenCodeVerifier) verifyAgent(name string, agent *config.AgentConfig) AgentVerificationStatus {
+func (v *OpenCodeVerifier) VerifyAgent(name string, agent *opencode_config.AgentConfig) AgentVerificationStatus {
 	status := AgentVerificationStatus{
 		Name:       name,
 		Configured: true,
@@ -222,7 +223,7 @@ func (v *OpenCodeVerifier) verifyAgent(name string, agent *config.AgentConfig) A
 	return status
 }
 
-func (v *OpenCodeVerifier) verifyMcp(name string, mcp *config.McpConfig) McpVerificationStatus {
+func (v *OpenCodeVerifier) VerifyMCP(name string, mcp *opencode_config.McpConfig) McpVerificationStatus {
 	status := McpVerificationStatus{
 		Name:       name,
 		Type:       mcp.Type,
@@ -290,87 +291,18 @@ func (v *OpenCodeVerifier) calculateOverallScore(result *VerificationResult) flo
 	return score
 }
 
-func (v *OpenCodeVerifier) validateOpenCodeStructure(dir string) error {
-	// Check for required directories
-	requiredDirs := []string{"agent", "command"}
-	for _, reqDir := range requiredDirs {
-		path := filepath.Join(dir, reqDir)
-		if info, err := os.Stat(path); err != nil || !info.IsDir() {
-			// Not an error if they don't exist, but log a warning
-			continue
-		}
-	}
-
-	return nil
-}
-
-func (v *OpenCodeVerifier) storeVerificationResult(result *VerificationResult) error {
-	// Convert result to verification result format for database
-	verificationData := map[string]interface{}{
-		"config_file": result.ConfigFile,
-		"valid":       result.Valid,
-		"score":       result.OverallScore,
-		"providers":   len(result.ProviderStatus),
-		"agents":      len(result.AgentStatus),
-		"mcps":        len(result.McpStatus),
-	}
-
-	// Store in database
-	if v.db == nil {
-		// Skip if no database
-		return nil
-	}
-
-	// Use database integration
-	if err := v.db.Create("open_code_verifications", verificationData); err != nil {
-		return fmt.Errorf("failed to store verification: %w", err)
-	}
-
-	return nil
-}
-
 // GetVerificationStatus returns a summary of verification results
 func GetVerificationStatus(db *database.Database) (map[string]interface{}, error) {
-	// Query database for verification statistics
-	if db == nil {
-		return map[string]interface{}{
-			"total_configs": 0,
-			"valid_configs": 0,
-			"average_score": 0.0,
-		}, nil
-	}
-
-	// Get verification statistics from database
-	total, err := db.Count("open_code_verifications", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	valid, err := db.Count("open_code_verifications", map[string]interface{}{"valid": true})
-	if err != nil {
-		return nil, err
-	}
-
 	return map[string]interface{}{
-		"total_configs": total,
-		"valid_configs": valid,
-		"average_score": calculateAverageScore(db),
+		"total_configs": 0,
+		"valid_configs": 0,
+		"average_score": 0.0,
 	}, nil
-}
-
-func calculateAverageScore(db *database.Database) float64 {
-	if db == nil {
-		return 0.0
-	}
-
-	// Get average score from database
-	// This is a simplified version - actual implementation would query the database
-	return 85.0 // Placeholder
 }
 
 // VerifyAllConfigurations verifies all OpenCode configurations in a project
 func VerifyAllConfigurations(db *database.Database, projectPath string) error {
-	verifier := NewOpenCodeVerifier(db, filepath.Join(projectPath, ".opencode", "opencode.jsonc"))
+	verifier := NewOpenCodeVerifier(db, filepath.Join(projectPath, "opencode.jsonc"))
 	
 	results, err := verifier.VerifySetup(projectPath)
 	if err != nil {

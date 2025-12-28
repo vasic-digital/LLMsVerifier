@@ -102,20 +102,20 @@ func (v *CrushVerifier) VerifyConfiguration() (*VerificationResult, error) {
 
 	// Verify providers and models
 	for name, provider := range cfg.Providers {
-		status := v.verifyProvider(name, &provider)
+		status := v.VerifyProvider(name, &provider)
 		result.ProviderStatus[name] = status
 		
 		// Verify models for this provider
 		result.ModelStatus[name] = make(map[string]ModelVerificationStatus)
 		for _, model := range provider.Models {
-			modelStatus := v.verifyModel(&model)
+			modelStatus := v.VerifyModel(&model)
 			result.ModelStatus[name][model.ID] = modelStatus
 		}
 	}
 
 	// Verify LSP servers
 	for name, lsp := range cfg.Lsp {
-		status := v.verifyLSP(name, &lsp)
+		status := v.VerifyLSP(name, &lsp)
 		result.LspStatus[name] = status
 	}
 
@@ -161,7 +161,7 @@ func (v *CrushVerifier) VerifySetup(projectPath string) (map[string]*Verificatio
 	return results, nil
 }
 
-func (v *CrushVerifier) verifyProvider(name string, provider *crush_config.Provider) ProviderVerificationStatus {
+func (v *CrushVerifier) VerifyProvider(name string, provider *crush_config.Provider) ProviderVerificationStatus {
 	status := ProviderVerificationStatus{
 		Name:       name,
 		Type:       provider.Type,
@@ -193,7 +193,7 @@ func (v *CrushVerifier) verifyProvider(name string, provider *crush_config.Provi
 	return status
 }
 
-func (v *CrushVerifier) verifyModel(model *crush_config.Model) ModelVerificationStatus {
+func (v *CrushVerifier) VerifyModel(model *crush_config.Model) ModelVerificationStatus {
 	status := ModelVerificationStatus{
 		ID:          model.ID,
 		Name:        model.Name,
@@ -230,7 +230,7 @@ func (v *CrushVerifier) verifyModel(model *crush_config.Model) ModelVerification
 	return status
 }
 
-func (v *CrushVerifier) verifyLSP(name string, lsp *crush_config.LspConfig) LspVerificationStatus {
+func (v *CrushVerifier) VerifyLSP(name string, lsp *crush_config.LspConfig) LspVerificationStatus {
 	status := LspVerificationStatus{
 		Name:       name,
 		Command:    lsp.Command,

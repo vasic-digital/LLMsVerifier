@@ -127,3 +127,23 @@ test_*.*
 *_export.*
 bulk_exports/
 bulk_exportsdefault/
+# Additional security exclusions
+.env.backup
+.env.cloud
+.env.deploy
+.env.override
+.env.private
+*.env
+*.secret
+*.key
+*.pem
+*.p12
+*.pfx
+
+# OS-specific security files
+*id_rsa*
+*id_dsa*
+*id_ecdsa*
+*id_ed25519*
+*.gnupg/
+*.ssh/
