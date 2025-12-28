@@ -1,7 +1,7 @@
-concurrency: 5
+concurrency: 32
 database:
   encryption_key: ''
-  path: ./llm-verifier-29-providers.db
+  path: ./llm-verifier-32-providers.db
 global:
   base_url: https://api.openai.com/v1
   max_retries: 3
@@ -210,4 +210,25 @@ llms:
     tool_calling: false
   model: ''
   name: TwelveLabs Provider
-timeout: 90s
+- api_key: ${SARVAM_API_KEY}
+  endpoint: https://api.sarvam.ai/v1
+  features:
+    embeddings: false
+    tool_calling: true
+  model: ''
+  name: Sarvam AI India Provider
+- api_key: ${VULAVULA_API_KEY}
+  endpoint: https://api.vulavula.com/v1
+  features:
+    embeddings: false
+    tool_calling: true
+  model: ''
+  name: Vulavula Provider
+- api_key: ${VERCEL_API_KEY}
+  endpoint: https://api.vercel.com/v1
+  features:
+    embeddings: false
+    tool_calling: true
+  model: ''
+  name: Vercel AI Gateway Provider
+timeout: 120s
