@@ -1,0 +1,3 @@
+Providers tested:
+0 providers configured
+Initiating provider discovery tests...
