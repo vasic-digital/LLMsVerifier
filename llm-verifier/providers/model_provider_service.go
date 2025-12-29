@@ -201,7 +201,7 @@ func (mps *ModelProviderService) GetModels(providerID string) ([]Model, error) {
 	// Tier 2: Try provider API if no config models
 	if len(models) == 0 {
 		mps.logger.Debug("Tier 2: Checking provider API", nil)
-		if apiModels, err := mps.fetchFromProviderAPI(providerID); err == nil && len(apiModels) > 0 {
+		if apiModels, err := mps.fetchFromProviderAPIEnhanced(providerID); err == nil && len(apiModels) > 0 {
 			models = apiModels
 			source = "api"
 			mps.logger.Info(fmt.Sprintf("Fetched %d models from provider API", len(models)), nil)
@@ -602,4 +602,177 @@ func (mps *ModelProviderService) RefreshCache() error {
 // GetAllProviders returns all registered providers
 func (mps *ModelProviderService) GetAllProviders() map[string]*ProviderClient {
 	return mps.providerClients
+}
+
+// Enhanced fetchFromProviderAPI that uses provider-specific adapters
+func (mps *ModelProviderService) fetchFromProviderAPIEnhanced(providerID string) ([]Model, error) {
+	client, exists := mps.providerClients[providerID]
+	if !exists {
+		return nil, fmt.Errorf("provider %s not registered", providerID)
+	}
+	
+	if client.APIKey == "" {
+		return nil, fmt.Errorf("no API key for provider %s", providerID)
+	}
+	
+	// Create provider-specific adapter based on provider ID
+	var models []Model
+	var err error
+	
+	switch providerID {
+	case "openai":
+		adapter := NewOpenAIAdapter(client.HTTPClient, client.BaseURL, client.APIKey)
+		models, err = mps.fetchModelsFromAdapter(adapter, providerID)
+	case "anthropic":
+		adapter := NewAnthropicAdapter(client.HTTPClient, client.BaseURL, client.APIKey)
+		models, err = mps.fetchModelsFromAdapter(adapter, providerID)
+	case "groq":
+		adapter := NewGroqAdapter(client.HTTPClient, client.BaseURL, client.APIKey)
+		models, err = mps.fetchModelsFromAdapter(adapter, providerID)
+	case "mistral":
+		adapter := NewMistralAdapter(client.HTTPClient, client.BaseURL, client.APIKey)
+		models, err = mps.fetchModelsFromAdapter(adapter, providerID)
+	case "deepseek":
+		adapter := NewDeepSeekAdapter(client.HTTPClient, client.BaseURL, client.APIKey)
+		models, err = mps.fetchModelsFromAdapter(adapter, providerID)
+	case "together":
+		adapter := NewTogetherAIAdapter(client.HTTPClient, client.BaseURL, client.APIKey)
+		models, err = mps.fetchModelsFromAdapter(adapter, providerID)
+	case "replicate":
+		adapter := NewReplicateAdapter(client.HTTPClient, client.BaseURL, client.APIKey)
+		models, err = mps.fetchModelsFromAdapter(adapter, providerID)
+	case "cloudflare":
+		adapter := NewCloudflareAdapter(client.HTTPClient, client.BaseURL, client.APIKey)
+		models, err = mps.fetchModelsFromAdapter(adapter, providerID)
+	case "cerebras":
+		adapter := NewCerebrasAdapter(client.HTTPClient, client.BaseURL, client.APIKey)
+		models, err = mps.fetchModelsFromAdapter(adapter, providerID)
+	case "cohere":
+		adapter := NewCohereAdapter(client.HTTPClient, client.BaseURL, client.APIKey)
+		models, err = mps.fetchModelsFromAdapter(adapter, providerID)
+	case "siliconflow":
+		adapter := NewSiliconFlowAdapter(client.HTTPClient, client.BaseURL, client.APIKey)
+		models, err = mps.fetchModelsFromAdapter(adapter, providerID)
+	case "xai":
+		adapter := NewxAIAdapter(client.HTTPClient, client.BaseURL, client.APIKey)
+		models, err = mps.fetchModelsFromAdapter(adapter, providerID)
+	default:
+		// Fall back to generic OpenAI-compatible approach
+		mps.logger.Debug(fmt.Sprintf("No specific adapter for %s, using generic OpenAI approach", providerID), nil)
+		return mps.fetchFromProviderAPIGeneric(providerID)
+	}
+	
+	if err != nil {
+		return nil, err
+	}
+	
+	return models, nil
+}
+
+// fetchModelsFromAdapter fetches models using a provider-specific adapter
+func (mps *ModelProviderService) fetchModelsFromAdapter(adapter interface{}, providerID string) ([]Model, error) {
+	ctx := context.Background()
+	
+	// Try to call ListModels method on the adapter
+	type ListModelsInterface interface {
+		ListModels(ctx context.Context) (*OpenAIModelsResponse, error)
+	}
+	
+	if listModelsAdapter, ok := adapter.(ListModelsInterface); ok {
+		resp, err := listModelsAdapter.ListModels(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list models for %s: %w", providerID, err)
+		}
+		
+		var models []Model
+		for _, data := range resp.Data {
+			model := Model{
+				ID:           data.ID,
+				Name:         data.ID, // Use ID as name initially
+				ProviderID:   providerID,
+				ProviderName: providerID,
+				Features:     make(map[string]interface{}),
+			}
+			
+			// Enhance model info from models.dev
+			if matches, err := mps.modelsDevClient.FindModel(context.Background(), data.ID); err == nil && len(matches) > 0 {
+				model = mps.enhanceFromModelsDevMatch(model, &matches[0])
+			}
+			
+			models = append(models, model)
+		}
+		
+		mps.logger.Info(fmt.Sprintf("Fetched %d models from %s API", len(models), providerID), nil)
+		return models, nil
+	}
+	
+	return nil, fmt.Errorf("adapter for %s does not support ListModels", providerID)
+}
+
+// fetchFromProviderAPIGeneric uses the original generic approach for providers without specific adapters
+func (mps *ModelProviderService) fetchFromProviderAPIGeneric(providerID string) ([]Model, error) {
+	client, exists := mps.providerClients[providerID]
+	if !exists {
+		return nil, fmt.Errorf("provider %s not registered", providerID)
+	}
+	
+	if client.APIKey == "" {
+		return nil, fmt.Errorf("no API key for provider %s", providerID)
+	}
+	
+	// Call /v1/models endpoint (OpenAI-compatible)
+	url := fmt.Sprintf("%s/models", client.BaseURL)
+	
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", client.APIKey))
+	req.Header.Set("Content-Type", "application/json")
+	
+	resp, err := client.HTTPClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
+		// Don't treat this as a fatal error - many providers don't support /v1/models
+		mps.logger.Debug(fmt.Sprintf("Provider %s returned status %d from /models endpoint", providerID, resp.StatusCode), nil)
+		return []Model{}, nil
+	}
+	
+	var apiResponse struct {
+		Data []struct {
+			ID      string `json:"id"`
+			Created int64  `json:"created"`
+			OwnedBy string `json:"owned_by"`
+		} `json:"data"`
+	}
+	
+	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
+		mps.logger.Debug(fmt.Sprintf("Failed to decode response from %s: %v", providerID, err), nil)
+		return []Model{}, nil
+	}
+	
+	var models []Model
+	for _, data := range apiResponse.Data {
+		model := Model{
+			ID:           data.ID,
+			Name:         data.ID, // Use ID as name initially
+			ProviderID:   providerID,
+			ProviderName: providerID,
+			Features:     make(map[string]interface{}),
+		}
+		
+		// Enhance model info from models.dev
+		if matches, err := mps.modelsDevClient.FindModel(context.Background(), data.ID); err == nil && len(matches) > 0 {
+			model = mps.enhanceFromModelsDevMatch(model, &matches[0])
+		}
+		
+		models = append(models, model)
+	}
+	
+	return models, nil
 }

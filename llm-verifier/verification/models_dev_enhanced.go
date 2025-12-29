@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -54,8 +55,8 @@ type ModelDetails struct {
 	Limits           ModelLimits         `json:"limit"`
 	StructuredOutput bool                `json:"structured_output,omitempty"`
 	Status           string              `json:"status,omitempty"`
-	ContextOver200k  bool                `json:"context_over_200k,omitempty"`
-	Interleaved      interface{}  `json:"interleaved,omitempty"`
+	ContextOver200k  interface{}         `json:"context_over_200k,omitempty"`
+	Interleaved      interface{}         `json:"interleaved,omitempty"`
 }
 
 // ModelModalities defines input/output modalities
@@ -145,11 +146,17 @@ func (c *EnhancedModelsDevClient) fetchProviders(ctx context.Context, forceFresh
 		return nil, fmt.Errorf("models.dev API returned status %d", resp.StatusCode)
 	}
 
-	var response ModelsDevEnhancedResponse
-	decoder := json.NewDecoder(resp.Body)
-	decoder.DisallowUnknownFields() // Strict parsing
+	// Read response body first
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
 
-	if err := decoder.Decode(&response); err != nil {
+	c.logger.Info(fmt.Sprintf("Fetched %d bytes from models.dev API", len(body)), nil)
+
+	// Try to parse with JSON unmarshaling (allows unknown fields by default)
+	var response ModelsDevEnhancedResponse
+	if err := json.Unmarshal(body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
