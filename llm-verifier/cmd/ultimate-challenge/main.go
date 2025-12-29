@@ -82,38 +82,40 @@ func main() {
 
 			fmt.Printf("🔍 Processing provider: %s\n", pid)
 
-			// Try verification with very short timeout
-			done := make(chan bool, 1)
-			var verifiedModels []providers.Model
+			// Check if provider has API key for verification
+			providerClient, hasClient := allProviders[pid]
+			hasAPIKey := hasClient && providerClient.APIKey != ""
+
+			var models []providers.Model
 			var verifyErr error
 
-			go func() {
-				verifyCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+			if hasAPIKey {
+				// Provider has API key - try verification with short timeout
+				verifyCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 				defer cancel()
 
-				models, err := service.GetModelsWithVerification(verifyCtx, pid)
-				verifiedModels = models
-				verifyErr = err
-				done <- true
-			}()
-
-			select {
-			case <-done:
-				// Verification completed
+				models, verifyErr = service.GetModelsWithVerification(verifyCtx, pid)
 				if verifyErr != nil {
-					fmt.Printf("⚠️  Verification failed for %s: %v\n", pid, verifyErr)
+					fmt.Printf("⚠️  Verification failed for %s: %v (using discovery mode)\n", pid, verifyErr)
+					// Fall back to discovery
+					models, verifyErr = service.GetModels(pid)
 				} else {
-					fmt.Printf("✅ Verification completed for %s: %d models\n", pid, len(verifiedModels))
+					fmt.Printf("✅ Verification completed for %s: %d models\n", pid, len(models))
 				}
-			case <-time.After(25 * time.Second):
-				// Verification timed out
-				fmt.Printf("⏰ Verification timed out for %s\n", pid)
-				verifiedModels = nil
-				verifyErr = fmt.Errorf("verification timeout")
+			} else {
+				// No API key - use discovery mode directly
+				fmt.Printf("📝 No API key for %s - using discovery mode\n", pid)
+				models, verifyErr = service.GetModels(pid)
 			}
 
-			// If verification failed or timed out, fall back to unverified models
-			if verifyErr != nil || verifiedModels == nil {
+			if verifyErr != nil {
+				fmt.Printf("❌ Failed to get models for %s: %v\n", pid, verifyErr)
+				results <- providerResult{pid, nil, verifyErr}
+				return
+			}
+
+			// If verification failed, fall back to unverified models
+			if err != nil || verifiedModels == nil {
 				unverifiedModels, err := service.GetModels(pid)
 				if err != nil {
 					fmt.Printf("❌ Failed to get any models for %s: %v\n", pid, err)
