@@ -17,6 +17,13 @@ llm-verifier-*
 main
 test-tui
 
+# Ultimate challenge binaries (large files)
+ultimate-challenge*
+llm-verifier/cmd/ultimate-challenge/ultimate-challenge*
+llm-verifier/cmd/fixed-ultimate-challenge/*
+llm-verifier/cmd/model-verification/model-verification
+crush_config_converter
+
 # Go module cache
 go.sum
 
@@ -26,9 +33,17 @@ go.sum
 *.sqlite
 *.sqlite3
 
+# Large database files in specific locations
+.crush/crush.db
+.crush/logs/crush.log
+
 # Log files
 *.log
 logs/
+
+# Large log files
+ultimate_challenge_*.log
+*.log.*
 
 # Configuration files (may contain secrets)
 config.yaml
