@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"llm-verifier/logging"
 	"llm-verifier/providers"
@@ -255,33 +254,27 @@ func generateUltimateOpenCode(allModels map[string][]providers.Model, service in
 		// Get provider client for API key and base URL
 		providerClient, exists := allProviders[providerID]
 
-		// Determine if this provider has API key for verification
-		hasAPIKey := exists && providerClient.APIKey != ""
+		// SECURITY: NEVER include API keys in exported configurations
+		// API keys are sensitive and should never be in config files
+		// OpenCode configurations should not contain sensitive credentials
+		// Users must configure API keys separately in their environment
 
-		// Add provider display name with LLMsVerifier suffix and verification status
-		displaySuffix := " (llmsvd)"
-		if !hasAPIKey {
-			displaySuffix = " (llmsvd - unverified)"
-		}
-		providerEntry["displayName"] = strings.Title(providerID) + displaySuffix
-
-		// Only add options wrapper if we have API key and base URL
-		if hasAPIKey && providerClient.BaseURL != "" {
+		// Only add baseURL if provider exists and has base URL
+		if exists && providerClient.BaseURL != "" {
 			// Process baseURL to ensure it ends with /v1 and has proper format
 			baseURL := providerClient.BaseURL
 			if !strings.Contains(baseURL, "/v1") && !strings.HasSuffix(baseURL, "/v1") {
 				baseURL = strings.TrimSuffix(baseURL, "/") + "/v1"
 			}
 
-			// Add options wrapper with camelCase keys (OpenCode standard)
+			// Add options with baseURL only - NO API KEYS
 			providerEntry["options"] = map[string]interface{}{
-				"apiKey":  providerClient.APIKey,
 				"baseURL": baseURL,
 			}
-		} else {
-			// For providers without API keys, add a note about verification requirement
-			providerEntry["verificationNote"] = "API key required for this provider. Add to .env file and re-run to enable verification."
 		}
+
+		// Note: API keys are NEVER exported for security reasons
+		// Users must set them in their environment or OpenCode configuration
 
 		// Create model map for this provider with proper structure
 		modelMap := make(map[string]interface{})
@@ -420,18 +413,7 @@ func generateUltimateOpenCode(allModels map[string][]providers.Model, service in
 		},
 	}
 
-	// Add metadata
-	config["metadata"] = map[string]interface{}{
-		"generatedAt":         time.Now().Format(time.RFC3339),
-		"verifiedModels":      0,
-		"unverifiedModels":    totalModels,
-		"totalModels":         totalModels,
-		"totalProviders":      len(allModels),
-		"generator":           "llm-verifier-ultimate-challenge",
-		"version":             "1.0.0",
-		"verificationEnabled": false,
-		"phase":               "discovery",
-	}
+	// Note: Metadata removed as it's not part of OpenCode schema
 
 	return config
 }
