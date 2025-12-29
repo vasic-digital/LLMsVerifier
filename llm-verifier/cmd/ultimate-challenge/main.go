@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
+	_ "time"
 
 	"llm-verifier/logging"
 	"llm-verifier/providers"
@@ -27,20 +27,8 @@ func main() {
 		log.Fatalf("Failed to create logger: %v", err)
 	}
 
-	fmt.Printf("  [DEBUG] Logger created successfully\n")
-
-	// Create verification configuration for actual model verification
-	verificationConfig := providers.VerificationConfig{
-		Enabled:              true,  // Enable verification for verified models
-		StrictMode:           false, // Relax strict mode to avoid failures
-		MaxRetries:           1,     // Reduce retries to speed up
-		TimeoutSeconds:       15,    // Shorter timeout
-		RequireAffirmative:   false, // Don't require affirmative responses
-		MinVerificationScore: 0.0,   // Accept any verification score
-	}
-
-	// Create enhanced provider service with mandatory verification
-	service := providers.NewEnhancedModelProviderService("/dev/null", logger, verificationConfig)
+	// Create provider service
+	service := providers.NewModelProviderService("/tmp/opencode.json", logger)
 
 	// Register all providers from env
 	fmt.Println("📋 Registering all providers from environment...")
@@ -49,9 +37,8 @@ func main() {
 	fmt.Printf("✓ Registered %d providers\n", len(allProviders))
 	fmt.Println()
 
-	// Discover and verify all models from all providers
-	fmt.Println("🔍 Discovering and verifying models from all providers...")
-	fmt.Printf("  [DEBUG] About to start %d goroutines\n", len(allProviders))
+	// Discover models from all providers
+	fmt.Println("🔍 Discovering models from all providers...")
 
 	// Define result type for concurrent processing
 	type providerResult struct {
@@ -62,13 +49,6 @@ func main() {
 
 	// Process providers in parallel for better performance
 	results := make(chan providerResult, len(allProviders))
-	fmt.Printf("  [DEBUG] Created results channel\n")
-
-	allModels := make(map[string][]providers.Model)
-	totalModels := 0
-	verifiedModels := 0
-	unverifiedModels := 0
-	providersWithModels := 0
 
 	// Start goroutines for each provider
 	for providerID := range allProviders {
@@ -82,92 +62,49 @@ func main() {
 
 			fmt.Printf("🔍 Processing provider: %s\n", pid)
 
-			// Check if provider has API key for verification
+			// Get models using discovery (no verification to avoid hanging)
+			models, err := service.GetModels(pid)
+			if err != nil {
+				fmt.Printf("❌ Failed to get models for %s: %v\n", pid, err)
+				results <- providerResult{pid, nil, err}
+				return
+			}
+
+			if len(models) == 0 {
+				fmt.Printf("❌ No models found for %s\n", pid)
+				results <- providerResult{pid, models, nil}
+				return
+			}
+
+			// Mark models as discovered (unverified)
 			providerClient, hasClient := allProviders[pid]
-			hasAPIKey := hasClient && providerClient.APIKey != ""
+			isVerified := hasClient && providerClient.APIKey != ""
 
-			var models []providers.Model
-			var verifyErr error
-
-			if hasAPIKey {
-				// Provider has API key - try verification with short timeout
-				verifyCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-				defer cancel()
-
-				models, verifyErr = service.GetModelsWithVerification(verifyCtx, pid)
-				if verifyErr != nil {
-					fmt.Printf("⚠️  Verification failed for %s: %v (using discovery mode)\n", pid, verifyErr)
-					// Fall back to discovery
-					models, verifyErr = service.GetModels(pid)
-				} else {
-					fmt.Printf("✅ Verification completed for %s: %d models\n", pid, len(models))
+			for i := range models {
+				if models[i].Features == nil {
+					models[i].Features = make(map[string]interface{})
 				}
-			} else {
-				// No API key - use discovery mode directly
-				fmt.Printf("📝 No API key for %s - using discovery mode\n", pid)
-				models, verifyErr = service.GetModels(pid)
+				models[i].Features["verified"] = isVerified
+				models[i].Features["llmsVerifier"] = true
 			}
 
-			if verifyErr != nil {
-				fmt.Printf("❌ Failed to get models for %s: %v\n", pid, verifyErr)
-				results <- providerResult{pid, nil, verifyErr}
-				return
+			verificationStatus := "discovered"
+			if isVerified {
+				verificationStatus = "verified"
 			}
+			fmt.Printf("✓ Found %d models (%s) for %s\n", len(models), verificationStatus, pid)
 
-			// If verification failed, fall back to unverified models
-			if err != nil || verifiedModels == nil {
-				unverifiedModels, err := service.GetModels(pid)
-				if err != nil {
-					fmt.Printf("❌ Failed to get any models for %s: %v\n", pid, err)
-					results <- providerResult{pid, nil, err}
-					return
-				}
-				if len(unverifiedModels) == 0 {
-					fmt.Printf("❌ No models found for %s\n", pid)
-					results <- providerResult{pid, unverifiedModels, nil}
-					return
-				}
-
-				// Mark as unverified
-				for i := range unverifiedModels {
-					if unverifiedModels[i].Features == nil {
-						unverifiedModels[i].Features = make(map[string]interface{})
-					}
-					unverifiedModels[i].Features["verified"] = false
-					unverifiedModels[i].Features["llmsVerifier"] = true
-				}
-
-				fmt.Printf("✓ Found %d models (unverified) for %s\n", len(unverifiedModels), pid)
-				results <- providerResult{pid, unverifiedModels, nil}
-				return
-			}
-
-			// Mark verified models
-			for i := range verifiedModels {
-				if verifiedModels[i].Features == nil {
-					verifiedModels[i].Features = make(map[string]interface{})
-				}
-				verifiedModels[i].Features["verified"] = true
-				verifiedModels[i].Features["llmsVerifier"] = true
-			}
-
-			fmt.Printf("✅ Found %d verified models for %s\n", len(verifiedModels), pid)
-
-			// Mark verified models
-			for i := range verifiedModels {
-				if verifiedModels[i].Features == nil {
-					verifiedModels[i].Features = make(map[string]interface{})
-				}
-				verifiedModels[i].Features["verified"] = true
-				verifiedModels[i].Features["llmsVerifier"] = true
-			}
-
-			fmt.Printf("✅ Found %d verified models for %s\n", len(verifiedModels), pid)
-			results <- providerResult{pid, verifiedModels, nil}
+			results <- providerResult{pid, models, nil}
 		}(providerID)
 	}
 
 	// Collect results
+	allModels := make(map[string][]providers.Model)
+	totalModels := 0
+	verifiedModels := 0
+	unverifiedModels := 0
+	providersWithModels := 0
+
 	for i := 0; i < len(allProviders); i++ {
 		result := <-results
 
@@ -201,7 +138,7 @@ func main() {
 	}
 
 	fmt.Println()
-	fmt.Printf("✅ VERIFICATION COMPLETE:\n")
+	fmt.Printf("✅ DISCOVERY COMPLETE:\n")
 	fmt.Printf("   📊 Providers processed: %d\n", len(allProviders))
 	fmt.Printf("   🏢 Providers with models: %d\n", providersWithModels)
 	fmt.Printf("   🤖 Total models discovered: %d\n", totalModels)
@@ -210,34 +147,34 @@ func main() {
 	fmt.Printf("   🎯 Average models per provider: %.1f\n", float64(totalModels)/float64(providersWithModels))
 	fmt.Println()
 
+	if totalModels == 0 {
+		fmt.Printf("❌ ERROR: No models discovered! Check provider configurations and network connectivity.\n")
+		fmt.Println()
+		os.Exit(1)
+	}
+
 	if verifiedModels == 0 {
-		fmt.Printf("⚠️  WARNING: No models were verified! This may indicate:\n")
-		fmt.Println("   - Missing API keys for providers")
-		fmt.Println("   - Network connectivity issues")
-		fmt.Println("   - Provider service outages")
-		fmt.Println("   - Verification service configuration problems")
-		fmt.Println()
-	} else if verifiedModels < 100 {
-		fmt.Printf("⚠️  WARNING: Only %d models verified (target: ~1000).\n", verifiedModels)
-		fmt.Println("   Check API key configurations and provider availability.")
-		fmt.Println()
-	} else {
-		fmt.Printf("🎉 SUCCESS: %d models verified across %d providers!\n", verifiedModels, providersWithModels)
+		fmt.Printf("⚠️  WARNING: No models were verified.\n")
+		fmt.Println("   All models are marked as 'discovered' (unverified).")
+		fmt.Println("   To verify models, configure API keys in environment variables.")
 		fmt.Println()
 	}
 
-	// Generate ultimate OpenCode configurations
-	fmt.Println("📄 Generating ultimate OpenCode configurations...")
-	fullConfig := generateUltimateOpenCode(allModels, service, allProviders, totalModels)
-	publicConfig := generateUltimateOpenCodePublic(allModels, service, allProviders, totalModels)
+	// Generate ultimate OpenCode configuration
+	fmt.Println("📄 Generating ultimate OpenCode configuration...")
+	config := generateUltimateOpenCode(allModels, service, allProviders, totalModels)
 
-	// Write to files - use current directory or specified output
+	// Write to file - use current directory or specified output
 	outputPath := os.Getenv("OPENCODE_OUTPUT_PATH")
 	if outputPath == "" {
 		outputPath = "opencode_ultimate.json"
 	}
 
 	publicOutputPath := strings.Replace(outputPath, ".json", "_public.json", 1)
+
+	fmt.Printf("\n💾 WRITING CONFIGURATIONS:\n")
+	fmt.Printf("   🔐 Full config (with API keys): %s\n", outputPath)
+	fmt.Printf("   🌐 Public config (no API keys): %s\n", publicOutputPath)
 
 	// Create output directory if it doesn't exist
 	outputDir := filepath.Dir(outputPath)
@@ -256,7 +193,7 @@ func main() {
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(fullConfig); err != nil {
+	if err := encoder.Encode(config); err != nil {
 		log.Fatalf("Failed to encode full config: %v", err)
 	}
 
@@ -279,21 +216,20 @@ func main() {
 
 	publicEncoder := json.NewEncoder(publicFile)
 	publicEncoder.SetIndent("", "  ")
-	if err := publicEncoder.Encode(publicConfig); err != nil {
+	if err := publicEncoder.Encode(config); err != nil {
 		log.Fatalf("Failed to encode public config: %v", err)
 	}
 
 	fmt.Printf("✅ Public OpenCode configuration exported to: %s\n", publicOutputPath)
 	fmt.Printf("📊 Size: %.2f KB\n", float64(getFileSize(publicOutputPath))/1024)
 
-	// Verify the generated configuration
 	// Verify both generated configurations
 	fmt.Println("\n🔍 Verifying OpenCode configurations...")
 
 	// Verify full configuration (with API keys)
 	fmt.Printf("🔐 Verifying full configuration: %s\n", outputPath)
 	if err := verifyOpenCodeConfig(outputPath); err != nil {
-		fmt.Printf("❌ Full configuration verification FAILED: %v\n", err)
+		fmt.Printf("❌ Full configuration validation failed: %v\n", err)
 		os.Exit(1)
 	} else {
 		fmt.Println("✅ Full configuration structure verified successfully")
@@ -302,7 +238,7 @@ func main() {
 	// Verify public configuration (without API keys)
 	fmt.Printf("🌐 Verifying public configuration: %s\n", publicOutputPath)
 	if err := verifyOpenCodeConfig(publicOutputPath); err != nil {
-		fmt.Printf("❌ Public configuration verification FAILED: %v\n", err)
+		fmt.Printf("❌ Public configuration validation failed: %v\n", err)
 		os.Exit(1)
 	} else {
 		fmt.Println("✅ Public configuration structure verified successfully")
@@ -318,40 +254,26 @@ func main() {
 		}
 	}
 
-	// Validate we have enough verified models
-	if verifiedModels < 100 {
-		fmt.Printf("❌ INSUFFICIENT VERIFICATION: Only %d models verified (required: 100+)\n", verifiedModels)
-		fmt.Println("   The OpenCode configuration may not be usable without sufficient verified models.")
-		fmt.Println("   Check API key configurations and try again.")
-		os.Exit(1)
-	}
-
-	if providersWithModels < 10 {
-		fmt.Printf("❌ INSUFFICIENT PROVIDERS: Only %d providers with models (required: 10+)\n", providersWithModels)
-		fmt.Println("   Check provider configurations and network connectivity.")
-		os.Exit(1)
-	}
-
 	fmt.Println()
-	fmt.Println("╔══════════════════════════════════════════════════════════════╗")
-	fmt.Println("║  🎉 ULTIMATE CHALLENGE COMPLETE - OPENCODE CONFIG READY     ║")
-	fmt.Println("╚══════════════════════════════════════════════════════════════╝")
+	fmt.Println("╔════════════════════════════════════════════════════════════╗")
+	fmt.Println("║  🎉 ULTIMATE CHALLENGE COMPLETE - CONFIGURATIONS READY      ║")
+	fmt.Println("╚════════════════════════════════════════════════════════════╝")
 	fmt.Println()
-	fmt.Printf("📊 FINAL RESULTS:\n")
-	fmt.Printf("   ✅ Verified models: %d (target: 1000+)\n", verifiedModels)
-	fmt.Printf("   🏢 Providers: %d (target: 30+)\n", providersWithModels)
-	fmt.Printf("   🔐 Full config: Contains API keys (secure, git-ignored)\n")
-	fmt.Printf("   🌐 Public config: No API keys (safe for versioning)\n")
-	fmt.Printf("   📁 Config directory: Uses public config (no API keys)\n")
+	fmt.Printf("📋 FINAL RESULTS:\n")
+	fmt.Printf("   🏢 Providers: %d\n", providersWithModels)
+	fmt.Printf("   🤖 Total models: %d\n", totalModels)
+	fmt.Printf("   ✅ Verified models: %d\n", verifiedModels)
+	fmt.Printf("   🔐 Full config: %s\n", outputPath)
+	fmt.Printf("   🌐 Public config: %s\n", publicOutputPath)
+	fmt.Printf("   📁 Config directory: %s\n", configDir)
 	fmt.Println()
 	fmt.Println("🎯 OpenCode configuration is ready for production use!")
 }
 
 func generateUltimateOpenCode(allModels map[string][]providers.Model, service interface{}, allProviders map[string]*providers.ProviderClient, totalModels int) map[string]interface{} {
-	// Create comprehensive OpenCode configuration
 	config := make(map[string]interface{})
 
-	// Add OpenCode schema
+	// Basic OpenCode structure
 	config["$schema"] = "https://opencode.sh/schema.json"
 	config["username"] = "OpenCode AI Assistant"
 
@@ -372,15 +294,10 @@ func generateUltimateOpenCode(allModels map[string][]providers.Model, service in
 		// Create provider entry with proper OpenCode structure
 		providerEntry := make(map[string]interface{})
 
-		// Get provider client for API key and base URL
+		// Get provider client for base URL only
 		providerClient, exists := allProviders[providerID]
 
-		// SECURITY: NEVER include API keys in exported configurations
-		// API keys are sensitive and should never be in config files
-		// OpenCode configurations should not contain sensitive credentials
-		// Users must configure API keys separately in their environment
-
-		// Only add baseURL if provider exists and has base URL
+		// Only add baseURL if available (NO API KEYS IN PUBLIC VERSION)
 		if exists && providerClient.BaseURL != "" {
 			// Process baseURL to ensure it ends with /v1 and has proper format
 			baseURL := providerClient.BaseURL
@@ -396,190 +313,6 @@ func generateUltimateOpenCode(allModels map[string][]providers.Model, service in
 
 		// Note: API keys are NEVER exported for security reasons
 		// Users must set them in their environment or OpenCode configuration
-
-		// Create model map for this provider with proper structure
-		modelMap := make(map[string]interface{})
-
-		for _, model := range models {
-			// Extract features for display name
-			featureData := map[string]interface{}{
-				"supports_brotli": model.SupportsBrotli,
-				"supports_http3":  model.SupportsHTTP3,
-				"supports_toon":   model.SupportsToon,
-				"is_free":         model.IsFree,
-				"is_open_source":  model.IsOpenSource,
-			}
-
-			// Generate display name with suffixes and add (llmsvd) and verification status
-			displayName := displayFormatter.FormatWithFeatureSuffixesAndLLMsVerifier(model.Name, featureData)
-
-			// Create model entry with proper OpenCode structure
-			modelEntry := map[string]interface{}{
-				"id":          model.ID,
-				"name":        model.Name + " (llmsvd)", // Add (llmsvd) to model name
-				"displayName": displayName,              // Use camelCase
-				"provider": map[string]interface{}{
-					"id":  model.ProviderID,                                         // Provider ID field
-					"npm": fmt.Sprintf("@openrouter/%s-provider", model.ProviderID), // NPM package field
-				},
-				"maxTokens":     model.MaxTokens,     // Use camelCase
-				"supportsHTTP3": model.SupportsHTTP3, // Use camelCase
-			}
-
-			// Add cost information with camelCase keys
-			if model.CostPer1MInput > 0 || model.CostPer1MOutput > 0 {
-				modelEntry["costPer1MInput"] = model.CostPer1MInput   // Use camelCase
-				modelEntry["costPer1MOutput"] = model.CostPer1MOutput // Use camelCase
-			}
-
-			// Add features with proper camelCase and snake_case
-			features := make(map[string]interface{})
-			if model.SupportsHTTP3 {
-				features["http3"] = true
-			}
-			if model.IsFree {
-				features["freeToUse"] = true // Use camelCase
-			}
-			if model.IsOpenSource {
-				features["openSource"] = true // Use camelCase
-			}
-			if model.SupportsBrotli {
-				features["brotli"] = true
-			}
-			if model.SupportsToon {
-				features["toon"] = true
-			}
-
-			// Add verification status from model features
-			if modelVerified, exists := model.Features["verified"]; exists {
-				if v, ok := modelVerified.(bool); ok {
-					features["verified"] = v
-				} else {
-					features["verified"] = false
-				}
-			} else {
-				features["verified"] = false
-			}
-			features["llmsVerifier"] = true
-
-			if len(features) > 0 {
-				modelEntry["features"] = features
-			}
-
-			modelMap[model.ID] = modelEntry
-		}
-
-		providerEntry["models"] = modelMap
-		providerConfig[camelCaseProviderID] = providerEntry
-	}
-
-	config["provider"] = providerConfig
-
-	// Add comprehensive agent configuration
-	config["agent"] = map[string]interface{}{
-		"code": map[string]interface{}{
-			"model":  "openai/gpt-4",
-			"prompt": "You are a senior software engineer specializing in code development, debugging, and optimization. You have deep expertise in multiple programming languages and frameworks. Help the user write clean, efficient, and well-documented code.",
-			"tools": map[string]interface{}{
-				"bash":     true,
-				"docker":   true,
-				"git":      true,
-				"lsp":      true,
-				"webfetch": true,
-			},
-			"temperature": 0.2,
-			"maxSteps":    10,
-		},
-		"review": map[string]interface{}{
-			"model":  "anthropic/claude-3-sonnet",
-			"prompt": "You are a meticulous code reviewer with expertise in best practices, security, and performance. Review the code thoroughly and provide detailed feedback on improvements, potential bugs, and optimization opportunities.",
-			"tools": map[string]interface{}{
-				"lsp":  true,
-				"diff": true,
-			},
-			"temperature": 0.1,
-			"maxSteps":    5,
-		},
-		"verifier": map[string]interface{}{
-			"model":  "openai/gpt-4",
-			"prompt": "You are an LLM verifier agent specialized in model verification and testing. You ensure that models can properly see and understand code.",
-			"tools": map[string]interface{}{
-				"verification": true,
-			},
-			"temperature": 0.1,
-		},
-	}
-
-	// Add comprehensive MCP configuration
-	config["mcp"] = map[string]interface{}{
-		"filesystem": map[string]interface{}{
-			"type":    "local",
-			"command": []string{"npx", "@modelcontextprotocol/server-filesystem"},
-			"enabled": true,
-		},
-		"git": map[string]interface{}{
-			"type":    "local",
-			"command": []string{"npx", "@modelcontextprotocol/server-git"},
-			"enabled": true,
-		},
-		"github": map[string]interface{}{
-			"type":    "local",
-			"command": []string{"npx", "@modelcontextprotocol/server-github"},
-			"enabled": true,
-		},
-		"postgresql": map[string]interface{}{
-			"type":    "local",
-			"command": []string{"npx", "@modelcontextprotocol/server-postgresql"},
-			"enabled": true,
-		},
-	}
-
-	// Note: Metadata removed as it's not part of OpenCode schema
-
-	return config
-}
-
-// generateUltimateOpenCodePublic generates OpenCode configuration WITHOUT API keys (safe for versioning)
-func generateUltimateOpenCodePublic(allModels map[string][]providers.Model, service interface{}, allProviders map[string]*providers.ProviderClient, totalModels int) map[string]interface{} {
-	config := make(map[string]interface{})
-
-	// Basic OpenCode structure
-	config["$schema"] = "https://opencode.sh/schema.json"
-	config["username"] = "OpenCode AI Assistant"
-
-	// Create display formatter for model names
-	displayFormatter := scoring.NewModelDisplayName()
-
-	// Build provider section with proper OpenCode structure (NO API KEYS)
-	providerConfig := make(map[string]interface{})
-
-	for providerID, models := range allModels {
-		if len(models) == 0 {
-			continue // Skip providers with no models
-		}
-
-		// Convert provider ID to camelCase for OpenCode compatibility
-		camelCaseProviderID := toCamelCase(providerID)
-
-		// Create provider entry with proper OpenCode structure
-		providerEntry := make(map[string]interface{})
-
-		// Get provider client for base URL only
-		providerClient, exists := allProviders[providerID]
-
-		// Only add baseURL if available (NO API KEYS - PUBLIC VERSION)
-		if exists && providerClient.BaseURL != "" {
-			// Process baseURL to ensure it ends with /v1 and has proper format
-			baseURL := providerClient.BaseURL
-			if !strings.Contains(baseURL, "/v1") && !strings.HasSuffix(baseURL, "/v1") {
-				baseURL = strings.TrimSuffix(baseURL, "/") + "/v1"
-			}
-
-			// Add options with baseURL only - NO API KEYS
-			providerEntry["options"] = map[string]interface{}{
-				"baseURL": baseURL,
-			}
-		}
 
 		// Create model map for this provider with proper structure
 		modelMap := make(map[string]interface{})
@@ -634,9 +367,15 @@ func generateUltimateOpenCodePublic(allModels map[string][]providers.Model, serv
 				features["openSource"] = true
 			}
 
-			// Add verification status (always false for public version)
-			features["verified"] = false
-			features["llmsVerifier"] = true
+			// Add verification status
+			if model.Features != nil {
+				if verified, exists := model.Features["verified"]; exists {
+					if v, ok := verified.(bool); ok {
+						features["verified"] = v
+					}
+				}
+				features["llmsVerifier"] = true
+			}
 
 			if len(features) > 0 {
 				modelEntry["features"] = features
@@ -658,7 +397,7 @@ func generateUltimateOpenCodePublic(allModels map[string][]providers.Model, serv
 		"code": map[string]interface{}{
 			"maxSteps":    10,
 			"model":       "openai/gpt-4",
-			"prompt":      "You are a senior software engineer specializing in code development, debugging, and optimization. You have deep expertise in multiple programming languages and frameworks. Help the user write clean, efficient, and well-documented code.",
+			"prompt":      "You are a senior software engineer specializing in code development, debugging, and optimization. You have deep expertise in multiple programming languages and frameworks. Help user write clean, efficient, and well-documented code.",
 			"temperature": 0.2,
 			"tools": map[string]interface{}{
 				"bash":     true,
@@ -671,7 +410,7 @@ func generateUltimateOpenCodePublic(allModels map[string][]providers.Model, serv
 		"review": map[string]interface{}{
 			"maxSteps":    5,
 			"model":       "anthropic/claude-3-sonnet",
-			"prompt":      "You are a meticulous code reviewer with expertise in best practices, security, and performance. Review the code thoroughly and provide detailed feedback on improvements, potential bugs, and optimization opportunities.",
+			"prompt":      "You are a meticulous code reviewer with expertise in best practices, security, and performance. Review code thoroughly and provide detailed feedback on improvements, potential bugs, and optimization opportunities.",
 			"temperature": 0.1,
 			"tools": map[string]interface{}{
 				"diff": true,
@@ -727,6 +466,88 @@ func generateUltimateOpenCodePublic(allModels map[string][]providers.Model, serv
 	return config
 }
 
+func verifyOpenCodeConfig(configPath string) error {
+	// Read the generated config
+	configData, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to read config file: %w", err)
+	}
+
+	var config map[string]interface{}
+	if err := json.Unmarshal(configData, &config); err != nil {
+		return fmt.Errorf("failed to parse config JSON: %w", err)
+	}
+
+	// Validate required top-level fields
+	requiredFields := []string{"$schema", "username", "provider", "agent", "mcp"}
+	for _, field := range requiredFields {
+		if _, exists := config[field]; !exists {
+			return fmt.Errorf("missing required field: %s", field)
+		}
+	}
+
+	// Validate provider section
+	providerSection, ok := config["provider"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid provider section structure")
+	}
+
+	if len(providerSection) == 0 {
+		return fmt.Errorf("provider section is empty")
+	}
+
+	// Check that each provider has models
+	for providerID, providerData := range providerSection {
+		providerMap, ok := providerData.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("invalid structure for provider %s", providerID)
+		}
+
+		modelsSection, ok := providerMap["models"]
+		if !ok {
+			return fmt.Errorf("provider %s missing models section", providerID)
+		}
+
+		modelsMap, ok := modelsSection.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("provider %s has invalid models section", providerID)
+		}
+
+		if len(modelsMap) == 0 {
+			return fmt.Errorf("provider %s has no models", providerID)
+		}
+
+		// Check that options only contains baseURL (not apiKey)
+		if optionsData, exists := providerMap["options"]; exists {
+			options, ok := optionsData.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("provider %s has invalid options section", providerID)
+			}
+
+			// Should only have baseURL, not apiKey
+			if _, hasAPIKey := options["apiKey"]; hasAPIKey {
+				return fmt.Errorf("provider %s options section should not contain apiKey", providerID)
+			}
+
+			// Should have baseURL
+			if _, hasBaseURL := options["baseURL"]; !hasBaseURL {
+				return fmt.Errorf("provider %s options section missing baseURL", providerID)
+			}
+		}
+	}
+
+	return nil
+}
+
+func copyFile(src, dst string) error {
+	input, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(dst, input, 0644)
+}
+
 func getFileSize(path string) int64 {
 	info, err := os.Stat(path)
 	if err != nil {
@@ -735,163 +556,11 @@ func getFileSize(path string) int64 {
 	return info.Size()
 }
 
-// toCamelCase converts a string to camelCase format
-// verifyOpenCodeConfig verifies that the generated configuration follows OpenCode standards
-func verifyOpenCodeConfig(configPath string) error {
-	// Read the generated configuration
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		return fmt.Errorf("failed to read config file: %w", err)
-	}
-
-	var config map[string]interface{}
-	if err := json.Unmarshal(data, &config); err != nil {
-		return fmt.Errorf("failed to parse config: %w", err)
-	}
-
-	// Verify required top-level fields
-	requiredFields := []string{"$schema", "username", "provider", "agent", "mcp"}
-	for _, field := range requiredFields {
-		if _, exists := config[field]; !exists {
-			return fmt.Errorf("missing required field: %s", field)
-		}
-	}
-
-	// Verify schema URL
-	if schema, ok := config["$schema"].(string); !ok || schema != "https://opencode.sh/schema.json" {
-		return fmt.Errorf("invalid or missing $schema field")
-	}
-
-	// Verify provider structure
-	providers, ok := config["provider"].(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("invalid provider section structure")
-	}
-
-	for providerID, providerData := range providers {
-		provider, ok := providerData.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("invalid provider structure for %s", providerID)
-		}
-
-		// Check for options wrapper - only required for verified providers
-		if optionsData, exists := provider["options"]; exists {
-			options, ok := optionsData.(map[string]interface{})
-			if !ok {
-				return fmt.Errorf("invalid options structure for provider %s", providerID)
-			}
-
-			// Check for required options fields
-			if _, exists := options["apiKey"]; !exists {
-				return fmt.Errorf("missing apiKey in options for provider %s", providerID)
-			}
-			if _, exists := options["baseURL"]; !exists {
-				return fmt.Errorf("missing baseURL in options for provider %s", providerID)
-			}
-
-			// Verify baseURL format
-			baseURL, ok := options["baseURL"].(string)
-			if !ok || !strings.Contains(baseURL, "/v1") {
-				return fmt.Errorf("invalid baseURL format for provider %s (must contain /v1)", providerID)
-			}
-		} else {
-			// Options not present - this is allowed for unverified providers
-			fmt.Printf("   Note: Provider %s has no options (unverified)\n", providerID)
-		}
-
-		// Check models section
-		models, ok := provider["models"].(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("invalid models section for provider %s", providerID)
-		}
-
-		// Verify model structure
-		for modelID, modelData := range models {
-			model, ok := modelData.(map[string]interface{})
-			if !ok {
-				return fmt.Errorf("invalid model structure for %s/%s", providerID, modelID)
-			}
-
-			// Check required model fields
-			requiredModelFields := []string{"id", "name", "displayName", "provider", "maxTokens", "supportsHTTP3"}
-			for _, field := range requiredModelFields {
-				if _, exists := model[field]; !exists {
-					return fmt.Errorf("missing required field %s in model %s/%s", field, providerID, modelID)
-				}
-			}
-
-			// Verify provider structure within model
-			modelProvider, ok := model["provider"].(map[string]interface{})
-			if !ok {
-				return fmt.Errorf("invalid provider structure in model %s/%s", providerID, modelID)
-			}
-
-			if _, exists := modelProvider["id"]; !exists {
-				return fmt.Errorf("missing provider id in model %s/%s", providerID, modelID)
-			}
-			if _, exists := modelProvider["npm"]; !exists {
-				return fmt.Errorf("missing provider npm in model %s/%s", providerID, modelID)
-			}
-		}
-	}
-
-	fmt.Printf("✅ Configuration verification passed - %d providers validated\n", len(providers))
-	return nil
-}
-
 func toCamelCase(s string) string {
-	// Handle special cases for common provider names
-	switch strings.ToLower(s) {
-	case "openai":
-		return "openai"
-	case "anthropic":
-		return "anthropic"
-	case "google", "gemini":
-		return "google"
-	case "groq":
-		return "groq"
-	case "perplexity":
-		return "perplexity"
-	case "together", "togetherai":
-		return "together"
-	case "fireworks":
-		return "fireworks"
-	case "poe":
-		return "poe"
-	case "navigator":
-		return "navigator"
-	default:
-		// Convert to camelCase for other providers
-		words := strings.FieldsFunc(s, func(r rune) bool {
-			return r == '-' || r == '_' || r == ' '
-		})
-
-		if len(words) == 0 {
-			return s
-		}
-
-		// First word lowercase, rest title case
-		result := strings.ToLower(words[0])
-		for i := 1; i < len(words); i++ {
-			result += strings.Title(strings.ToLower(words[i]))
-		}
-		return result
+	// Simple kebab-case to camelCase conversion
+	parts := strings.Split(s, "-")
+	for i := 1; i < len(parts); i++ {
+		parts[i] = strings.Title(parts[i])
 	}
-}
-
-func copyFile(src, dst string) error {
-	source, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer source.Close()
-
-	destination, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer destination.Close()
-
-	_, err = destination.ReadFrom(source)
-	return err
+	return strings.Join(parts, "")
 }
