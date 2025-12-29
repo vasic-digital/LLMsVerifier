@@ -173,7 +173,7 @@ Permissions: -rw------- (600)
 
 ### Code Changes
 - ✅ `llm-verifier/client/http_client.go` (updated, 28 provider mappings)
-- ✅ `scripts/export_opencode_config.py` (security export tool)
+- ✅ `scripts/export_opencode_config_fixed.py` (security export tool)
 
 ---
 

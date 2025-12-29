@@ -2,12 +2,12 @@ package opencode_verifier
 
 import (
 	"encoding/json"
+	"llm-verifier/database"
+	opencodeConfig "llm-verifier/pkg/opencode/config"
 	"os"
 	"path/filepath"
 	"testing"
-	"llm-verifier/pkg/opencode/config"
-	"llm-verifier/database"
-	
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -56,7 +56,7 @@ func TestVerifyConfiguration(t *testing.T) {
 				},
 				"agent": map[string]interface{}{
 					"build": map[string]interface{}{
-						"model": "gpt-4",
+						"model":  "gpt-4",
 						"prompt": "You are a build agent",
 					},
 				},
@@ -81,7 +81,7 @@ func TestVerifyConfiguration(t *testing.T) {
 			// Create verifier and verify
 			verifier := NewOpenCodeVerifier(db, configPath)
 			result, err := verifier.VerifyConfiguration()
-			
+
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
@@ -102,12 +102,12 @@ func TestVerifyProvider(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		provider config.ProviderConfig
+		provider opencodeConfig.ProviderConfig
 		expected ProviderVerificationStatus
 	}{
 		{
 			name: "provider with options",
-			provider: config.ProviderConfig{
+			provider: opencodeConfig.ProviderConfig{
 				Options: map[string]interface{}{
 					"api_key": "test-key",
 				},
@@ -119,7 +119,7 @@ func TestVerifyProvider(t *testing.T) {
 		},
 		{
 			name: "provider with model",
-			provider: config.ProviderConfig{
+			provider: opencodeConfig.ProviderConfig{
 				Model: "gpt-4",
 			},
 			expected: ProviderVerificationStatus{
@@ -131,7 +131,7 @@ func TestVerifyProvider(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			status := verifier.verifyProvider("test", &tt.provider)
+			status := verifier.VerifyProvider("test", &tt.provider)
 			assert.Equal(t, tt.expected.Configured, status.Configured)
 			assert.Equal(t, tt.expected.Score, status.Score)
 		})
@@ -146,13 +146,13 @@ func TestVerifyAgent(t *testing.T) {
 	verifier := NewOpenCodeVerifier(db, "test.json")
 
 	tests := []struct {
-		name   string
-		agent  config.AgentConfig
+		name     string
+		agent    opencodeConfig.AgentConfig
 		expected AgentVerificationStatus
 	}{
 		{
 			name: "agent with model",
-			agent: config.AgentConfig{
+			agent: opencodeConfig.AgentConfig{
 				Model: "gpt-4",
 			},
 			expected: AgentVerificationStatus{
@@ -162,7 +162,7 @@ func TestVerifyAgent(t *testing.T) {
 		},
 		{
 			name: "agent with prompt",
-			agent: config.AgentConfig{
+			agent: opencodeConfig.AgentConfig{
 				Prompt: "You are a helpful assistant",
 			},
 			expected: AgentVerificationStatus{
@@ -172,7 +172,7 @@ func TestVerifyAgent(t *testing.T) {
 		},
 		{
 			name: "agent with tools",
-			agent: config.AgentConfig{
+			agent: opencodeConfig.AgentConfig{
 				Tools: map[string]bool{
 					"github": true,
 					"docker": true,
@@ -187,7 +187,7 @@ func TestVerifyAgent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			status := verifier.verifyAgent("test", &tt.agent)
+			status := verifier.VerifyAgent("test", &tt.agent)
 			assert.Equal(t, tt.expected.HasModel, status.HasModel)
 			assert.Equal(t, tt.expected.HasPrompt, status.HasPrompt)
 			assert.Equal(t, tt.expected.ToolsConfigured, status.ToolsConfigured)
@@ -205,15 +205,15 @@ func TestVerifyMcp(t *testing.T) {
 
 	trueVal := true
 	falseVal := false
-	
+
 	tests := []struct {
-		name   string
-		mcp    config.McpConfig
+		name     string
+		mcp      opencodeConfig.McpConfig
 		expected McpVerificationStatus
 	}{
 		{
 			name: "local MCP server",
-			mcp: config.McpConfig{
+			mcp: opencodeConfig.McpConfig{
 				Type:    "local",
 				Command: []string{"npx", "@modelcontextprotocol/server-github"},
 				Enabled: &trueVal,
@@ -226,7 +226,7 @@ func TestVerifyMcp(t *testing.T) {
 		},
 		{
 			name: "remote MCP server",
-			mcp: config.McpConfig{
+			mcp: opencodeConfig.McpConfig{
 				Type:    "remote",
 				URL:     "https://api.github.com/mcp",
 				Enabled: &falseVal,
@@ -241,7 +241,7 @@ func TestVerifyMcp(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			status := verifier.verifyMcp("test", &tt.mcp)
+			status := verifier.VerifyMCP("test", &tt.mcp)
 			assert.Equal(t, tt.expected.Type, status.Type)
 			assert.Equal(t, tt.expected.Enabled, status.Enabled)
 			assert.Equal(t, tt.expected.Score, status.Score)

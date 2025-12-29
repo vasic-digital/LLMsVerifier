@@ -410,7 +410,7 @@ def main():
         print(f"\n{BLUE}📤 Exporting OpenCode configuration...{NC}")
         
         os.chdir("/media/milosvasic/DATA4TB/Projects/LLM/LLMsVerifier")
-        os.system(f"python3 scripts/export_opencode_config.py --verification {output_file} 2>&1 | tail -30")
+        os.system(f"python3 scripts/export_opencode_config_fixed.py --verification {output_file} 2>&1 | tail -30")
         
         final_path = Path("/home/milosvasic/Downloads/opencode.json")
         if final_path.exists():

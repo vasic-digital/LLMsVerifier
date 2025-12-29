@@ -26,17 +26,17 @@ func main() {
 	}
 
 	// Create relaxed verification configuration
-	verificationConfig := providers.FixedVerificationConfig{
-		Enabled:               true,
-		StrictMode:            false, // Relaxed mode
-		MaxRetries:            3,
-		TimeoutSeconds:        30,
-		RequireAffirmative:    false, // Don't require strict affirmative responses
-		MinVerificationScore:  0.3,   // Lower threshold
+	verificationConfig := providers.VerificationConfig{
+		Enabled:              true,
+		StrictMode:           false, // Relaxed mode
+		MaxRetries:           3,
+		TimeoutSeconds:       30,
+		RequireAffirmative:   false, // Don't require strict affirmative responses
+		MinVerificationScore: 0.3,   // Lower threshold
 	}
 
-	// Create fixed enhanced provider service with relaxed verification
-	service := providers.NewFixedEnhancedModelProviderService("/tmp/opencode.json", logger, verificationConfig)
+	// Create enhanced provider service with relaxed verification
+	service := providers.NewEnhancedModelProviderService("/tmp/opencode.json", logger, verificationConfig)
 
 	// Register all providers from env
 	fmt.Println("📋 Registering all providers from environment...")
@@ -77,7 +77,7 @@ func main() {
 			// Show first few models as examples
 			for i, model := range models {
 				if i < 3 { // Show first 3 models
-					fmt.Printf("    - %s (score: %.2f)\n", model.Name, model.VerificationScore)
+					fmt.Printf("    - %s\n", model.Name)
 				}
 			}
 			if len(models) > 3 {
@@ -107,7 +107,7 @@ func main() {
 
 	fmt.Printf("✅ Fixed Ultimate OpenCode configuration exported to: %s\n", outputPath)
 	fmt.Printf("📊 Size: %.2f KB\n", float64(getFileSize(outputPath))/1024)
-	
+
 	// Verify the generated configuration
 	fmt.Println("🔍 Verifying OpenCode configuration structure...")
 	if err := verifyFixedOpenCodeConfig(outputPath); err != nil {
@@ -136,27 +136,27 @@ func main() {
 }
 
 // generateFixedUltimateOpenCode generates the ultimate OpenCode configuration
-func generateFixedUltimateOpenCode(allModels map[string][]providers.Model, service *providers.FixedEnhancedModelProviderService, allProviders map[string]*providers.ProviderClient, verifiedCount int) map[string]interface{} {
+func generateFixedUltimateOpenCode(allModels map[string][]providers.Model, service *providers.EnhancedModelProviderService, allProviders map[string]*providers.ProviderClient, verifiedCount int) map[string]interface{} {
 	config := make(map[string]interface{})
-	
+
 	// Add schema
 	config["$schema"] = "https://opencode.sh/schema.json"
-	
+
 	// Add username
 	config["username"] = "opencode-user"
-	
+
 	// Add provider section
 	providerSection := make(map[string]interface{})
 	for providerID, client := range allProviders {
 		if models, exists := allModels[providerID]; exists && len(models) > 0 {
 			providerConfig := make(map[string]interface{})
-			
+
 			// Add options
 			options := make(map[string]interface{})
 			options["apiKey"] = client.APIKey
 			options["baseURL"] = client.BaseURL + "/v1"
 			providerConfig["options"] = options
-			
+
 			// Add models
 			modelsSection := make(map[string]interface{})
 			for _, model := range models {
@@ -170,7 +170,7 @@ func generateFixedUltimateOpenCode(allModels map[string][]providers.Model, servi
 				}
 				modelConfig["maxTokens"] = model.MaxTokens
 				modelConfig["supportsHTTP3"] = model.SupportsHTTP3
-				
+
 				// Add additional features
 				if model.IsFree {
 					modelConfig["isFree"] = true
@@ -178,42 +178,39 @@ func generateFixedUltimateOpenCode(allModels map[string][]providers.Model, servi
 				if model.IsOpenSource {
 					modelConfig["isOpenSource"] = true
 				}
-				if model.Verified {
-					modelConfig["verified"] = true
-					modelConfig["verificationScore"] = model.VerificationScore
-				}
-				
+				// Note: verification status not available in basic Model struct
+
 				modelsSection[model.ID] = modelConfig
 			}
 			providerConfig["models"] = modelsSection
-			
+
 			providerSection[providerID] = providerConfig
 		}
 	}
 	config["provider"] = providerSection
-	
+
 	// Add agent section
 	config["agent"] = map[string]interface{}{
 		"id":      "opencode-agent",
 		"name":    "OpenCode Agent",
 		"version": "1.0.0",
 	}
-	
+
 	// Add MCP section
 	config["mcp"] = map[string]interface{}{
 		"enabled": true,
 		"version": "2024.1",
 	}
-	
+
 	// Add metadata
 	config["metadata"] = map[string]interface{}{
-		"generatedAt":     time.Now().Format(time.RFC3339),
-		"totalProviders":  len(allProviders),
-		"verifiedModels":  verifiedCount,
-		"generator":       "fixed-ultimate-challenge",
-		"version":         "1.0.0",
+		"generatedAt":    time.Now().Format(time.RFC3339),
+		"totalProviders": len(allProviders),
+		"verifiedModels": verifiedCount,
+		"generator":      "fixed-ultimate-challenge",
+		"version":        "1.0.0",
 	}
-	
+
 	return config
 }
 
@@ -224,12 +221,12 @@ func verifyFixedOpenCodeConfig(configPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to read config file: %w", err)
 	}
-	
+
 	var config map[string]interface{}
 	if err := json.Unmarshal(data, &config); err != nil {
 		return fmt.Errorf("failed to parse config: %w", err)
 	}
-	
+
 	// Verify required top-level fields
 	requiredFields := []string{"$schema", "username", "provider", "agent", "mcp"}
 	for _, field := range requiredFields {
@@ -237,66 +234,66 @@ func verifyFixedOpenCodeConfig(configPath string) error {
 			return fmt.Errorf("missing required field: %s", field)
 		}
 	}
-	
+
 	// Verify schema URL
 	if schema, ok := config["$schema"].(string); !ok || schema != "https://opencode.sh/schema.json" {
 		return fmt.Errorf("invalid or missing $schema field")
 	}
-	
+
 	// Verify provider section
 	providers, ok := config["provider"].(map[string]interface{})
 	if !ok {
 		return fmt.Errorf("invalid provider section structure")
 	}
-	
+
 	if len(providers) == 0 {
 		return fmt.Errorf("no providers found in configuration")
 	}
-	
+
 	for providerID, providerData := range providers {
 		provider, ok := providerData.(map[string]interface{})
 		if !ok {
 			return fmt.Errorf("invalid provider structure for %s", providerID)
 		}
-		
+
 		// Check for options wrapper
 		if _, exists := provider["options"]; !exists {
 			return fmt.Errorf("missing options wrapper for provider %s", providerID)
 		}
-		
+
 		options, ok := provider["options"].(map[string]interface{})
 		if !ok {
 			return fmt.Errorf("invalid options structure for provider %s", providerID)
 		}
-		
+
 		// Check for required options fields (allow empty API key for now)
 		if _, exists := options["baseURL"]; !exists {
 			return fmt.Errorf("missing baseURL in options for provider %s", providerID)
 		}
-		
+
 		// Verify baseURL format
 		baseURL, ok := options["baseURL"].(string)
 		if !ok || !strings.Contains(baseURL, "/v1") {
 			return fmt.Errorf("invalid baseURL format for provider %s (must contain /v1)", providerID)
 		}
-		
+
 		// Check models section
 		models, ok := provider["models"].(map[string]interface{})
 		if !ok {
 			return fmt.Errorf("invalid models section for provider %s", providerID)
 		}
-		
+
 		if len(models) == 0 {
 			return fmt.Errorf("no models found for provider %s", providerID)
 		}
-		
+
 		// Verify model structure
 		for modelID, modelData := range models {
 			model, ok := modelData.(map[string]interface{})
 			if !ok {
 				return fmt.Errorf("invalid model structure for %s/%s", providerID, modelID)
 			}
-			
+
 			// Check required model fields
 			requiredModelFields := []string{"id", "name", "displayName", "provider", "maxTokens", "supportsHTTP3"}
 			for _, field := range requiredModelFields {
@@ -304,13 +301,13 @@ func verifyFixedOpenCodeConfig(configPath string) error {
 					return fmt.Errorf("missing required field %s in model %s/%s", field, providerID, modelID)
 				}
 			}
-			
+
 			// Verify provider structure within model
 			modelProvider, ok := model["provider"].(map[string]interface{})
 			if !ok {
 				return fmt.Errorf("invalid provider structure in model %s/%s", providerID, modelID)
 			}
-			
+
 			if _, exists := modelProvider["id"]; !exists {
 				return fmt.Errorf("missing provider id in model %s/%s", providerID, modelID)
 			}
@@ -319,7 +316,7 @@ func verifyFixedOpenCodeConfig(configPath string) error {
 			}
 		}
 	}
-	
+
 	fmt.Printf("✅ Configuration verification passed - %d providers validated\n", len(providers))
 	return nil
 }
@@ -339,6 +336,6 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	return os.WriteFile(dst, sourceFile, 0644)
 }

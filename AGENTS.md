@@ -24,15 +24,15 @@ data/             # Test data and fixtures
 ### Export OpenCode Configuration (Secure)
 
 ```bash
-# Standard export - generates configuration with embedded API keys
+# Standard export - generates VALID OpenCode configuration with embedded API keys
 # File is automatically protected with 600 permissions and gitignore rules
-python3 scripts/export_opencode_config.py
+python3 scripts/export_opencode_config_fixed.py
 
 # Custom output location
-python3 scripts/export_opencode_config.py --output /path/to/secure/location/
+python3 scripts/export_opencode_config_fixed.py --output /path/to/secure/location/
 
 # Validate gitignore protections (recommended before export)
-python3 scripts/export_opencode_config.py --validate-only
+python3 scripts/export_opencode_config_fixed.py --validate-only
 ```
 
 **Security Features:**
@@ -48,8 +48,9 @@ python3 scripts/export_opencode_config.py --validate-only
 ### Run Model Verification Challenge
 
 ```bash
+make build
 cd llm-verifier
-go run cmd/model-verification/run_full_verification_fixed.go
+../bin/llm-verifier run_full_verification_fixed
 ```
 
 **What it does:**
@@ -75,7 +76,7 @@ cd llm-verifier
 
 1. **ALWAYS use the official export script:**
    ```bash
-   python3 scripts/export_opencode_config.py
+   python3 scripts/export_opencode_config_fixed.py
    ```
 
 2. **NEVER commit exported configurations:**
@@ -105,7 +106,7 @@ The `.gitignore` file protects:
 
 **Validation:**
 ```bash
-python3 scripts/export_opencode_config.py --validate-only
+python3 scripts/export_opencode_config_fixed.py --validate-only
 ```
 
 ## 📖 Code Style
@@ -194,7 +195,7 @@ Where:
 ### 2025-12-28: Security Enhancement (v2.0-ultimate)
 
 **Added:**
-- `scripts/export_opencode_config.py` - Secure export tool with:
+- `scripts/export_opencode_config_fixed.py` - Secure export tool with:
   - Automatic 600 permissions
   - Gitignore validation
   - Security warnings
@@ -259,7 +260,7 @@ cd llm-verifier
 ./llm-verifier
 
 # Export configuration
-python3 scripts/export_opencode_config.py
+python3 scripts/export_opencode_config_fixed.py
 ```
 
 ## 📚 Documentation

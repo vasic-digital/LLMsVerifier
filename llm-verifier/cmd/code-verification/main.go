@@ -29,14 +29,14 @@ type VerificationConfig struct {
 
 // VerificationReport represents the complete verification report
 type VerificationReport struct {
-	Timestamp       time.Time                     `json:"timestamp"`
-	TotalModels     int                           `json:"total_models"`
-	VerifiedModels  int                           `json:"verified_models"`
-	FailedModels    int                           `json:"failed_models"`
-	ErrorModels     int                           `json:"error_models"`
-	AverageScore    float64                       `json:"average_score"`
-	Results         []verification.VerificationResult `json:"results"`
-	Summary         VerificationSummary           `json:"summary"`
+	Timestamp      time.Time                         `json:"timestamp"`
+	TotalModels    int                               `json:"total_models"`
+	VerifiedModels int                               `json:"verified_models"`
+	FailedModels   int                               `json:"failed_models"`
+	ErrorModels    int                               `json:"error_models"`
+	AverageScore   float64                           `json:"average_score"`
+	Results        []verification.VerificationResult `json:"results"`
+	Summary        VerificationSummary               `json:"summary"`
 }
 
 // VerificationSummary provides a summary of the verification run
@@ -97,14 +97,6 @@ func main() {
 		"file_level":    "debug",
 		"component":     "code_verification",
 	}
-	logger, err := logging.NewLogger(db, loggerConfig)
-	if err != nil {
-		log.Fatalf("Failed to create logger: %v", err)
-	}
-	logger.Info("Starting mandatory code verification process", map[string]interface{}{
-		"config": config,
-		"output": *outputDir,
-	})
 
 	// Initialize database
 	db, err := database.New(*dbPath)
@@ -113,16 +105,25 @@ func main() {
 	}
 	defer db.Close()
 
+	// Initialize logger
+	logger, err := logging.NewLogger(db, loggerConfig)
+	if err != nil {
+		log.Fatalf("Failed to create logger: %v", err)
+	}
+	logger.Info("Starting mandatory code verification process", map[string]interface{}{
+		"config": config,
+	})
+
 	// Initialize services
 	httpClient := client.NewHTTPClient(time.Duration(config.Timeout) * time.Second)
 	providerService := providers.NewModelProviderService("config.yaml", logger)
-	
+
 	// Register all providers
 	providerService.RegisterAllProviders()
 
 	// Create verification service
 	verificationService := verification.NewCodeVerificationService(httpClient, logger)
-	
+
 	// Create integration with adapter
 	providerAdapter := providers.NewProviderServiceAdapter(providerService)
 	integration := verification.NewCodeVerificationIntegration(verificationService, db, logger, providerAdapter)
@@ -285,7 +286,7 @@ func filterResults(results []verification.VerificationResult, config Verificatio
 func generateReport(results []verification.VerificationResult) VerificationReport {
 	byProvider := make(map[string]ProviderSummary)
 	byStatus := make(map[string]int)
-	
+
 	var totalScore float64
 	var verifiedCount, failedCount, errorCount int
 

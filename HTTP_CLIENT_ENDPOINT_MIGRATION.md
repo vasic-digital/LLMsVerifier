@@ -105,7 +105,7 @@ go run cmd/model-verification/run_full_verification_fixed.go
 ### Export Configuration
 ```bash
 cd /media/milosvasic/DATA4TB/Projects/LLM/LLMsVerifier
-python3 scripts/export_opencode_config.py
+python3 scripts/export_opencode_config_fixed.py
 ```
 
 **Export Features:**

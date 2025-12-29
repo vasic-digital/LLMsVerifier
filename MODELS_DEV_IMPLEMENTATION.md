@@ -460,7 +460,7 @@ cd /media/milosvasic/DATA4TB/Projects/LLM/LLMsVerifier
 go test -v ./tests/...
 
 # 3. Export configuration
-python3 scripts/export_opencode_config.py
+python3 scripts/export_opencode_config_fixed.py
 
 # 4. Copy to OpenCode location
 cp /home/milosvasic/Downloads/opencode.json ~/.opencode/config.json

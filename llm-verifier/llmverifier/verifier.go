@@ -1247,15 +1247,15 @@ and then suggest improvements based on the content.`,
 		Model: modelName,
 		Messages: []Message{
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "I'm working on a Python project with the following structure: src/main.py, tests/test_main.py, requirements.txt. The main.py file contains a Flask web application. Remember this project structure and context.",
 			},
 			{
-				Role: "assistant",
+				Role:    "assistant",
 				Content: "I've noted your Python project structure: src/main.py (Flask web app), tests/test_main.py, requirements.txt. I'll remember this context for our conversation.",
 			},
 			{
-				Role: "user",
+				Role:    "user",
 				Content: "Based on this project structure, where should I add a new utility module for database operations, and what would be the appropriate import statement in my Flask app?",
 			},
 		},
@@ -2314,12 +2314,11 @@ func (v *Verifier) CalculateScores(result VerificationResult) (PerformanceScore,
 	// Calculate value proposition score (5% weight)
 	scores.ValueProposition = v.calculateValuePropositionScore(scores)
 
-	// Calculate overall score (adjusting weights to account for generative score)
-	scores.OverallScore = (codeScore * 0.40) +
-		(responsivenessScore * 0.15) +
-		(reliabilityScore * 0.15) +
-		(featureRichnessScore * 0.20) + // Increased to include generative aspects
-		(scores.ValueProposition * 0.10) // Increased weight
+	// Calculate overall score according to specification weights
+	scores.OverallScore = (responsivenessScore * 0.30) +
+		(codeScore * 0.25) +
+		(featureRichnessScore * 0.25) +
+		(reliabilityScore * 0.20)
 
 	return scores, details
 }

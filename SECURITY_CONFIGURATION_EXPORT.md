@@ -46,7 +46,7 @@ This prevents unauthorized access by other users on the system.
 
 ### **The Official Export Tool**
 
-**Location:** `scripts/export_opencode_config.py`
+**Location:** `scripts/export_opencode_config_fixed.py`
 
 **Features:**
 - ✅ Automatic security validation
@@ -65,7 +65,7 @@ This prevents unauthorized access by other users on the system.
 
 ```bash
 cd /media/milosvasic/DATA4TB/Projects/LLM/LLMsVerifier
-python3 scripts/export_opencode_config.py
+python3 scripts/export_opencode_config_fixed.py
 ```
 
 This will:
@@ -80,22 +80,22 @@ This will:
 
 ```bash
 # Specify custom output location
-python3 scripts/export_opencode_config.py \
+python3 scripts/export_opencode_config_fixed.py \
   --output /path/to/safe/location/opencode.json
 
 # Use specific verification results
-python3 scripts/export_opencode_config.py \
+python3 scripts/export_opencode_config_fixed.py \
   --verification challenges/full_verification/2025/12/28/143700/results/providers_export.json
 
 # Use specific .env file  
-python3 scripts/export_opencode_config.py \
+python3 scripts/export_opencode_config_fixed.py \
   --env /path/to/secrets/.env
 ```
 
 ### **Validate Gitignore Protection**
 
 ```bash
-python3 scripts/export_opencode_config.py --validate-only
+python3 scripts/export_opencode_config_fixed.py --validate-only
 ```
 
 This checks if the `.gitignore` file has proper security protections.
@@ -145,7 +145,7 @@ This checks if the `.gitignore` file has proper security protections.
 
 1. **Always use the official export script**
    ```bash
-   python3 scripts/export_opencode_config.py
+   python3 scripts/export_opencode_config_fixed.py
    ```
 
 2. **Keep exported files in secure locations**
@@ -159,7 +159,7 @@ This checks if the `.gitignore` file has proper security protections.
 
 4. **Validate gitignore before exporting**
    ```bash
-   python3 scripts/export_opencode_config.py --validate-only
+   python3 scripts/export_opencode_config_fixed.py --validate-only
    ```
 
 5. **Review exported files for sensitive data**
@@ -309,10 +309,10 @@ Verify complete security setup:
 
 ```bash
 # 1. Gitignore protection
-python3 scripts/export_opencode_config.py --validate-only
+python3 scripts/export_opencode_config_fixed.py --validate-only
 
 # 2. Export configuration
-python3 scripts/export_opencode_config.py
+python3 scripts/export_opencode_config_fixed.py
 
 # 3. Check file permissions
 ls -la ~/Downloads/opencode*.json  # Should show -rw-------
