@@ -12,9 +12,10 @@ DAY=$(date +%d)
 DATETIME=$(date +"%Y-%m-%d %H:%M:%S")
 
 # Remove previous results for clean slate
-rm -rf "$CHALLENGE_NAME"/*/
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+rm -rf "$SCRIPT_DIR/../$CHALLENGE_NAME"/*/ 2>/dev/null || true
 
-CHALLENGE_DIR="$CHALLENGE_NAME/$YEAR/$MONTH/$DAY/temp_$TIMESTAMP"
+CHALLENGE_DIR="$SCRIPT_DIR/../$CHALLENGE_NAME/$YEAR/$MONTH/$DAY/temp_$TIMESTAMP"
 LOG_DIR="$CHALLENGE_DIR/logs"
 RESULTS_DIR="$CHALLENGE_DIR/results"
 
@@ -191,7 +192,7 @@ log "RUNNING BINARY - ACTUAL EXECUTION"
 log "========================================"
 log ""
 
-BINARY="$(pwd)/../llm-verifier"
+BINARY="$SCRIPT_DIR/../../llm-verifier"
 
 # Log and execute binary command
 log "Executing binary to discover and verify providers..."
@@ -209,10 +210,10 @@ log ""
 
 # Determine success/failure and move directory
 if [ $EXIT_CODE -eq 0 ]; then
-    FINAL_DIR="$CHALLENGE_NAME/$YEAR/$MONTH/$DAY/SUCCESS/$TIMESTAMP"
+    FINAL_DIR="$SCRIPT_DIR/../$CHALLENGE_NAME/$YEAR/$MONTH/$DAY/SUCCESS/$TIMESTAMP"
     log "Challenge succeeded, moving to SUCCESS"
 else
-    FINAL_DIR="$CHALLENGE_NAME/$YEAR/$MONTH/$DAY/FAILED/$TIMESTAMP"
+    FINAL_DIR="$SCRIPT_DIR/../$CHALLENGE_NAME/$YEAR/$MONTH/$DAY/FAILED/$TIMESTAMP"
     log "Challenge failed, moving to FAILED"
 fi
 

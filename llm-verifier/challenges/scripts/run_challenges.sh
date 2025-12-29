@@ -6,7 +6,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CHALLENGES_BANK="$SCRIPT_DIR/challenges_bank.json"
+CHALLENGES_BANK="$SCRIPT_DIR/../data/challenges_bank.json"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Colors for output

@@ -7,7 +7,7 @@
       "name": "Provider Models Discovery",
       "description": "Discover all available providers, their models, and verify features",
       "platforms": ["cli", "rest-api", "tui", "desktop"],
-      "binary": "llm-verifier",
+      "binary": "../llm-verifier",
       "script": "run_actual_binary_challenge.sh",
       "config_template": "run_actual_binary_challenge.sh",
       "dependencies": [],
@@ -23,7 +23,7 @@
       "name": "Model Verification",
       "description": "Verify each model's actual capabilities (chat, streaming, function calling, vision)",
       "platforms": ["cli", "rest-api"],
-      "binary": "llm-verifier",
+      "binary": "../llm-verifier",
       "script": "codebase/challenge_runners/model_verification/run.sh",
       "config_template": "codebase/challenge_runners/model_verification/config_template.yaml",
       "dependencies": [],
@@ -39,7 +39,7 @@
       "name": "Feature Integration",
       "description": "Test multi-provider failover, load balancing, and health monitoring",
       "platforms": ["cli", "rest-api", "tui"],
-      "binary": "llm-verifier",
+      "binary": "../llm-verifier",
       "script": "codebase/challenge_runners/feature_integration/run.sh",
       "config_template": "codebase/challenge_runners/feature_integration/config_template.yaml",
       "dependencies": [],
@@ -55,7 +55,7 @@
       "name": "Performance Benchmark",
       "description": "Benchmark response times, concurrent requests, and rate limits",
       "platforms": ["cli", "rest-api"],
-      "binary": "llm-verifier",
+      "binary": "../llm-verifier",
       "script": "codebase/challenge_runners/performance_benchmark/run.sh",
       "config_template": "codebase/challenge_runners/performance_benchmark/config_template.yaml",
       "dependencies": [],
@@ -72,7 +72,7 @@
       "name": "REST API Testing",
       "description": "Test all REST API endpoints and verify functionality",
       "platforms": ["rest-api"],
-      "binary": "llm-verifier",
+      "binary": "../llm-verifier",
       "script": "codebase/challenge_runners/rest_api_testing/run.sh",
       "config_template": "codebase/challenge_runners/rest_api_testing/config_template.yaml",
       "dependencies": [],
@@ -88,7 +88,7 @@
       "name": "TUI Functionality",
       "description": "Test Terminal User Interface features and workflows",
       "platforms": ["tui"],
-      "binary": "llm-verifier",
+      "binary": "../llm-verifier",
       "script": "codebase/challenge_runners/tui_functionality/run.sh",
       "config_template": "codebase/challenge_runners/tui_functionality/config_template.yaml",
       "dependencies": [],
@@ -104,7 +104,7 @@
       "name": "Desktop Application Testing",
       "description": "Test desktop application features and integrations",
       "platforms": ["desktop"],
-      "binary": "llm-verifier",
+      "binary": "../llm-verifier",
       "script": "codebase/challenge_runners/desktop_app_testing/run.sh",
       "config_template": "codebase/challenge_runners/desktop_app_testing/config_template.yaml",
       "dependencies": [],
@@ -120,7 +120,7 @@
       "name": "Mobile Application Testing",
       "description": "Test mobile application features and integrations",
       "platforms": ["mobile"],
-      "binary": "llm-verifier",
+      "binary": "../llm-verifier",
       "script": "codebase/challenge_runners/mobile_app_testing/run.sh",
       "config_template": "codebase/challenge_runners/mobile_app_testing/config_template.yaml",
       "dependencies": [],
@@ -136,7 +136,7 @@
       "name": "Configuration Export/Import",
       "description": "Test AI configuration export and import functionality",
       "platforms": ["cli", "rest-api"],
-      "binary": "llm-verifier",
+      "binary": "../llm-verifier",
       "script": "codebase/challenge_runners/config_export_import/run.sh",
       "config_template": "codebase/challenge_runners/config_export_import/config_template.yaml",
       "dependencies": [],
@@ -151,23 +151,23 @@
   ],
   "platforms": {
     "cli": {
-      "binary": "llm-verifier",
+      "binary": "../llm-verifier",
       "description": "Command Line Interface"
     },
     "rest-api": {
-      "binary": "llm-verifier",
+      "binary": "../llm-verifier",
       "description": "REST API Server"
     },
     "tui": {
-      "binary": "llm-verifier",
+      "binary": "../llm-verifier",
       "description": "Terminal User Interface"
     },
     "desktop": {
-      "binary": "llm-verifier",
+      "binary": "../llm-verifier",
       "description": "Desktop Application"
     },
     "mobile": {
-      "binary": "llm-verifier",
+      "binary": "../llm-verifier",
       "description": "Mobile Application"
     },
     "web": {
