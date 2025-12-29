@@ -559,14 +559,28 @@ func (mps *ModelProviderService) sortModels(models []Model) {
 
 // Cache operations
 
-// getFromCache retrieves models from cache if not expired
-func (mps *ModelProviderService) getFromCache(providerID string) []Model {
-	mps.cacheMutex.RLock()
-	defer mps.cacheMutex.RUnlock()
+	// getFromCache retrieves models from cache if not expired
+	func (mps *ModelProviderService) getFromCache(providerID string) []Model {
+		mps.cacheMutex.RLock()
+		defer mps.cacheMutex.RUnlock()
 
-	entry, exists := mps.cache[providerID]
-	if !exists {
-		return nil
+		entry, exists := mps.cache[providerID]
+		if !exists {
+			return nil
+		}
+
+		// Check cache expiration (24 hours)
+		cacheAge := time.Since(entry.timestamp)
+		cacheDuration := 24 * time.Hour
+		
+		if cacheAge > cacheDuration {
+			mps.logger.Debug(fmt.Sprintf("Cache expired for %s (age: %v, TTL: %v)", providerID, cacheAge.Round(time.Minute), cacheDuration))
+			delete(mps.cache, providerID)
+			return nil
+		}
+
+		mps.logger.Debug(fmt.Sprintf("Cache hit for %s (age: %v)", providerID, cacheAge.Round(time.Minute)))
+		return entry.models
 	}
 
 	// Check if expired
