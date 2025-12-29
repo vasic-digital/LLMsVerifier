@@ -23,6 +23,12 @@ llm-verifier/cmd/ultimate-challenge/ultimate-challenge*
 llm-verifier/cmd/fixed-ultimate-challenge/*
 llm-verifier/cmd/model-verification/model-verification
 crush_config_converter
+llm-verifier/cmd/cmd
+llm-verifier/final-build
+llm-verifier/main
+llm-verifier/run_challenges
+llm-verifier/test_binary
+llm-verifier/tui-app
 
 # Go module cache
 go.sum
