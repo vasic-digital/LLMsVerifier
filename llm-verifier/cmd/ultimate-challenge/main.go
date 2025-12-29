@@ -40,7 +40,7 @@ func main() {
 	}
 
 	// Create enhanced provider service with mandatory verification
-	service := providers.NewEnhancedModelProviderService("/tmp/opencode.json", logger, verificationConfig)
+	service := providers.NewEnhancedModelProviderService("/dev/null", logger, verificationConfig)
 
 	// Register all providers from env
 	fmt.Println("📋 Registering all providers from environment...")

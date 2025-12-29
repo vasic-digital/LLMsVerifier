@@ -572,37 +572,14 @@ func (mps *ModelProviderService) getFromCache(providerID string) []Model {
 	// Check cache expiration (24 hours)
 	cacheAge := time.Since(entry.timestamp)
 	cacheDuration := 24 * time.Hour
-	
+
 	if cacheAge > cacheDuration {
-		mps.logger.Debug(fmt.Sprintf("Cache expired for %s (age: %v, TTL: %v)", providerID, cacheAge.Round(time.Minute), cacheDuration))
-		// Remove expired entry
+		mps.logger.Debug(fmt.Sprintf("Cache expired for %s (age: %v, TTL: %v)", providerID, cacheAge.Round(time.Minute), cacheDuration), nil)
 		delete(mps.cache, providerID)
 		return nil
 	}
 
-	mps.logger.Debug(fmt.Sprintf("Cache hit for %s (age: %v)", providerID, cacheAge.Round(time.Minute)))
-	return entry.models
-}
-
-		// Check cache expiration (24 hours)
-		cacheAge := time.Since(entry.timestamp)
-		cacheDuration := 24 * time.Hour
-		
-		if cacheAge > cacheDuration {
-			mps.logger.Debug(fmt.Sprintf("Cache expired for %s (age: %v, TTL: %v)", providerID, cacheAge.Round(time.Minute), cacheDuration))
-			delete(mps.cache, providerID)
-			return nil
-		}
-
-		mps.logger.Debug(fmt.Sprintf("Cache hit for %s (age: %v)", providerID, cacheAge.Round(time.Minute)))
-		return entry.models
-	}
-
-	// Check if expired
-	if time.Since(entry.timestamp) > time.Duration(mps.cacheTTL)*time.Hour {
-		return nil
-	}
-
+	mps.logger.Debug(fmt.Sprintf("Cache hit for %s (age: %v)", providerID, cacheAge.Round(time.Minute)), nil)
 	return entry.models
 }
 
