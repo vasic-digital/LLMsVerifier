@@ -29,6 +29,13 @@ llm-verifier/main
 llm-verifier/run_challenges
 llm-verifier/test_binary
 llm-verifier/tui-app
+llm-verifier/cmd/verify_clean
+llm-verifier/crush_config_converter
+llm-verifier/provider_models_discovery
+llm-verifier/run_model_*
+llm-verifier/test_http3_toon
+partners-cli
+testsuite-cli
 
 # Go module cache
 go.sum
