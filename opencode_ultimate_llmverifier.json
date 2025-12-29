@@ -1,0 +1,97 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "version": "1.0",
+  "username": "OpenCode AI Assistant (Ultimate Challenge - LLM-Verifier Binary Only)",
+  "provider": {
+    "cerebras": {
+      "options": {
+        "apiKey": "$ApiKey_Cerebras"
+      },
+      "models": {}
+    },
+    "chutes": {
+      "options": {
+        "apiKey": "$ApiKey_Chutes"
+      },
+      "models": {}
+    },
+    "deepseek": {
+      "options": {
+        "apiKey": "$ApiKey_DeepSeek"
+      },
+      "models": {}
+    },
+    "fireworks": {
+      "options": {
+        "apiKey": "$ApiKey_Fireworks_AI"
+      },
+      "models": {}
+    },
+    "huggingface": {
+      "options": {
+        "apiKey": "$ApiKey_HuggingFace"
+      },
+      "models": {}
+    },
+    "hyperbolic": {
+      "options": {
+        "apiKey": "$ApiKey_Hyperbolic"
+      },
+      "models": {}
+    },
+    "inference": {
+      "options": {
+        "apiKey": "$ApiKey_Inference"
+      },
+      "models": {}
+    },
+    "mistral": {
+      "options": {
+        "apiKey": "$ApiKey_Mistral_AiStudio"
+      },
+      "models": {}
+    },
+    "novita": {
+      "options": {
+        "apiKey": "$ApiKey_Novita_AI"
+      },
+      "models": {}
+    },
+    "nvidia": {
+      "options": {
+        "apiKey": "$ApiKey_Nvidia"
+      },
+      "models": {}
+    },
+    "openrouter": {
+      "options": {
+        "apiKey": "$ApiKey_OpenRouter"
+      },
+      "models": {}
+    },
+    "replicate": {
+      "options": {
+        "apiKey": "$ApiKey_Replicate"
+      },
+      "models": {}
+    },
+    "sambanova": {
+      "options": {
+        "apiKey": "$ApiKey_SambaNova_AI"
+      },
+      "models": {}
+    },
+    "siliconflow": {
+      "options": {
+        "apiKey": "$ApiKey_SiliconFlow"
+      },
+      "models": {}
+    },
+    "upstage": {
+      "options": {
+        "apiKey": "$ApiKey_Upstage_AI"
+      },
+      "models": {}
+    }
+  }
+}

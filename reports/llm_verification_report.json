@@ -1,0 +1,358 @@
+{
+  "metadata": {
+    "generated_at": "2025-12-29T14:24:02+03:00",
+    "total_models": 2
+  },
+  "results": [
+    {
+      "model_info": {
+        "id": "gpt-4-turbo",
+        "object": "",
+        "created": 0,
+        "owned_by": "",
+        "capabilities": {
+          "completion": false,
+          "chat": false,
+          "embedding": false,
+          "fine_tuning": false,
+          "image_generation": false,
+          "code_generation": false,
+          "tool_use": false,
+          "multimodal": false,
+          "function_calling": false,
+          "voice": false,
+          "rerank": false
+        },
+        "context_window": {
+          "max_input_tokens": 0,
+          "max_output_tokens": 0,
+          "total_max_tokens": 0
+        },
+        "input_prices": {
+          "prompt": ""
+        },
+        "output_prices": {
+          "completion": ""
+        },
+        "architecture": {
+          "reasoning_efficiency": 0,
+          "cot_token_efficiency": 0
+        },
+        "endpoint": "https://api.openai.com/v1"
+      },
+      "availability": {
+        "exists": false,
+        "responsive": false,
+        "overloaded": false,
+        "latency": 0,
+        "last_checked": "0001-01-01T00:00:00Z"
+      },
+      "response_time": {
+        "average_latency": 0,
+        "p95_latency": 0,
+        "min_latency": 0,
+        "max_latency": 0,
+        "throughput": 0,
+        "measurement_count": 0
+      },
+      "feature_detection": {
+        "tool_use": false,
+        "functions": null,
+        "code_generation": false,
+        "code_completion": false,
+        "code_review": false,
+        "code_explanation": false,
+        "embeddings": false,
+        "reranking": false,
+        "image_generation": false,
+        "audio_generation": false,
+        "video_generation": false,
+        "mcps": false,
+        "lsps": false,
+        "acps": false,
+        "multimodal": false,
+        "streaming": false,
+        "json_mode": false,
+        "structured_output": false,
+        "reasoning": false,
+        "function_calling": false,
+        "parallel_tool_use": false,
+        "max_parallel_calls": 0,
+        "modalities": null,
+        "batch_processing": false,
+        "supports_brotli": false
+      },
+      "code_capabilities": {
+        "language_support": null,
+        "code_generation": false,
+        "code_completion": false,
+        "code_debugging": false,
+        "code_optimization": false,
+        "code_review": false,
+        "code_explanation": false,
+        "test_generation": false,
+        "documentation": false,
+        "refactoring": false,
+        "error_resolution": false,
+        "architecture": false,
+        "security_assessment": false,
+        "pattern_recognition": false,
+        "debugging_accuracy": 0,
+        "complexity_handling": {
+          "max_handled_depth": 0,
+          "max_tokens": 0,
+          "code_quality": 0,
+          "logic_correctness": 0,
+          "runtime_efficiency": 0
+        },
+        "prompt_response": {
+          "python_success_rate": 0,
+          "javascript_success_rate": 0,
+          "go_success_rate": 0,
+          "java_success_rate": 0,
+          "cpp_success_rate": 0,
+          "typescript_success_rate": 0,
+          "overall_success_rate": 0,
+          "avg_response_time": 0
+        }
+      },
+      "generative_capabilities": {
+        "creative_writing": false,
+        "storytelling": false,
+        "content_generation": false,
+        "artistic_creativity": false,
+        "problem_solving": false,
+        "multimodal_generative": false,
+        "originality_score": 0,
+        "creativity_score": 0
+      },
+      "performance_scores": {
+        "overall_score": 0,
+        "code_capability": 0,
+        "responsiveness": 0,
+        "reliability": 0,
+        "feature_richness": 0,
+        "value_proposition": 0
+      },
+      "timestamp": "2025-12-29T14:24:01.620616612+03:00",
+      "error": "failed to check model existence: API request failed with status 401: {\n  \"error\": {\n    \"message\": \"Incorrect API key provided: ${OPENAI*****KEY}. You can find your API key at https://platform.openai.com/account/api-keys.\",\n    \"type\": \"invalid_request_error\",\n    \"param\": null,\n    \"code\": \"invalid_api_key\"\n  }\n}",
+      "score_details": {
+        "code_capability_breakdown": {
+          "generation_score": 0,
+          "completion_score": 0,
+          "debugging_score": 0,
+          "review_score": 0,
+          "test_gen_score": 0,
+          "document_score": 0,
+          "architecture_score": 0,
+          "optimization_score": 0,
+          "complexity_handling": 0,
+          "weighted_average": 0
+        },
+        "response_time_breakdown": {
+          "latency_score": 0,
+          "throughput_score": 0,
+          "consistency_score": 0,
+          "weighted_average": 0
+        },
+        "feature_support_breakdown": {
+          "core_features_score": 0,
+          "advanced_features_score": 0,
+          "experimental_features_score": 0,
+          "weighted_average": 0
+        },
+        "reliability_breakdown": {
+          "availability_score": 0,
+          "consistency_score": 0,
+          "error_rate_score": 0,
+          "stability_score": 0,
+          "weighted_average": 0
+        }
+      }
+    },
+    {
+      "model_info": {
+        "id": "gpt-3.5-turbo",
+        "object": "",
+        "created": 0,
+        "owned_by": "",
+        "capabilities": {
+          "completion": false,
+          "chat": false,
+          "embedding": false,
+          "fine_tuning": false,
+          "image_generation": false,
+          "code_generation": false,
+          "tool_use": false,
+          "multimodal": false,
+          "function_calling": false,
+          "voice": false,
+          "rerank": false
+        },
+        "context_window": {
+          "max_input_tokens": 0,
+          "max_output_tokens": 0,
+          "total_max_tokens": 0
+        },
+        "input_prices": {
+          "prompt": ""
+        },
+        "output_prices": {
+          "completion": ""
+        },
+        "architecture": {
+          "reasoning_efficiency": 0,
+          "cot_token_efficiency": 0
+        },
+        "endpoint": "https://api.openai.com/v1"
+      },
+      "availability": {
+        "exists": false,
+        "responsive": false,
+        "overloaded": false,
+        "latency": 0,
+        "last_checked": "0001-01-01T00:00:00Z"
+      },
+      "response_time": {
+        "average_latency": 0,
+        "p95_latency": 0,
+        "min_latency": 0,
+        "max_latency": 0,
+        "throughput": 0,
+        "measurement_count": 0
+      },
+      "feature_detection": {
+        "tool_use": false,
+        "functions": null,
+        "code_generation": false,
+        "code_completion": false,
+        "code_review": false,
+        "code_explanation": false,
+        "embeddings": false,
+        "reranking": false,
+        "image_generation": false,
+        "audio_generation": false,
+        "video_generation": false,
+        "mcps": false,
+        "lsps": false,
+        "acps": false,
+        "multimodal": false,
+        "streaming": false,
+        "json_mode": false,
+        "structured_output": false,
+        "reasoning": false,
+        "function_calling": false,
+        "parallel_tool_use": false,
+        "max_parallel_calls": 0,
+        "modalities": null,
+        "batch_processing": false,
+        "supports_brotli": false
+      },
+      "code_capabilities": {
+        "language_support": null,
+        "code_generation": false,
+        "code_completion": false,
+        "code_debugging": false,
+        "code_optimization": false,
+        "code_review": false,
+        "code_explanation": false,
+        "test_generation": false,
+        "documentation": false,
+        "refactoring": false,
+        "error_resolution": false,
+        "architecture": false,
+        "security_assessment": false,
+        "pattern_recognition": false,
+        "debugging_accuracy": 0,
+        "complexity_handling": {
+          "max_handled_depth": 0,
+          "max_tokens": 0,
+          "code_quality": 0,
+          "logic_correctness": 0,
+          "runtime_efficiency": 0
+        },
+        "prompt_response": {
+          "python_success_rate": 0,
+          "javascript_success_rate": 0,
+          "go_success_rate": 0,
+          "java_success_rate": 0,
+          "cpp_success_rate": 0,
+          "typescript_success_rate": 0,
+          "overall_success_rate": 0,
+          "avg_response_time": 0
+        }
+      },
+      "generative_capabilities": {
+        "creative_writing": false,
+        "storytelling": false,
+        "content_generation": false,
+        "artistic_creativity": false,
+        "problem_solving": false,
+        "multimodal_generative": false,
+        "originality_score": 0,
+        "creativity_score": 0
+      },
+      "performance_scores": {
+        "overall_score": 0,
+        "code_capability": 0,
+        "responsiveness": 0,
+        "reliability": 0,
+        "feature_richness": 0,
+        "value_proposition": 0
+      },
+      "timestamp": "2025-12-29T14:24:02.221697009+03:00",
+      "error": "failed to check model existence: API request failed with status 401: {\n  \"error\": {\n    \"message\": \"Incorrect API key provided: ${OPENAI*****KEY}. You can find your API key at https://platform.openai.com/account/api-keys.\",\n    \"type\": \"invalid_request_error\",\n    \"param\": null,\n    \"code\": \"invalid_api_key\"\n  }\n}",
+      "score_details": {
+        "code_capability_breakdown": {
+          "generation_score": 0,
+          "completion_score": 0,
+          "debugging_score": 0,
+          "review_score": 0,
+          "test_gen_score": 0,
+          "document_score": 0,
+          "architecture_score": 0,
+          "optimization_score": 0,
+          "complexity_handling": 0,
+          "weighted_average": 0
+        },
+        "response_time_breakdown": {
+          "latency_score": 0,
+          "throughput_score": 0,
+          "consistency_score": 0,
+          "weighted_average": 0
+        },
+        "feature_support_breakdown": {
+          "core_features_score": 0,
+          "advanced_features_score": 0,
+          "experimental_features_score": 0,
+          "weighted_average": 0
+        },
+        "reliability_breakdown": {
+          "availability_score": 0,
+          "consistency_score": 0,
+          "error_rate_score": 0,
+          "stability_score": 0,
+          "weighted_average": 0
+        }
+      }
+    }
+  ],
+  "summary": {
+    "total_models": 2,
+    "available_models": 0,
+    "failed_models": 2,
+    "start_time": "2025-12-29T14:24:02.44247182+03:00",
+    "end_time": "2025-12-29T14:24:02.442471849+03:00",
+    "duration": 0,
+    "average_score": 0,
+    "brotli_support_rate": 0,
+    "top_performers": null,
+    "category_rankings": {
+      "by_code_capability": [],
+      "by_responsiveness": [],
+      "by_reliability": [],
+      "by_feature_richness": [],
+      "by_value": []
+    }
+  }
+}
