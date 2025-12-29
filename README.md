@@ -10,6 +10,7 @@
 ## 🌟 Key Features
 
 ### Core Capabilities
+- **Mandatory Model Verification**: All models must pass "Do you see my code?" verification before use
 - **20+ LLM Verification Tests**: Comprehensive capability assessment across all major providers
 - **Multi-Provider Support**: OpenAI, Anthropic, Google, Cohere, Meta, Groq, Together AI, Fireworks AI, Poe, NaviGator AI, Mistral, xAI, Replicate, and more
 - **Real-Time Monitoring**: 99.9% uptime with intelligent failover and health checking
@@ -28,6 +29,12 @@
 - **Model Recommendations**: AI-powered model selection based on task requirements
 - **Cloud Backup Integration**: Multi-provider cloud storage for checkpoints (AWS S3, Google Cloud, Azure)
 
+### Branding & Verification
+- **(llmsvd) Suffix System**: All LLMsVerifier-generated providers and models include mandatory branding suffix
+- **Verified Configuration Export**: Only verified models included in exported configurations
+- **Code Visibility Assurance**: Models confirmed to see and understand provided code
+- **Quality Scoring**: Comprehensive scoring system with feature suffixes
+
 ### Production Ready
 - **Docker & Kubernetes**: Production deployment with health monitoring
 - **Prometheus Metrics**: Comprehensive monitoring with Grafana dashboards
@@ -42,70 +49,15 @@
 - [API Documentation](llm-verifier/docs/API_DOCUMENTATION.md)
 - [Deployment Guide](llm-verifier/docs/DEPLOYMENT_GUIDE.md)
 - [Environment Variables](llm-verifier/docs/ENVIRONMENT_VARIABLES.md)
+- [Model Verification Guide](docs/MODEL_VERIFICATION_GUIDE.md)
+- [LLMSVD Suffix Guide](docs/LLMSVD_SUFFIX_GUIDE.md)
+- [Configuration Migration Guide](docs/CONFIGURATION_MIGRATION_GUIDE.md)
 
 ### Developer Documentation
 - [Architecture Overview](docs/ARCHITECTURE_OVERVIEW.md)
 - [System Documentation](docs/COMPLETE_SYSTEM_DOCUMENTATION.md)
 - [API Changelog](llm-verifier/docs/CHANGELOG.md)
-
-## 🤝 Contributing
-
-We welcome contributions from the community! LLM Verifier is an open-source project that benefits from diverse perspectives and expertise.
-
-### Getting Started
-- 📖 [Contributing Guide](CONTRIBUTING.md) - Complete contribution guidelines
-- 🐛 [Bug Reports](.github/ISSUE_TEMPLATE/bug-report.yml) - Report issues
-- ✨ [Feature Requests](.github/ISSUE_TEMPLATE/feature-request.yml) - Suggest improvements
-- 🛡️ [Security Policy](SECURITY.md) - Report security vulnerabilities
-
-### Development Quick Start
-```bash
-# Clone the repository
-git clone https://github.com/your-org/llm-verifier.git
-cd llm-verifier
-
-# Set up development environment
-make setup
-
-# Run tests
-make test
-
-# Build the project
-make build
-
-# Start development server
-make run
-```
-
-### Development Workflow
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests (`make check test`)
-5. Commit your changes (`git commit -m "feat: add amazing feature"`)
-6. Push to your branch (`git push origin feature/amazing-feature`)
-7. Create a Pull Request
-
-### Code Quality Standards
-- ✅ **Linting**: `make lint`
-- ✅ **Formatting**: `make format`
-- ✅ **Testing**: `make test` (minimum 80% coverage)
-- ✅ **Security**: `make security`
-- ✅ **Documentation**: Update relevant docs for changes
-
-### Community
-- 💬 [GitHub Discussions](https://github.com/your-org/llm-verifier/discussions) - General discussions
-- 🆘 [Discord/Slack](#) - Real-time chat
-- 📧 [Mailing List](#) - Announcements
-
----
-
-*LLM Verifier is proudly open source under the MIT License. Built with ❤️ by the community.*
-
-### Deployment Guides
-- [Docker Deployment](llm-verifier/docs/deployment/docker.md)
-- [Kubernetes Deployment](llm-verifier/docs/deployment/kubernetes.md)
-- [AWS Deployment](llm-verifier/docs/deployment/aws.md)
+- [Test Suite Documentation](docs/COMPREHENSIVE_TEST_SUITE_DOCUMENTATION.md)
 
 ## 🚀 Quick Start
 
@@ -178,6 +130,22 @@ api:
   jwt_secret: "your-jwt-secret"
   enable_cors: true
 
+# Model Verification Configuration
+model_verification:
+  enabled: true
+  strict_mode: true
+  require_affirmative: true
+  max_retries: 3
+  timeout_seconds: 30
+  min_verification_score: 0.7
+
+# LLMSVD Suffix Configuration
+branding:
+  enabled: true
+  suffix: "(llmsvd)"
+  position: "final"  # Always appears as final suffix
+```
+
 ### Configuration Management
 
 The LLM Verifier includes tools for managing LLM configurations for different platforms:
@@ -186,15 +154,25 @@ The LLM Verifier includes tools for managing LLM configurations for different pl
 - **Auto-Generated Configs**: Use the built-in converter to generate valid Crush configurations from discovery results
 - **Streaming Support**: Configurations automatically include streaming flags when LLMs support it
 - **Cost Estimation**: Realistic cost calculations based on provider and model type
+- **Verification Integration**: Only verified models are included in configurations
 
 ```bash
 # Generate Crush config from discovery
 go run crush_config_converter.go path/to/discovery.json
+
+# Generate verified Crush config
+./model-verification --output ./verified-configs --format crush
 ```
 
 #### OpenCode Configuration
 - **Streaming Enabled**: All compatible models have streaming support enabled by default
 - **Model Verification**: Configurations are validated to ensure consistency
+- **Verified Models Only**: Only models that pass verification are included
+
+```bash
+# Generate verified OpenCode config
+./model-verification --output ./verified-configs --format opencode
+```
 
 #### Sensitive File Handling
 
@@ -203,6 +181,7 @@ The LLM Verifier implements secure configuration management:
 - **Full Files**: Contain actual API keys - **gitignored** (e.g., `*_config.json`)
 - **Redacted Files**: API keys as `""` - **versioned** (e.g., `*_config_redacted.json`)
 - **Platform Formats**: Generates Crush and OpenCode configs per official specs
+- **Verification Status**: All models marked with verification status
 
 **Security**: Never commit files with real API keys. Use redacted versions for sharing.
 
@@ -210,6 +189,27 @@ The LLM Verifier implements secure configuration management:
 
 - **Crush**: Full JSON schema compliance with providers, models, costs, and options
 - **OpenCode**: Official format with `$schema`, `provider` object containing `options.apiKey` and empty `models`
+
+### Model Verification System
+
+The LLM Verifier now includes mandatory model verification to ensure models can actually see and understand code:
+
+```bash
+# Run model verification
+./llm-verifier/cmd/model-verification/model-verification --verify-all
+
+# Verify specific provider
+./model-verification --provider openai
+
+# Generate verified configuration
+./model-verification --output ./verified-configs --format opencode
+```
+
+#### Verification Process
+1. **Code Visibility Test**: Models must respond to "Do you see my code?"
+2. **Affirmative Response Required**: Only models that confirm code visibility pass
+3. **Scoring System**: Verification scores based on response quality
+4. **Configuration Filtering**: Only verified models included in exports
 
 ### Challenges
 
@@ -226,31 +226,10 @@ To run LLM verification challenges:
 go run llm-verifier/challenges/codebase/go_files/provider_models_discovery.go
 
 # Run model verification
-go run llm-verifier/challenges/codebase/go_files/run_model_verification.go
-```
+./llm-verifier/cmd/model-verification/model-verification --verify-all
 
-monitoring:
-  enabled: true
-  prometheus:
-    enabled: true
-    port: 9090
-
-enterprise:
-  ldap:
-    enabled: true
-    host: "ldap.company.com"
-    port: 389
-    base_dn: "dc=company,dc=com"
-    bind_user: "cn=service,ou=users,dc=company,dc=com"
-    bind_password: "${LDAP_BIND_PASSWORD}"
-
-  sso:
-    provider: "saml"
-    saml:
-      entity_id: "llm-verifier"
-      sso_url: "https://sso.company.com/saml/sso"
-      certificate: "/path/to/cert.pem"
-      private_key: "/path/to/key.pem"
+# Run comprehensive test suite
+./run_comprehensive_tests.sh
 ```
 
 ## 🔧 API Usage
@@ -286,6 +265,45 @@ curl -X POST http://localhost:8080/api/v1/chat \
   }'
 ```
 
+### Model Verification API
+
+```bash
+# Trigger model verification
+curl -X POST http://localhost:8080/api/v1/models/gpt-4/verify \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# Get verification status
+curl -X GET http://localhost:8080/api/v1/models/gpt-4/verification-status \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# Get verified models only
+curl -X GET "http://localhost:8080/api/v1/models?verification_status=verified" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### Configuration Export API
+
+```bash
+# Export verified OpenCode configuration
+curl -X POST http://localhost:8080/api/v1/config-exports/opencode \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "min_score": 80,
+    "verification_status": "verified",
+    "supports_code_generation": true
+  }'
+
+# Export verified Crush configuration
+curl -X POST http://localhost:8080/api/v1/config-exports/crush \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "providers": ["openai", "anthropic"],
+    "verification_status": "verified"
+  }'
+```
+
 ### SDK Usage
 
 #### Go SDK
@@ -302,13 +320,25 @@ import (
 func main() {
     client := llmverifier.NewClient("http://localhost:8080", "your-api-key")
 
-    result, err := client.VerifyModel("gpt-4", "Test prompt")
+    // Verify a model
+    verification, err := client.VerifyModel("gpt-4", "Test prompt")
     if err != nil {
         log.Fatal(err)
     }
 
-    fmt.Printf("Score: %.2f, Capabilities: %v\n",
-        result.OverallScore, result.Capabilities)
+    fmt.Printf("Verification Score: %.2f, Can See Code: %v\n",
+        verification.Score, verification.CanSeeCode)
+
+    // Get verified models only
+    verifiedModels, err := client.GetVerifiedModels()
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    for _, model := range verifiedModels {
+        fmt.Printf("Verified Model: %s (Score: %.1f)\n", 
+            model.Name, model.OverallScore)
+    }
 }
 ```
 
@@ -323,9 +353,16 @@ const client = new LLMVerifier({
 
 async function verifyModel() {
     try {
-        const result = await client.verifyModel('gpt-4', 'Test prompt');
-        console.log(`Score: ${result.overallScore}`);
-        console.log(`Capabilities:`, result.capabilities);
+        // Verify model can see code
+        const verification = await client.verifyModel('gpt-4', 'Test prompt');
+        console.log(`Verification Score: ${verification.score}`);
+        console.log(`Can See Code: ${verification.canSeeCode}`);
+
+        // Get only verified models
+        const verifiedModels = await client.getVerifiedModels();
+        verifiedModels.forEach(model => {
+            console.log(`Verified: ${model.name} (${model.overallScore})`);
+        });
     } catch (error) {
         console.error('Verification failed:', error);
     }
@@ -346,20 +383,24 @@ verifyModel();
                               │
                               ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  LLM Verifier   │    │  Context Mgmt   │    │  Vector DB      │
-│  (Core Logic)   │◄──►│  (RAG/Summary)  │◄──►│  (Embeddings)   │
+│  LLM Verifier   │    │  Model          │    │  Vector DB      │
+│  (Core Logic)   │◄──►│  Verification   │◄──►│  (Embeddings)   │
+│                 │    │  Service        │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                               │
                               ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Supervisor    │    │   Workers       │    │   Providers     │
 │   (Task Mgmt)   │◄──►│   (Processing)  │◄──►│   (OpenAI, etc) │
+│                 │    │                 │    │   (Verified)    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                               │
                               ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Database      │    │   Monitoring    │    │   Enterprise    │
 │   (SQL Cipher)  │◄──►│   (Prometheus)  │◄──►│   (LDAP/SSO)    │
+│   (Verified     │    │                 │    │                 │
+│    Models)      │    │                 │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
@@ -371,46 +412,69 @@ verifyModel();
 - **Observer Pattern**: Event-driven architecture
 - **Strategy Pattern**: Pluggable provider adapters
 - **Decorator Pattern**: Middleware for authentication and logging
+- **Verification Pattern**: Mandatory model verification before use
 
 ## 🎯 Advanced Features
 
-### Intelligent Model Selection
+### Intelligent Model Selection with Verification
 ```go
-// AI-powered model recommendation
+// AI-powered model recommendation with verification
 requirements := analytics.TaskRequirements{
     TaskType:         "coding",
     Complexity:       "medium",
     SpeedRequirement: "normal",
     BudgetLimit:      0.50, // $0.50 per request
     RequiredFeatures: []string{"function_calling", "json_mode"},
+    RequireVerification: true, // Only verified models
 }
 
 recommendation, _ := recommender.RecommendModel(requirements)
-fmt.Printf("Recommended: %s (Score: %.1f, Cost: $%.4f)\n",
+fmt.Printf("Recommended: %s (Score: %.1f, Cost: $%.4f, Verified: %v)\n",
     recommendation.BestChoice.ModelID,
     recommendation.BestChoice.Score,
-    recommendation.BestChoice.CostEstimate)
+    recommendation.BestChoice.CostEstimate,
+    recommendation.BestChoice.Verified)
 ```
 
-### Context Management with RAG
+### Context Management with RAG and Verification
 ```go
-// Advanced context with vector search
+// Advanced context with vector search and verification
 contextMgr := context.NewConversationManager(100, time.Hour)
 rag := vector.NewRAGService(vectorDB, embeddings, contextMgr)
+
+// Only use verified models for context operations
+verifiedModels := rag.GetVerifiedModels()
 
 // Index conversation messages
 for _, msg := range messages {
     rag.IndexMessage(ctx, msg)
 }
 
-// Retrieve relevant context
+// Retrieve relevant context from verified models
 relevantDocs, _ := rag.RetrieveContext(ctx, query, conversationID)
 
-// Optimize prompts with context
+// Optimize prompts with verified context
 optimizedPrompt, _ := rag.OptimizePrompt(ctx, userPrompt, conversationID)
 ```
 
-### Enterprise Monitoring
+### Mandatory Verification Workflow
+```go
+// Configure mandatory verification
+verificationConfig := providers.VerificationConfig{
+    Enabled:               true,
+    StrictMode:            true,  // Only verified models
+    RequireAffirmative:    true,  // Must confirm code visibility
+    MaxRetries:            3,
+    TimeoutSeconds:        30,
+    MinVerificationScore:  0.7,
+}
+
+// Get only verified models
+enhancedService := providers.NewEnhancedModelProviderService(configPath, logger, verificationConfig)
+verifiedModels, err := enhancedService.GetModelsWithVerification(ctx, "openai")
+```
+
+### Enterprise Monitoring with Verification Metrics
 ```yaml
 # Prometheus metrics endpoint: http://localhost:9090/metrics
 # Grafana dashboard: Import dashboard ID 1860
@@ -420,6 +484,11 @@ monitoring:
   prometheus:
     enabled: true
     port: 9090
+    metrics:
+      - verification_rate
+      - verified_models_count
+      - verification_failures
+      - model_verification_scores
 
 enterprise:
   monitoring:
@@ -430,6 +499,9 @@ enterprise:
     datadog:
       api_key: "${DD_API_KEY}"
       service_name: "llm-verifier"
+      metrics:
+        - llm_verification_rate
+        - llm_verified_models
 ```
 
 ## 🚀 Deployment
@@ -442,6 +514,13 @@ docker run -p 8080:8080 -v /data:/data llm-verifier
 
 # With Docker Compose
 docker-compose up -d
+
+# With verification enabled
+docker run -p 8080:8080 \
+  -e MODEL_VERIFICATION_ENABLED=true \
+  -e MODEL_VERIFICATION_STRICT_MODE=true \
+  -v /data:/data \
+  llm-verifier
 ```
 
 ### Kubernetes Deployment
@@ -449,14 +528,17 @@ docker-compose up -d
 # Deploy to Kubernetes
 kubectl apply -f k8s-manifests/
 
+# Deploy with verification
+kubectl apply -f k8s-manifests-with-verification/
+
 # Check status
 kubectl get pods
 kubectl get services
 ```
 
-### High Availability Setup
+### High Availability Setup with Verification
 ```yaml
-# Multi-zone deployment with load balancing
+# Multi-zone deployment with load balancing and verification
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -476,6 +558,12 @@ spec:
         env:
         - name: DATABASE_PATH
           value: "/data/llm-verifier.db"
+        - name: MODEL_VERIFICATION_ENABLED
+          value: "true"
+        - name: MODEL_VERIFICATION_STRICT_MODE
+          value: "true"
+        - name: LLMSVD_SUFFIX_ENABLED
+          value: "true"
         volumeMounts:
         - name: data
           mountPath: /data
@@ -501,6 +589,9 @@ go mod download
 # Run tests
 go test ./...
 
+# Run comprehensive test suite
+./run_comprehensive_tests.sh
+
 # Build application
 go build -o llm-verifier cmd/main.go
 
@@ -513,6 +604,22 @@ go build -o llm-verifier cmd/main.go
 - TypeScript: ESLint, Prettier
 - Tests: 95%+ coverage required
 - Documentation: Auto-generated API docs
+- Verification: All models must pass verification tests
+
+### Verification Testing
+```bash
+# Test model verification
+go test ./providers -v -run TestModelVerification
+
+# Test suffix handling
+go test ./scoring -v -run TestLLMSVDSuffix
+
+# Run integration tests
+go test ./tests -v -run TestIntegration
+
+# Run comprehensive tests
+./run_comprehensive_tests.sh
+```
 
 ## 📄 License
 
@@ -523,13 +630,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - OpenAI, Anthropic, Google, and other LLM providers for their APIs
 - The Go community for excellent libraries and tools
 - Contributors and users for their valuable feedback
+- The verification system ensuring code visibility across all models
 
 ## 📞 Support
 
 - **Documentation**: [llm-verifier/docs/](llm-verifier/docs/)
 - **Issues**: [GitHub Issues](https://github.com/vasic-digital/LLMsVerifier/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/vasic-digital/LLMsVerifier/discussions)
+- **Migration Support**: See [MIGRATION_GUIDE_v1_to_v2.md](docs/MIGRATION_GUIDE_v1_to_v2.md)
 
 ---
 
-**Built with ❤️ for the AI community**
+**Built with ❤️ for the AI community - Now with mandatory model verification and (llmsvd) branding**

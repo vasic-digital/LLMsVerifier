@@ -1,0 +1,10 @@
+{
+    "test_type": "performance",
+    "passed": ,
+    "failed": ,
+    "skipped": ,
+    "total": 0,
+    "success_rate": 0,
+    "log_file": "/media/milosvasic/DATA4TB/Projects/LLM/LLMsVerifier/logs/performance_tests.log",
+    "timestamp": "2025-12-29T00:20:10Z"
+}

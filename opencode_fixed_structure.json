@@ -1,0 +1,636 @@
+{
+  "$schema": "https://opencode.sh/schema.json",
+  "username": "OpenCode AI Assistant",
+  "provider": {
+    "openai": {
+      "displayName": "Openai",
+      "options": {
+        "apiKey": "${OPENAI_API_KEY}",
+        "baseURL": "https://api.openai.com/v1"
+      },
+      "models": {
+        "gpt-4": {
+          "id": "gpt-4",
+          "name": "GPT-4",
+          "displayName": "GPT-4",
+          "provider": {
+            "id": "openai",
+            "npm": "@openrouter/openai-provider"
+          },
+          "maxTokens": 8192,
+          "supportsHTTP3": false,
+          "costPer1MInput": 30.0,
+          "costPer1MOutput": 60.0,
+          "supportsBrotli": true,
+          "features": {
+            "brotli": true
+          }
+        },
+        "gpt-4-turbo": {
+          "id": "gpt-4-turbo",
+          "name": "GPT-4 Turbo",
+          "displayName": "GPT-4 Turbo",
+          "provider": {
+            "id": "openai",
+            "npm": "@openrouter/openai-provider"
+          },
+          "maxTokens": 128000,
+          "supportsHTTP3": false,
+          "costPer1MInput": 10.0,
+          "costPer1MOutput": 30.0,
+          "supportsBrotli": true,
+          "features": {
+            "brotli": true
+          }
+        },
+        "gpt-3.5-turbo": {
+          "id": "gpt-3.5-turbo",
+          "name": "GPT-3.5 Turbo",
+          "displayName": "GPT-3.5 Turbo",
+          "provider": {
+            "id": "openai",
+            "npm": "@openrouter/openai-provider"
+          },
+          "maxTokens": 16385,
+          "supportsHTTP3": false,
+          "costPer1MInput": 0.5,
+          "costPer1MOutput": 1.5,
+          "supportsBrotli": true,
+          "features": {
+            "brotli": true
+          }
+        },
+        "gpt-4o": {
+          "id": "gpt-4o",
+          "name": "GPT-4o",
+          "displayName": "GPT-4o",
+          "provider": {
+            "id": "openai",
+            "npm": "@openrouter/openai-provider"
+          },
+          "maxTokens": 128000,
+          "supportsHTTP3": false,
+          "costPer1MInput": 5.0,
+          "costPer1MOutput": 15.0,
+          "supportsBrotli": true,
+          "features": {
+            "brotli": true
+          }
+        },
+        "gpt-4o-mini": {
+          "id": "gpt-4o-mini",
+          "name": "GPT-4o Mini",
+          "displayName": "GPT-4o Mini",
+          "provider": {
+            "id": "openai",
+            "npm": "@openrouter/openai-provider"
+          },
+          "maxTokens": 128000,
+          "supportsHTTP3": false,
+          "costPer1MInput": 0.15,
+          "costPer1MOutput": 0.6,
+          "supportsBrotli": true,
+          "features": {
+            "brotli": true
+          }
+        }
+      }
+    },
+    "anthropic": {
+      "displayName": "Anthropic",
+      "options": {
+        "apiKey": "${ANTHROPIC_API_KEY}",
+        "baseURL": "https://api.anthropic.com/v1"
+      },
+      "models": {
+        "claude-3-opus": {
+          "id": "claude-3-opus",
+          "name": "Claude 3 Opus",
+          "displayName": "Claude 3 Opus",
+          "provider": {
+            "id": "anthropic",
+            "npm": "@openrouter/anthropic-provider"
+          },
+          "maxTokens": 200000,
+          "supportsHTTP3": false,
+          "costPer1MInput": 15.0,
+          "costPer1MOutput": 75.0,
+          "supportsBrotli": false
+        },
+        "claude-3-sonnet": {
+          "id": "claude-3-sonnet",
+          "name": "Claude 3 Sonnet",
+          "displayName": "Claude 3 Sonnet",
+          "provider": {
+            "id": "anthropic",
+            "npm": "@openrouter/anthropic-provider"
+          },
+          "maxTokens": 200000,
+          "supportsHTTP3": false,
+          "costPer1MInput": 3.0,
+          "costPer1MOutput": 15.0,
+          "supportsBrotli": false
+        },
+        "claude-3-haiku": {
+          "id": "claude-3-haiku",
+          "name": "Claude 3 Haiku",
+          "displayName": "Claude 3 Haiku",
+          "provider": {
+            "id": "anthropic",
+            "npm": "@openrouter/anthropic-provider"
+          },
+          "maxTokens": 200000,
+          "supportsHTTP3": false,
+          "costPer1MInput": 0.25,
+          "costPer1MOutput": 1.25,
+          "supportsBrotli": false
+        }
+      }
+    },
+    "groq": {
+      "displayName": "Groq",
+      "options": {
+        "apiKey": "${GROQ_API_KEY}",
+        "baseURL": "https://api.groq.com/openai/v1"
+      },
+      "models": {
+        "llama2-70b": {
+          "id": "llama2-70b",
+          "name": "LLaMA 2 70B (Groq)",
+          "displayName": "LLaMA 2 70B (Groq)",
+          "provider": {
+            "id": "groq",
+            "npm": "@openrouter/groq-provider"
+          },
+          "maxTokens": 4096,
+          "supportsHTTP3": false,
+          "costPer1MInput": 0.0,
+          "costPer1MOutput": 0.0,
+          "supportsBrotli": true,
+          "features": {
+            "brotli": true
+          }
+        },
+        "mixtral-8x7b": {
+          "id": "mixtral-8x7b",
+          "name": "Mixtral 8x7B (Groq)",
+          "displayName": "Mixtral 8x7B (Groq)",
+          "provider": {
+            "id": "groq",
+            "npm": "@openrouter/groq-provider"
+          },
+          "maxTokens": 32768,
+          "supportsHTTP3": false,
+          "costPer1MInput": 0.0,
+          "costPer1MOutput": 0.0,
+          "supportsBrotli": true,
+          "features": {
+            "brotli": true
+          }
+        },
+        "gemma-7b": {
+          "id": "gemma-7b",
+          "name": "Gemma 7B (Groq)",
+          "displayName": "Gemma 7B (Groq)",
+          "provider": {
+            "id": "groq",
+            "npm": "@openrouter/groq-provider"
+          },
+          "maxTokens": 8192,
+          "supportsHTTP3": false,
+          "costPer1MInput": 0.0,
+          "costPer1MOutput": 0.0,
+          "supportsBrotli": true,
+          "features": {
+            "brotli": true
+          }
+        }
+      }
+    },
+    "google": {
+      "displayName": "Google",
+      "options": {
+        "apiKey": "${GOOGLE_API_KEY}",
+        "baseURL": "https://generativelanguage.googleapis.com/v1"
+      },
+      "models": {
+        "gemini-pro": {
+          "id": "gemini-pro",
+          "name": "Gemini Pro",
+          "displayName": "Gemini Pro",
+          "provider": {
+            "id": "google",
+            "npm": "@openrouter/google-provider"
+          },
+          "maxTokens": 32768,
+          "supportsHTTP3": false,
+          "costPer1MInput": 0.5,
+          "costPer1MOutput": 1.5,
+          "supportsBrotli": true,
+          "features": {
+            "brotli": true
+          }
+        },
+        "gemini-1.5-pro": {
+          "id": "gemini-1.5-pro",
+          "name": "Gemini 1.5 Pro",
+          "displayName": "Gemini 1.5 Pro",
+          "provider": {
+            "id": "google",
+            "npm": "@openrouter/google-provider"
+          },
+          "maxTokens": 2000000,
+          "supportsHTTP3": false,
+          "costPer1MInput": 3.5,
+          "costPer1MOutput": 10.5,
+          "supportsBrotli": true,
+          "features": {
+            "brotli": true
+          }
+        },
+        "gemini-1.5-flash": {
+          "id": "gemini-1.5-flash",
+          "name": "Gemini 1.5 Flash",
+          "displayName": "Gemini 1.5 Flash",
+          "provider": {
+            "id": "google",
+            "npm": "@openrouter/google-provider"
+          },
+          "maxTokens": 2000000,
+          "supportsHTTP3": false,
+          "costPer1MInput": 0.075,
+          "costPer1MOutput": 0.3,
+          "supportsBrotli": true,
+          "features": {
+            "brotli": true
+          }
+        }
+      }
+    },
+    "perplexity": {
+      "displayName": "Perplexity",
+      "options": {
+        "apiKey": "${PERPLEXITY_API_KEY}",
+        "baseURL": "https://api.perplexity.ai"
+      },
+      "models": {
+        "sonar-small-online": {
+          "id": "sonar-small-online",
+          "name": "Perplexity Sonar Small Online",
+          "displayName": "Perplexity Sonar Small Online",
+          "provider": {
+            "id": "perplexity",
+            "npm": "@openrouter/perplexity-provider"
+          },
+          "maxTokens": 127072,
+          "supportsHTTP3": false,
+          "costPer1MInput": 0.2,
+          "costPer1MOutput": 2.0,
+          "supportsBrotli": true,
+          "features": {
+            "brotli": true
+          }
+        },
+        "sonar-medium-online": {
+          "id": "sonar-medium-online",
+          "name": "Perplexity Sonar Medium Online",
+          "displayName": "Perplexity Sonar Medium Online",
+          "provider": {
+            "id": "perplexity",
+            "npm": "@openrouter/perplexity-provider"
+          },
+          "maxTokens": 127072,
+          "supportsHTTP3": false,
+          "costPer1MInput": 0.6,
+          "costPer1MOutput": 6.0,
+          "supportsBrotli": true,
+          "features": {
+            "brotli": true
+          }
+        }
+      }
+    },
+    "together": {
+      "displayName": "Together",
+      "options": {
+        "apiKey": "${TOGETHER_API_KEY}",
+        "baseURL": "https://api.together.xyz/v1"
+      },
+      "models": {
+        "mistralai/Mixtral-8x7B-Instruct-v0.1": {
+          "id": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+          "name": "Mixtral 8x7B Instruct",
+          "displayName": "Mixtral 8x7B Instruct",
+          "provider": {
+            "id": "together",
+            "npm": "@openrouter/together-provider"
+          },
+          "maxTokens": 32768,
+          "supportsHTTP3": false,
+          "costPer1MInput": 0.6,
+          "costPer1MOutput": 0.6,
+          "supportsBrotli": true,
+          "features": {
+            "brotli": true
+          }
+        },
+        "meta-llama/Llama-2-70b-chat-hf": {
+          "id": "meta-llama/Llama-2-70b-chat-hf",
+          "name": "LLaMA 2 70B Chat",
+          "displayName": "LLaMA 2 70B Chat",
+          "provider": {
+            "id": "together",
+            "npm": "@openrouter/together-provider"
+          },
+          "maxTokens": 4096,
+          "supportsHTTP3": false,
+          "costPer1MInput": 0.9,
+          "costPer1MOutput": 0.9,
+          "supportsBrotli": true,
+          "features": {
+            "brotli": true
+          }
+        }
+      }
+    }
+  },
+  "agent": {
+    "code": {
+      "model": "openai/gpt-4",
+      "prompt": "You are a senior software engineer specializing in code development, debugging, and optimization. You have deep expertise in multiple programming languages and frameworks. Help the user write clean, efficient, and well-documented code.",
+      "tools": {
+        "bash": true,
+        "docker": true,
+        "git": true,
+        "lsp": true,
+        "webfetch": true
+      },
+      "temperature": 0.2,
+      "maxSteps": 10
+    },
+    "review": {
+      "model": "anthropic/claude-3-sonnet",
+      "prompt": "You are a meticulous code reviewer with expertise in best practices, security, and performance. Review the code thoroughly and provide detailed feedback on improvements, potential bugs, and optimization opportunities.",
+      "tools": {
+        "lsp": true,
+        "diff": true
+      },
+      "temperature": 0.3,
+      "maxSteps": 5
+    },
+    "plan": {
+      "model": "anthropic/claude-3-opus",
+      "prompt": "You are an expert software architect and project planner. Help users break down complex projects into manageable tasks, create implementation strategies, and identify potential challenges before they start coding.",
+      "tools": {
+        "webfetch": true,
+        "bash": true
+      },
+      "temperature": 0.4,
+      "maxSteps": 15
+    },
+    "document": {
+      "model": "openai/gpt-4-turbo",
+      "prompt": "You are a technical documentation expert. Write clear, comprehensive, and well-structured documentation for code, APIs, and systems. Include examples and best practices.",
+      "tools": {
+        "webfetch": true,
+        "bash": true
+      },
+      "temperature": 0.5,
+      "maxSteps": 8
+    },
+    "debug": {
+      "model": "openai/gpt-4",
+      "prompt": "You are an expert debugger with extensive experience in troubleshooting complex issues. Systematically analyze errors, identify root causes, and provide clear solutions with explanations.",
+      "tools": {
+        "bash": true,
+        "docker": true,
+        "lsp": true,
+        "git": true
+      },
+      "temperature": 0.1,
+      "maxSteps": 20
+    },
+    "test": {
+      "model": "anthropic/claude-3-sonnet",
+      "prompt": "You are a testing expert specializing in creating comprehensive test suites. Generate unit tests, integration tests, and end-to-end tests following best practices and achieving good coverage.",
+      "tools": {
+        "bash": true,
+        "docker": true,
+        "git": true
+      },
+      "temperature": 0.3,
+      "maxSteps": 12
+    }
+  },
+  "mcp": {
+    "github": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "enabled": true,
+      "environment": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      },
+      "timeout": 30000
+    },
+    "postgres": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-postgres"
+      ],
+      "enabled": true,
+      "args": [
+        "postgresql://localhost:5432"
+      ],
+      "timeout": 30000
+    },
+    "filesystem": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-filesystem"
+      ],
+      "enabled": true,
+      "args": [
+        "."
+      ],
+      "timeout": 30000
+    },
+    "docker": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-docker"
+      ],
+      "enabled": true,
+      "timeout": 30000
+    },
+    "redis": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-redis"
+      ],
+      "enabled": false,
+      "args": [
+        "--connection",
+        "redis://localhost:6379"
+      ],
+      "timeout": 30000
+    },
+    "aws": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-aws"
+      ],
+      "enabled": true,
+      "environment": {
+        "AWS_ACCESS_KEY_ID": "${AWS_ACCESS_KEY_ID}",
+        "AWS_SECRET_ACCESS_KEY": "${AWS_SECRET_ACCESS_KEY}",
+        "AWS_REGION": "${AWS_REGION}"
+      },
+      "timeout": 30000
+    }
+  },
+  "command": {
+    "test": {
+      "template": "Run comprehensive tests for {{file}}",
+      "agent": "test",
+      "description": "Run tests for the specified file or project"
+    },
+    "build": {
+      "template": "Build the project with optimizations",
+      "agent": "code",
+      "description": "Build the current project"
+    },
+    "debug": {
+      "template": "Debug the issue in {{file}}",
+      "agent": "debug",
+      "description": "Debug issues in the specified file"
+    },
+    "document": {
+      "template": "Write comprehensive documentation for {{file}}",
+      "agent": "document",
+      "description": "Generate documentation for code"
+    },
+    "review": {
+      "template": "Review the code in {{file}} for issues",
+      "agent": "review",
+      "description": "Review code for improvements"
+    },
+    "plan": {
+      "template": "{{input}}",
+      "agent": "plan",
+      "description": "Plan a new feature or project"
+    },
+    "optimize": {
+      "template": "Optimize the performance of {{file}}",
+      "agent": "code",
+      "description": "Optimize code performance"
+    },
+    "docker": {
+      "template": "Create Docker configuration for this project",
+      "agent": "code",
+      "description": "Generate Docker setup"
+    }
+  },
+  "keybinds": {
+    "leader": " ",
+    "app_exit": "ctrl+c",
+    "editor_open": "ctrl+o",
+    "session_new": "ctrl+n",
+    "session_list": "ctrl+l",
+    "session_kill": "ctrl+k",
+    "session_rename": "ctrl+r",
+    "model_list": "ctrl+m",
+    "agent_list": "ctrl+a",
+    "command_list": "ctrl+shift+p",
+    "tool_details": "ctrl+t",
+    "input_submit": "enter",
+    "input_newline": "shift+enter",
+    "input_clear": "ctrl+u",
+    "input_paste": "ctrl+v",
+    "session_export": "ctrl+e",
+    "session_compact": "alt+c",
+    "sidebar_toggle": "ctrl+b"
+  },
+  "options": {
+    "disable_provider_auto_update": false,
+    "auto_save": true,
+    "theme": "catppuccin-mocha",
+    "log_level": "info",
+    "compact_mode": false
+  },
+  "tools": {
+    "bash": true,
+    "docker": true,
+    "git": true,
+    "lsp": true,
+    "webfetch": true,
+    "file": true
+  },
+  "lsp": {
+    "gopls": {
+      "command": "gopls",
+      "args": [
+        "-logfile",
+        "/tmp/gopls.log"
+      ],
+      "enabled": true,
+      "filetypes": [
+        "go"
+      ]
+    },
+    "typescript-language-server": {
+      "command": "typescript-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "enabled": true,
+      "filetypes": [
+        "typescript",
+        "javascript",
+        "tsx",
+        "jsx"
+      ]
+    },
+    "rust-analyzer": {
+      "command": "rust-analyzer",
+      "enabled": true,
+      "filetypes": [
+        "rust"
+      ]
+    },
+    "pyright-langserver": {
+      "command": "pyright-langserver",
+      "args": [
+        "--stdio"
+      ],
+      "enabled": true,
+      "filetypes": [
+        "python"
+      ]
+    },
+    "json-lsp": {
+      "command": "vscode-json-languageserver",
+      "args": [
+        "--stdio"
+      ],
+      "enabled": true,
+      "filetypes": [
+        "json",
+        "jsonc"
+      ]
+    }
+  }
+}

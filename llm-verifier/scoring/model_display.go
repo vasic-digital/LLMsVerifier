@@ -20,6 +20,12 @@ func NewModelDisplayName() *ModelDisplayName {
 // FormatWithFeatureSuffixes formats a model name with feature-based suffixes
 // Adds: (brotli), (http3), (toon), (free to use), (open source), etc.
 func (md *ModelDisplayName) FormatWithFeatureSuffixes(modelName string, modelInfo interface{}) string {
+	return md.FormatWithFeatureSuffixesAndLLMsVerifier(modelName, modelInfo)
+}
+
+// FormatWithFeatureSuffixesAndLLMsVerifier formats a model name with feature-based suffixes and mandatory LLMsVerifier suffix
+// Adds: (brotli), (http3), (toon), (free to use), (open source), etc. + (llmsvd) as the final suffix
+func (md *ModelDisplayName) FormatWithFeatureSuffixesAndLLMsVerifier(modelName string, modelInfo interface{}) string {
 	// Remove any existing suffixes first
 	cleanName := md.naming.RemoveScoreSuffix(modelName)
 	cleanName = md.removeFeatureSuffixes(cleanName)
@@ -56,11 +62,11 @@ func (md *ModelDisplayName) FormatWithFeatureSuffixes(modelName string, modelInf
 		suffixes = append(suffixes, "(fast)")
 	}
 	
+	// Add mandatory LLMsVerifier suffix as the final suffix
+	suffixes = append(suffixes, "(llmsvd)")
+	
 	// Build final name
-	if len(suffixes) > 0 {
-		return fmt.Sprintf("%s %s", cleanName, strings.Join(suffixes, " "))
-	}
-	return cleanName
+	return fmt.Sprintf("%s %s", cleanName, strings.Join(suffixes, " "))
 }
 
 // ModelFeatures contains feature flags for a model
@@ -147,7 +153,7 @@ func (md *ModelDisplayName) removeFeatureSuffixes(name string) string {
 		"(brotli)", "(http3)", "(toon)", "(free to use)",
 		"(open source)", "(fast)", "(optimized)", "(premium)",
 		"(experimental)", "(beta)", "(prod)", "(stable)",
-		"(deprecated)", "(legacy)",
+		"(deprecated)", "(legacy)", "(llmsvd)",
 	}
 	
 	for _, suffix := range suffixes {
@@ -179,6 +185,7 @@ func GetAllFeatureSuffixes() []string {
 		"(stable)",
 		"(deprecated)",
 		"(legacy)",
+		"(llmsvd)",
 	}
 }
 

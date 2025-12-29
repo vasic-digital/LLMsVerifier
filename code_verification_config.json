@@ -1,0 +1,57 @@
+{
+  "provider_filter": [],
+  "model_filter": [],
+  "max_concurrency": 5,
+  "timeout_seconds": 60,
+  "output_format": "json",
+  "verification_settings": {
+    "test_samples": {
+      "python": {
+        "code": "def fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n-1) + fibonacci(n-2)\n\nprint(fibonacci(10))",
+        "purpose": "Test basic function definition and recursion"
+      },
+      "javascript": {
+        "code": "function quickSort(arr) {\n    if (arr.length <= 1) return arr;\n    \n    const pivot = arr[Math.floor(arr.length / 2)];\n    const left = arr.filter(x => x < pivot);\n    const middle = arr.filter(x => x === pivot);\n    const right = arr.filter(x => x > pivot);\n    \n    return [...quickSort(left), ...middle, ...quickSort(right)];\n}",
+        "purpose": "Test function declaration and array operations"
+      },
+      "go": {
+        "code": "package main\n\nimport \"fmt\"\n\nfunc main() {\n    message := \"Hello, World!\"\n    fmt.Println(message)\n}",
+        "purpose": "Test package declaration and basic syntax"
+      },
+      "java": {
+        "code": "public class Calculator {\n    public static int add(int a, int b) {\n        return a + b;\n    }\n    \n    public static void main(String[] args) {\n        int result = add(5, 3);\n        System.out.println(\"Result: \" + result);\n    }\n}",
+        "purpose": "Test class definition and static methods"
+      },
+      "csharp": {
+        "code": "using System;\n\nclass Program {\n    static void Main() {\n        string name = \"LLM Verifier\";\n        Console.WriteLine($\"Hello, {name}!\");\n    }\n}",
+        "purpose": "Test class and string interpolation"
+      }
+    },
+    "verification_prompt": "Do you see my code? Please respond with \"Yes, I can see your {language} code\" if you can see the code below, or \"No, I cannot see your code\" if you cannot see it.\n\n{language} code:\n```{language}\n{code}\n```\n\nPlease confirm if you can see this code and understand what it does.",
+    "affirmative_keywords": ["yes", "i can see", "i see", "visible", "can see"],
+    "negative_keywords": ["no", "cannot see", "can't see", "not visible", "do not see"],
+    "confidence_threshold": 0.7,
+    "min_affirmative_responses": 3
+  },
+  "database_settings": {
+    "store_results": true,
+    "update_model_metadata": true,
+    "create_verification_records": true
+  },
+  "output_settings": {
+    "include_raw_responses": false,
+    "include_response_analysis": true,
+    "generate_summary_statistics": true,
+    "create_provider_breakdown": true
+  },
+  "retry_settings": {
+	"max_retries": 3,
+	"retry_delay_seconds": 5,
+	"retry_on_failure": true
+  },
+  "logging_settings": {
+	"log_level": "info",
+	"log_to_file": true,
+	"log_file": "code_verification.log"
+  }
+}
