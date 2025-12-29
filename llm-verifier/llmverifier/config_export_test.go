@@ -2,6 +2,7 @@ package llmverifier
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -47,55 +48,109 @@ func TestOpenCodeConfigExport(t *testing.T) {
 		IncludeAPIKey: true,
 	}
 
-	config, err := createOfficialOpenCodeConfig(results, options)
+	configMap, err := createCorrectOpenCodeConfig(results, options)
 	if err != nil {
 		t.Fatalf("Failed to create OpenCode config: %v", err)
 	}
 
-	// Verify structure
-	if config.Schema != "https://opencode.ai/config.json" {
-		t.Errorf("Expected schema 'https://opencode.ai/config.json', got '%s'", config.Schema)
+	// Verify schema
+	if schema, ok := configMap["$schema"].(string); !ok || schema != "./opencode-schema.json" {
+		t.Errorf("Expected schema './opencode-schema.json', got '%v'", configMap["$schema"])
 	}
 
-	if len(config.Provider) != 2 {
-		t.Errorf("Expected 2 providers, got %d", len(config.Provider))
+	// Check providers section
+	providers, ok := configMap["providers"].(map[string]interface{})
+	if !ok {
+		t.Fatal("Expected providers to be a map")
+	}
+	if len(providers) != 2 {
+		t.Errorf("Expected 2 providers, got %d", len(providers))
 	}
 
 	// Check OpenAI provider
-	openaiProvider, exists := config.Provider["openai"]
+	openaiProviderData, exists := providers["openai"]
 	if !exists {
 		t.Error("Expected 'openai' provider to exist")
 	}
-	if openaiProvider.Options.APIKey != "$OPENAI_API_KEY" {
-		t.Errorf("Expected API key '$OPENAI_API_KEY', got '%s'", openaiProvider.Options.APIKey)
+	openaiProvider, ok := openaiProviderData.(map[string]interface{})
+	if !ok {
+		t.Fatal("Expected openai provider to be a map")
 	}
-	if len(openaiProvider.Models) != 0 {
-		t.Errorf("Expected models to be empty, got %d models", len(openaiProvider.Models))
+	if apiKey, ok := openaiProvider["apiKey"].(string); !ok || apiKey != "${OPENAI_API_KEY}" {
+		t.Errorf("Expected API key '${OPENAI_API_KEY}', got '%v'", openaiProvider["apiKey"])
 	}
 
 	// Check Anthropic provider
-	anthropicProvider, exists := config.Provider["anthropic"]
+	anthropicProviderData, exists := providers["anthropic"]
 	if !exists {
 		t.Error("Expected 'anthropic' provider to exist")
 	}
-	if anthropicProvider.Options.APIKey != "$ANTHROPIC_API_KEY" {
-		t.Errorf("Expected API key '$ANTHROPIC_API_KEY', got '%s'", anthropicProvider.Options.APIKey)
+	anthropicProvider, ok := anthropicProviderData.(map[string]interface{})
+	if !ok {
+		t.Fatal("Expected anthropic provider to be a map")
+	}
+	if apiKey, ok := anthropicProvider["apiKey"].(string); !ok || apiKey != "${ANTHROPIC_API_KEY}" {
+		t.Errorf("Expected API key '${ANTHROPIC_API_KEY}', got '%v'", anthropicProvider["apiKey"])
+	}
+
+	// Check agents section
+	agents, ok := configMap["agents"].(map[string]interface{})
+	if !ok {
+		t.Fatal("Expected agents to be a map")
+	}
+
+	requiredAgents := []string{"coder", "task", "title"}
+	for _, agentName := range requiredAgents {
+		if _, exists := agents[agentName]; !exists {
+			t.Errorf("Expected agent '%s' to exist", agentName)
+		}
 	}
 
 	// Test JSON marshaling
-	data, err := json.MarshalIndent(config, "", "  ")
+	data, err := json.MarshalIndent(configMap, "", "  ")
 	if err != nil {
 		t.Fatalf("Failed to marshal config: %v", err)
 	}
 
-	// Test unmarshaling
-	var unmarshaled OpenCodeConfig
+	// Test unmarshaling back to map
+	var unmarshaled map[string]interface{}
 	if err := json.Unmarshal(data, &unmarshaled); err != nil {
 		t.Fatalf("Failed to unmarshal config: %v", err)
 	}
 
-	if unmarshaled.Schema != config.Schema {
+	if unmarshaled["$schema"] != configMap["$schema"] {
 		t.Error("Schema not preserved during marshal/unmarshal")
+	}
+
+	// Verify the config matches OpenCode's expected structure
+	// Check that it has all required sections for OpenCode
+	requiredTopLevelKeys := []string{"$schema", "data", "providers", "agents", "tui", "shell", "autoCompact", "debug", "debugLSP"}
+	for _, key := range requiredTopLevelKeys {
+		if _, exists := configMap[key]; !exists {
+			t.Errorf("Missing required top-level key: %s", key)
+		}
+	}
+
+	// Verify data section has directory
+	if data, ok := configMap["data"].(map[string]interface{}); ok {
+		if _, hasDir := data["directory"]; !hasDir {
+			t.Error("data section should have directory field")
+		}
+	} else {
+		t.Error("data section should be an object")
+	}
+
+	// Verify agents have proper model references (provider.model format)
+	if agents, ok := configMap["agents"].(map[string]interface{}); ok {
+		for agentName, agentData := range agents {
+			if agent, ok := agentData.(map[string]interface{}); ok {
+				if model, hasModel := agent["model"]; hasModel {
+					if modelStr, ok := model.(string); ok && !strings.Contains(modelStr, ".") {
+						t.Errorf("Agent %s model should be in provider.model format, got: %s", agentName, modelStr)
+					}
+				}
+			}
+		}
 	}
 }
 

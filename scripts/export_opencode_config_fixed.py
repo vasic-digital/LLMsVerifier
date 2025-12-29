@@ -138,402 +138,82 @@ class OfficialOpenCodeExporter:
     def get_provider_config(self, provider_name):
         """Get provider configuration in OFFICIAL OpenCode format"""
 
-        # Official OpenCode provider configurations
+        # Official OpenCode provider configurations (simple format)
         provider_configs = {
             "openai": {
-                "id": "openai",
-                "npm": "@opencode/openai-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("openai", "${OPENAI_API_KEY}"),
-                    "baseURL": "https://api.openai.com/v1",
-                },
+                "apiKey": self.api_keys.get("openai", "${OPENAI_API_KEY}"),
+                "disabled": False,
+                "provider": "openai",
             },
             "anthropic": {
-                "id": "anthropic",
-                "npm": "@opencode/anthropic-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("anthropic", "${ANTHROPIC_API_KEY}"),
-                    "baseURL": "https://api.anthropic.com/v1",
-                },
+                "apiKey": self.api_keys.get("anthropic", "${ANTHROPIC_API_KEY}"),
+                "disabled": False,
+                "provider": "anthropic",
             },
             "groq": {
-                "id": "groq",
-                "npm": "@opencode/groq-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("groq", "${GROQ_API_KEY}"),
-                    "baseURL": "https://api.groq.com/openai/v1",
-                },
-            },
-            "huggingface": {
-                "id": "huggingface",
-                "npm": "@opencode/huggingface-provider",
-                "options": {
-                    "apiKey": self.api_keys.get(
-                        "huggingface", "${HUGGINGFACE_API_KEY}"
-                    ),
-                    "baseURL": "https://api-inference.huggingface.co",
-                },
+                "apiKey": self.api_keys.get("groq", "${GROQ_API_KEY}"),
+                "disabled": False,
+                "provider": "groq",
             },
             "gemini": {
-                "id": "gemini",
-                "npm": "@opencode/gemini-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("gemini", "${GEMINI_API_KEY}"),
-                    "baseURL": "https://generativelanguage.googleapis.com/v1",
-                },
-            },
-            "deepseek": {
-                "id": "deepseek",
-                "npm": "@opencode/deepseek-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("deepseek", "${DEEPSEEK_API_KEY}"),
-                    "baseURL": "https://api.deepseek.com",
-                },
+                "apiKey": self.api_keys.get("google", "${GOOGLE_API_KEY}"),
+                "disabled": False,
+                "provider": "gemini",
             },
             "openrouter": {
-                "id": "openrouter",
-                "npm": "@opencode/openrouter-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("openrouter", "${OPENROUTER_API_KEY}"),
-                    "baseURL": "https://openrouter.ai/api/v1",
-                },
+                "apiKey": self.api_keys.get("openrouter", "${OPENROUTER_API_KEY}"),
+                "disabled": False,
+                "provider": "openrouter",
             },
-            "perplexity": {
-                "id": "perplexity",
-                "npm": "@opencode/perplexity-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("perplexity", "${PERPLEXITY_API_KEY}"),
-                    "baseURL": "https://api.perplexity.ai",
-                },
+            "bedrock": {
+                "apiKey": self.api_keys.get("bedrock", "${BEDROCK_API_KEY}"),
+                "disabled": False,
+                "provider": "bedrock",
             },
-            "together": {
-                "id": "together",
-                "npm": "@opencode/together-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("together", "${TOGETHER_API_KEY}"),
-                    "baseURL": "https://api.together.xyz/v1",
-                },
+            "azure": {
+                "apiKey": self.api_keys.get("azure", "${AZURE_API_KEY}"),
+                "disabled": False,
+                "provider": "azure",
             },
-            "mistral": {
-                "id": "mistral",
-                "npm": "@opencode/mistral-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("mistral", "${MISTRAL_API_KEY}"),
-                    "baseURL": "https://api.mistral.ai/v1",
-                },
+            "vertexai": {
+                "apiKey": self.api_keys.get("vertexai", "${VERTEXAI_API_KEY}"),
+                "disabled": False,
+                "provider": "vertexai",
             },
-            "fireworks": {
-                "id": "fireworks",
-                "npm": "@opencode/fireworks-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("fireworks", "${FIREWORKS_API_KEY}"),
-                    "baseURL": "https://api.fireworks.ai/inference/v1",
-                },
-            },
-            "nvidia": {
-                "id": "nvidia",
-                "npm": "@opencode/nvidia-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("nvidia", "${NVIDIA_API_KEY}"),
-                    "baseURL": "https://integrate.api.nvidia.com/v1",
-                },
-            },
-            "cerebras": {
-                "id": "cerebras",
-                "npm": "@opencode/cerebras-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("cerebras", "${CEREBRAS_API_KEY}"),
-                    "baseURL": "https://api.cerebras.ai/v1",
-                },
-            },
-            "hyperbolic": {
-                "id": "hyperbolic",
-                "npm": "@opencode/hyperbolic-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("hyperbolic", "${HYPERBOLIC_API_KEY}"),
-                    "baseURL": "https://api.hyperbolic.xyz/v1",
-                },
-            },
-            "inference": {
-                "id": "inference",
-                "npm": "@opencode/inference-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("inference", "${INFERENCE_API_KEY}"),
-                    "baseURL": "https://api.inference.net/v1",
-                },
-            },
-            "vercel": {
-                "id": "vercel",
-                "npm": "@opencode/vercel-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("vercel", "${VERCEL_API_KEY}"),
-                    "baseURL": "https://api.vercel.com/v1",
-                },
-            },
-            "baseten": {
-                "id": "baseten",
-                "npm": "@opencode/baseten-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("baseten", "${BASETEN_API_KEY}"),
-                    "baseURL": "https://inference.baseten.co/v1",
-                },
-            },
-            "novita": {
-                "id": "novita",
-                "npm": "@opencode/novita-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("novita", "${NOVITA_API_KEY}"),
-                    "baseURL": "https://api.novita.ai/v3/openai",
-                },
-            },
-            "upstage": {
-                "id": "upstage",
-                "npm": "@opencode/upstage-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("upstage", "${UPSTAGE_API_KEY}"),
-                    "baseURL": "https://api.upstage.ai/v1",
-                },
-            },
-            "nlpcloud": {
-                "id": "nlpcloud",
-                "npm": "@opencode/nlpcloud-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("nlpcloud", "${NLPCLOUD_API_KEY}"),
-                    "baseURL": "https://api.nlpcloud.com/v1",
-                },
-            },
-            "modal": {
-                "id": "modal",
-                "npm": "@opencode/modal-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("modal", "${MODAL_API_KEY}"),
-                    "baseURL": "https://api.modal.com/v1",
-                },
-            },
-            "chutes": {
-                "id": "chutes",
-                "npm": "@opencode/chutes-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("chutes", "${CHUTES_API_KEY}"),
-                    "baseURL": "https://api.chutes.ai/v1",
-                },
-            },
-            "cloudflare": {
-                "id": "cloudflare",
-                "npm": "@opencode/cloudflare-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("cloudflare", "${CLOUDFLARE_API_KEY}"),
-                    "baseURL": "https://api.cloudflare.com/client/v4/ai/inference",
-                },
-            },
-            "siliconflow": {
-                "id": "siliconflow",
-                "npm": "@opencode/siliconflow-provider",
-                "options": {
-                    "apiKey": self.api_keys.get(
-                        "siliconflow", "${SILICONFLOW_API_KEY}"
-                    ),
-                    "baseURL": "https://api.siliconflow.cn/v1",
-                },
-            },
-            "kimi": {
-                "id": "kimi",
-                "npm": "@opencode/kimi-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("kimi", "${KIMI_API_KEY}"),
-                    "baseURL": "https://api.moonshot.cn/v1",
-                },
-            },
-            "zai": {
-                "id": "zai",
-                "npm": "@opencode/zai-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("zai", "${ZAI_API_KEY}"),
-                    "baseURL": "https://api.z.ai/v1",
-                },
-            },
-            "sambanova": {
-                "id": "sambanova",
-                "npm": "@opencode/sambanova-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("sambanova", "${SAMBANOVA_API_KEY}"),
-                    "baseURL": "https://api.sambanova.ai/v1",
-                },
-            },
-            "replicate": {
-                "id": "replicate",
-                "npm": "@opencode/replicate-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("replicate", "${REPLICATE_API_KEY}"),
-                    "baseURL": "https://api.replicate.com/v1",
-                },
-            },
-            "sarvam": {
-                "id": "sarvam",
-                "npm": "@opencode/sarvam-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("sarvam", "${SARVAM_API_KEY}"),
-                    "baseURL": "https://api.sarvam.ai",
-                },
-            },
-            "vulavula": {
-                "id": "vulavula",
-                "npm": "@opencode/vulavula-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("vulavula", "${VULAVULA_API_KEY}"),
-                    "baseURL": "https://api.lelapa.ai",
-                },
-            },
-            "twelvelabs": {
-                "id": "twelvelabs",
-                "npm": "@opencode/twelvelabs-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("twelvelabs", "${TWELVELABS_API_KEY}"),
-                    "baseURL": "https://api.twelvelabs.io/v1",
-                },
-            },
-            "codestral": {
-                "id": "codestral",
-                "npm": "@opencode/codestral-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("codestral", "${CODESTRAL_API_KEY}"),
-                    "baseURL": "https://codestral.mistral.ai/v1",
-                },
-            },
-            "qwen": {
-                "id": "qwen",
-                "npm": "@opencode/qwen-provider",
-                "options": {
-                    "apiKey": self.api_keys.get("qwen", "${QWEN_API_KEY}"),
-                    "baseURL": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-                },
+            "copilot": {
+                "apiKey": self.api_keys.get("copilot", "${COPILOT_API_KEY}"),
+                "disabled": False,
+                "provider": "copilot",
             },
         }
 
         return provider_configs.get(
             provider_name,
             {
-                "id": provider_name,
-                "npm": f"@opencode/{provider_name}-provider",
-                "options": {
-                    "apiKey": f"${{{provider_name.upper()}_API_KEY}}",
-                    "baseURL": f"https://api.{provider_name}.com/v1",
-                },
+                "apiKey": f"${{{provider_name.upper()}_API_KEY}}",
+                "disabled": False,
+                "provider": provider_name,
             },
         )
 
-    def create_model_entry(self, model_id, provider_name):
-        """Create a model entry following OFFICIAL OpenCode schema"""
+    def create_model_reference(self, model_id, provider_name):
+        """Create a model reference in OpenCode format (provider.model)"""
 
-        # Extract base model name for display
-        base_name = model_id.split("/")[-1].replace("-", " ").title()
-
-        # Get features from verification data if available
-        supports_brotli = False
-        supports_http3 = False
-        supports_toon = False
-        supports_streaming = False
-        supports_websocket = False
-
-        # Check verification data for this model
-        if self.verification_data and "providers" in self.verification_data:
-            for provider_data in self.verification_data["providers"]:
-                if provider_data.get("name") == provider_name:
-                    for model_data in provider_data.get("models", []):
-                        if model_data.get("model_id") == model_id:
-                            features = model_data.get("features", {})
-                            supports_brotli = features.get("supports_brotli", False)
-                            supports_http3 = features.get("supports_http3", False)
-                            supports_toon = features.get("supports_toon", False)
-                            supports_streaming = features.get("streaming", False)
-                            break
-                    break
-
-        # Fallback to provider-based detection if no verification data
-        if not supports_brotli:
-            # Major providers support brotli
-            supports_brotli = provider_name in [
-                "openai",
-                "anthropic",
-                "google",
-                "deepseek",
-                "anthropic",
-            ]
-        if not supports_http3:
-            # Cloudflare and Google typically support HTTP/3
-            supports_http3 = provider_name in ["google", "cloudflare"]
-        if not supports_streaming:
-            # Most modern models support streaming
-            supports_streaming = True  # Default to true for modern models
-        if not supports_toon:
-            # Check if model name suggests creative capabilities
-            supports_toon = (
-                "toon" in model_id.lower()
-                or "creative" in model_id.lower()
-                or "dalle" in model_id.lower()
-            )
-
-        # Build suffix list for display name
-        suffixes = []
-        if supports_http3:
-            suffixes.append("(http3)")
-        if supports_streaming:
-            suffixes.append("(stream)")
-        if supports_toon:
-            suffixes.append("(toon)")
-        if supports_brotli:
-            suffixes.append("(brotli)")
-
-        # Create display name with suffixes
-        if suffixes:
-            display_name = f"{base_name} {' '.join(suffixes)}"
+        # Clean up model name for OpenCode compatibility
+        # Remove provider prefix if present (e.g., "openai/gpt-4o" -> "gpt-4o")
+        if "/" in model_id:
+            model_name = model_id.split("/", 1)[1]
         else:
-            display_name = base_name
+            model_name = model_id
 
-        # Estimate max tokens based on model type
-        if "32k" in model_id or "128k" in model_id:
-            max_tokens = 128000
-        elif "8k" in model_id:
-            max_tokens = 8192
-        elif "gpt-4" in model_id:
-            max_tokens = 8192
-        elif "claude" in model_id:
-            max_tokens = 200000
-        else:
-            max_tokens = 4096
+        # Handle special cases for model naming
+        model_name = model_name.replace("gpt-4o", "gpt-4o")  # Keep as-is
+        model_name = model_name.replace("claude-3-5-sonnet", "claude-3.5-sonnet")
+        model_name = model_name.replace("claude-3-5-haiku", "claude-3.5-haiku")
+        model_name = model_name.replace("claude-3-7-sonnet", "claude-3.7-sonnet")
 
-        # Estimate costs (simplified)
-        cost_in = 0.5
-        cost_out = 1.5
-
-        if "gpt-4" in model_id:
-            cost_in = 30.0
-            cost_out = 60.0
-        elif "claude-3-opus" in model_id:
-            cost_in = 15.0
-            cost_out = 75.0
-        elif "claude-3-sonnet" in model_id:
-            cost_in = 3.0
-            cost_out = 15.0
-        elif "claude-3-haiku" in model_id:
-            cost_in = 0.25
-            cost_out = 1.25
-
-        return {
-            "id": model_id,
-            "name": f"{display_name} (Challenge Verified)",
-            "displayName": display_name,
-            "maxTokens": max_tokens,
-            "cost_per_1m_in": cost_in,
-            "cost_per_1m_out": cost_out,
-            "supportsBrotli": supports_brotli,
-            "supportsHTTP3": supports_http3,
-            "supportsWebSocket": supports_websocket,
-            "provider": {
-                "id": provider_name,
-                "npm": f"@opencode/{provider_name}-provider",
-            },
-        }
+        # Return the full reference as provider.model
+        return f"{provider_name}.{model_name}"
 
     def generate_config(self):
         """Generate VALID OpenCode configuration following official schema"""
@@ -541,48 +221,58 @@ class OfficialOpenCodeExporter:
 
         # OFFICIAL OpenCode configuration structure
         config = {
-            "$schema": "https://opencode.sh/schema.json",
-            "username": "OpenCode AI Assistant (Ultimate Challenge)",
-            "provider": {},
+            "$schema": "./opencode-schema.json",
+            "data": {"directory": ".opencode"},
+            "providers": {},
+            "agents": {},
+            "tui": {"theme": "opencode"},
+            "shell": {"path": "/bin/bash", "args": ["-l"]},
+            "autoCompact": True,
+            "debug": False,
+            "debugLSP": False,
         }
 
         # Build provider configurations
         valid_providers = 0
         total_models = 0
 
-        for provider_name, models in self.verification_data.items():
-            if not models:  # Skip providers with no models
-                continue
+        # Select best models for each provider as defaults for agents
+        default_models = {}
 
-            provider_config = self.get_provider_config(provider_name)
-            provider_config["models"] = {}
-
-            for model_id in models:
-                model_config = self.create_model_entry(model_id, provider_name)
-                provider_config["models"][model_id] = model_config
-                total_models += 1
-
-            config["provider"][provider_name] = provider_config
-            valid_providers += 1
-
-        # Add other standard OpenCode sections (minimal required)
-        config.update(
-            {
-                "agent": {"name": "OpenCode AI Assistant", "version": "1.0.0"},
-                "mcp": {"servers": []},
-                "command": {"timeout": 30000},
-                "keybinds": {"toggleSidebar": "ctrl+b", "quickCommand": "ctrl+shift+p"},
-                "options": {
-                    "theme": "dark",
-                    "autoSave": True,
-                    "enableChallengeVerification": True,
-                },
-                "tools": {"enabled": True, "maxTools": 10},
-                "lsp": {"enabled": True, "servers": []},
+        # Ensure we have at least basic agents
+        if not config["agents"]:
+            config["agents"] = {
+                "coder": {"model": "gpt-4o", "maxTokens": 5000},
+                "task": {"model": "gpt-4o", "maxTokens": 5000},
+                "title": {"model": "gpt-4o", "maxTokens": 80},
             }
-        )
 
         return config
+
+    def select_best_model(self, models, provider_name):
+        """Select the best model from a list for agent assignment"""
+        if not models:
+            return None
+
+        # Priority order for model selection
+        priority_patterns = [
+            "gpt-4o",
+            "claude-3.5-sonnet",
+            "claude-3-opus",
+            "gpt-4-turbo",
+            "claude-3-sonnet",
+            "gpt-4",
+            "claude-3-haiku",
+            "gpt-3.5-turbo",
+        ]
+
+        for pattern in priority_patterns:
+            for model in models:
+                if pattern in model.lower():
+                    return model
+
+        # Fallback to first model
+        return models[0]
 
     def save_config(self, config):
         """Save configuration with secure permissions"""

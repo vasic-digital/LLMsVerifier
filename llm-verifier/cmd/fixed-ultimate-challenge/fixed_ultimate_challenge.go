@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"time"
 
 	"llm-verifier/logging"
 	"llm-verifier/providers"
@@ -139,77 +138,124 @@ func main() {
 func generateFixedUltimateOpenCode(allModels map[string][]providers.Model, service *providers.EnhancedModelProviderService, allProviders map[string]*providers.ProviderClient, verifiedCount int) map[string]interface{} {
 	config := make(map[string]interface{})
 
-	// Add schema
-	config["$schema"] = "https://opencode.sh/schema.json"
+	// Use correct OpenCode schema
+	config["$schema"] = "./opencode-schema.json"
 
-	// Add username
-	config["username"] = "opencode-user"
+	// Add data section
+	config["data"] = map[string]interface{}{
+		"directory": ".opencode",
+	}
 
-	// Add provider section
-	providerSection := make(map[string]interface{})
+	// Add providers section (plural, simple format)
+	providersSection := make(map[string]interface{})
+	agentsSection := make(map[string]interface{})
+
+	// Track best models for agent assignment
+	bestCoderModel := ""
+	bestTaskModel := ""
+	bestTitleModel := ""
+
 	for providerID, client := range allProviders {
 		if models, exists := allModels[providerID]; exists && len(models) > 0 {
-			providerConfig := make(map[string]interface{})
-
-			// Add options
-			options := make(map[string]interface{})
-			options["apiKey"] = client.APIKey
-			options["baseURL"] = client.BaseURL + "/v1"
-			providerConfig["options"] = options
-
-			// Add models
-			modelsSection := make(map[string]interface{})
-			for _, model := range models {
-				modelConfig := make(map[string]interface{})
-				modelConfig["id"] = model.ID
-				modelConfig["name"] = model.Name
-				modelConfig["displayName"] = model.DisplayName
-				modelConfig["provider"] = map[string]interface{}{
-					"id":  providerID,
-					"npm": "@opencode/" + providerID,
-				}
-				modelConfig["maxTokens"] = model.MaxTokens
-				modelConfig["supportsHTTP3"] = model.SupportsHTTP3
-
-				// Add additional features
-				if model.IsFree {
-					modelConfig["isFree"] = true
-				}
-				if model.IsOpenSource {
-					modelConfig["isOpenSource"] = true
-				}
-				// Note: verification status not available in basic Model struct
-
-				modelsSection[model.ID] = modelConfig
+			// Simple provider config as per OpenCode schema
+			providerConfig := map[string]interface{}{
+				"apiKey":   client.APIKey,
+				"disabled": false,
+				"provider": providerID,
 			}
-			providerConfig["models"] = modelsSection
+			providersSection[providerID] = providerConfig
 
-			providerSection[providerID] = providerConfig
+			// Select best models for agents
+			for _, model := range models {
+				modelRef := fmt.Sprintf("%s.%s", providerID, model.ID)
+
+				// Priority for coder: GPT-4, Claude-3, then others
+				if bestCoderModel == "" {
+					if strings.Contains(strings.ToLower(model.ID), "gpt-4") ||
+						strings.Contains(strings.ToLower(model.ID), "claude-3") {
+						bestCoderModel = modelRef
+					}
+				}
+
+				// Priority for task: same as coder or next best
+				if bestTaskModel == "" && bestCoderModel != modelRef {
+					if strings.Contains(strings.ToLower(model.ID), "gpt-4") ||
+						strings.Contains(strings.ToLower(model.ID), "claude-3") ||
+						strings.Contains(strings.ToLower(model.ID), "gpt-3.5") {
+						bestTaskModel = modelRef
+					}
+				}
+
+				// Title model: can be lighter model
+				if bestTitleModel == "" {
+					bestTitleModel = modelRef
+				}
+			}
 		}
 	}
-	config["provider"] = providerSection
+	config["providers"] = providersSection
 
-	// Add agent section
-	config["agent"] = map[string]interface{}{
-		"id":      "opencode-agent",
-		"name":    "OpenCode Agent",
-		"version": "1.0.0",
+	// Set up agents with proper model references
+	if bestCoderModel != "" {
+		agentsSection["coder"] = map[string]interface{}{
+			"model":     bestCoderModel,
+			"maxTokens": 5000,
+		}
 	}
 
-	// Add MCP section
-	config["mcp"] = map[string]interface{}{
-		"enabled": true,
-		"version": "2024.1",
+	if bestTaskModel != "" {
+		agentsSection["task"] = map[string]interface{}{
+			"model":     bestTaskModel,
+			"maxTokens": 5000,
+		}
+	} else if bestCoderModel != "" {
+		// Fallback to coder model
+		agentsSection["task"] = map[string]interface{}{
+			"model":     bestCoderModel,
+			"maxTokens": 5000,
+		}
 	}
 
-	// Add metadata
-	config["metadata"] = map[string]interface{}{
-		"generatedAt":    time.Now().Format(time.RFC3339),
-		"totalProviders": len(allProviders),
-		"verifiedModels": verifiedCount,
-		"generator":      "fixed-ultimate-challenge",
-		"version":        "1.0.0",
+	if bestTitleModel != "" {
+		agentsSection["title"] = map[string]interface{}{
+			"model":     bestTitleModel,
+			"maxTokens": 80,
+		}
 	}
+
+	// Ensure we have basic agents even if no models found
+	if len(agentsSection) == 0 {
+		agentsSection["coder"] = map[string]interface{}{
+			"model":     "gpt-4o",
+			"maxTokens": 5000,
+		}
+		agentsSection["task"] = map[string]interface{}{
+			"model":     "gpt-4o",
+			"maxTokens": 5000,
+		}
+		agentsSection["title"] = map[string]interface{}{
+			"model":     "gpt-4o",
+			"maxTokens": 80,
+		}
+	}
+
+	config["agents"] = agentsSection
+
+	// Add TUI config
+	config["tui"] = map[string]interface{}{
+		"theme": "opencode",
+	}
+
+	// Add shell config
+	config["shell"] = map[string]interface{}{
+		"path": "/bin/bash",
+		"args": []string{"-l"},
+	}
+
+	// Add other required sections
+	config["autoCompact"] = true
+	config["debug"] = false
+	config["debugLSP"] = false
 
 	return config
 }
@@ -236,7 +282,7 @@ func verifyFixedOpenCodeConfig(configPath string) error {
 	}
 
 	// Verify schema URL
-	if schema, ok := config["$schema"].(string); !ok || schema != "https://opencode.sh/schema.json" {
+	if schema, ok := config["$schema"].(string); !ok || schema != "./opencode-schema.json" {
 		return fmt.Errorf("invalid or missing $schema field")
 	}
 

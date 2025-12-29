@@ -204,8 +204,8 @@ func ExportAIConfig(db *database.Database, cfg *config.Config, aiFormat, outputP
 	case "crush":
 		return exportCrushConfig(filteredModels, outputPath, options)
 	case "opencode":
-		// Use official OpenCode format
-		opencodeConfig, err := createOfficialOpenCodeConfig(filteredModels, options)
+		// Use correct OpenCode format that matches actual OpenCode schema
+		opencodeConfig, err := createCorrectOpenCodeConfig(filteredModels, options)
 		if err != nil {
 			return fmt.Errorf("failed to create OpenCode config: %w", err)
 		}
@@ -945,44 +945,45 @@ func categorizeModel(result VerificationResult) string {
 
 // extractProvider extracts provider name from endpoint
 func extractProvider(endpoint string) string {
+	// Extract provider name from endpoint URL (lowercase for consistency)
 	if strings.Contains(endpoint, "openai.com") {
-		return "OpenAI"
+		return "openai"
 	}
 	if strings.Contains(endpoint, "anthropic.com") {
-		return "Anthropic"
+		return "anthropic"
 	}
 	if strings.Contains(endpoint, "deepseek.com") {
-		return "DeepSeek"
+		return "deepseek"
 	}
 	if strings.Contains(endpoint, "google.com") || strings.Contains(endpoint, "generativelanguage.googleapis.com") {
-		return "Google"
+		return "google"
 	}
 	if strings.Contains(endpoint, "azure.com") {
-		return "Azure"
+		return "azure"
 	}
 	if strings.Contains(endpoint, "aws") || strings.Contains(endpoint, "bedrock") {
-		return "AWS"
+		return "bedrock"
 	}
 	if strings.Contains(endpoint, "huggingface.co") {
-		return "HuggingFace"
+		return "huggingface"
 	}
 	if strings.Contains(endpoint, "nvidia.com") || strings.Contains(endpoint, "integrate.api.nvidia.com") {
-		return "Nvidia"
+		return "nvidia"
 	}
 	if strings.Contains(endpoint, "chutes.ai") {
-		return "Chutes"
+		return "chutes"
 	}
 	if strings.Contains(endpoint, "siliconflow.cn") {
-		return "SiliconFlow"
+		return "siliconflow"
 	}
 	if strings.Contains(endpoint, "moonshot.cn") {
-		return "Kimi"
+		return "kimi"
 	}
 	if strings.Contains(endpoint, "openrouter.ai") {
-		return "OpenRouter"
+		return "openrouter"
 	}
 	if strings.Contains(endpoint, "z.ai") {
-		return "Z.AI"
+		return "zai"
 	}
 
 	return "Unknown"
@@ -1206,11 +1207,11 @@ func ValidateExportedConfig(configPath string) error {
 
 	// Handle OpenCode format specially
 	if strings.Contains(filename, "opencode") {
-		var opencodeConfig OpenCodeConfig
-		if err := json.Unmarshal(data, &opencodeConfig); err != nil {
+		var opencodeConfigMap map[string]interface{}
+		if err := json.Unmarshal(data, &opencodeConfigMap); err != nil {
 			return fmt.Errorf("failed to parse OpenCode config: %w", err)
 		}
-		return validateOpenCodeConfigStructure(&opencodeConfig)
+		return validateCorrectOpenCodeConfigStructure(opencodeConfigMap)
 	}
 
 	// Handle other formats as AIConfig
@@ -1515,6 +1516,69 @@ func validateOpenCodeConfigStructure(config *OpenCodeConfig) error {
 		// Options should contain API key
 		if provider.Options.APIKey == "" {
 			return fmt.Errorf("provider '%s' missing API key in options", providerName)
+		}
+	}
+
+	return nil
+}
+
+// validateCorrectOpenCodeConfigStructure validates the correct OpenCode configuration format
+func validateCorrectOpenCodeConfigStructure(config map[string]interface{}) error {
+	// Check schema
+	schema, ok := config["$schema"].(string)
+	if !ok {
+		return fmt.Errorf("missing or invalid $schema field")
+	}
+	if schema != "./opencode-schema.json" {
+		return fmt.Errorf("invalid $schema URL: expected './opencode-schema.json', got '%s'", schema)
+	}
+
+	// Check required sections
+	requiredSections := []string{"data", "providers", "agents", "tui", "shell"}
+	for _, section := range requiredSections {
+		if _, exists := config[section]; !exists {
+			return fmt.Errorf("missing required section: %s", section)
+		}
+	}
+
+	// Validate providers section
+	providers, ok := config["providers"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("providers section must be an object")
+	}
+	if len(providers) == 0 {
+		return fmt.Errorf("providers section must contain at least one provider")
+	}
+
+	// Validate each provider
+	for providerName, providerData := range providers {
+		provider, ok := providerData.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("provider '%s' must be an object", providerName)
+		}
+
+		// Check required provider fields
+		if _, hasAPIKey := provider["apiKey"]; !hasAPIKey {
+			return fmt.Errorf("provider '%s' missing apiKey field", providerName)
+		}
+		if _, hasDisabled := provider["disabled"]; !hasDisabled {
+			return fmt.Errorf("provider '%s' missing disabled field", providerName)
+		}
+		if _, hasProvider := provider["provider"]; !hasProvider {
+			return fmt.Errorf("provider '%s' missing provider field", providerName)
+		}
+	}
+
+	// Validate agents section
+	agents, ok := config["agents"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("agents section must be an object")
+	}
+
+	requiredAgents := []string{"coder", "task", "title"}
+	for _, agentName := range requiredAgents {
+		if _, exists := agents[agentName]; !exists {
+			return fmt.Errorf("missing required agent: %s", agentName)
 		}
 	}
 
@@ -1935,6 +1999,166 @@ func createOfficialOpenCodeConfig(results []VerificationResult, options *ExportO
 	}
 
 	return config, nil
+}
+
+// createCorrectOpenCodeConfig creates OpenCode configuration in the correct format that OpenCode actually accepts
+func createCorrectOpenCodeConfig(results []VerificationResult, options *ExportOptions) (map[string]interface{}, error) {
+	// Group models by provider
+	providerModels := make(map[string][]VerificationResult)
+
+	for _, result := range results {
+		if result.Error != "" {
+			continue
+		}
+
+		provider := extractProvider(result.ModelInfo.Endpoint)
+		providerModels[provider] = append(providerModels[provider], result)
+	}
+
+	// Create correct OpenCode config structure
+	config := make(map[string]interface{})
+
+	// Use correct schema
+	config["$schema"] = "./opencode-schema.json"
+
+	// Add data section
+	config["data"] = map[string]interface{}{
+		"directory": ".opencode",
+	}
+
+	// Add providers section (plural, simple format)
+	providersSection := make(map[string]interface{})
+	agentsSection := make(map[string]interface{})
+
+	// Track best models for agent assignment
+	var bestCoderModel, bestTaskModel, bestTitleModel string
+
+	for providerName, models := range providerModels {
+		// Simple provider config as per OpenCode schema
+		providerConfig := map[string]interface{}{
+			"apiKey":   getAPIKeyForProvider(providerName, options),
+			"disabled": false,
+			"provider": providerName,
+		}
+		providersSection[providerName] = providerConfig
+
+		// Select best models for agents
+		for _, result := range models {
+			modelID := result.ModelInfo.ID
+			modelRef := fmt.Sprintf("%s.%s", providerName, modelID)
+
+			// Priority for coder: GPT-4, Claude-3, then others
+			if bestCoderModel == "" {
+				if strings.Contains(strings.ToLower(modelID), "gpt-4") ||
+					strings.Contains(strings.ToLower(modelID), "claude-3") {
+					bestCoderModel = modelRef
+				}
+			}
+
+			// Priority for task: same as coder or next best
+			if bestTaskModel == "" && bestCoderModel != modelRef {
+				if strings.Contains(strings.ToLower(modelID), "gpt-4") ||
+					strings.Contains(strings.ToLower(modelID), "claude-3") ||
+					strings.Contains(strings.ToLower(modelID), "gpt-3.5") {
+					bestTaskModel = modelRef
+				}
+			}
+
+			// Title model: can be lighter model
+			if bestTitleModel == "" {
+				bestTitleModel = modelRef
+			}
+		}
+	}
+	config["providers"] = providersSection
+
+	// Set up agents with proper model references
+	if bestCoderModel != "" {
+		agentsSection["coder"] = map[string]interface{}{
+			"model":     bestCoderModel,
+			"maxTokens": 5000,
+		}
+	}
+
+	if bestTaskModel != "" {
+		agentsSection["task"] = map[string]interface{}{
+			"model":     bestTaskModel,
+			"maxTokens": 5000,
+		}
+	} else if bestCoderModel != "" {
+		// Fallback to coder model
+		agentsSection["task"] = map[string]interface{}{
+			"model":     bestCoderModel,
+			"maxTokens": 5000,
+		}
+	}
+
+	if bestTitleModel != "" {
+		agentsSection["title"] = map[string]interface{}{
+			"model":     bestTitleModel,
+			"maxTokens": 80,
+		}
+	}
+
+	// Ensure we have basic agents even if no models found
+	if len(agentsSection) == 0 {
+		agentsSection["coder"] = map[string]interface{}{
+			"model":     "gpt-4o",
+			"maxTokens": 5000,
+		}
+		agentsSection["task"] = map[string]interface{}{
+			"model":     "gpt-4o",
+			"maxTokens": 5000,
+		}
+		agentsSection["title"] = map[string]interface{}{
+			"model":     "gpt-4o",
+			"maxTokens": 80,
+		}
+	}
+
+	config["agents"] = agentsSection
+
+	// Add TUI config
+	config["tui"] = map[string]interface{}{
+		"theme": "opencode",
+	}
+
+	// Add shell config
+	config["shell"] = map[string]interface{}{
+		"path": "/bin/bash",
+		"args": []string{"-l"},
+	}
+
+	// Add other required sections
+	config["autoCompact"] = true
+	config["debug"] = false
+	config["debugLSP"] = false
+
+	return config, nil
+}
+
+// getAPIKeyForProvider returns the appropriate API key variable for a provider
+func getAPIKeyForProvider(providerName string, options *ExportOptions) string {
+	if options == nil || !options.IncludeAPIKey {
+		return ""
+	}
+
+	switch strings.ToLower(providerName) {
+	case "openai":
+		return "${OPENAI_API_KEY}"
+	case "anthropic":
+		return "${ANTHROPIC_API_KEY}"
+	case "groq":
+		return "${GROQ_API_KEY}"
+	case "google", "gemini":
+		return "${GOOGLE_API_KEY}"
+	case "openrouter":
+		return "${OPENROUTER_API_KEY}"
+	case "copilot":
+		return "${COPILOT_API_KEY}"
+	default:
+		return fmt.Sprintf("${%s_API_KEY}", strings.ToUpper(strings.ReplaceAll(providerName, "-", "_")))
+	}
 }
 
 // getCrushProviderType returns the Crush provider type for a given provider name
