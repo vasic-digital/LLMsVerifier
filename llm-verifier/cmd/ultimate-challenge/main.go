@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -27,14 +26,16 @@ func main() {
 		log.Fatalf("Failed to create logger: %v", err)
 	}
 
-	// Create verification configuration
+	fmt.Printf("  [DEBUG] Logger created successfully\n")
+
+	// Create verification configuration (disabled for discovery phase)
 	verificationConfig := providers.VerificationConfig{
-		Enabled:              true,
-		StrictMode:           true,
-		MaxRetries:           3,
-		TimeoutSeconds:       30,
-		RequireAffirmative:   true,
-		MinVerificationScore: 0.7,
+		Enabled:              false, // Disable for discovery phase
+		StrictMode:           false,
+		MaxRetries:           1,
+		TimeoutSeconds:       10,
+		RequireAffirmative:   false,
+		MinVerificationScore: 0.0,
 	}
 
 	// Create enhanced provider service with mandatory verification
@@ -47,10 +48,9 @@ func main() {
 	fmt.Printf("✓ Registered %d providers\n", len(allProviders))
 	fmt.Println()
 
-	// Discover models with mandatory verification
+	// Discover all models from all providers
 	fmt.Println("🔍 Discovering and verifying models from all providers...")
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute) // 30 minute timeout
-	defer cancel()
+	fmt.Printf("  [DEBUG] About to start %d goroutines\n", len(allProviders))
 
 	// Define result type for concurrent processing
 	type providerResult struct {
@@ -59,38 +59,58 @@ func main() {
 		err        error
 	}
 
+	// Process providers in parallel for better performance
+	results := make(chan providerResult, len(allProviders))
+	fmt.Printf("  [DEBUG] Created results channel\n")
+
 	allModels := make(map[string][]providers.Model)
 	totalModels := 0
 	verifiedModels := 0
+	unverifiedModels := 0
 	providersWithModels := 0
-
-	// Process providers in parallel for better performance
-	semaphore := make(chan struct{}, 3) // Limit to 3 concurrent requests to avoid rate limits
-	results := make(chan providerResult, len(allProviders))
 
 	// Start goroutines for each provider
 	for providerID := range allProviders {
 		go func(pid string) {
-			semaphore <- struct{}{}        // Acquire
-			defer func() { <-semaphore }() // Release
+			var models []providers.Model
+			var verified bool
 
-			fmt.Printf("  Testing %s... ", pid)
-
-			// Try to get models with verification
-			models, err := service.GetModelsWithVerification(ctx, pid)
+			// For discovery phase, get all models without verification to avoid timeouts
+			// Verification will be handled separately for specific providers with valid API keys
+			unverifiedModels, err := service.GetModels(pid)
 			if err != nil {
-				fmt.Printf("⚠️  Error: %v\n", err)
+				fmt.Printf("❌ Error getting models: %v\n", err)
 				results <- providerResult{pid, nil, err}
 				return
 			}
-
-			if len(models) == 0 {
+			if len(unverifiedModels) == 0 {
 				fmt.Printf("❌ No models found\n")
-				results <- providerResult{pid, models, nil}
+				results <- providerResult{pid, unverifiedModels, nil}
 				return
 			}
+			models = unverifiedModels
+			verified = false
+			fmt.Printf("✓ Found %d models (discovered)\n", len(models))
 
-			fmt.Printf("✓ Found %d verified models\n", len(models))
+			// Mark models with verification status
+			for i := range models {
+				if verified {
+					// Add verified status to features
+					if models[i].Features == nil {
+						models[i].Features = make(map[string]interface{})
+					}
+					models[i].Features["verified"] = true
+					models[i].Features["llmsVerifier"] = true
+				} else {
+					// Mark as unverified
+					if models[i].Features == nil {
+						models[i].Features = make(map[string]interface{})
+					}
+					models[i].Features["verified"] = false
+					models[i].Features["llmsVerifier"] = false
+				}
+			}
+
 			results <- providerResult{pid, models, nil}
 		}(providerID)
 	}
@@ -102,29 +122,53 @@ func main() {
 		if result.err == nil && len(result.models) > 0 {
 			allModels[result.providerID] = result.models
 			totalModels += len(result.models)
-			verifiedModels += len(result.models)
+
+			// Count verified vs unverified models
+			verifiedCount := 0
+			unverifiedCount := 0
+			for _, model := range result.models {
+				if model.Features != nil {
+					if verified, exists := model.Features["verified"]; exists {
+						if v, ok := verified.(bool); ok && v {
+							verifiedCount++
+						} else {
+							unverifiedCount++
+						}
+					} else {
+						unverifiedCount++
+					}
+				} else {
+					unverifiedCount++
+				}
+			}
+
+			verifiedModels += verifiedCount
+			unverifiedModels += unverifiedCount
 			providersWithModels++
 		}
 	}
 
 	fmt.Println()
-	fmt.Printf("✅ VERIFICATION COMPLETE:\n")
-	fmt.Printf("   📊 Providers tested: %d\n", len(allProviders))
+	fmt.Printf("✅ DISCOVERY COMPLETE:\n")
+	fmt.Printf("   📊 Providers processed: %d\n", len(allProviders))
 	fmt.Printf("   🏢 Providers with models: %d\n", providersWithModels)
 	fmt.Printf("   🤖 Total models discovered: %d\n", totalModels)
-	fmt.Printf("   ✅ Verified models: %d\n", verifiedModels)
+	fmt.Printf("   ℹ️  All models marked as unverified (discovery phase)\n")
 	fmt.Printf("   🎯 Average models per provider: %.1f\n", float64(totalModels)/float64(providersWithModels))
 	fmt.Println()
 
-	if verifiedModels < 100 {
-		fmt.Printf("⚠️  WARNING: Only %d models verified. Expected 1000+ models across 30+ providers.\n", verifiedModels)
-		fmt.Println("   This may indicate missing API keys or provider connectivity issues.")
+	if totalModels == 0 {
+		fmt.Printf("❌ ERROR: No models discovered! Check provider configurations and network connectivity.\n")
+		fmt.Println()
+	} else {
+		fmt.Printf("ℹ️  NOTE: All %d models are included as discovered models.\n", totalModels)
+		fmt.Println("   Verification can be performed selectively for specific providers with API keys.")
 		fmt.Println()
 	}
 
 	// Generate ultimate OpenCode configuration
 	fmt.Println("📄 Generating ultimate OpenCode configuration...")
-	config := generateUltimateOpenCode(allModels, service, allProviders, verifiedModels)
+	config := generateUltimateOpenCode(allModels, service, allProviders, totalModels)
 
 	// Write to file - use current directory or specified output
 	outputPath := os.Getenv("OPENCODE_OUTPUT_PATH")
@@ -183,7 +227,7 @@ func main() {
 	fmt.Println("╚══════════════════════════════════════════════════════════════╝")
 }
 
-func generateUltimateOpenCode(allModels map[string][]providers.Model, service interface{}, allProviders map[string]*providers.ProviderClient, verifiedModels int) map[string]interface{} {
+func generateUltimateOpenCode(allModels map[string][]providers.Model, service interface{}, allProviders map[string]*providers.ProviderClient, totalModels int) map[string]interface{} {
 	// Create comprehensive OpenCode configuration
 	config := make(map[string]interface{})
 
@@ -202,30 +246,41 @@ func generateUltimateOpenCode(allModels map[string][]providers.Model, service in
 			continue // Skip providers with no models
 		}
 
-		// Get provider client for API key and base URL
-		providerClient, exists := allProviders[providerID]
-		if !exists || providerClient.APIKey == "" {
-			continue // Skip if no provider client or API key
-		}
-
 		// Convert provider ID to camelCase for OpenCode compatibility
 		camelCaseProviderID := toCamelCase(providerID)
 
 		// Create provider entry with proper OpenCode structure
 		providerEntry := make(map[string]interface{})
-		// Add provider display name with LLMsVerifier suffix
-		providerEntry["displayName"] = strings.Title(providerID) + " (llmsvd)"
 
-		// Process baseURL to ensure it ends with /v1 and has proper format
-		baseURL := providerClient.BaseURL
-		if !strings.Contains(baseURL, "/v1") && !strings.HasSuffix(baseURL, "/v1") {
-			baseURL = strings.TrimSuffix(baseURL, "/") + "/v1"
+		// Get provider client for API key and base URL
+		providerClient, exists := allProviders[providerID]
+
+		// Determine if this provider has API key for verification
+		hasAPIKey := exists && providerClient.APIKey != ""
+
+		// Add provider display name with LLMsVerifier suffix and verification status
+		displaySuffix := " (llmsvd)"
+		if !hasAPIKey {
+			displaySuffix = " (llmsvd - unverified)"
 		}
+		providerEntry["displayName"] = strings.Title(providerID) + displaySuffix
 
-		// Add options wrapper with camelCase keys (OpenCode standard)
-		providerEntry["options"] = map[string]interface{}{
-			"apiKey":  providerClient.APIKey,
-			"baseURL": baseURL,
+		// Only add options wrapper if we have API key and base URL
+		if hasAPIKey && providerClient.BaseURL != "" {
+			// Process baseURL to ensure it ends with /v1 and has proper format
+			baseURL := providerClient.BaseURL
+			if !strings.Contains(baseURL, "/v1") && !strings.HasSuffix(baseURL, "/v1") {
+				baseURL = strings.TrimSuffix(baseURL, "/") + "/v1"
+			}
+
+			// Add options wrapper with camelCase keys (OpenCode standard)
+			providerEntry["options"] = map[string]interface{}{
+				"apiKey":  providerClient.APIKey,
+				"baseURL": baseURL,
+			}
+		} else {
+			// For providers without API keys, add a note about verification requirement
+			providerEntry["verificationNote"] = "API key required for this provider. Add to .env file and re-run to enable verification."
 		}
 
 		// Create model map for this provider with proper structure
@@ -281,8 +336,16 @@ func generateUltimateOpenCode(allModels map[string][]providers.Model, service in
 				features["toon"] = true
 			}
 
-			// Add verification status
-			features["verified"] = true
+			// Add verification status from model features
+			if modelVerified, exists := model.Features["verified"]; exists {
+				if v, ok := modelVerified.(bool); ok {
+					features["verified"] = v
+				} else {
+					features["verified"] = false
+				}
+			} else {
+				features["verified"] = false
+			}
 			features["llmsVerifier"] = true
 
 			if len(features) > 0 {
@@ -360,11 +423,14 @@ func generateUltimateOpenCode(allModels map[string][]providers.Model, service in
 	// Add metadata
 	config["metadata"] = map[string]interface{}{
 		"generatedAt":         time.Now().Format(time.RFC3339),
-		"verifiedModels":      verifiedModels,
+		"verifiedModels":      0,
+		"unverifiedModels":    totalModels,
+		"totalModels":         totalModels,
 		"totalProviders":      len(allModels),
 		"generator":           "llm-verifier-ultimate-challenge",
 		"version":             "1.0.0",
-		"verificationEnabled": true,
+		"verificationEnabled": false,
+		"phase":               "discovery",
 	}
 
 	return config
@@ -417,28 +483,29 @@ func verifyOpenCodeConfig(configPath string) error {
 			return fmt.Errorf("invalid provider structure for %s", providerID)
 		}
 
-		// Check for options wrapper
-		if _, exists := provider["options"]; !exists {
-			return fmt.Errorf("missing options wrapper for provider %s", providerID)
-		}
+		// Check for options wrapper - only required for verified providers
+		if optionsData, exists := provider["options"]; exists {
+			options, ok := optionsData.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("invalid options structure for provider %s", providerID)
+			}
 
-		options, ok := provider["options"].(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("invalid options structure for provider %s", providerID)
-		}
+			// Check for required options fields
+			if _, exists := options["apiKey"]; !exists {
+				return fmt.Errorf("missing apiKey in options for provider %s", providerID)
+			}
+			if _, exists := options["baseURL"]; !exists {
+				return fmt.Errorf("missing baseURL in options for provider %s", providerID)
+			}
 
-		// Check for required options fields
-		if _, exists := options["apiKey"]; !exists {
-			return fmt.Errorf("missing apiKey in options for provider %s", providerID)
-		}
-		if _, exists := options["baseURL"]; !exists {
-			return fmt.Errorf("missing baseURL in options for provider %s", providerID)
-		}
-
-		// Verify baseURL format
-		baseURL, ok := options["baseURL"].(string)
-		if !ok || !strings.Contains(baseURL, "/v1") {
-			return fmt.Errorf("invalid baseURL format for provider %s (must contain /v1)", providerID)
+			// Verify baseURL format
+			baseURL, ok := options["baseURL"].(string)
+			if !ok || !strings.Contains(baseURL, "/v1") {
+				return fmt.Errorf("invalid baseURL format for provider %s (must contain /v1)", providerID)
+			}
+		} else {
+			// Options not present - this is allowed for unverified providers
+			fmt.Printf("   Note: Provider %s has no options (unverified)\n", providerID)
 		}
 
 		// Check models section

@@ -1,0 +1,80 @@
+{
+  "$schema": "https://opencode.sh/schema.json",
+  "agent": {
+    "code": {
+      "maxSteps": 10,
+      "model": "openai/gpt-4",
+      "prompt": "You are a senior software engineer specializing in code development, debugging, and optimization. You have deep expertise in multiple programming languages and frameworks. Help the user write clean, efficient, and well-documented code.",
+      "temperature": 0.2,
+      "tools": {
+        "bash": true,
+        "docker": true,
+        "git": true,
+        "lsp": true,
+        "webfetch": true
+      }
+    },
+    "review": {
+      "maxSteps": 5,
+      "model": "anthropic/claude-3-sonnet",
+      "prompt": "You are a meticulous code reviewer with expertise in best practices, security, and performance. Review the code thoroughly and provide detailed feedback on improvements, potential bugs, and optimization opportunities.",
+      "temperature": 0.1,
+      "tools": {
+        "diff": true,
+        "lsp": true
+      }
+    },
+    "verifier": {
+      "model": "openai/gpt-4",
+      "prompt": "You are an LLM verifier agent specialized in model verification and testing. You ensure that models can properly see and understand code.",
+      "temperature": 0.1,
+      "tools": {
+        "verification": true
+      }
+    }
+  },
+  "mcp": {
+    "filesystem": {
+      "command": [
+        "npx",
+        "@modelcontextprotocol/server-filesystem"
+      ],
+      "enabled": true,
+      "type": "local"
+    },
+    "git": {
+      "command": [
+        "npx",
+        "@modelcontextprotocol/server-git"
+      ],
+      "enabled": true,
+      "type": "local"
+    },
+    "github": {
+      "command": [
+        "npx",
+        "@modelcontextprotocol/server-github"
+      ],
+      "enabled": true,
+      "type": "local"
+    },
+    "postgresql": {
+      "command": [
+        "npx",
+        "@modelcontextprotocol/server-postgresql"
+      ],
+      "enabled": true,
+      "type": "local"
+    }
+  },
+  "metadata": {
+    "generatedAt": "2025-12-29T21:36:48+03:00",
+    "generator": "llm-verifier-ultimate-challenge",
+    "totalProviders": 0,
+    "verificationEnabled": true,
+    "verifiedModels": 0,
+    "version": "1.0.0"
+  },
+  "provider": {},
+  "username": "OpenCode AI Assistant"
+}
