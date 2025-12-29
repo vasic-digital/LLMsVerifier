@@ -165,15 +165,18 @@ func main() {
 		fmt.Println()
 	}
 
-	// Generate ultimate OpenCode configuration
-	fmt.Println("📄 Generating ultimate OpenCode configuration...")
-	config := generateUltimateOpenCode(allModels, service, allProviders, totalModels)
+	// Generate ultimate OpenCode configurations
+	fmt.Println("📄 Generating ultimate OpenCode configurations...")
+	fullConfig := generateUltimateOpenCode(allModels, service, allProviders, totalModels)
+	publicConfig := generateUltimateOpenCodePublic(allModels, service, allProviders, totalModels)
 
-	// Write to file - use current directory or specified output
+	// Write to files - use current directory or specified output
 	outputPath := os.Getenv("OPENCODE_OUTPUT_PATH")
 	if outputPath == "" {
 		outputPath = "opencode_ultimate.json"
 	}
+
+	publicOutputPath := strings.Replace(outputPath, ".json", "_public.json", 1)
 
 	// Create output directory if it doesn't exist
 	outputDir := filepath.Dir(outputPath)
@@ -183,47 +186,86 @@ func main() {
 		}
 	}
 
+	// Write full configuration (with API keys) - SECURE FILE
 	file, err := os.Create(outputPath)
 	if err != nil {
-		log.Fatalf("Failed to create output file: %v", err)
+		log.Fatalf("Failed to create full config file: %v", err)
 	}
 	defer file.Close()
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(config); err != nil {
-		log.Fatalf("Failed to encode config: %v", err)
+	if err := encoder.Encode(fullConfig); err != nil {
+		log.Fatalf("Failed to encode full config: %v", err)
 	}
 
-	fmt.Printf("✅ Ultimate OpenCode configuration exported to: %s\n", outputPath)
+	fmt.Printf("✅ Full OpenCode configuration exported to: %s\n", outputPath)
 	fmt.Printf("📊 Size: %.2f KB\n", float64(getFileSize(outputPath))/1024)
 
-	// Verify the generated configuration
-	fmt.Println("🔍 Verifying OpenCode configuration structure...")
-	if err := verifyOpenCodeConfig(outputPath); err != nil {
-		fmt.Printf("❌ Configuration verification FAILED: %v\n", err)
-		fmt.Println("   The generated configuration may not be compatible with OpenCode.")
-		fmt.Println("   Please check the errors above and fix any issues.")
-		os.Exit(1)
+	// Set restrictive permissions on full config (owner read/write only)
+	if err := os.Chmod(outputPath, 0600); err != nil {
+		fmt.Printf("⚠️  Warning: Could not set restrictive permissions on %s: %v\n", outputPath, err)
 	} else {
-		fmt.Println("✅ Configuration structure verified successfully")
-		fmt.Println("   The generated opencode.json is 100% compatible with OpenCode!")
+		fmt.Printf("🔒 Set restrictive permissions (600) on full config\n")
 	}
 
-	// Copy to config directory
+	// Write public configuration (without API keys) - VERSIONABLE FILE
+	publicFile, err := os.Create(publicOutputPath)
+	if err != nil {
+		log.Fatalf("Failed to create public config file: %v", err)
+	}
+	defer publicFile.Close()
+
+	publicEncoder := json.NewEncoder(publicFile)
+	publicEncoder.SetIndent("", "  ")
+	if err := publicEncoder.Encode(publicConfig); err != nil {
+		log.Fatalf("Failed to encode public config: %v", err)
+	}
+
+	fmt.Printf("✅ Public OpenCode configuration exported to: %s\n", publicOutputPath)
+	fmt.Printf("📊 Size: %.2f KB\n", float64(getFileSize(publicOutputPath))/1024)
+
+	// Verify the generated configuration
+	// Verify both generated configurations
+	fmt.Println("\n🔍 Verifying OpenCode configurations...")
+
+	// Verify full configuration (with API keys)
+	fmt.Printf("🔐 Verifying full configuration: %s\n", outputPath)
+	if err := verifyOpenCodeConfig(outputPath); err != nil {
+		fmt.Printf("❌ Full configuration verification FAILED: %v\n", err)
+		os.Exit(1)
+	} else {
+		fmt.Println("✅ Full configuration structure verified successfully")
+	}
+
+	// Verify public configuration (without API keys)
+	fmt.Printf("🌐 Verifying public configuration: %s\n", publicOutputPath)
+	if err := verifyOpenCodeConfig(publicOutputPath); err != nil {
+		fmt.Printf("❌ Public configuration verification FAILED: %v\n", err)
+		os.Exit(1)
+	} else {
+		fmt.Println("✅ Public configuration structure verified successfully")
+	}
+
+	// Copy PUBLIC configuration to config directory (no API keys)
 	configDir := "/home/milosvasic/.config/opencode"
 	if err := os.MkdirAll(configDir, 0755); err == nil {
 		configPath := configDir + "/opencode.json"
 		os.Remove(configPath) // Remove old symlink
-		if err := copyFile(outputPath, configPath); err == nil {
+		if err := copyFile(publicOutputPath, configPath); err == nil {
 			fmt.Printf("✅ Configuration copied to: %s\n", configPath)
 		}
 	}
 
 	fmt.Println()
 	fmt.Println("╔══════════════════════════════════════════════════════════════╗")
-	fmt.Println("║  🎉 ULTIMATE CHALLENGE COMPLETE - CONFIGURATION READY       ║")
+	fmt.Println("║  🎉 ULTIMATE CHALLENGE COMPLETE - CONFIGURATIONS READY      ║")
 	fmt.Println("╚══════════════════════════════════════════════════════════════╝")
+	fmt.Println()
+	fmt.Println("📋 Configuration Summary:")
+	fmt.Println("   🔐 Full config: Contains API keys (secure, git-ignored)")
+	fmt.Println("   🌐 Public config: No API keys (safe for versioning)")
+	fmt.Println("   📁 Config directory: Uses public config (no API keys)")
 }
 
 func generateUltimateOpenCode(allModels map[string][]providers.Model, service interface{}, allProviders map[string]*providers.ProviderClient, totalModels int) map[string]interface{} {
@@ -414,6 +456,194 @@ func generateUltimateOpenCode(allModels map[string][]providers.Model, service in
 	}
 
 	// Note: Metadata removed as it's not part of OpenCode schema
+
+	return config
+}
+
+// generateUltimateOpenCodePublic generates OpenCode configuration WITHOUT API keys (safe for versioning)
+func generateUltimateOpenCodePublic(allModels map[string][]providers.Model, service interface{}, allProviders map[string]*providers.ProviderClient, totalModels int) map[string]interface{} {
+	config := make(map[string]interface{})
+
+	// Basic OpenCode structure
+	config["$schema"] = "https://opencode.sh/schema.json"
+	config["username"] = "OpenCode AI Assistant"
+
+	// Create display formatter for model names
+	displayFormatter := scoring.NewModelDisplayName()
+
+	// Build provider section with proper OpenCode structure (NO API KEYS)
+	providerConfig := make(map[string]interface{})
+
+	for providerID, models := range allModels {
+		if len(models) == 0 {
+			continue // Skip providers with no models
+		}
+
+		// Convert provider ID to camelCase for OpenCode compatibility
+		camelCaseProviderID := toCamelCase(providerID)
+
+		// Create provider entry with proper OpenCode structure
+		providerEntry := make(map[string]interface{})
+
+		// Get provider client for base URL only
+		providerClient, exists := allProviders[providerID]
+
+		// Only add baseURL if available (NO API KEYS - PUBLIC VERSION)
+		if exists && providerClient.BaseURL != "" {
+			// Process baseURL to ensure it ends with /v1 and has proper format
+			baseURL := providerClient.BaseURL
+			if !strings.Contains(baseURL, "/v1") && !strings.HasSuffix(baseURL, "/v1") {
+				baseURL = strings.TrimSuffix(baseURL, "/") + "/v1"
+			}
+
+			// Add options with baseURL only - NO API KEYS
+			providerEntry["options"] = map[string]interface{}{
+				"baseURL": baseURL,
+			}
+		}
+
+		// Create model map for this provider with proper structure
+		modelMap := make(map[string]interface{})
+
+		for _, model := range models {
+			// Extract features for display name
+			featureData := map[string]interface{}{
+				"supports_brotli": model.SupportsBrotli,
+				"supports_http3":  model.SupportsHTTP3,
+				"supports_toon":   model.SupportsToon,
+				"is_free":         model.IsFree,
+				"is_open_source":  model.IsOpenSource,
+			}
+
+			// Generate display name with suffixes and add (llmsvd) and verification status
+			displayName := displayFormatter.FormatWithFeatureSuffixesAndLLMsVerifier(model.Name, featureData)
+
+			// Create model entry with proper OpenCode structure
+			modelEntry := map[string]interface{}{
+				"id":          model.ID,
+				"name":        model.Name + " (llmsvd)", // Add (llmsvd) to model name
+				"displayName": displayName,
+				"provider": map[string]interface{}{
+					"id":  providerID,
+					"npm": "@openrouter/" + providerID + "-provider",
+				},
+			}
+
+			// Add maxTokens if available
+			if model.MaxTokens > 0 {
+				modelEntry["maxTokens"] = model.MaxTokens
+			}
+
+			// Add supportsHTTP3 flag
+			modelEntry["supportsHTTP3"] = model.SupportsHTTP3
+
+			// Add cost information with camelCase keys
+			if model.CostPer1MInput > 0 || model.CostPer1MOutput > 0 {
+				modelEntry["costPer1MInput"] = model.CostPer1MInput   // Use camelCase
+				modelEntry["costPer1MOutput"] = model.CostPer1MOutput // Use camelCase
+			}
+
+			// Add features with proper camelCase and snake_case
+			features := make(map[string]interface{})
+			if model.SupportsHTTP3 {
+				features["http3"] = true
+			}
+			if model.IsFree {
+				features["freeToUse"] = true // Use camelCase
+			}
+			if model.IsOpenSource {
+				features["openSource"] = true
+			}
+
+			// Add verification status (always false for public version)
+			features["verified"] = false
+			features["llmsVerifier"] = true
+
+			if len(features) > 0 {
+				modelEntry["features"] = features
+			}
+
+			modelMap[model.ID] = modelEntry
+		}
+
+		if len(modelMap) > 0 {
+			providerEntry["models"] = modelMap
+			providerConfig[camelCaseProviderID] = providerEntry
+		}
+	}
+
+	config["provider"] = providerConfig
+
+	// Add agent configurations
+	config["agent"] = map[string]interface{}{
+		"code": map[string]interface{}{
+			"maxSteps":    10,
+			"model":       "openai/gpt-4",
+			"prompt":      "You are a senior software engineer specializing in code development, debugging, and optimization. You have deep expertise in multiple programming languages and frameworks. Help the user write clean, efficient, and well-documented code.",
+			"temperature": 0.2,
+			"tools": map[string]interface{}{
+				"bash":     true,
+				"docker":   true,
+				"git":      true,
+				"lsp":      true,
+				"webfetch": true,
+			},
+		},
+		"review": map[string]interface{}{
+			"maxSteps":    5,
+			"model":       "anthropic/claude-3-sonnet",
+			"prompt":      "You are a meticulous code reviewer with expertise in best practices, security, and performance. Review the code thoroughly and provide detailed feedback on improvements, potential bugs, and optimization opportunities.",
+			"temperature": 0.1,
+			"tools": map[string]interface{}{
+				"diff": true,
+				"lsp":  true,
+			},
+		},
+		"verifier": map[string]interface{}{
+			"model":       "openai/gpt-4",
+			"prompt":      "You are an LLM verifier agent specialized in model verification and testing. You ensure that models can properly see and understand code.",
+			"temperature": 0.1,
+			"tools": map[string]interface{}{
+				"verification": true,
+			},
+		},
+	}
+
+	// Add MCP configurations
+	config["mcp"] = map[string]interface{}{
+		"filesystem": map[string]interface{}{
+			"command": []interface{}{
+				"npx",
+				"@modelcontextprotocol/server-filesystem",
+			},
+			"enabled": true,
+			"type":    "local",
+		},
+		"git": map[string]interface{}{
+			"command": []interface{}{
+				"npx",
+				"@modelcontextprotocol/server-git",
+			},
+			"enabled": true,
+			"type":    "local",
+		},
+		"github": map[string]interface{}{
+			"command": []interface{}{
+				"npx",
+				"@modelcontextprotocol/server-github",
+			},
+			"enabled": true,
+			"type":    "local",
+		},
+		"postgresql": map[string]interface{}{
+			"command": []interface{}{
+				"npx",
+				"@modelcontextprotocol/server-postgresql",
+			},
+			"enabled": true,
+			"type":    "local",
+		},
+	}
 
 	return config
 }
