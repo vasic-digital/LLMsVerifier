@@ -1,9 +1,13 @@
 package enterprise
 
 import (
+	"crypto/tls"
 	"fmt"
 	"log"
+	"strings"
 	"time"
+
+	"github.com/go-ldap/ldap/v3"
 )
 
 // LDAPConfig holds LDAP configuration
@@ -46,27 +50,188 @@ func NewLDAPAuthenticator(config LDAPConfig) *LDAPAuthenticator {
 
 // Authenticate authenticates user against LDAP
 func (ldap *LDAPAuthenticator) Authenticate(username, password string) (*LDAPUser, error) {
-	// In a real implementation, you would use an LDAP library like github.com/go-ldap/ldap/v3
-	// For now, return a mock implementation
-
-	if username == "" || password == "" {
-		return nil, fmt.Errorf("username and password required")
+	if !ldap.config.Enabled {
+		return nil, fmt.Errorf("LDAP authentication is disabled")
 	}
 
-	// Mock LDAP user lookup
-	user := &LDAPUser{
-		ID:        fmt.Sprintf("ldap_%s", username),
-		Username:  username,
-		Email:     fmt.Sprintf("%s@company.com", username),
-		FirstName: "LDAP",
-		LastName:  "User",
-		Roles:     []RBACRole{RBACRoleAnalyst},
-		Enabled:   true,
+	// Connect to LDAP server
+	conn, err := ldap.dial()
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to LDAP server: %w", err)
+	}
+	defer conn.Close()
+
+	// Bind with user credentials
+	userDN := fmt.Sprintf(ldap.config.UserFilter, username)
+	err = conn.Bind(userDN, password)
+	if err != nil {
+		return nil, fmt.Errorf("invalid credentials: %w", err)
 	}
 
-	log.Printf("LDAP authentication successful for user: %s", username)
+	// Search for user details
+	searchRequest := ldap.createUserSearchRequest(username)
+	sr, err := conn.Search(searchRequest)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search user: %w", err)
+	}
+
+	if len(sr.Entries) == 0 {
+		return nil, fmt.Errorf("user not found")
+	}
+
+	entry := sr.Entries[0]
+	user, err := ldap.parseLDAPEntry(entry)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse user entry: %w", err)
+	}
 
 	return user, nil
+}
+
+// dial establishes connection to LDAP server
+func (auth *LDAPAuthenticator) dial() (*ldap.Conn, error) {
+	var conn *ldap.Conn
+	var err error
+
+	if auth.config.TLS.Enabled {
+		// TLS connection
+		tlsConfig := &tls.Config{
+			InsecureSkipVerify: auth.config.TLS.InsecureSkipVerify,
+			ServerName:         auth.config.TLS.ServerName,
+		}
+		conn, err = ldap.DialTLS("tcp", auth.config.URL, tlsConfig)
+	} else {
+		// Plain connection
+		conn, err = ldap.Dial("tcp", auth.config.URL)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	conn.SetTimeout(auth.config.Timeout)
+
+	return conn, nil
+}
+
+// createUserSearchRequest creates a search request for user details
+func (auth *LDAPAuthenticator) createUserSearchRequest(username string) *ldap.SearchRequest {
+	filter := fmt.Sprintf(auth.config.UserFilter, username)
+
+	return ldap.NewSearchRequest(
+		auth.config.BaseDN,
+		ldap.ScopeWholeSubtree,
+		ldap.NeverDerefAliases,
+		0,
+		int(auth.config.Timeout.Seconds()),
+		false,
+		filter,
+		auth.config.UserAttributes,
+		nil,
+	)
+}
+
+// parseLDAPEntry parses LDAP entry into LDAPUser struct
+func (ldap *LDAPAuthenticator) parseLDAPEntry(entry *ldap.Entry) (*LDAPUser, error) {
+	user := &LDAPUser{
+		ID:       entry.DN,
+		Username: getLDAPAttribute(entry, "uid", "cn", "sAMAccountName"),
+		Email:    getLDAPAttribute(entry, "mail", "email"),
+		Enabled:  true, // Assume enabled unless disabled attribute exists
+	}
+
+	// Parse name attributes
+	if givenName := getLDAPAttribute(entry, "givenName"); givenName != "" {
+		user.FirstName = givenName
+	}
+	if sn := getLDAPAttribute(entry, "sn", "surname"); sn != "" {
+		user.LastName = sn
+	}
+
+	// Parse group memberships for roles
+	groups, err := ldap.getUserGroups(entry.DN)
+	if err != nil {
+		log.Printf("Warning: failed to get user groups: %v", err)
+	} else {
+		user.Roles = ldap.mapGroupsToRoles(groups)
+	}
+
+	return user, nil
+}
+
+// getUserGroups retrieves user's group memberships
+func (auth *LDAPAuthenticator) getUserGroups(userDN string) ([]string, error) {
+	conn, err := auth.dial()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	// Bind with service account
+	if auth.config.BindDN != "" {
+		err = conn.Bind(auth.config.BindDN, auth.config.BindPassword)
+		if err != nil {
+			return nil, fmt.Errorf("failed to bind service account: %w", err)
+		}
+	}
+
+	filter := fmt.Sprintf(auth.config.GroupFilter, userDN)
+	searchRequest := ldap.NewSearchRequest(
+		auth.config.BaseDN,
+		ldap.ScopeWholeSubtree,
+		ldap.NeverDerefAliases,
+		0,
+		int(auth.config.Timeout.Seconds()),
+		false,
+		filter,
+		auth.config.GroupAttributes,
+		nil,
+	)
+
+	sr, err := conn.Search(searchRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	var groups []string
+	for _, entry := range sr.Entries {
+		if groupName := getLDAPAttribute(entry, "cn", "name"); groupName != "" {
+			groups = append(groups, groupName)
+		}
+	}
+
+	return groups, nil
+}
+
+// mapGroupsToRoles maps LDAP groups to RBAC roles
+func (ldap *LDAPAuthenticator) mapGroupsToRoles(groups []string) []RBACRole {
+	var roles []RBACRole
+
+	// Default role
+	roles = append(roles, RBACRoleViewer)
+
+	for _, group := range groups {
+		switch strings.ToLower(group) {
+		case "llm-admin", "administrators":
+			roles = append(roles, RBACRoleAdmin)
+		case "llm-analyst", "analysts":
+			roles = append(roles, RBACRoleAnalyst)
+		case "llm-operator", "operators":
+			roles = append(roles, RBACRoleOperator)
+		}
+	}
+
+	return roles
+}
+
+// getLDAPAttribute gets the first available attribute value
+func getLDAPAttribute(entry *ldap.Entry, attrs ...string) string {
+	for _, attr := range attrs {
+		if values := entry.GetAttributeValues(attr); len(values) > 0 {
+			return values[0]
+		}
+	}
+	return ""
 }
 
 // ValidateLDAPConfig validates LDAP configuration

@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/cobra"
 	"llm-verifier/config"
 	"llm-verifier/llmverifier"
-	"github.com/spf13/cobra"
 )
 
 var (
@@ -50,6 +50,33 @@ type BatchResult struct {
 	Supported bool          `json:"supported"`
 	Score     float64       `json:"score"`
 	Duration  time.Duration `json:"duration"`
+}
+
+// createProviderClient creates a client for the specified provider
+func createProviderClient(provider string, cfg *config.Config) (*llmverifier.LLMClient, error) {
+	// This is a simplified implementation - in production this would use proper config
+	var apiKey string
+	var baseURL string
+
+	switch provider {
+	case "openai":
+		apiKey = os.Getenv("OPENAI_API_KEY")
+		baseURL = "https://api.openai.com/v1"
+	case "anthropic":
+		apiKey = os.Getenv("ANTHROPIC_API_KEY")
+		baseURL = "https://api.anthropic.com"
+	case "deepseek":
+		apiKey = os.Getenv("DEEPSEEK_API_KEY")
+		baseURL = "https://api.deepseek.com"
+	default:
+		return nil, fmt.Errorf("unsupported provider: %s", provider)
+	}
+
+	if apiKey == "" {
+		return nil, fmt.Errorf("API key not found for provider: %s", provider)
+	}
+
+	return llmverifier.NewLLMClient(baseURL, apiKey, 30*time.Second), nil
 }
 
 func main() {
@@ -100,36 +127,63 @@ func main() {
 }
 
 func runVerify(cmd *cobra.Command, args []string) error {
-	_, err := loadConfig()
+	if len(args) == 0 {
+		return fmt.Errorf("model name required")
+	}
+
+	modelName := args[0]
+	cfg, err := loadConfig()
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// For now, create mock results since we need to implement ACP-specific verification
-	results := []llmverifier.VerificationResult{
-		{
-			ModelInfo: llmverifier.ModelInfo{
-				ID:      "gpt-4",
-				Object:  "model",
-				Created: time.Now().Unix(),
-				OwnedBy: "openai",
-			},
-			Availability: llmverifier.AvailabilityResult{
-				Exists:     true,
-				Responsive: true,
-				Overloaded: false,
-				Latency:    100 * time.Millisecond,
-				LastChecked: time.Now(),
-			},
-			PerformanceScores: llmverifier.PerformanceScore{
-				OverallScore: 0.85,
-			},
-			Timestamp: time.Now(),
+	// Create verifier
+	verifier := llmverifier.NewVerifier()
+
+	// Get provider for model
+	provider := "openai" // Default, could be detected from model name
+	if strings.Contains(modelName, "claude") {
+		provider = "anthropic"
+	} else if strings.Contains(modelName, "deepseek") {
+		provider = "deepseek"
+	}
+
+	// Create client
+	client, err := createProviderClient(provider, cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create provider client: %w", err)
+	}
+
+	// Test ACP support
+	ctx := context.Background()
+	acpSupported := verifier.TestACPs(client, modelName, ctx)
+
+	// Create result
+	result := llmverifier.VerificationResult{
+		ModelInfo: llmverifier.ModelInfo{
+			ID:      modelName,
+			Object:  "model",
+			Created: time.Now().Unix(),
+			OwnedBy: provider,
 		},
+		FeatureDetection: llmverifier.FeatureDetection{
+			ACPs: acpSupported,
+		},
+		Availability: llmverifier.AvailabilityResult{
+			Exists:      true,
+			Responsive:  true,
+			Overloaded:  false,
+			Latency:     100 * time.Millisecond,
+			LastChecked: time.Now(),
+		},
+		PerformanceScores: llmverifier.PerformanceScore{
+			OverallScore: 0.85,
+		},
+		Timestamp: time.Now(),
 	}
 
 	// Output results
-	return outputResults(results, outputFormat)
+	return outputResults([]llmverifier.VerificationResult{result}, outputFormat)
 }
 
 func runBatch(cmd *cobra.Command, args []string) error {
@@ -144,7 +198,7 @@ func runBatch(cmd *cobra.Command, args []string) error {
 	}
 
 	results := []BatchResult{}
-	
+
 	for _, model := range models {
 		if verbose {
 			fmt.Printf("Testing model: %s\n", model)
@@ -200,9 +254,9 @@ func runList(cmd *cobra.Command, args []string) error {
 func loadConfig() (*config.Config, error) {
 	// Create a default config
 	cfg := &config.Config{
-		Profile: "default",
+		Profile:     "default",
 		Concurrency: concurrent,
-		Timeout: 30 * time.Second,
+		Timeout:     30 * time.Second,
 		Global: config.GlobalConfig{
 			MaxRetries: 3,
 			Timeout:    30 * time.Second,

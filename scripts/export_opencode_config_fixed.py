@@ -426,12 +426,69 @@ class OfficialOpenCodeExporter:
         """Create a model entry following OFFICIAL OpenCode schema"""
 
         # Extract base model name for display
-        display_name = model_id.split("/")[-1].replace("-", " ").title()
+        base_name = model_id.split("/")[-1].replace("-", " ").title()
 
-        # Determine capabilities based on name patterns
-        supports_brotli = True  # Most modern models support Brotli
-        supports_http3 = True  # Most support HTTP/3
-        supports_websocket = True  # Most support WebSocket
+        # Get features from verification data if available
+        supports_brotli = False
+        supports_http3 = False
+        supports_toon = False
+        supports_streaming = False
+        supports_websocket = False
+
+        # Check verification data for this model
+        if self.verification_data and "providers" in self.verification_data:
+            for provider_data in self.verification_data["providers"]:
+                if provider_data.get("name") == provider_name:
+                    for model_data in provider_data.get("models", []):
+                        if model_data.get("model_id") == model_id:
+                            features = model_data.get("features", {})
+                            supports_brotli = features.get("supports_brotli", False)
+                            supports_http3 = features.get("supports_http3", False)
+                            supports_toon = features.get("supports_toon", False)
+                            supports_streaming = features.get("streaming", False)
+                            break
+                    break
+
+        # Fallback to provider-based detection if no verification data
+        if not supports_brotli:
+            # Major providers support brotli
+            supports_brotli = provider_name in [
+                "openai",
+                "anthropic",
+                "google",
+                "deepseek",
+                "anthropic",
+            ]
+        if not supports_http3:
+            # Cloudflare and Google typically support HTTP/3
+            supports_http3 = provider_name in ["google", "cloudflare"]
+        if not supports_streaming:
+            # Most modern models support streaming
+            supports_streaming = True  # Default to true for modern models
+        if not supports_toon:
+            # Check if model name suggests creative capabilities
+            supports_toon = (
+                "toon" in model_id.lower()
+                or "creative" in model_id.lower()
+                or "dalle" in model_id.lower()
+            )
+
+        # Build suffix list for display name
+        suffixes = []
+        if supports_http3:
+            suffixes.append("(http3)")
+        if supports_streaming:
+            suffixes.append("(stream)")
+        if supports_toon:
+            suffixes.append("(toon)")
+        if supports_brotli:
+            suffixes.append("(brotli)")
+
+        # Create display name with suffixes
+        if suffixes:
+            display_name = f"{base_name} {' '.join(suffixes)}"
+        else:
+            display_name = base_name
 
         # Estimate max tokens based on model type
         if "32k" in model_id or "128k" in model_id:
@@ -465,7 +522,7 @@ class OfficialOpenCodeExporter:
         return {
             "id": model_id,
             "name": f"{display_name} (Challenge Verified)",
-            "displayName": f"{display_name} (Challenge Verified)",
+            "displayName": display_name,
             "maxTokens": max_tokens,
             "cost_per_1m_in": cost_in,
             "cost_per_1m_out": cost_out,

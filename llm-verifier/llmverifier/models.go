@@ -161,6 +161,8 @@ type FeatureDetectionResult struct {
 	Modalities       []string             `json:"modalities"`
 	BatchProcessing  bool                 `json:"batch_processing"`
 	SupportsBrotli   bool                 `json:"supports_brotli"`
+	SupportsHTTP3    bool                 `json:"supports_http3"`
+	SupportsToon     bool                 `json:"supports_toon"`
 }
 
 type FunctionDefinition struct {

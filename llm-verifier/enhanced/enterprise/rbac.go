@@ -377,7 +377,7 @@ func (rbac *RBACManager) logAudit(userID, action, resource, ipAddress string, su
 	if ipAddress == "" {
 		ipAddress = "0.0.0.0"
 	}
-	
+
 	entry := AuditEntry{
 		ID:        fmt.Sprintf("audit_%d", time.Now().UnixNano()),
 		UserID:    userID,
@@ -404,6 +404,7 @@ type TLSConfig struct {
 	CertFile           string `yaml:"cert_file"`
 	KeyFile            string `yaml:"key_file"`
 	CAFile             string `yaml:"ca_file"`
+	ServerName         string `yaml:"server_name"`
 	InsecureSkipVerify bool   `yaml:"insecure_skip_verify"`
 }
 

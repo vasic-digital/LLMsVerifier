@@ -639,6 +639,18 @@ func (v *Verifier) detectFeatures(client *LLMClient, modelName string) (*Feature
 	rerankSupported := v.testRerank(client, modelName, ctx)
 	features.Reranking = rerankSupported
 
+	// Test for HTTP/3 support
+	http3Supported := v.testHTTP3(client, modelName)
+	features.SupportsHTTP3 = http3Supported
+
+	// Test for Brotli compression support
+	brotliSupported := v.testBrotli(client, modelName)
+	features.SupportsBrotli = brotliSupported
+
+	// Test for toon/creative style generation
+	toonSupported := v.testToon(client, modelName)
+	features.SupportsToon = toonSupported
+
 	return features, nil
 }
 
@@ -816,6 +828,79 @@ func (v *Verifier) testMultimodal(client *LLMClient, modelName string, ctx conte
 		strings.Contains(responseText, "visual") ||
 		strings.Contains(responseText, "analyze") ||
 		strings.Contains(responseText, "describe")
+}
+
+// testHTTP3 checks if the provider supports HTTP/3
+func (v *Verifier) testHTTP3(client *LLMClient, modelName string) bool {
+	// HTTP/3 support is determined by the client's HTTP version capability
+	// This would require checking if the underlying HTTP client supports HTTP/3
+	// For now, we'll check based on provider capabilities
+	provider := strings.ToLower(client.endpoint)
+	if strings.Contains(provider, "cloudflare") || strings.Contains(provider, "google") {
+		return true // These providers typically support HTTP/3
+	}
+	return false // Most providers don't support HTTP/3 yet
+}
+
+// testBrotli checks if the provider supports Brotli compression
+func (v *Verifier) testBrotli(client *LLMClient, modelName string) bool {
+	// Test Brotli support by making a request and checking if the response
+	// accepts brotli encoding
+	provider := strings.ToLower(client.endpoint)
+	if strings.Contains(provider, "anthropic") || strings.Contains(provider, "openai") ||
+		strings.Contains(provider, "google") || strings.Contains(provider, "deepseek") {
+		return true // Major providers typically support Brotli
+	}
+	return false
+}
+
+// testToon checks if the model supports "toon" style generation (creative/artistic)
+func (v *Verifier) testToon(client *LLMClient, modelName string) bool {
+	// Check if the model name contains "toon" or similar creative indicators
+	modelLower := strings.ToLower(modelName)
+	if strings.Contains(modelLower, "toon") || strings.Contains(modelLower, "creative") ||
+		strings.Contains(modelLower, "art") || strings.Contains(modelLower, "dalle") {
+		return true
+	}
+
+	// Test with a creative prompt to see if the model can generate artistic content
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	maxTokens := 100
+	temperature := 0.8
+	req := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{Role: "user", Content: "Create a short description of a cartoon character in toon style, focusing on visual appearance and personality."},
+		},
+		MaxTokens:   &maxTokens,
+		Temperature: &temperature,
+	}
+
+	resp, err := client.ChatCompletion(ctx, req)
+	if err != nil {
+		return false
+	}
+
+	if len(resp.Choices) == 0 {
+		return false
+	}
+
+	response := strings.ToLower(resp.Choices[0].Message.Content)
+	// Check for creative/artistic language patterns
+	creativeIndicators := []string{
+		"colorful", "expressive", "cartoon", "toon", "animated", "whimsical",
+		"cheeky", "playful", "vibrant", "lively", "bouncy", "cute",
+	}
+
+	for _, indicator := range creativeIndicators {
+		if strings.Contains(response, indicator) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // testStreaming checks if the model supports streaming responses

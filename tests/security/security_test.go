@@ -212,7 +212,7 @@ func TestInputValidation(t *testing.T) {
 	}{
 		{"Empty_String", "", "model_id"},
 		{"Too_Long", strings.Repeat("a", 1000), "model_id"},
-		{"Special_Chars", "model<id>"", "model_id"},
+		{"Special_Chars", "model<id>", "model_id"},
 		{"SQL_Injection", "'; DROP TABLE --", "model_id"},
 		{"Path_Traversal", "../../../etc/passwd", "file_path"},
 		{"Command_Injection", "; rm -rf /", "command"},
