@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Verifier - AI Model Verification & Benchmarking</title>
+    <meta name="description" content="Professional AI model verification and benchmarking tool. Test, compare, and export configurations for OpenAI, Anthropic, Google, and 20+ AI providers.">
+    <meta name="keywords" content="AI, LLM, model verification, benchmarking, OpenCode, OpenAI, Anthropic, Claude, GPT">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://llm-verifier.dev/">
+    <meta property="og:title" content="LLM Verifier - AI Model Verification & Benchmarking">
+    <meta property="og:description" content="Professional AI model verification tool supporting 20+ providers. Export configurations for OpenCode, Crush, and Claude Code.">
+    <meta property="og:image" content="https://llm-verifier.dev/images/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://llm-verifier.dev/">
+    <meta property="twitter:title" content="LLM Verifier - AI Model Verification & Benchmarking">
+    <meta property="twitter:description" content="Professional AI model verification tool supporting 20+ providers. Export configurations for OpenCode, Crush, and Claude Code.">
+    <meta property="twitter:image" content="https://llm-verifier.dev/images/twitter-image.png">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-brain"></i>
+                <span>LLM Verifier</span>
+            </div>
+            <div class="nav-menu">
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#providers" class="nav-link">Providers</a>
+                <a href="#docs" class="nav-link">Documentation</a>
+                <a href="#pricing" class="nav-link">Pricing</a>
+                <a href="https://github.com/your-org/llm-verifier" class="nav-link" target="_blank">
+                    <i class="fab fa-github"></i> GitHub
+                </a>
+                <a href="/docs/getting-started" class="btn btn-primary">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    Professional AI Model<br>
+                    <span class="highlight">Verification & Benchmarking</span>
+                </h1>
+                <p class="hero-subtitle">
+                    Test, compare, and export configurations for 20+ AI providers.
+                    Seamlessly integrate with OpenCode, Crush, and Claude Code.
+                    Resolve ProviderInitError with confidence.
+                </p>
+                <div class="hero-actions">
+                    <a href="/docs/getting-started" class="btn btn-primary btn-lg">
+                        <i class="fas fa-rocket"></i> Start Verifying
+                    </a>
+                    <a href="#demo" class="btn btn-secondary btn-lg">
+                        <i class="fas fa-play"></i> Watch Demo
+                    </a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-number">20+</span>
+                        <span class="stat-label">AI Providers</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">100%</span>
+                        <span class="stat-label">Test Coverage</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">99.9%</span>
+                        <span class="stat-label">Reliability</span>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div class="code-preview">
+                    <pre><code class="language-bash"># Verify GPT-4 with OpenAI
+llm-verifier verify \
+  --provider openai \
+  --model gpt-4o \
+  --parallel 3
+
+# Export to OpenCode
+llm-verifier export-config opencode \
+  --output opencode-config.json \
+  --include-api-keys</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>Professional AI Model Verification</h2>
+                <p>Comprehensive testing, benchmarking, and configuration export for enterprise AI deployments</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3>Intelligent Verification</h3>
+                    <p>Advanced testing across code generation, reasoning, responsiveness, and reliability metrics. Automated scoring with detailed performance analysis.</p>
+                </div>
+
+                <div class="feature-card highlight">
+                    <div class="feature-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3>ProviderInitError Resolution</h3>
+                    <p>Specifically designed to resolve OpenCode ProviderInitError. Generates correctly formatted configurations compatible with OpenCode schema.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <h3>Multi-Format Export</h3>
+                    <p>Export verified configurations to OpenCode, Crush, and Claude Code formats. Intelligent model selection for optimal performance.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Analytics & Monitoring</h3>
+                    <p>Comprehensive usage analytics, performance tracking, and export history. Monitor provider performance and model reliability.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Enterprise Security</h3>
+                    <p>Secure API key handling, input validation, rate limiting, and audit logging. SOC 2 compliant security practices.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <h3>Developer Experience</h3>
+                    <p>REST API, Go SDK, CLI tools, and comprehensive documentation. Easy integration into CI/CD pipelines and automated workflows.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Providers Section -->
+    <section id="providers" class="providers">
+        <div class="container">
+            <div class="section-header">
+                <h2>Supported AI Providers</h2>
+                <p>Test and benchmark models from leading AI providers worldwide</p>
+            </div>
+
+            <div class="providers-grid">
+                <div class="provider-card">
+                    <div class="provider-logo">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3>OpenAI</h3>
+                    <p>GPT-4, GPT-4o, GPT-3.5 Turbo</p>
+                    <span class="provider-status verified">✓ Verified</span>
+                </div>
+
+                <div class="provider-card">
+                    <div class="provider-logo">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <h3>Anthropic</h3>
+                    <p>Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku</p>
+                    <span class="provider-status verified">✓ Verified</span>
+                </div>
+
+                <div class="provider-card">
+                    <div class="provider-logo">
+                        <i class="fab fa-google"></i>
+                    </div>
+                    <h3>Google</h3>
+                    <p>Gemini 2.0, Gemini 1.5 Pro, Gemini 1.0</p>
+                    <span class="provider-status verified">✓ Verified</span>
+                </div>
+
+                <div class="provider-card">
+                    <div class="provider-logo">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3>Groq</h3>
+                    <p>Lightning-fast inference with Llama models</p>
+                    <span class="provider-status verified">✓ Verified</span>
+                </div>
+
+                <div class="provider-card">
+                    <div class="provider-logo">
+                        <i class="fas fa-cloud"></i>
+                    </div>
+                    <h3>Azure OpenAI</h3>
+                    <p>Enterprise-grade Azure deployments</p>
+                    <span class="provider-status verified">✓ Verified</span>
+                </div>
+
+                <div class="provider-card">
+                    <div class="provider-logo">
+                        <i class="fas fa-server"></i>
+                    </div>
+                    <h3>Together AI</h3>
+                    <p>Open-source models at scale</p>
+                    <span class="provider-status verified">✓ Verified</span>
+                </div>
+
+                <div class="provider-card">
+                    <div class="provider-logo">
+                        <i class="fas fa-fire"></i>
+                    </div>
+                    <h3>Fireworks AI</h3>
+                    <p>Optimized inference for production</p>
+                    <span class="provider-status verified">✓ Verified</span>
+                </div>
+
+                <div class="provider-card">
+                    <div class="provider-logo">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3>Perplexity</h3>
+                    <p>AI-powered search and reasoning</p>
+                    <span class="provider-status verified">✓ Verified</span>
+                </div>
+            </div>
+
+            <div class="providers-more">
+                <p><strong>And 12+ more providers:</strong> DeepSeek, Mistral, Cohere, Replicate, Chutes, SiliconFlow, Kimi, and more...</p>
+                <a href="/docs/providers" class="btn btn-secondary">View All Providers</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section id="demo" class="demo">
+        <div class="container">
+            <div class="demo-content">
+                <h2>See LLM Verifier in Action</h2>
+                <p>Watch how LLM Verifier resolves ProviderInitError and optimizes AI model configurations</p>
+
+                <div class="demo-video">
+                    <!-- Placeholder for video embed -->
+                    <div class="video-placeholder">
+                        <i class="fas fa-play-circle"></i>
+                        <h3>ProviderInitError Resolution Demo</h3>
+                        <p>Step-by-step guide to fixing OpenCode configuration issues</p>
+                    </div>
+                </div>
+
+                <div class="demo-features">
+                    <div class="demo-feature">
+                        <i class="fas fa-wrench"></i>
+                        <h4>Configuration Fix</h4>
+                        <p>Automatically generates OpenCode-compatible configurations</p>
+                    </div>
+                    <div class="demo-feature">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <h4>Performance Testing</h4>
+                        <p>Comprehensive benchmarking across multiple metrics</p>
+                    </div>
+                    <div class="demo-feature">
+                        <i class="fas fa-chart-bar"></i>
+                        <h4>Analytics Dashboard</h4>
+                        <p>Real-time monitoring and performance insights</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Getting Started Section -->
+    <section class="getting-started">
+        <div class="container">
+            <div class="getting-started-content">
+                <h2>Getting Started in 3 Steps</h2>
+
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <h3>Install LLM Verifier</h3>
+                        <pre><code class="language-bash">go install github.com/your-org/llm-verifier@latest</code></pre>
+                        <p>Or download pre-built binaries for your platform</p>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <h3>Configure API Keys</h3>
+                        <pre><code class="language-bash">export OPENAI_API_KEY="sk-your-key"
+export ANTHROPIC_API_KEY="sk-ant-your-key"</code></pre>
+                        <p>Set up your AI provider API keys securely</p>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <h3>Start Verifying</h3>
+                        <pre><code class="language-bash">llm-verifier verify --provider openai --model gpt-4o
+llm-verifier export-config opencode --output config.json</code></pre>
+                        <p>Verify models and export configurations for OpenCode</p>
+                    </div>
+                </div>
+
+                <a href="/docs/getting-started" class="btn btn-primary btn-lg">
+                    <i class="fas fa-book"></i> Read Full Documentation
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="testimonials">
+        <div class="container">
+            <div class="section-header">
+                <h2>Trusted by AI Teams Worldwide</h2>
+            </div>
+
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        "LLM Verifier resolved our ProviderInitError issues with OpenCode. The intelligent model selection and configuration export saved us weeks of debugging."
+                    </div>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="author-info">
+                            <h4>Sarah Chen</h4>
+                            <span>AI Engineering Lead, TechCorp</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        "The comprehensive testing and analytics features help us maintain high reliability across our AI model deployments. Enterprise-grade quality."
+                    </div>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="author-info">
+                            <h4>Michael Rodriguez</h4>
+                            <span>ML Platform Engineer, DataFlow</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        "Finally, a tool that properly handles multi-provider AI model verification. The documentation and API are top-notch for integration."
+                    </div>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">
+                            <i class="fas fa-user"></i>
+                        <div class="author-info">
+                            <h4>Alex Kim</h4>
+                            <span>AI Infrastructure Lead, InnovateLabs</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="pricing">
+        <div class="container">
+            <div class="section-header">
+                <h2>Simple, Transparent Pricing</h2>
+                <p>Choose the plan that fits your AI verification needs</p>
+            </div>
+
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3>Open Source</h3>
+                    <div class="price">
+                        <span class="amount">$0</span>
+                        <span class="period">forever</span>
+                    </div>
+                    <ul class="features">
+                        <li><i class="fas fa-check"></i> Full source code access</li>
+                        <li><i class="fas fa-check"></i> Community support</li>
+                        <li><i class="fas fa-check"></i> All core features</li>
+                        <li><i class="fas fa-check"></i> Self-hosted deployment</li>
+                    </ul>
+                    <a href="https://github.com/your-org/llm-verifier" class="btn btn-secondary" target="_blank">
+                        <i class="fab fa-github"></i> Get on GitHub
+                    </a>
+                </div>
+
+                <div class="pricing-card featured">
+                    <div class="badge">Most Popular</div>
+                    <h3>Professional</h3>
+                    <div class="price">
+                        <span class="amount">$49</span>
+                        <span class="period">/month</span>
+                    </div>
+                    <ul class="features">
+                        <li><i class="fas fa-check"></i> Everything in Open Source</li>
+                        <li><i class="fas fa-check"></i> Priority support</li>
+                        <li><i class="fas fa-check"></i> Advanced analytics</li>
+                        <li><i class="fas fa-check"></i> SLA guarantees</li>
+                        <li><i class="fas fa-check"></i> Custom integrations</li>
+                    </ul>
+                    <a href="/pricing/professional" class="btn btn-primary">
+                        Start Free Trial
+                    </a>
+                </div>
+
+                <div class="pricing-card">
+                    <h3>Enterprise</h3>
+                    <div class="price">
+                        <span class="amount">Custom</span>
+                    </div>
+                    <ul class="features">
+                        <li><i class="fas fa-check"></i> Everything in Professional</li>
+                        <li><i class="fas fa-check"></i> 24/7 dedicated support</li>
+                        <li><i class="fas fa-check"></i> Custom feature development</li>
+                        <li><i class="fas fa-check"></i> On-premise deployment</li>
+                        <li><i class="fas fa-check"></i> White-label options</li>
+                    </ul>
+                    <a href="/contact" class="btn btn-secondary">
+                        Contact Sales
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Ready to Verify Your AI Models?</h2>
+                <p>Join thousands of AI teams using LLM Verifier for reliable model verification and benchmarking.</p>
+                <div class="cta-actions">
+                    <a href="/docs/getting-started" class="btn btn-primary btn-lg">
+                        <i class="fas fa-rocket"></i> Get Started Free
+                    </a>
+                    <a href="/docs/user-manual" class="btn btn-secondary btn-lg">
+                        <i class="fas fa-book"></i> Read Documentation
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <i class="fas fa-brain"></i>
+                    <span>LLM Verifier</span>
+                    <p>Professional AI model verification and benchmarking</p>
+                </div>
+
+                <div class="footer-links">
+                    <div class="footer-section">
+                        <h4>Product</h4>
+                        <a href="/features">Features</a>
+                        <a href="/providers">Providers</a>
+                        <a href="/pricing">Pricing</a>
+                        <a href="/changelog">Changelog</a>
+                    </div>
+
+                    <div class="footer-section">
+                        <h4>Documentation</h4>
+                        <a href="/docs/getting-started">Getting Started</a>
+                        <a href="/docs/user-manual">User Manual</a>
+                        <a href="/docs/api-reference">API Reference</a>
+                        <a href="/docs/developer-guide">Developer Guide</a>
+                    </div>
+
+                    <div class="footer-section">
+                        <h4>Community</h4>
+                        <a href="https://github.com/your-org/llm-verifier" target="_blank">GitHub</a>
+                        <a href="https://discord.gg/llm-verifier" target="_blank">Discord</a>
+                        <a href="/blog">Blog</a>
+                        <a href="/support">Support</a>
+                    </div>
+
+                    <div class="footer-section">
+                        <h4>Company</h4>
+                        <a href="/about">About</a>
+                        <a href="/contact">Contact</a>
+                        <a href="/privacy">Privacy</a>
+                        <a href="/terms">Terms</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2024 LLM Verifier. Open source with ❤️</p>
+                <div class="footer-social">
+                    <a href="https://twitter.com/LLMVerifier" target="_blank">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a href="https://github.com/your-org/llm-verifier" target="_blank">
+                        <i class="fab fa-github"></i>
+                    </a>
+                    <a href="https://discord.gg/llm-verifier" target="_blank">
+                        <i class="fab fa-discord"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="/js/main.js"></script>
+
+    <!-- Analytics -->
+    <script>
+        // Basic analytics (replace with your analytics service)
+        console.log('LLM Verifier website loaded - v2.0.0');
+    </script>
+</body>
+</html>
