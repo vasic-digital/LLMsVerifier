@@ -218,28 +218,18 @@ func ExportAIConfig(db *database.Database, cfg *config.Config, aiFormat, outputP
 
 		// Write to file
 		if err := os.WriteFile(outputPath, data, 0644); err != nil {
-			return fmt.Errorf("failed to write OpenCode config file: %w", err)
-		}
-	default:
-		// Use generic AIConfig format for other tools
-		aiConfig, err := createGenericAIConfig(filteredModels, aiFormat, options)
-		if err != nil {
-			return fmt.Errorf("failed to create %s config: %w", aiFormat, err)
+			// Record failed export
+			RecordOpenCodeExport(opencodeConfig, false, err.Error())
+			return fmt.Errorf("failed to write OpenCode config: %w", err)
 		}
 
-		// Marshal to JSON
-		data, err := json.MarshalIndent(aiConfig, "", "  ")
-		if err != nil {
-			return fmt.Errorf("failed to marshal AI config: %w", err)
-		}
+		// Record successful export
+		RecordOpenCodeExport(opencodeConfig, true, "")
 
-		// Write to file
-		if err := os.WriteFile(outputPath, data, 0644); err != nil {
-			return fmt.Errorf("failed to write AI config file: %w", err)
-		}
+		return nil
 	}
 
-	return nil
+	return fmt.Errorf("unsupported AI format: %s", aiFormat)
 }
 
 // createOpenCodeConfig creates configuration for OpenCode
@@ -944,49 +934,128 @@ func categorizeModel(result VerificationResult) string {
 }
 
 // extractProvider extracts provider name from endpoint
+// extractProvider extracts provider name from endpoint URL with enhanced detection
 func extractProvider(endpoint string) string {
-	// Extract provider name from endpoint URL (lowercase for consistency)
-	if strings.Contains(endpoint, "openai.com") {
-		return "openai"
-	}
-	if strings.Contains(endpoint, "anthropic.com") {
-		return "anthropic"
-	}
-	if strings.Contains(endpoint, "deepseek.com") {
-		return "deepseek"
-	}
-	if strings.Contains(endpoint, "google.com") || strings.Contains(endpoint, "generativelanguage.googleapis.com") {
-		return "google"
-	}
-	if strings.Contains(endpoint, "azure.com") {
-		return "azure"
-	}
-	if strings.Contains(endpoint, "aws") || strings.Contains(endpoint, "bedrock") {
-		return "bedrock"
-	}
-	if strings.Contains(endpoint, "huggingface.co") {
-		return "huggingface"
-	}
-	if strings.Contains(endpoint, "nvidia.com") || strings.Contains(endpoint, "integrate.api.nvidia.com") {
-		return "nvidia"
-	}
-	if strings.Contains(endpoint, "chutes.ai") {
-		return "chutes"
-	}
-	if strings.Contains(endpoint, "siliconflow.cn") {
-		return "siliconflow"
-	}
-	if strings.Contains(endpoint, "moonshot.cn") {
-		return "kimi"
-	}
-	if strings.Contains(endpoint, "openrouter.ai") {
-		return "openrouter"
-	}
-	if strings.Contains(endpoint, "z.ai") {
-		return "zai"
+	// Clean and normalize endpoint
+	endpoint = strings.ToLower(strings.TrimSpace(endpoint))
+
+	// Primary provider detection
+	providerPatterns := map[string]string{
+		// Major providers
+		"openai.com":                        "openai",
+		"api.openai.com":                    "openai",
+		"anthropic.com":                     "anthropic",
+		"api.anthropic.com":                 "anthropic",
+		"google.com":                        "gemini",
+		"generativelanguage.googleapis.com": "gemini",
+		"vertexai":                          "vertexai",
+
+		// Popular alternatives
+		"groq.com":          "groq",
+		"api.groq.com":      "groq",
+		"deepseek.com":      "deepseek",
+		"api.deepseek.com":  "deepseek",
+		"together.xyz":      "together",
+		"api.together.xyz":  "together",
+		"fireworks.ai":      "fireworks",
+		"api.fireworks.ai":  "fireworks",
+		"perplexity.ai":     "perplexity",
+		"api.perplexity.ai": "perplexity",
+
+		// Cloud providers
+		"azure.com":        "azure",
+		"openai.azure.com": "azure",
+		"aws":              "bedrock",
+		"bedrock":          "bedrock",
+		"amazonaws.com":    "bedrock",
+
+		// Open source and community
+		"huggingface.co":               "huggingface",
+		"inference-api.huggingface.co": "huggingface",
+		"replicate.com":                "replicate",
+		"api.replicate.com":            "replicate",
+		"chutes.ai":                    "chutes",
+		"api.chutes.ai":                "chutes",
+
+		// Regional and specialized
+		"siliconflow.cn":           "siliconflow",
+		"api.siliconflow.cn":       "siliconflow",
+		"moonshot.cn":              "kimi",
+		"api.moonshot.cn":          "kimi",
+		"nvidia.com":               "nvidia",
+		"integrate.api.nvidia.com": "nvidia",
+		"z.ai":                     "zai",
+		"api.z.ai":                 "zai",
+
+		// Aggregators and routers
+		"openrouter.ai":      "openrouter",
+		"api.openrouter.ai":  "openrouter",
+		"cerebras.ai":        "cerebras",
+		"api.cerebras.ai":    "cerebras",
+		"hyperbolic.xyz":     "hyperbolic",
+		"api.hyperbolic.xyz": "hyperbolic",
+
+		// Local and custom endpoints
+		"localhost": "local",
+		"127.0.0.1": "local",
+		"0.0.0.0":   "local",
 	}
 
-	return "Unknown"
+	// Check for exact matches first
+	for pattern, provider := range providerPatterns {
+		if strings.Contains(endpoint, pattern) {
+			return provider
+		}
+	}
+
+	// Fallback: try to extract from URL structure
+	// e.g., "api.example.com" -> "example"
+	if strings.HasPrefix(endpoint, "api.") && strings.Count(endpoint, ".") >= 2 {
+		parts := strings.Split(endpoint, ".")
+		if len(parts) >= 3 {
+			domain := parts[1]
+			// Common domain to provider mappings
+			switch domain {
+			case "x":
+				return "xai"
+			case "sarvam":
+				return "sarvam"
+			case "lelapa":
+				return "vulavula"
+			case "twelvelabs":
+				return "twelvelabs"
+			case "codestral":
+				return "codestral"
+			case "dashscope":
+				return "qwen"
+			case "modal":
+				return "modal"
+			case "inference":
+				return "inference"
+			case "vercel":
+				return "vercel"
+			case "baseten":
+				return "baseten"
+			case "novita":
+				return "novita"
+			case "upstage":
+				return "upstage"
+			case "nlpcloud":
+				return "nlpcloud"
+			}
+		}
+	}
+
+	// Last resort: try to extract from subdomain
+	// e.g., "groq.api.example.com" -> "groq"
+	if parts := strings.Split(endpoint, "."); len(parts) >= 3 {
+		subdomain := parts[0]
+		if subdomain != "api" && subdomain != "www" {
+			return subdomain
+		}
+	}
+
+	return "unknown"
 }
 
 // isProviderFree checks if a provider offers free models
@@ -2042,32 +2111,65 @@ func createCorrectOpenCodeConfig(results []VerificationResult, options *ExportOp
 		}
 		providersSection[providerName] = providerConfig
 
-		// Select best models for agents
+		// Select best models for agents with sophisticated prioritization
+		modelsByPriority := make(map[string][]string)
+
 		for _, result := range models {
 			modelID := result.ModelInfo.ID
 			modelRef := fmt.Sprintf("%s.%s", providerName, modelID)
 
-			// Priority for coder: GPT-4, Claude-3, then others
-			if bestCoderModel == "" {
-				if strings.Contains(strings.ToLower(modelID), "gpt-4") ||
-					strings.Contains(strings.ToLower(modelID), "claude-3") {
-					bestCoderModel = modelRef
-				}
+			// Categorize models by priority for different agents
+			modelLower := strings.ToLower(modelID)
+
+			// CODER: High-capability models
+			if strings.Contains(modelLower, "gpt-4o") ||
+				strings.Contains(modelLower, "claude-3-5-sonnet") ||
+				strings.Contains(modelLower, "claude-3-opus") ||
+				strings.Contains(modelLower, "gpt-4-turbo") {
+				modelsByPriority["coder_primary"] = append(modelsByPriority["coder_primary"], modelRef)
+			} else if strings.Contains(modelLower, "gpt-4") ||
+				strings.Contains(modelLower, "claude-3") {
+				modelsByPriority["coder_secondary"] = append(modelsByPriority["coder_secondary"], modelRef)
 			}
 
-			// Priority for task: same as coder or next best
-			if bestTaskModel == "" && bestCoderModel != modelRef {
-				if strings.Contains(strings.ToLower(modelID), "gpt-4") ||
-					strings.Contains(strings.ToLower(modelID), "claude-3") ||
-					strings.Contains(strings.ToLower(modelID), "gpt-3.5") {
-					bestTaskModel = modelRef
-				}
+			// TASK: Balanced models
+			if strings.Contains(modelLower, "claude-3-5-haiku") ||
+				strings.Contains(modelLower, "gpt-4o-mini") ||
+				strings.Contains(modelLower, "claude-3-haiku") {
+				modelsByPriority["task_primary"] = append(modelsByPriority["task_primary"], modelRef)
+			} else if strings.Contains(modelLower, "gpt-4") ||
+				strings.Contains(modelLower, "claude-3") ||
+				strings.Contains(modelLower, "gpt-3.5") {
+				modelsByPriority["task_secondary"] = append(modelsByPriority["task_secondary"], modelRef)
 			}
 
-			// Title model: can be lighter model
-			if bestTitleModel == "" {
-				bestTitleModel = modelRef
+			// TITLE: Lightweight models
+			if strings.Contains(modelLower, "gpt-3.5-turbo") ||
+				strings.Contains(modelLower, "claude-3-haiku") ||
+				strings.Contains(modelLower, "gpt-4o-mini") {
+				modelsByPriority["title_primary"] = append(modelsByPriority["title_primary"], modelRef)
+			} else {
+				modelsByPriority["title_fallback"] = append(modelsByPriority["title_fallback"], modelRef)
 			}
+		}
+
+		// Select best model for each agent from categorized options
+		if len(modelsByPriority["coder_primary"]) > 0 {
+			bestCoderModel = modelsByPriority["coder_primary"][0]
+		} else if len(modelsByPriority["coder_secondary"]) > 0 {
+			bestCoderModel = modelsByPriority["coder_secondary"][0]
+		}
+
+		if len(modelsByPriority["task_primary"]) > 0 {
+			bestTaskModel = modelsByPriority["task_primary"][0]
+		} else if len(modelsByPriority["task_secondary"]) > 0 {
+			bestTaskModel = modelsByPriority["task_secondary"][0]
+		}
+
+		if len(modelsByPriority["title_primary"]) > 0 {
+			bestTitleModel = modelsByPriority["title_primary"][0]
+		} else if len(modelsByPriority["title_fallback"]) > 0 {
+			bestTitleModel = modelsByPriority["title_fallback"][0]
 		}
 	}
 	config["providers"] = providersSection
