@@ -262,9 +262,9 @@
           "supportsHTTP3": true
         },
         "llama-3.3-70b": {
-          "costPer1MInput": 0.71,
-          "costPer1MOutput": 0.71,
-          "displayName": "Llama-3.3-70B-Instruct (http3) (toon) (llmsvd)",
+          "costPer1MInput": 0.29,
+          "costPer1MOutput": 2.25,
+          "displayName": "@cf/meta/llama-3.3-70b-instruct-fp8-fast (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
@@ -272,8 +272,8 @@
             "verified": true
           },
           "id": "llama-3.3-70b",
-          "maxTokens": 128000,
-          "name": "Llama-3.3-70B-Instruct (llmsvd)",
+          "maxTokens": 24000,
+          "name": "@cf/meta/llama-3.3-70b-instruct-fp8-fast (llmsvd)",
           "provider": {
             "id": "cerebras",
             "npm": "@openrouter/cerebras-provider"
@@ -347,6 +347,7 @@
         }
       },
       "options": {
+        "apiKey": "REDACTED_API_KEY",
         "baseURL": "https://api.cerebras.ai/v1"
       }
     },
@@ -1392,6 +1393,7 @@
         }
       },
       "options": {
+        "apiKey": "REDACTED_API_KEY",
         "baseURL": "https://api.chutes.ai/v1"
       }
     },
@@ -1574,6 +1576,7 @@
         }
       },
       "options": {
+        "apiKey": "REDACTED_API_KEY",
         "baseURL": "https://api.deepseek.com/v1"
       }
     },
@@ -2169,6 +2172,7 @@
         }
       },
       "options": {
+        "apiKey": "REDACTED_API_KEY",
         "baseURL": "https://api.fireworks.ai/inference/v1"
       }
     },
@@ -2492,6 +2496,7 @@
         }
       },
       "options": {
+        "apiKey": "REDACTED_API_KEY",
         "baseURL": "https://api-inference.huggingface.co/v1"
       }
     },
@@ -2550,40 +2555,40 @@
           "supportsHTTP3": true
         },
         "Qwen/Qwen2.5-Coder-32B-Instruct": {
-          "costPer1MInput": 0.03,
-          "costPer1MOutput": 0.11,
-          "displayName": "Qwen2.5 Coder 32B Instruct (llmsvd)",
+          "costPer1MInput": 0.18,
+          "costPer1MOutput": 0.18,
+          "displayName": "Qwen/Qwen2.5-Coder-32B-Instruct (http3) (llmsvd)",
           "features": {
+            "http3": true,
             "llmsVerifier": true,
-            "openSource": true,
             "verified": true
           },
           "id": "Qwen/Qwen2.5-Coder-32B-Instruct",
-          "maxTokens": 32768,
-          "name": "Qwen2.5 Coder 32B Instruct (llmsvd)",
+          "maxTokens": 33000,
+          "name": "Qwen/Qwen2.5-Coder-32B-Instruct (llmsvd)",
           "provider": {
             "id": "hyperbolic",
             "npm": "@openrouter/hyperbolic-provider"
           },
-          "supportsHTTP3": false
+          "supportsHTTP3": true
         },
         "Qwen/Qwen2.5-VL-72B-Instruct": {
-          "costPer1MInput": 0.03,
-          "costPer1MOutput": 0.13,
-          "displayName": "Qwen2.5 VL 72B Instruct (llmsvd)",
+          "costPer1MInput": 0.59,
+          "costPer1MOutput": 0.59,
+          "displayName": "Qwen/Qwen2.5-VL-72B-Instruct (http3) (llmsvd)",
           "features": {
+            "http3": true,
             "llmsVerifier": true,
-            "openSource": true,
             "verified": true
           },
           "id": "Qwen/Qwen2.5-VL-72B-Instruct",
-          "maxTokens": 32768,
-          "name": "Qwen2.5 VL 72B Instruct (llmsvd)",
+          "maxTokens": 131000,
+          "name": "Qwen/Qwen2.5-VL-72B-Instruct (llmsvd)",
           "provider": {
             "id": "hyperbolic",
             "npm": "@openrouter/hyperbolic-provider"
           },
-          "supportsHTTP3": false
+          "supportsHTTP3": true
         },
         "Qwen/Qwen2.5-VL-7B-Instruct": {
           "costPer1MInput": 0.05,
@@ -2604,16 +2609,18 @@
           "supportsHTTP3": true
         },
         "Qwen/Qwen3-235B-A22B": {
-          "displayName": "Qwen3-235B-A22B (http3) (toon) (llmsvd)",
+          "costPer1MInput": 0.3,
+          "costPer1MOutput": 1.2,
+          "displayName": "Qwen3 235B A22B (http3) (toon) (llmsvd)",
           "features": {
-            "freeToUse": true,
             "http3": true,
             "llmsVerifier": true,
+            "openSource": true,
             "verified": true
           },
           "id": "Qwen/Qwen3-235B-A22B",
-          "maxTokens": 131072,
-          "name": "Qwen3-235B-A22B (llmsvd)",
+          "maxTokens": 40960,
+          "name": "Qwen3 235B A22B (llmsvd)",
           "provider": {
             "id": "hyperbolic",
             "npm": "@openrouter/hyperbolic-provider"
@@ -2621,8 +2628,8 @@
           "supportsHTTP3": true
         },
         "Qwen/Qwen3-235B-A22B-Instruct-2507": {
-          "costPer1MInput": 0.08,
-          "costPer1MOutput": 0.55,
+          "costPer1MInput": 0.2,
+          "costPer1MOutput": 0.8,
           "displayName": "Qwen3 235B A22B Instruct 2507 (http3) (llmsvd)",
           "features": {
             "http3": true,
@@ -2631,7 +2638,7 @@
             "verified": true
           },
           "id": "Qwen/Qwen3-235B-A22B-Instruct-2507",
-          "maxTokens": 262144,
+          "maxTokens": 131072,
           "name": "Qwen3 235B A22B Instruct 2507 (llmsvd)",
           "provider": {
             "id": "hyperbolic",
@@ -2640,18 +2647,17 @@
           "supportsHTTP3": true
         },
         "Qwen/Qwen3-Coder-480B-A35B-Instruct": {
-          "costPer1MInput": 0.4,
-          "costPer1MOutput": 1.6,
-          "displayName": "Qwen3 Coder 480B A35B Instruct (http3) (llmsvd)",
+          "costPer1MInput": 0.25,
+          "costPer1MOutput": 1,
+          "displayName": "Qwen/Qwen3-Coder-480B-A35B-Instruct (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
-            "openSource": true,
             "verified": true
           },
           "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
-          "maxTokens": 262144,
-          "name": "Qwen3 Coder 480B A35B Instruct (llmsvd)",
+          "maxTokens": 262000,
+          "name": "Qwen/Qwen3-Coder-480B-A35B-Instruct (llmsvd)",
           "provider": {
             "id": "hyperbolic",
             "npm": "@openrouter/hyperbolic-provider"
@@ -2659,16 +2665,17 @@
           "supportsHTTP3": true
         },
         "Qwen/Qwen3-Next-80B-A3B-Instruct": {
-          "displayName": "Qwen3-Next-80B-A3B-Instruct (http3) (llmsvd)",
+          "costPer1MInput": 0.14,
+          "costPer1MOutput": 1.4,
+          "displayName": "Qwen/Qwen3-Next-80B-A3B-Instruct (http3) (llmsvd)",
           "features": {
-            "freeToUse": true,
             "http3": true,
             "llmsVerifier": true,
             "verified": true
           },
           "id": "Qwen/Qwen3-Next-80B-A3B-Instruct",
-          "maxTokens": 262144,
-          "name": "Qwen3-Next-80B-A3B-Instruct (llmsvd)",
+          "maxTokens": 262000,
+          "name": "Qwen/Qwen3-Next-80B-A3B-Instruct (llmsvd)",
           "provider": {
             "id": "hyperbolic",
             "npm": "@openrouter/hyperbolic-provider"
@@ -2764,17 +2771,17 @@
           "supportsHTTP3": true
         },
         "deepseek-ai/DeepSeek-V3": {
-          "costPer1MInput": 0.25,
-          "costPer1MOutput": 1,
-          "displayName": "deepseek-ai/DeepSeek-V3 (http3) (llmsvd)",
+          "costPer1MInput": 0.5,
+          "costPer1MOutput": 1.5,
+          "displayName": "DeepSeek V3 (http3) (toon) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
             "verified": true
           },
           "id": "deepseek-ai/DeepSeek-V3",
-          "maxTokens": 164000,
-          "name": "deepseek-ai/DeepSeek-V3 (llmsvd)",
+          "maxTokens": 131072,
+          "name": "DeepSeek V3 (llmsvd)",
           "provider": {
             "id": "hyperbolic",
             "npm": "@openrouter/hyperbolic-provider"
@@ -2782,17 +2789,18 @@
           "supportsHTTP3": true
         },
         "deepseek-ai/DeepSeek-V3-0324": {
-          "costPer1MInput": 0.2,
-          "costPer1MOutput": 0.8,
-          "displayName": "DeepSeek V3 0324 (http3) (llmsvd)",
+          "costPer1MInput": 1.14,
+          "costPer1MOutput": 2.75,
+          "displayName": "DeepSeek-V3-0324 (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
+            "openSource": true,
             "verified": true
           },
           "id": "deepseek-ai/DeepSeek-V3-0324",
-          "maxTokens": 75000,
-          "name": "DeepSeek V3 0324 (llmsvd)",
+          "maxTokens": 161000,
+          "name": "DeepSeek-V3-0324 (llmsvd)",
           "provider": {
             "id": "hyperbolic",
             "npm": "@openrouter/hyperbolic-provider"
@@ -2814,9 +2822,9 @@
           "supportsHTTP3": false
         },
         "meta-llama/Llama-3.3-70B-Instruct": {
-          "costPer1MInput": 0.71,
-          "costPer1MOutput": 0.71,
-          "displayName": "Llama-3.3-70B-Instruct (http3) (toon) (llmsvd)",
+          "costPer1MInput": 1,
+          "costPer1MOutput": 2,
+          "displayName": "Llama 3.3 70b Instruct (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
@@ -2825,7 +2833,7 @@
           },
           "id": "meta-llama/Llama-3.3-70B-Instruct",
           "maxTokens": 128000,
-          "name": "Llama-3.3-70B-Instruct (llmsvd)",
+          "name": "Llama 3.3 70b Instruct (llmsvd)",
           "provider": {
             "id": "hyperbolic",
             "npm": "@openrouter/hyperbolic-provider"
@@ -2921,20 +2929,23 @@
           "supportsHTTP3": false
         },
         "openai/gpt-oss-120b": {
-          "displayName": "GPT-OSS-120B (toon) (llmsvd)",
+          "costPer1MInput": 0.15,
+          "costPer1MOutput": 0.6,
+          "displayName": "GPT OSS 120B (http3) (toon) (llmsvd)",
           "features": {
-            "freeToUse": true,
+            "http3": true,
             "llmsVerifier": true,
+            "openSource": true,
             "verified": true
           },
           "id": "openai/gpt-oss-120b",
-          "maxTokens": 128000,
-          "name": "GPT-OSS-120B (llmsvd)",
+          "maxTokens": 131072,
+          "name": "GPT OSS 120B (llmsvd)",
           "provider": {
             "id": "hyperbolic",
             "npm": "@openrouter/hyperbolic-provider"
           },
-          "supportsHTTP3": false
+          "supportsHTTP3": true
         },
         "openai/gpt-oss-120b-turbo": {
           "displayName": "openai/gpt-oss-120b-turbo (llmsvd)",
@@ -2970,6 +2981,7 @@
         }
       },
       "options": {
+        "apiKey": "REDACTED_API_KEY",
         "baseURL": "https://api.hyperbolic.xyz/v1"
       }
     },
@@ -3158,27 +3170,24 @@
           "supportsHTTP3": false
         },
         "openai/gpt-oss-120b": {
-          "costPer1MInput": 0.072,
-          "costPer1MOutput": 0.28,
-          "displayName": "GPT OSS 120B (http3) (toon) (llmsvd)",
+          "displayName": "GPT-OSS-120B (toon) (llmsvd)",
           "features": {
-            "http3": true,
+            "freeToUse": true,
             "llmsVerifier": true,
-            "openSource": true,
             "verified": true
           },
           "id": "openai/gpt-oss-120b",
-          "maxTokens": 131072,
-          "name": "GPT OSS 120B (llmsvd)",
+          "maxTokens": 128000,
+          "name": "GPT-OSS-120B (llmsvd)",
           "provider": {
             "id": "inference",
             "npm": "@openrouter/inference-provider"
           },
-          "supportsHTTP3": true
+          "supportsHTTP3": false
         },
         "openai/gpt-oss-20b": {
-          "costPer1MInput": 0.1,
-          "costPer1MOutput": 0.5,
+          "costPer1MInput": 0.07,
+          "costPer1MOutput": 0.3,
           "displayName": "GPT OSS 20B (http3) (toon) (llmsvd)",
           "features": {
             "http3": true,
@@ -3239,6 +3248,7 @@
         }
       },
       "options": {
+        "apiKey": "REDACTED_API_KEY",
         "baseURL": "https://api.inference.net/v1"
       }
     },
@@ -4259,6 +4269,7 @@
         }
       },
       "options": {
+        "apiKey": "REDACTED_API_KEY",
         "baseURL": "https://api.mistral.ai/v1"
       }
     },
@@ -4564,7 +4575,7 @@
             "verified": true
           },
           "id": "deepseek/deepseek-v3.1-terminus",
-          "maxTokens": 128000,
+          "maxTokens": 131072,
           "name": "DeepSeek V3.1 Terminus (llmsvd)",
           "provider": {
             "id": "novita",
@@ -4777,23 +4788,21 @@
           "supportsHTTP3": true
         },
         "meta-llama/llama-4-scout-17b-16e-instruct": {
-          "costPer1MInput": 0.11,
-          "costPer1MOutput": 0.34,
-          "displayName": "Llama 4 Scout 17B (http3) (llmsvd)",
+          "displayName": "Llama 4 Scout 17B 16E Instruct (toon) (llmsvd)",
           "features": {
-            "http3": true,
+            "freeToUse": true,
             "llmsVerifier": true,
             "openSource": true,
             "verified": true
           },
           "id": "meta-llama/llama-4-scout-17b-16e-instruct",
           "maxTokens": 131072,
-          "name": "Llama 4 Scout 17B (llmsvd)",
+          "name": "Llama 4 Scout 17B 16E Instruct (llmsvd)",
           "provider": {
             "id": "novita",
             "npm": "@openrouter/novita-provider"
           },
-          "supportsHTTP3": true
+          "supportsHTTP3": false
         },
         "microsoft/wizardlm-2-8x22b": {
           "displayName": "microsoft/wizardlm-2-8x22b (llmsvd)",
@@ -4828,18 +4837,17 @@
           "supportsHTTP3": true
         },
         "minimax/minimax-m2.1": {
-          "costPer1MInput": 0.3,
-          "costPer1MOutput": 1.2,
-          "displayName": "MiniMax M2.1 (http3) (toon) (llmsvd)",
+          "costPer1MInput": 1,
+          "costPer1MOutput": 2,
+          "displayName": "Minimax M2.1 (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
-            "openSource": true,
             "verified": true
           },
           "id": "minimax/minimax-m2.1",
-          "maxTokens": 204800,
-          "name": "MiniMax M2.1 (llmsvd)",
+          "maxTokens": 128000,
+          "name": "Minimax M2.1 (llmsvd)",
           "provider": {
             "id": "novita",
             "npm": "@openrouter/novita-provider"
@@ -4902,17 +4910,18 @@
           "supportsHTTP3": true
         },
         "moonshotai/kimi-k2-instruct": {
-          "costPer1MInput": 1,
-          "costPer1MOutput": 2,
-          "displayName": "Kimi K2 Instruct (http3) (llmsvd)",
+          "costPer1MInput": 1.35,
+          "costPer1MOutput": 4,
+          "displayName": "Kimi-K2-Instruct (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
+            "openSource": true,
             "verified": true
           },
           "id": "moonshotai/kimi-k2-instruct",
-          "maxTokens": 131072,
-          "name": "Kimi K2 Instruct (llmsvd)",
+          "maxTokens": 128000,
+          "name": "Kimi-K2-Instruct (llmsvd)",
           "provider": {
             "id": "novita",
             "npm": "@openrouter/novita-provider"
@@ -4953,24 +4962,26 @@
           "supportsHTTP3": false
         },
         "openai/gpt-oss-120b": {
-          "displayName": "GPT-OSS-120B (toon) (llmsvd)",
+          "costPer1MInput": 0.05,
+          "costPer1MOutput": 0.45,
+          "displayName": "openai/gpt-oss-120b (http3) (toon) (llmsvd)",
           "features": {
-            "freeToUse": true,
+            "http3": true,
             "llmsVerifier": true,
             "verified": true
           },
           "id": "openai/gpt-oss-120b",
-          "maxTokens": 128000,
-          "name": "GPT-OSS-120B (llmsvd)",
+          "maxTokens": 131000,
+          "name": "openai/gpt-oss-120b (llmsvd)",
           "provider": {
             "id": "novita",
             "npm": "@openrouter/novita-provider"
           },
-          "supportsHTTP3": false
+          "supportsHTTP3": true
         },
         "openai/gpt-oss-20b": {
-          "costPer1MInput": 0.05,
-          "costPer1MOutput": 0.2,
+          "costPer1MInput": 0.03,
+          "costPer1MOutput": 0.14,
           "displayName": "GPT OSS 20B (http3) (toon) (llmsvd)",
           "features": {
             "http3": true,
@@ -5048,22 +5059,22 @@
           "supportsHTTP3": true
         },
         "qwen/qwen2.5-vl-72b-instruct": {
-          "costPer1MInput": 0.03,
-          "costPer1MOutput": 0.13,
-          "displayName": "Qwen2.5 VL 72B Instruct (llmsvd)",
+          "costPer1MInput": 0.59,
+          "costPer1MOutput": 0.59,
+          "displayName": "Qwen/Qwen2.5-VL-72B-Instruct (http3) (llmsvd)",
           "features": {
+            "http3": true,
             "llmsVerifier": true,
-            "openSource": true,
             "verified": true
           },
           "id": "qwen/qwen2.5-vl-72b-instruct",
-          "maxTokens": 32768,
-          "name": "Qwen2.5 VL 72B Instruct (llmsvd)",
+          "maxTokens": 131000,
+          "name": "Qwen/Qwen2.5-VL-72B-Instruct (llmsvd)",
           "provider": {
             "id": "novita",
             "npm": "@openrouter/novita-provider"
           },
-          "supportsHTTP3": false
+          "supportsHTTP3": true
         },
         "qwen/qwen3-235b-a22b-fp8": {
           "displayName": "qwen/qwen3-235b-a22b-fp8 (llmsvd)",
@@ -5080,18 +5091,17 @@
           "supportsHTTP3": false
         },
         "qwen/qwen3-235b-a22b-instruct-2507": {
-          "costPer1MInput": 0.2,
-          "costPer1MOutput": 0.3,
-          "displayName": "Qwen3 235B A22B Instruct 2507 (http3) (llmsvd)",
+          "costPer1MInput": 0.09,
+          "costPer1MOutput": 0.6,
+          "displayName": "Qwen/Qwen3-235B-A22B-Instruct-2507 (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
-            "openSource": true,
             "verified": true
           },
           "id": "qwen/qwen3-235b-a22b-instruct-2507",
-          "maxTokens": 262144,
-          "name": "Qwen3 235B A22B Instruct 2507 (llmsvd)",
+          "maxTokens": 262000,
+          "name": "Qwen/Qwen3-235B-A22B-Instruct-2507 (llmsvd)",
           "provider": {
             "id": "novita",
             "npm": "@openrouter/novita-provider"
@@ -5231,18 +5241,17 @@
           "supportsHTTP3": true
         },
         "qwen/qwen3-next-80b-a3b-instruct": {
-          "costPer1MInput": 0.25,
-          "costPer1MOutput": 1,
-          "displayName": "Qwen3-Next-80B-A3B-Instruct (http3) (llmsvd)",
+          "costPer1MInput": 0.14,
+          "costPer1MOutput": 1.4,
+          "displayName": "Qwen/Qwen3-Next-80B-A3B-Instruct (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
-            "openSource": true,
             "verified": true
           },
           "id": "qwen/qwen3-next-80b-a3b-instruct",
-          "maxTokens": 262144,
-          "name": "Qwen3-Next-80B-A3B-Instruct (llmsvd)",
+          "maxTokens": 262000,
+          "name": "Qwen/Qwen3-Next-80B-A3B-Instruct (llmsvd)",
           "provider": {
             "id": "novita",
             "npm": "@openrouter/novita-provider"
@@ -5250,9 +5259,10 @@
           "supportsHTTP3": true
         },
         "qwen/qwen3-next-80b-a3b-thinking": {
-          "displayName": "Qwen3-Next-80B-A3B-Thinking (http3) (toon) (llmsvd)",
+          "costPer1MInput": 0.14,
+          "costPer1MOutput": 1.4,
+          "displayName": "Qwen3 Next 80B A3B Thinking (http3) (toon) (llmsvd)",
           "features": {
-            "freeToUse": true,
             "http3": true,
             "llmsVerifier": true,
             "openSource": true,
@@ -5260,7 +5270,7 @@
           },
           "id": "qwen/qwen3-next-80b-a3b-thinking",
           "maxTokens": 262144,
-          "name": "Qwen3-Next-80B-A3B-Thinking (llmsvd)",
+          "name": "Qwen3 Next 80B A3B Thinking (llmsvd)",
           "provider": {
             "id": "novita",
             "npm": "@openrouter/novita-provider"
@@ -5269,16 +5279,17 @@
         },
         "qwen/qwen3-vl-235b-a22b-instruct": {
           "costPer1MInput": 0.3,
-          "costPer1MOutput": 1.5,
-          "displayName": "Qwen/Qwen3-VL-235B-A22B-Instruct (http3) (llmsvd)",
+          "costPer1MOutput": 1.2,
+          "displayName": "Qwen3 VL 235B A22B Instruct (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
+            "openSource": true,
             "verified": true
           },
           "id": "qwen/qwen3-vl-235b-a22b-instruct",
-          "maxTokens": 262000,
-          "name": "Qwen/Qwen3-VL-235B-A22B-Instruct (llmsvd)",
+          "maxTokens": 262144,
+          "name": "Qwen3 VL 235B A22B Instruct (llmsvd)",
           "provider": {
             "id": "novita",
             "npm": "@openrouter/novita-provider"
@@ -5460,17 +5471,17 @@
           "supportsHTTP3": false
         },
         "zai-org/glm-4.5": {
-          "costPer1MInput": 0.6,
-          "costPer1MOutput": 2.2,
-          "displayName": "GLM 4.5 (http3) (toon) (llmsvd)",
+          "costPer1MInput": 0.4,
+          "costPer1MOutput": 2,
+          "displayName": "zai-org/GLM-4.5 (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
             "verified": true
           },
           "id": "zai-org/glm-4.5",
-          "maxTokens": 131072,
-          "name": "GLM 4.5 (llmsvd)",
+          "maxTokens": 131000,
+          "name": "zai-org/GLM-4.5 (llmsvd)",
           "provider": {
             "id": "novita",
             "npm": "@openrouter/novita-provider"
@@ -5478,13 +5489,12 @@
           "supportsHTTP3": true
         },
         "zai-org/glm-4.5-air": {
-          "costPer1MInput": 0.1,
-          "costPer1MOutput": 0.5,
-          "displayName": "GLM 4.5 Air (http3) (llmsvd)",
+          "costPer1MInput": 0.2,
+          "costPer1MOutput": 1.2,
+          "displayName": "GLM 4.5 Air (http3) (toon) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
-            "openSource": true,
             "verified": true
           },
           "id": "zai-org/glm-4.5-air",
@@ -5515,18 +5525,17 @@
           "supportsHTTP3": true
         },
         "zai-org/glm-4.6": {
-          "costPer1MInput": 0.6,
-          "costPer1MOutput": 2.2,
-          "displayName": "GLM 4.6 (http3) (llmsvd)",
+          "costPer1MInput": 0.5,
+          "costPer1MOutput": 1.9,
+          "displayName": "zai-org/GLM-4.6 (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
-            "openSource": true,
             "verified": true
           },
           "id": "zai-org/glm-4.6",
-          "maxTokens": 200000,
-          "name": "GLM 4.6 (llmsvd)",
+          "maxTokens": 205000,
+          "name": "zai-org/GLM-4.6 (llmsvd)",
           "provider": {
             "id": "novita",
             "npm": "@openrouter/novita-provider"
@@ -5553,8 +5562,8 @@
           "supportsHTTP3": true
         },
         "zai-org/glm-4.7": {
-          "costPer1MInput": 0.43,
-          "costPer1MOutput": 1.75,
+          "costPer1MInput": 0.6,
+          "costPer1MOutput": 2.2,
           "displayName": "GLM-4.7 (http3) (toon) (llmsvd)",
           "features": {
             "http3": true,
@@ -5563,7 +5572,7 @@
             "verified": true
           },
           "id": "zai-org/glm-4.7",
-          "maxTokens": 202752,
+          "maxTokens": 204800,
           "name": "GLM-4.7 (llmsvd)",
           "provider": {
             "id": "novita",
@@ -5573,6 +5582,7 @@
         }
       },
       "options": {
+        "apiKey": "REDACTED_API_KEY",
         "baseURL": "https://api.novita.ai/v3/openai/v1"
       }
     },
@@ -5768,8 +5778,8 @@
           "supportsHTTP3": true
         },
         "deepseek-ai/deepseek-r1": {
-          "costPer1MInput": 3,
-          "costPer1MOutput": 7,
+          "costPer1MInput": 0.3,
+          "costPer1MOutput": 1.2,
           "displayName": "DeepSeek R1 (toon) (llmsvd)",
           "features": {
             "llmsVerifier": true,
@@ -5777,7 +5787,7 @@
             "verified": true
           },
           "id": "deepseek-ai/deepseek-r1",
-          "maxTokens": 163839,
+          "maxTokens": 163840,
           "name": "DeepSeek R1 (llmsvd)",
           "provider": {
             "id": "nvidia",
@@ -5786,9 +5796,9 @@
           "supportsHTTP3": false
         },
         "deepseek-ai/deepseek-r1-0528": {
-          "costPer1MInput": 1.35,
-          "costPer1MOutput": 5.4,
-          "displayName": "DeepSeek-R1-0528 (http3) (toon) (llmsvd)",
+          "costPer1MInput": 2,
+          "costPer1MOutput": 8.75,
+          "displayName": "DeepSeek R1 (http3) (toon) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
@@ -5796,8 +5806,8 @@
             "verified": true
           },
           "id": "deepseek-ai/deepseek-r1-0528",
-          "maxTokens": 161000,
-          "name": "DeepSeek-R1-0528 (llmsvd)",
+          "maxTokens": 128000,
+          "name": "DeepSeek R1 (llmsvd)",
           "provider": {
             "id": "nvidia",
             "npm": "@openrouter/nvidia-provider"
@@ -5891,18 +5901,17 @@
           "supportsHTTP3": true
         },
         "deepseek-ai/deepseek-v3.1-terminus": {
-          "costPer1MInput": 0.23,
-          "costPer1MOutput": 0.9,
-          "displayName": "DeepSeek V3.1 Terminus (http3) (toon) (llmsvd)",
+          "costPer1MInput": 0.27,
+          "costPer1MOutput": 1,
+          "displayName": "deepseek-ai/DeepSeek-V3.1-Terminus (http3) (toon) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
-            "openSource": true,
             "verified": true
           },
           "id": "deepseek-ai/deepseek-v3.1-terminus",
-          "maxTokens": 163840,
-          "name": "DeepSeek V3.1 Terminus (llmsvd)",
+          "maxTokens": 164000,
+          "name": "deepseek-ai/DeepSeek-V3.1-Terminus (llmsvd)",
           "provider": {
             "id": "nvidia",
             "npm": "@openrouter/nvidia-provider"
@@ -5910,9 +5919,9 @@
           "supportsHTTP3": true
         },
         "deepseek-ai/deepseek-v3.2": {
-          "costPer1MInput": 0.3,
-          "costPer1MOutput": 0.45,
-          "displayName": "DeepSeek V3.2 (http3) (llmsvd)",
+          "costPer1MInput": 0.27,
+          "costPer1MOutput": 0.41,
+          "displayName": "DeepSeek V3.2 (http3) (toon) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
@@ -5920,7 +5929,7 @@
             "verified": true
           },
           "id": "deepseek-ai/deepseek-v3.2",
-          "maxTokens": 163800,
+          "maxTokens": 163840,
           "name": "DeepSeek V3.2 (llmsvd)",
           "provider": {
             "id": "nvidia",
@@ -6085,16 +6094,17 @@
           "supportsHTTP3": true
         },
         "google/gemma-3-27b-it": {
-          "displayName": "Gemma-3-27B-IT (http3) (toon) (llmsvd)",
+          "displayName": "Gemma 3 27B IT (http3) (llmsvd)",
           "features": {
             "freeToUse": true,
             "http3": true,
             "llmsVerifier": true,
+            "openSource": true,
             "verified": true
           },
           "id": "google/gemma-3-27b-it",
-          "maxTokens": 131072,
-          "name": "Gemma-3-27B-IT (llmsvd)",
+          "maxTokens": 96000,
+          "name": "Gemma 3 27B IT (llmsvd)",
           "provider": {
             "id": "nvidia",
             "npm": "@openrouter/nvidia-provider"
@@ -6134,21 +6144,22 @@
           "supportsHTTP3": true
         },
         "google/gemma-3n-e4b-it": {
-          "displayName": "Gemma 3n E4B IT (llmsvd)",
+          "displayName": "Gemma 3n E4b It (http3) (llmsvd)",
           "features": {
             "freeToUse": true,
+            "http3": true,
             "llmsVerifier": true,
             "openSource": true,
             "verified": true
           },
           "id": "google/gemma-3n-e4b-it",
-          "maxTokens": 8192,
-          "name": "Gemma 3n E4B IT (llmsvd)",
+          "maxTokens": 128000,
+          "name": "Gemma 3n E4b It (llmsvd)",
           "provider": {
             "id": "nvidia",
             "npm": "@openrouter/nvidia-provider"
           },
-          "supportsHTTP3": false
+          "supportsHTTP3": true
         },
         "google/gemma-7b": {
           "displayName": "@cf/google/gemma-7b-it-lora (http3) (llmsvd)",
@@ -6465,18 +6476,17 @@
           "supportsHTTP3": true
         },
         "meta/llama-3.2-11b-vision-instruct": {
-          "costPer1MInput": 0.055,
-          "costPer1MOutput": 0.055,
-          "displayName": "Llama 3.2 11B Vision Instruct (http3) (llmsvd)",
+          "displayName": "Llama 3.2 11b Vision Instruct (http3) (llmsvd)",
           "features": {
+            "freeToUse": true,
             "http3": true,
             "llmsVerifier": true,
             "openSource": true,
             "verified": true
           },
           "id": "meta/llama-3.2-11b-vision-instruct",
-          "maxTokens": 16000,
-          "name": "Llama 3.2 11B Vision Instruct (llmsvd)",
+          "maxTokens": 128000,
+          "name": "Llama 3.2 11b Vision Instruct (llmsvd)",
           "provider": {
             "id": "nvidia",
             "npm": "@openrouter/nvidia-provider"
@@ -6540,7 +6550,7 @@
           "supportsHTTP3": true
         },
         "meta/llama-3.3-70b-instruct": {
-          "displayName": "Llama 3.3 70b Instruct (http3) (llmsvd)",
+          "displayName": "Llama-3.3-70B-Instruct (http3) (toon) (llmsvd)",
           "features": {
             "freeToUse": true,
             "http3": true,
@@ -6550,7 +6560,7 @@
           },
           "id": "meta/llama-3.3-70b-instruct",
           "maxTokens": 128000,
-          "name": "Llama 3.3 70b Instruct (llmsvd)",
+          "name": "Llama-3.3-70B-Instruct (llmsvd)",
           "provider": {
             "id": "nvidia",
             "npm": "@openrouter/nvidia-provider"
@@ -6576,7 +6586,7 @@
           "supportsHTTP3": true
         },
         "meta/llama-4-scout-17b-16e-instruct": {
-          "displayName": "Llama 4 Scout 17B 16E Instruct (http3) (toon) (llmsvd)",
+          "displayName": "Llama 4 Scout 17b 16e Instruct (http3) (llmsvd)",
           "features": {
             "freeToUse": true,
             "http3": true,
@@ -6586,7 +6596,7 @@
           },
           "id": "meta/llama-4-scout-17b-16e-instruct",
           "maxTokens": 128000,
-          "name": "Llama 4 Scout 17B 16E Instruct (llmsvd)",
+          "name": "Llama 4 Scout 17b 16e Instruct (llmsvd)",
           "provider": {
             "id": "nvidia",
             "npm": "@openrouter/nvidia-provider"
@@ -6672,7 +6682,7 @@
           "supportsHTTP3": false
         },
         "microsoft/phi-3-medium-128k-instruct": {
-          "displayName": "Phi 3 Medium 128k Instruct (http3) (llmsvd)",
+          "displayName": "Phi-3-medium instruct (128k) (http3) (toon) (llmsvd)",
           "features": {
             "freeToUse": true,
             "http3": true,
@@ -6682,7 +6692,7 @@
           },
           "id": "microsoft/phi-3-medium-128k-instruct",
           "maxTokens": 128000,
-          "name": "Phi 3 Medium 128k Instruct (llmsvd)",
+          "name": "Phi-3-medium instruct (128k) (llmsvd)",
           "provider": {
             "id": "nvidia",
             "npm": "@openrouter/nvidia-provider"
@@ -6744,7 +6754,7 @@
           "supportsHTTP3": true
         },
         "microsoft/phi-3-small-128k-instruct": {
-          "displayName": "Phi 3 Small 128k Instruct (http3) (llmsvd)",
+          "displayName": "Phi-3-small instruct (128k) (http3) (toon) (llmsvd)",
           "features": {
             "freeToUse": true,
             "http3": true,
@@ -6754,7 +6764,7 @@
           },
           "id": "microsoft/phi-3-small-128k-instruct",
           "maxTokens": 128000,
-          "name": "Phi 3 Small 128k Instruct (llmsvd)",
+          "name": "Phi-3-small instruct (128k) (llmsvd)",
           "provider": {
             "id": "nvidia",
             "npm": "@openrouter/nvidia-provider"
@@ -6816,7 +6826,7 @@
           "supportsHTTP3": true
         },
         "microsoft/phi-3.5-moe-instruct": {
-          "displayName": "Phi-3.5-MoE instruct (128k) (http3) (toon) (llmsvd)",
+          "displayName": "Phi 3.5 Moe Instruct (http3) (llmsvd)",
           "features": {
             "freeToUse": true,
             "http3": true,
@@ -6826,7 +6836,7 @@
           },
           "id": "microsoft/phi-3.5-moe-instruct",
           "maxTokens": 128000,
-          "name": "Phi-3.5-MoE instruct (128k) (llmsvd)",
+          "name": "Phi 3.5 Moe Instruct (llmsvd)",
           "provider": {
             "id": "nvidia",
             "npm": "@openrouter/nvidia-provider"
@@ -6901,18 +6911,17 @@
           "supportsHTTP3": true
         },
         "minimaxai/minimax-m2": {
-          "costPer1MInput": 0.254,
-          "costPer1MOutput": 1.02,
-          "displayName": "MiniMax M2 (http3) (toon) (llmsvd)",
+          "costPer1MInput": 0.3,
+          "costPer1MOutput": 1.2,
+          "displayName": "MiniMaxAI/MiniMax-M2 (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
-            "openSource": true,
             "verified": true
           },
           "id": "minimaxai/minimax-m2",
-          "maxTokens": 262144,
-          "name": "MiniMax M2 (llmsvd)",
+          "maxTokens": 197000,
+          "name": "MiniMaxAI/MiniMax-M2 (llmsvd)",
           "provider": {
             "id": "nvidia",
             "npm": "@openrouter/nvidia-provider"
@@ -6938,9 +6947,9 @@
           "supportsHTTP3": true
         },
         "mistralai/devstral-2-123b-instruct-2512": {
-          "costPer1MInput": 1,
-          "costPer1MOutput": 2,
-          "displayName": "Devstral 2 123b Instruct 2512 (http3) (llmsvd)",
+          "costPer1MInput": 0.15,
+          "costPer1MOutput": 0.6,
+          "displayName": "Devstral 2 123B Instruct 2512 (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
@@ -6948,8 +6957,8 @@
             "verified": true
           },
           "id": "mistralai/devstral-2-123b-instruct-2512",
-          "maxTokens": 131072,
-          "name": "Devstral 2 123b Instruct 2512 (llmsvd)",
+          "maxTokens": 262144,
+          "name": "Devstral 2 123B Instruct 2512 (llmsvd)",
           "provider": {
             "id": "nvidia",
             "npm": "@openrouter/nvidia-provider"
@@ -7052,17 +7061,17 @@
           "supportsHTTP3": false
         },
         "mistralai/mistral-large": {
-          "displayName": "Mistral Large 2 Instruct (http3) (llmsvd)",
+          "costPer1MInput": 2,
+          "costPer1MOutput": 6,
+          "displayName": "Mistral Large Instruct 2411 (http3) (llmsvd)",
           "features": {
-            "freeToUse": true,
             "http3": true,
             "llmsVerifier": true,
-            "openSource": true,
             "verified": true
           },
           "id": "mistralai/mistral-large",
           "maxTokens": 128000,
-          "name": "Mistral Large 2 Instruct (llmsvd)",
+          "name": "Mistral Large Instruct 2411 (llmsvd)",
           "provider": {
             "id": "nvidia",
             "npm": "@openrouter/nvidia-provider"
@@ -7209,9 +7218,9 @@
           "supportsHTTP3": false
         },
         "moonshotai/kimi-k2-instruct": {
-          "costPer1MInput": 0.5,
-          "costPer1MOutput": 2,
-          "displayName": "Kimi K2 (http3) (llmsvd)",
+          "costPer1MInput": 1,
+          "costPer1MOutput": 3,
+          "displayName": "Kimi K2 Instruct (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
@@ -7220,7 +7229,7 @@
           },
           "id": "moonshotai/kimi-k2-instruct",
           "maxTokens": 131072,
-          "name": "Kimi K2 (llmsvd)",
+          "name": "Kimi K2 Instruct (llmsvd)",
           "provider": {
             "id": "nvidia",
             "npm": "@openrouter/nvidia-provider"
@@ -7228,8 +7237,8 @@
           "supportsHTTP3": true
         },
         "moonshotai/kimi-k2-instruct-0905": {
-          "costPer1MInput": 0.6,
-          "costPer1MOutput": 2.5,
+          "costPer1MInput": 1,
+          "costPer1MOutput": 3,
           "displayName": "Kimi K2 Instruct 0905 (http3) (llmsvd)",
           "features": {
             "http3": true,
@@ -7909,8 +7918,8 @@
           "supportsHTTP3": false
         },
         "openai/gpt-oss-120b": {
-          "costPer1MInput": 0.15,
-          "costPer1MOutput": 0.6,
+          "costPer1MInput": 0.072,
+          "costPer1MOutput": 0.28,
           "displayName": "GPT OSS 120B (http3) (toon) (llmsvd)",
           "features": {
             "http3": true,
@@ -7928,10 +7937,9 @@
           "supportsHTTP3": true
         },
         "openai/gpt-oss-20b": {
-          "costPer1MInput": 0.03,
-          "costPer1MOutput": 0.14,
-          "displayName": "GPT OSS 20B (http3) (toon) (llmsvd)",
+          "displayName": "Gpt Oss 20b (http3) (toon) (llmsvd)",
           "features": {
+            "freeToUse": true,
             "http3": true,
             "llmsVerifier": true,
             "openSource": true,
@@ -7939,7 +7947,7 @@
           },
           "id": "openai/gpt-oss-20b",
           "maxTokens": 131072,
-          "name": "GPT OSS 20B (llmsvd)",
+          "name": "Gpt Oss 20b (llmsvd)",
           "provider": {
             "id": "nvidia",
             "npm": "@openrouter/nvidia-provider"
@@ -8046,13 +8054,11 @@
           "supportsHTTP3": true
         },
         "qwen/qwen3-coder-480b-a35b-instruct": {
-          "costPer1MInput": 0.4,
-          "costPer1MOutput": 1.6,
           "displayName": "Qwen3 Coder 480B A35B Instruct (http3) (llmsvd)",
           "features": {
+            "freeToUse": true,
             "http3": true,
             "llmsVerifier": true,
-            "openSource": true,
             "verified": true
           },
           "id": "qwen/qwen3-coder-480b-a35b-instruct",
@@ -8065,17 +8071,18 @@
           "supportsHTTP3": true
         },
         "qwen/qwen3-next-80b-a3b-instruct": {
-          "costPer1MInput": 0.14,
-          "costPer1MOutput": 1.4,
-          "displayName": "Qwen/Qwen3-Next-80B-A3B-Instruct (http3) (llmsvd)",
+          "costPer1MInput": 0.1,
+          "costPer1MOutput": 0.8,
+          "displayName": "Qwen3 Next 80B A3B Instruct (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
+            "openSource": true,
             "verified": true
           },
           "id": "qwen/qwen3-next-80b-a3b-instruct",
-          "maxTokens": 262000,
-          "name": "Qwen/Qwen3-Next-80B-A3B-Instruct (llmsvd)",
+          "maxTokens": 262144,
+          "name": "Qwen3 Next 80B A3B Instruct (llmsvd)",
           "provider": {
             "id": "nvidia",
             "npm": "@openrouter/nvidia-provider"
@@ -8101,22 +8108,21 @@
           "supportsHTTP3": true
         },
         "qwen/qwq-32b": {
-          "costPer1MInput": 0.15,
-          "costPer1MOutput": 0.58,
-          "displayName": "Qwen/QwQ-32B (http3) (toon) (llmsvd)",
+          "displayName": "Qwq 32b (toon) (llmsvd)",
           "features": {
-            "http3": true,
+            "freeToUse": true,
             "llmsVerifier": true,
+            "openSource": true,
             "verified": true
           },
           "id": "qwen/qwq-32b",
-          "maxTokens": 131000,
-          "name": "Qwen/QwQ-32B (llmsvd)",
+          "maxTokens": 128000,
+          "name": "Qwq 32b (llmsvd)",
           "provider": {
             "id": "nvidia",
             "npm": "@openrouter/nvidia-provider"
           },
-          "supportsHTTP3": true
+          "supportsHTTP3": false
         },
         "rakuten/rakutenai-7b-chat": {
           "displayName": "rakuten/rakutenai-7b-chat (llmsvd)",
@@ -8376,6 +8382,7 @@
         }
       },
       "options": {
+        "apiKey": "REDACTED_API_KEY",
         "baseURL": "https://integrate.api.nvidia.com/v1"
       }
     },
@@ -8863,7 +8870,7 @@
         },
         "anthropic/claude-haiku-4.5": {
           "costPer1MInput": 1,
-          "costPer1MOutput": 5,
+          "costPer1MOutput": 1.25,
           "displayName": "Claude Haiku 4.5 (http3) (toon) (llmsvd)",
           "features": {
             "http3": true,
@@ -8952,8 +8959,8 @@
           "supportsHTTP3": true
         },
         "anthropic/claude-sonnet-4.5": {
-          "costPer1MInput": 3,
-          "costPer1MOutput": 15,
+          "costPer1MInput": 2.6,
+          "costPer1MOutput": 13,
           "displayName": "Claude Sonnet 4.5 (http3) (toon) (llmsvd)",
           "features": {
             "http3": true,
@@ -8961,7 +8968,7 @@
             "verified": true
           },
           "id": "anthropic/claude-sonnet-4.5",
-          "maxTokens": 1000000,
+          "maxTokens": 983040,
           "name": "Claude Sonnet 4.5 (llmsvd)",
           "provider": {
             "id": "openrouter",
@@ -9397,18 +9404,17 @@
           "supportsHTTP3": false
         },
         "deepseek/deepseek-r1": {
-          "costPer1MInput": 1,
-          "costPer1MOutput": 2,
-          "displayName": "Deepseek R1 (http3) (toon) (llmsvd)",
+          "displayName": "DeepSeek-R1 (http3) (toon) (llmsvd)",
           "features": {
+            "freeToUse": true,
             "http3": true,
             "llmsVerifier": true,
             "openSource": true,
             "verified": true
           },
           "id": "deepseek/deepseek-r1",
-          "maxTokens": 128000,
-          "name": "Deepseek R1 (llmsvd)",
+          "maxTokens": 65536,
+          "name": "DeepSeek-R1 (llmsvd)",
           "provider": {
             "id": "openrouter",
             "npm": "@openrouter/openrouter-provider"
@@ -10444,9 +10450,9 @@
           "supportsHTTP3": true
         },
         "meta-llama/llama-3.3-70b-instruct": {
-          "costPer1MInput": 0.71,
-          "costPer1MOutput": 0.71,
-          "displayName": "Llama-3.3-70B-Instruct (http3) (toon) (llmsvd)",
+          "costPer1MInput": 1,
+          "costPer1MOutput": 2,
+          "displayName": "Llama 3.3 70b Instruct (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
@@ -10455,7 +10461,7 @@
           },
           "id": "meta-llama/llama-3.3-70b-instruct",
           "maxTokens": 128000,
-          "name": "Llama-3.3-70B-Instruct (llmsvd)",
+          "name": "Llama 3.3 70b Instruct (llmsvd)",
           "provider": {
             "id": "openrouter",
             "npm": "@openrouter/openrouter-provider"
@@ -10500,9 +10506,9 @@
           "supportsHTTP3": true
         },
         "meta-llama/llama-4-scout": {
-          "costPer1MInput": 0.17,
-          "costPer1MOutput": 0.66,
-          "displayName": "Llama 4 Scout 17B 16E Instruct (http3) (toon) (llmsvd)",
+          "costPer1MInput": 0.15,
+          "costPer1MOutput": 0.6,
+          "displayName": "Llama-4-Scout-17B-16E-Instruct (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
@@ -10510,8 +10516,8 @@
             "verified": true
           },
           "id": "meta-llama/llama-4-scout",
-          "maxTokens": 64000,
-          "name": "Llama 4 Scout 17B 16E Instruct (llmsvd)",
+          "maxTokens": 328000,
+          "name": "Llama-4-Scout-17B-16E-Instruct (llmsvd)",
           "provider": {
             "id": "openrouter",
             "npm": "@openrouter/openrouter-provider"
@@ -10565,7 +10571,7 @@
           "supportsHTTP3": false
         },
         "microsoft/phi-3-medium-128k-instruct": {
-          "displayName": "Phi 3 Medium 128k Instruct (http3) (llmsvd)",
+          "displayName": "Phi-3-medium instruct (128k) (http3) (toon) (llmsvd)",
           "features": {
             "freeToUse": true,
             "http3": true,
@@ -10575,7 +10581,7 @@
           },
           "id": "microsoft/phi-3-medium-128k-instruct",
           "maxTokens": 128000,
-          "name": "Phi 3 Medium 128k Instruct (llmsvd)",
+          "name": "Phi-3-medium instruct (128k) (llmsvd)",
           "provider": {
             "id": "openrouter",
             "npm": "@openrouter/openrouter-provider"
@@ -10717,17 +10723,16 @@
           "supportsHTTP3": true
         },
         "minimax/minimax-m2": {
-          "costPer1MInput": 0.28,
-          "costPer1MOutput": 1.15,
+          "costPer1MInput": 0.3,
+          "costPer1MOutput": 1.2,
           "displayName": "MiniMax M2 (http3) (toon) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
-            "openSource": true,
             "verified": true
           },
           "id": "minimax/minimax-m2",
-          "maxTokens": 196600,
+          "maxTokens": 204800,
           "name": "MiniMax M2 (llmsvd)",
           "provider": {
             "id": "openrouter",
@@ -10736,18 +10741,17 @@
           "supportsHTTP3": true
         },
         "minimax/minimax-m2.1": {
-          "costPer1MInput": 0.3,
-          "costPer1MOutput": 1.2,
-          "displayName": "MiniMax M2.1 (http3) (toon) (llmsvd)",
+          "costPer1MInput": 1,
+          "costPer1MOutput": 2,
+          "displayName": "Minimax M2.1 (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
-            "openSource": true,
             "verified": true
           },
           "id": "minimax/minimax-m2.1",
-          "maxTokens": 204800,
-          "name": "MiniMax M2.1 (llmsvd)",
+          "maxTokens": 128000,
+          "name": "Minimax M2.1 (llmsvd)",
           "provider": {
             "id": "openrouter",
             "npm": "@openrouter/openrouter-provider"
@@ -10830,18 +10834,17 @@
           "supportsHTTP3": true
         },
         "mistralai/devstral-small": {
-          "costPer1MInput": 0.06,
-          "costPer1MOutput": 0.12,
-          "displayName": "Devstral Small (http3) (llmsvd)",
+          "costPer1MInput": 0.05,
+          "costPer1MOutput": 0.22,
+          "displayName": "Devstral Small 2505 (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
-            "openSource": true,
             "verified": true
           },
           "id": "mistralai/devstral-small",
           "maxTokens": 128000,
-          "name": "Devstral Small (llmsvd)",
+          "name": "Devstral Small 2505 (llmsvd)",
           "provider": {
             "id": "openrouter",
             "npm": "@openrouter/openrouter-provider"
@@ -11016,17 +11019,18 @@
           "supportsHTTP3": true
         },
         "mistralai/mistral-large": {
-          "displayName": "Mistral Large 3 675B Instruct 2512 (http3) (llmsvd)",
+          "costPer1MInput": 1,
+          "costPer1MOutput": 2,
+          "displayName": "Mistral Large 3 675b Instruct 2512 (http3) (llmsvd)",
           "features": {
-            "freeToUse": true,
             "http3": true,
             "llmsVerifier": true,
             "openSource": true,
             "verified": true
           },
           "id": "mistralai/mistral-large",
-          "maxTokens": 262144,
-          "name": "Mistral Large 3 675B Instruct 2512 (llmsvd)",
+          "maxTokens": 131072,
+          "name": "Mistral Large 3 675b Instruct 2512 (llmsvd)",
           "provider": {
             "id": "openrouter",
             "npm": "@openrouter/openrouter-provider"
@@ -11346,16 +11350,15 @@
         "moonshotai/kimi-k2-0905": {
           "costPer1MInput": 0.6,
           "costPer1MOutput": 2.5,
-          "displayName": "Kimi K2 Instruct 0905 (http3) (llmsvd)",
+          "displayName": "Kimi K2 0905 (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
-            "openSource": true,
             "verified": true
           },
           "id": "moonshotai/kimi-k2-0905",
           "maxTokens": 262144,
-          "name": "Kimi K2 Instruct 0905 (llmsvd)",
+          "name": "Kimi K2 0905 (llmsvd)",
           "provider": {
             "id": "openrouter",
             "npm": "@openrouter/openrouter-provider"
@@ -11572,15 +11575,16 @@
         "nousresearch/hermes-4-405b": {
           "costPer1MInput": 1,
           "costPer1MOutput": 3,
-          "displayName": "Hermes-4 405B (http3) (toon) (llmsvd)",
+          "displayName": "Hermes 4 405B (http3) (toon) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
+            "openSource": true,
             "verified": true
           },
           "id": "nousresearch/hermes-4-405b",
           "maxTokens": 131072,
-          "name": "Hermes-4 405B (llmsvd)",
+          "name": "Hermes 4 405B (llmsvd)",
           "provider": {
             "id": "openrouter",
             "npm": "@openrouter/openrouter-provider"
@@ -11588,12 +11592,13 @@
           "supportsHTTP3": true
         },
         "nousresearch/hermes-4-70b": {
-          "costPer1MInput": 0.13,
-          "costPer1MOutput": 0.4,
+          "costPer1MInput": 0.11,
+          "costPer1MOutput": 0.38,
           "displayName": "Hermes 4 70B (http3) (toon) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
+            "openSource": true,
             "verified": true
           },
           "id": "nousresearch/hermes-4-70b",
@@ -12154,22 +12159,21 @@
           "supportsHTTP3": true
         },
         "openai/gpt-5-chat": {
-          "costPer1MInput": 1.1,
-          "costPer1MOutput": 9,
-          "displayName": "GPT-5-Chat (http3) (llmsvd)",
+          "costPer1MInput": 1.25,
+          "costPer1MOutput": 10,
+          "displayName": "GPT-5 Chat (latest) (toon) (llmsvd)",
           "features": {
-            "http3": true,
             "llmsVerifier": true,
             "verified": true
           },
           "id": "openai/gpt-5-chat",
-          "maxTokens": 128000,
-          "name": "GPT-5-Chat (llmsvd)",
+          "maxTokens": 400000,
+          "name": "GPT-5 Chat (latest) (llmsvd)",
           "provider": {
             "id": "openrouter",
             "npm": "@openrouter/openrouter-provider"
           },
-          "supportsHTTP3": true
+          "supportsHTTP3": false
         },
         "openai/gpt-5-codex": {
           "costPer1MInput": 1.25,
@@ -12471,12 +12475,13 @@
           "supportsHTTP3": false
         },
         "openai/gpt-oss-20b": {
-          "costPer1MInput": 0.05,
-          "costPer1MOutput": 0.2,
+          "costPer1MInput": 0.03,
+          "costPer1MOutput": 0.14,
           "displayName": "GPT OSS 20B (http3) (toon) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
+            "openSource": true,
             "verified": true
           },
           "id": "openai/gpt-oss-20b",
@@ -13042,18 +13047,17 @@
           "supportsHTTP3": true
         },
         "qwen/qwen2.5-vl-32b-instruct": {
-          "costPer1MInput": 0.05,
-          "costPer1MOutput": 0.22,
-          "displayName": "Qwen 2.5 VL 32B Instruct (http3) (llmsvd)",
+          "costPer1MInput": 0.27,
+          "costPer1MOutput": 0.27,
+          "displayName": "Qwen/Qwen2.5-VL-32B-Instruct (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
-            "openSource": true,
             "verified": true
           },
           "id": "qwen/qwen2.5-vl-32b-instruct",
-          "maxTokens": 32000,
-          "name": "Qwen 2.5 VL 32B Instruct (llmsvd)",
+          "maxTokens": 131000,
+          "name": "Qwen/Qwen2.5-VL-32B-Instruct (llmsvd)",
           "provider": {
             "id": "openrouter",
             "npm": "@openrouter/openrouter-provider"
@@ -13079,17 +13083,18 @@
           "supportsHTTP3": true
         },
         "qwen/qwen3-14b": {
-          "costPer1MInput": 0.07,
-          "costPer1MOutput": 0.28,
-          "displayName": "Qwen/Qwen3-14B (http3) (llmsvd)",
+          "costPer1MInput": 0.05,
+          "costPer1MOutput": 0.22,
+          "displayName": "Qwen3 14B (http3) (toon) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
+            "openSource": true,
             "verified": true
           },
           "id": "qwen/qwen3-14b",
-          "maxTokens": 131000,
-          "name": "Qwen/Qwen3-14B (llmsvd)",
+          "maxTokens": 40960,
+          "name": "Qwen3 14B (llmsvd)",
           "provider": {
             "id": "openrouter",
             "npm": "@openrouter/openrouter-provider"
@@ -13097,18 +13102,16 @@
           "supportsHTTP3": true
         },
         "qwen/qwen3-235b-a22b": {
-          "costPer1MInput": 0.3,
-          "costPer1MOutput": 1.2,
-          "displayName": "Qwen3 235B A22B (http3) (toon) (llmsvd)",
+          "displayName": "Qwen3-235B-A22B (http3) (toon) (llmsvd)",
           "features": {
+            "freeToUse": true,
             "http3": true,
             "llmsVerifier": true,
-            "openSource": true,
             "verified": true
           },
           "id": "qwen/qwen3-235b-a22b",
-          "maxTokens": 40960,
-          "name": "Qwen3 235B A22B (llmsvd)",
+          "maxTokens": 131072,
+          "name": "Qwen3-235B-A22B (llmsvd)",
           "provider": {
             "id": "openrouter",
             "npm": "@openrouter/openrouter-provider"
@@ -13130,17 +13133,16 @@
           "supportsHTTP3": false
         },
         "qwen/qwen3-235b-a22b-thinking-2507": {
-          "costPer1MInput": 1,
-          "costPer1MOutput": 2,
           "displayName": "Qwen3 235B A22B Thinking 2507 (http3) (toon) (llmsvd)",
           "features": {
+            "freeToUse": true,
             "http3": true,
             "llmsVerifier": true,
             "openSource": true,
             "verified": true
           },
           "id": "qwen/qwen3-235b-a22b-thinking-2507",
-          "maxTokens": 262144,
+          "maxTokens": 131072,
           "name": "Qwen3 235B A22B Thinking 2507 (llmsvd)",
           "provider": {
             "id": "openrouter",
@@ -13149,17 +13151,17 @@
           "supportsHTTP3": true
         },
         "qwen/qwen3-30b-a3b": {
-          "costPer1MInput": 0.09,
-          "costPer1MOutput": 0.45,
-          "displayName": "Qwen/Qwen3-30B-A3B (http3) (llmsvd)",
+          "displayName": "Qwen3 30B A3B (http3) (toon) (llmsvd)",
           "features": {
+            "freeToUse": true,
             "http3": true,
             "llmsVerifier": true,
+            "openSource": true,
             "verified": true
           },
           "id": "qwen/qwen3-30b-a3b",
-          "maxTokens": 131000,
-          "name": "Qwen/Qwen3-30B-A3B (llmsvd)",
+          "maxTokens": 131072,
+          "name": "Qwen3 30B A3B (llmsvd)",
           "provider": {
             "id": "openrouter",
             "npm": "@openrouter/openrouter-provider"
@@ -13167,17 +13169,18 @@
           "supportsHTTP3": true
         },
         "qwen/qwen3-30b-a3b-instruct-2507": {
-          "costPer1MInput": 0.09,
-          "costPer1MOutput": 0.3,
-          "displayName": "Qwen/Qwen3-30B-A3B-Instruct-2507 (http3) (llmsvd)",
+          "costPer1MInput": 0.2,
+          "costPer1MOutput": 0.8,
+          "displayName": "Qwen3 30B A3B Instruct 2507 (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
+            "openSource": true,
             "verified": true
           },
           "id": "qwen/qwen3-30b-a3b-instruct-2507",
           "maxTokens": 262000,
-          "name": "Qwen/Qwen3-30B-A3B-Instruct-2507 (llmsvd)",
+          "name": "Qwen3 30B A3B Instruct 2507 (llmsvd)",
           "provider": {
             "id": "openrouter",
             "npm": "@openrouter/openrouter-provider"
@@ -13185,17 +13188,16 @@
           "supportsHTTP3": true
         },
         "qwen/qwen3-30b-a3b-thinking-2507": {
-          "costPer1MInput": 0.2,
-          "costPer1MOutput": 0.8,
           "displayName": "Qwen3 30B A3B Thinking 2507 (http3) (toon) (llmsvd)",
           "features": {
+            "freeToUse": true,
             "http3": true,
             "llmsVerifier": true,
             "openSource": true,
             "verified": true
           },
           "id": "qwen/qwen3-30b-a3b-thinking-2507",
-          "maxTokens": 262000,
+          "maxTokens": 262144,
           "name": "Qwen3 30B A3B Thinking 2507 (llmsvd)",
           "provider": {
             "id": "openrouter",
@@ -13204,17 +13206,18 @@
           "supportsHTTP3": true
         },
         "qwen/qwen3-32b": {
-          "costPer1MInput": 0.14,
-          "costPer1MOutput": 0.57,
-          "displayName": "Qwen/Qwen3-32B (http3) (llmsvd)",
+          "costPer1MInput": 0.29,
+          "costPer1MOutput": 0.59,
+          "displayName": "Qwen3 32B (http3) (toon) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
+            "openSource": true,
             "verified": true
           },
           "id": "qwen/qwen3-32b",
-          "maxTokens": 131000,
-          "name": "Qwen/Qwen3-32B (llmsvd)",
+          "maxTokens": 131072,
+          "name": "Qwen3 32B (llmsvd)",
           "provider": {
             "id": "openrouter",
             "npm": "@openrouter/openrouter-provider"
@@ -13273,18 +13276,17 @@
           "supportsHTTP3": true
         },
         "qwen/qwen3-coder-30b-a3b-instruct": {
-          "costPer1MInput": 0.06,
-          "costPer1MOutput": 0.25,
-          "displayName": "Qwen3 Coder 30B A3B Instruct (http3) (llmsvd)",
+          "costPer1MInput": 0.07,
+          "costPer1MOutput": 0.28,
+          "displayName": "Qwen/Qwen3-Coder-30B-A3B-Instruct (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
-            "openSource": true,
             "verified": true
           },
           "id": "qwen/qwen3-coder-30b-a3b-instruct",
-          "maxTokens": 262144,
-          "name": "Qwen3 Coder 30B A3B Instruct (llmsvd)",
+          "maxTokens": 262000,
+          "name": "Qwen/Qwen3-Coder-30B-A3B-Instruct (llmsvd)",
           "provider": {
             "id": "openrouter",
             "npm": "@openrouter/openrouter-provider"
@@ -13384,16 +13386,17 @@
           "supportsHTTP3": true
         },
         "qwen/qwen3-next-80b-a3b-instruct": {
-          "displayName": "Qwen3-Next-80B-A3B-Instruct (http3) (llmsvd)",
+          "costPer1MInput": 0.14,
+          "costPer1MOutput": 1.4,
+          "displayName": "Qwen/Qwen3-Next-80B-A3B-Instruct (http3) (llmsvd)",
           "features": {
-            "freeToUse": true,
             "http3": true,
             "llmsVerifier": true,
             "verified": true
           },
           "id": "qwen/qwen3-next-80b-a3b-instruct",
-          "maxTokens": 262144,
-          "name": "Qwen3-Next-80B-A3B-Instruct (llmsvd)",
+          "maxTokens": 262000,
+          "name": "Qwen/Qwen3-Next-80B-A3B-Instruct (llmsvd)",
           "provider": {
             "id": "openrouter",
             "npm": "@openrouter/openrouter-provider"
@@ -13402,16 +13405,17 @@
         },
         "qwen/qwen3-next-80b-a3b-thinking": {
           "costPer1MInput": 0.14,
-          "costPer1MOutput": 0.57,
-          "displayName": "Qwen/Qwen3-Next-80B-A3B-Thinking (http3) (toon) (llmsvd)",
+          "costPer1MOutput": 1.4,
+          "displayName": "Qwen3 Next 80B A3B Thinking (http3) (toon) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
+            "openSource": true,
             "verified": true
           },
           "id": "qwen/qwen3-next-80b-a3b-thinking",
-          "maxTokens": 262000,
-          "name": "Qwen/Qwen3-Next-80B-A3B-Thinking (llmsvd)",
+          "maxTokens": 262144,
+          "name": "Qwen3 Next 80B A3B Thinking (llmsvd)",
           "provider": {
             "id": "openrouter",
             "npm": "@openrouter/openrouter-provider"
@@ -14156,9 +14160,9 @@
           "supportsHTTP3": true
         },
         "z-ai/glm-4.6": {
-          "costPer1MInput": 0.6,
-          "costPer1MOutput": 2.2,
-          "displayName": "GLM 4.6 (http3) (toon) (llmsvd)",
+          "costPer1MInput": 1,
+          "costPer1MOutput": 2,
+          "displayName": "GLM 4.6 (http3) (llmsvd)",
           "features": {
             "http3": true,
             "llmsVerifier": true,
@@ -14228,6 +14232,7 @@
         }
       },
       "options": {
+        "apiKey": "REDACTED_API_KEY",
         "baseURL": "https://openrouter.ai/api/v1"
       }
     },
@@ -14314,6 +14319,7 @@
         }
       },
       "options": {
+        "apiKey": "REDACTED_API_KEY",
         "baseURL": "https://api.replicate.com/v1"
       }
     },
@@ -14334,16 +14340,17 @@
           "supportsHTTP3": false
         },
         "DeepSeek-R1-0528": {
+          "costPer1MInput": 1.35,
+          "costPer1MOutput": 5.4,
           "displayName": "DeepSeek-R1-0528 (http3) (toon) (llmsvd)",
           "features": {
-            "freeToUse": true,
             "http3": true,
             "llmsVerifier": true,
             "openSource": true,
             "verified": true
           },
           "id": "DeepSeek-R1-0528",
-          "maxTokens": 65536,
+          "maxTokens": 163840,
           "name": "DeepSeek-R1-0528 (llmsvd)",
           "provider": {
             "id": "sambanova",
@@ -14352,8 +14359,8 @@
           "supportsHTTP3": true
         },
         "DeepSeek-R1-Distill-Llama-70B": {
-          "costPer1MInput": 0.9,
-          "costPer1MOutput": 0.9,
+          "costPer1MInput": 0.2,
+          "costPer1MOutput": 0.2,
           "displayName": "DeepSeek R1 Distill Llama 70B (http3) (toon) (llmsvd)",
           "features": {
             "http3": true,
@@ -14362,7 +14369,7 @@
             "verified": true
           },
           "id": "DeepSeek-R1-Distill-Llama-70B",
-          "maxTokens": 32000,
+          "maxTokens": 121808,
           "name": "DeepSeek R1 Distill Llama 70B (llmsvd)",
           "provider": {
             "id": "sambanova",
@@ -14372,7 +14379,7 @@
         },
         "DeepSeek-V3-0324": {
           "costPer1MInput": 1.14,
-          "costPer1MOutput": 4.56,
+          "costPer1MOutput": 2.75,
           "displayName": "DeepSeek-V3-0324 (http3) (llmsvd)",
           "features": {
             "http3": true,
@@ -14381,7 +14388,7 @@
             "verified": true
           },
           "id": "DeepSeek-V3-0324",
-          "maxTokens": 131072,
+          "maxTokens": 161000,
           "name": "DeepSeek-V3-0324 (llmsvd)",
           "provider": {
             "id": "sambanova",
@@ -14390,17 +14397,17 @@
           "supportsHTTP3": true
         },
         "DeepSeek-V3.1": {
-          "costPer1MInput": 0.5,
-          "costPer1MOutput": 2,
-          "displayName": "nex-agi/DeepSeek-V3.1-Nex-N1 (http3) (toon) (llmsvd)",
+          "displayName": "DeepSeek-V3.1 671B (http3) (toon) (llmsvd)",
           "features": {
+            "freeToUse": true,
             "http3": true,
             "llmsVerifier": true,
+            "openSource": true,
             "verified": true
           },
           "id": "DeepSeek-V3.1",
-          "maxTokens": 131000,
-          "name": "nex-agi/DeepSeek-V3.1-Nex-N1 (llmsvd)",
+          "maxTokens": 160000,
+          "name": "DeepSeek-V3.1 671B (llmsvd)",
           "provider": {
             "id": "sambanova",
             "npm": "@openrouter/sambanova-provider"
@@ -14510,8 +14517,8 @@
           "supportsHTTP3": true
         },
         "Qwen3-235B": {
-          "costPer1MInput": 0.3,
-          "costPer1MOutput": 3,
+          "costPer1MInput": 0.11,
+          "costPer1MOutput": 0.6,
           "displayName": "Qwen3-235B-A22B-Thinking-2507 (http3) (toon) (llmsvd)",
           "features": {
             "http3": true,
@@ -14583,6 +14590,7 @@
         }
       },
       "options": {
+        "apiKey": "REDACTED_API_KEY",
         "baseURL": "https://api.sambanova.ai/v1"
       }
     },
@@ -15885,6 +15893,7 @@
         }
       },
       "options": {
+        "apiKey": "REDACTED_API_KEY",
         "baseURL": "https://api.siliconflow.cn/v1"
       }
     },
@@ -16237,6 +16246,7 @@
         }
       },
       "options": {
+        "apiKey": "REDACTED_API_KEY",
         "baseURL": "https://api.upstage.ai/v1/solar"
       }
     },

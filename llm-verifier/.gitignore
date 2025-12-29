@@ -56,6 +56,12 @@ test_output/
 config.local.yaml
 *.local.yaml
 
+# OpenCode configurations - full version with API keys (git-ignored)
+opencode_ultimate.json
+opencode*.json
+opencode_full.json
+opencode*_with_keys.json
+
 # Logs
 *.log
 logs/

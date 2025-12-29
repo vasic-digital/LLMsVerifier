@@ -161,10 +161,15 @@ func main() {
 	}
 
 	// Generate ultimate OpenCode configuration
-	fmt.Println("📄 Generating ultimate OpenCode configuration...")
-	config := generateUltimateOpenCode(allModels, service, allProviders, totalModels)
+	fmt.Println("📄 Generating ultimate OpenCode configurations...")
 
-	// Write to file - use current directory or specified output
+	// Generate PUBLIC version first (without API keys)
+	publicConfig := generateUltimateOpenCode(allModels, service, allProviders, totalModels, false)
+
+	// Generate FULL version (with API keys)
+	fullConfig := generateUltimateOpenCode(allModels, service, allProviders, totalModels, true)
+
+	// Write to files - use current directory or specified output
 	outputPath := os.Getenv("OPENCODE_OUTPUT_PATH")
 	if outputPath == "" {
 		outputPath = "opencode_ultimate.json"
@@ -191,9 +196,9 @@ func main() {
 	}
 	defer file.Close()
 
-	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(config); err != nil {
+	fullEncoder := json.NewEncoder(file)
+	fullEncoder.SetIndent("", "  ")
+	if err := fullEncoder.Encode(fullConfig); err != nil {
 		log.Fatalf("Failed to encode full config: %v", err)
 	}
 
@@ -216,7 +221,7 @@ func main() {
 
 	publicEncoder := json.NewEncoder(publicFile)
 	publicEncoder.SetIndent("", "  ")
-	if err := publicEncoder.Encode(config); err != nil {
+	if err := publicEncoder.Encode(publicConfig); err != nil {
 		log.Fatalf("Failed to encode public config: %v", err)
 	}
 
@@ -244,13 +249,13 @@ func main() {
 		fmt.Println("✅ Public configuration structure verified successfully")
 	}
 
-	// Copy PUBLIC configuration to config directory (no API keys)
+	// Copy FULL configuration (with API keys) to config directory
 	configDir := "/home/milosvasic/.config/opencode"
 	if err := os.MkdirAll(configDir, 0755); err == nil {
 		configPath := configDir + "/opencode.json"
 		os.Remove(configPath) // Remove old symlink
-		if err := copyFile(publicOutputPath, configPath); err == nil {
-			fmt.Printf("✅ Configuration copied to: %s\n", configPath)
+		if err := copyFile(outputPath, configPath); err == nil {
+			fmt.Printf("✅ Full configuration (with API keys) copied to: %s\n", configPath)
 		}
 	}
 
@@ -270,7 +275,7 @@ func main() {
 	fmt.Println("🎯 OpenCode configuration is ready for production use!")
 }
 
-func generateUltimateOpenCode(allModels map[string][]providers.Model, service interface{}, allProviders map[string]*providers.ProviderClient, totalModels int) map[string]interface{} {
+func generateUltimateOpenCode(allModels map[string][]providers.Model, service interface{}, allProviders map[string]*providers.ProviderClient, totalModels int, withAPIKeys bool) map[string]interface{} {
 	config := make(map[string]interface{})
 
 	// Basic OpenCode structure
@@ -305,13 +310,22 @@ func generateUltimateOpenCode(allModels map[string][]providers.Model, service in
 				baseURL = strings.TrimSuffix(baseURL, "/") + "/v1"
 			}
 
-			// Add options with baseURL only - NO API KEYS
-			providerEntry["options"] = map[string]interface{}{
-				"baseURL": baseURL,
+			// Add options with baseURL only or with baseURL + API key (if requested)
+			if withAPIKeys && providerClient.APIKey != "" {
+				// FULL VERSION: Include API key
+				providerEntry["options"] = map[string]interface{}{
+					"baseURL": baseURL,
+					"apiKey":  providerClient.APIKey,
+				}
+			} else {
+				// PUBLIC VERSION: Only baseURL, no API key
+				providerEntry["options"] = map[string]interface{}{
+					"baseURL": baseURL,
+				}
 			}
 		}
 
-		// Note: API keys are NEVER exported for security reasons
+		// Note: API keys are NEVER exported for security in public version
 		// Users must set them in their environment or OpenCode configuration
 
 		// Create model map for this provider with proper structure
@@ -517,22 +531,20 @@ func verifyOpenCodeConfig(configPath string) error {
 			return fmt.Errorf("provider %s has no models", providerID)
 		}
 
-		// Check that options only contains baseURL (not apiKey)
+		// Check that options section is valid
 		if optionsData, exists := providerMap["options"]; exists {
 			options, ok := optionsData.(map[string]interface{})
 			if !ok {
 				return fmt.Errorf("provider %s has invalid options section", providerID)
 			}
 
-			// Should only have baseURL, not apiKey
-			if _, hasAPIKey := options["apiKey"]; hasAPIKey {
-				return fmt.Errorf("provider %s options section should not contain apiKey", providerID)
-			}
-
-			// Should have baseURL
+			// Must have baseURL
 			if _, hasBaseURL := options["baseURL"]; !hasBaseURL {
 				return fmt.Errorf("provider %s options section missing baseURL", providerID)
 			}
+
+			// Optional: apiKey is allowed in full configs but not required
+			// Both public and full configs are valid
 		}
 	}
 
