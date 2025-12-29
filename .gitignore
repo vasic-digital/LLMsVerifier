@@ -204,6 +204,23 @@ opencode_*_with_keys.json
 **/*opencode*keys*.json
 llm-verifier-opencode-*.json
 
+# Crush configuration files (may contain keys)
+crush.json
+crush_export.json
+crush_*_export.json
+
+# Ultimate configuration files (may contain keys)
+ultimate_opencode*.json
+ultimate_*.json
+
+# Test discovery files (may contain API responses with keys)
+test_*discovery*.json
+*discovery*.json
+
+# Challenge result files (may contain verification data)
+**/results/*.json
+challenges/**/results/
+
 # Crush configuration (may contain keys)
 crush.json
 crush_export.json

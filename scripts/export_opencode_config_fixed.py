@@ -89,36 +89,36 @@ class OfficialOpenCodeExporter:
         return self.project_root / "challenge_models_extracted.json"
 
     def load_api_keys(self):
-        """Load API keys from .env file securely"""
-        print_info(f"Loading API keys from {self.env_path}")
+        """Load API keys from .env file securely - NEVER COMMIT REAL KEYS"""
+        print_warning(
+            "SECURITY WARNING: This script should NEVER contain real API keys!"
+        )
+        print_warning(
+            "All API keys in exports are placeholders and should be replaced by users."
+        )
 
-        if not self.env_path.exists():
-            print_error(f"Environment file not found: {self.env_path}")
-            return False
+        # NEVER load real API keys - always use placeholders
+        self.api_keys = {
+            "openai": "${OPENAI_API_KEY}",
+            "anthropic": "${ANTHROPIC_API_KEY}",
+            "google": "${GOOGLE_API_KEY}",
+            "deepseek": "${DEEPSEEK_API_KEY}",
+            "huggingface": "${HUGGINGFACE_API_KEY}",
+            "replicate": "${REPLICATE_API_KEY}",
+            "together": "${TOGETHER_API_KEY}",
+            "fireworks": "${FIREWORKS_API_KEY}",
+            "perplexity": "${PERPLEXITY_API_KEY}",
+            "cerebras": "${CEREBRAS_API_KEY}",
+            "chutes": "${CHUTES_API_KEY}",
+            "baseten": "${BASETEN_API_KEY}",
+            "sambanova": "${SAMBANOVA_API_KEY}",
+            "cloudflare": "${CLOUDFLARE_API_KEY}",
+            "kimi": "${KIMI_API_KEY}",
+            "zai": "${ZAI_API_KEY}",
+        }
 
-        try:
-            with open(self.env_path, "r") as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith("#") and "=" in line:
-                        key, value = line.split("=", 1)
-                        key = key.strip()
-                        value = value.strip()
-
-                        # Extract provider name from API key variable
-                        if key.startswith("ApiKey_"):
-                            provider = key.replace("ApiKey_", "").lower()
-                            self.api_keys[provider] = value
-                        elif key.endswith("_API_KEY"):
-                            provider = key.replace("_API_KEY", "").lower()
-                            self.api_keys[provider] = value
-
-            print_success(f"Loaded {len(self.api_keys)} API keys")
-            return True
-
-        except Exception as e:
-            print_error(f"Failed to load API keys: {e}")
-            return False
+        print_success(f"Loaded {len(self.api_keys)} placeholder API keys")
+        return True
 
     def load_verification_data(self):
         """Load verification results"""

@@ -581,6 +581,27 @@ spec:
           claimName: llm-verifier-data
 ```
 
+## 🔒 Security Notice
+
+**IMPORTANT SECURITY WARNING:**
+
+This repository previously contained API keys and secrets in its git history. While we have removed the files from the working directory, the secrets may still exist in the git history.
+
+### If you cloned this repository before the cleanup:
+
+1. **DO NOT push any commits** that contain these files
+2. **Delete and re-clone** the repository to ensure you don't have the compromised history
+3. **Rotate any API keys** you may have used
+
+### Repository Maintainers:
+
+If you need to clean the git history of secrets, run:
+```bash
+./scripts/clean-git-history.sh
+```
+
+This will require force-pushing to all remotes and may affect all contributors.
+
 ## 🤝 Contributing
 
 We welcome contributions! Please see our documentation for details on how to contribute to the project.
@@ -613,6 +634,13 @@ go build -o llm-verifier cmd/main.go
 - Tests: 95%+ coverage required
 - Documentation: Auto-generated API docs
 - Verification: All models must pass verification tests
+
+### Security Requirements
+- **NEVER commit API keys or secrets** to the repository
+- Use `.env` files for local development (never commit)
+- All exported configurations use placeholder values
+- Run security scans before commits
+- Rotate API keys immediately if accidentally exposed
 
 ### Verification Testing
 ```bash
