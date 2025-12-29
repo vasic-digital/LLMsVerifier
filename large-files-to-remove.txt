@@ -1,0 +1,25 @@
+# Large files to remove from git history
+# These files are causing the pack to exceed 100MB limit
+
+# Binary files (23MB each)
+llm-verifier/cmd/ultimate-challenge/ultimate-challenge
+llm-verifier/cmd/ultimate-challenge/ultimate-challenge-clean
+llm-verifier/cmd/ultimate-challenge/ultimate-challenge-final
+llm-verifier/cmd/ultimate-challenge/ultimate-challenge-fixed
+llm-verifier/cmd/ultimate-challenge/ultimate-challenge-new
+llm-verifier/cmd/ultimate-challenge/ultimate-challenge-npm
+llm-verifier/cmd/ultimate-challenge/ultimate-challenge-validated
+llm-verifier/cmd/fixed-ultimate-challenge/fixed_ultimate_challenge
+crush_config_converter
+ultimate-challenge-fixed
+ultimate-challenge-test
+llm-verifier/cmd/cmd
+llm-verifier/cmd/model-verification/model-verification
+
+# Database files
+.crush/crush.db
+llm-verifier.db
+
+# Large log files
+ultimate_challenge_complete.log
+.crush/logs/crush.log
