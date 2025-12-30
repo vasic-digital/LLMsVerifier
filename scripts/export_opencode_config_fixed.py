@@ -232,12 +232,39 @@ class OfficialOpenCodeExporter:
             "debugLSP": False,
         }
 
-        # Build provider configurations
+        # Build provider configurations from verification data
         valid_providers = 0
         total_models = 0
 
+        # Process each provider from verification data
+        for provider_name, models in self.verification_data.items():
+            if not models:
+                continue
+
+            # Get provider config
+            provider_config = self.get_provider_config(provider_name)
+            provider_config["models"] = {}
+
+            # Add each model
+            for model_id in models:
+                model_ref = self.create_model_reference(model_id, provider_name)
+                provider_config["models"][model_ref] = {
+                    "model": model_id,
+                    "maxTokens": 4096,  # Default, can be customized
+                }
+                total_models += 1
+
+            # Add provider to config
+            config["providers"][provider_name] = provider_config
+            valid_providers += 1
+
         # Select best models for each provider as defaults for agents
         default_models = {}
+        for provider_name, models in self.verification_data.items():
+            if models:
+                best_model = self.select_best_model(models, provider_name)
+                if best_model:
+                    default_models[provider_name] = best_model
 
         # Ensure we have at least basic agents
         if not config["agents"]:
@@ -323,7 +350,7 @@ class OfficialOpenCodeExporter:
             output_path = self.save_config(config)
 
             # Display summary
-            providers = config.get("provider", {})
+            providers = config.get("providers", {})
             total_providers = len(providers)
             total_models = sum(
                 len(provider_data.get("models", {}))
