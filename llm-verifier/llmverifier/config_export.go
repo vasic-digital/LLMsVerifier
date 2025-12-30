@@ -2667,11 +2667,45 @@ func createCorrectOpenCodeConfig(results []VerificationResult, options *ExportOp
 
 	for providerName, models := range providerModels {
 		fmt.Printf("DEBUG: Adding provider %s with %d models\n", providerName, len(models))
-		// Simple provider config as per OpenCode schema
+
+		// Build models array for this provider
+		modelsArray := make([]map[string]interface{}, 0, len(models))
+
+		for _, result := range models {
+			// Detect features
+			supportsBrotli := result.FeatureDetection.SupportsBrotli || result.ModelInfo.SupportsBrotli || detectBrotliSupport(result.ModelInfo.Endpoint)
+			supportsHTTP3 := result.FeatureDetection.SupportsHTTP3 || result.ModelInfo.SupportsHTTP3 || detectHTTP3Support(result.ModelInfo.Endpoint)
+			supportsToon := result.FeatureDetection.SupportsToon || result.ModelInfo.SupportsToon || detectToonSupport(result.ModelInfo.ID)
+			supportsStreaming := result.FeatureDetection.Streaming
+			isFreeProvider := isProviderFree(providerName)
+
+			// Format model name with suffixes
+			modelName := formatModelNameWithSuffixes(result.ModelInfo.ID, result, true)
+
+			modelConfig := map[string]interface{}{
+				"id":                result.ModelInfo.ID,
+				"name":              modelName,
+				"context_window":    result.ModelInfo.ContextWindow.TotalMaxTokens,
+				"max_output_tokens": result.ModelInfo.MaxOutputTokens,
+				"supports_brotli":   supportsBrotli,
+				"supports_http3":    supportsHTTP3,
+				"supports_toon":     supportsToon,
+				"supports_streaming": supportsStreaming,
+				"supports_vision":   result.ModelInfo.SupportsVision,
+				"supports_audio":    result.ModelInfo.SupportsAudio,
+				"supports_reasoning": result.ModelInfo.SupportsReasoning,
+				"free_to_use":       isFreeProvider,
+				"verified":          true,
+			}
+			modelsArray = append(modelsArray, modelConfig)
+		}
+
+		// Provider config with models included
 		providerConfig := map[string]interface{}{
 			"apiKey":   getAPIKeyForProvider(providerName, options),
 			"disabled": false,
 			"provider": providerName,
+			"models":   modelsArray,
 		}
 		providersSection[providerName] = providerConfig
 
