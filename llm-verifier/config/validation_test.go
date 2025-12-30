@@ -732,3 +732,336 @@ func TestConfigMerge(t *testing.T) {
 	assert.Equal(t, "9090", merged.API.Port)     // Overridden
 	assert.Equal(t, 100, merged.API.RateLimit) // Kept from default
 }
+
+// Test ValidationError
+func TestValidationError(t *testing.T) {
+	ve := ValidationError{
+		Field:   "api.port",
+		Message: "port is required",
+	}
+
+	errStr := ve.Error()
+	assert.Contains(t, errStr, "api.port")
+	assert.Contains(t, errStr, "port is required")
+}
+
+// Test ValidateConfig (the function that takes *Config)
+func TestValidateConfigFunc(t *testing.T) {
+	t.Run("valid config with defaults", func(t *testing.T) {
+		cfg := &Config{
+			Database: DatabaseConfig{
+				Path: "./test.db",
+			},
+			LLMs: []LLMConfig{
+				{
+					Name:     "Test LLM",
+					Endpoint: "https://api.openai.com/v1",
+					APIKey:   "test-key",
+				},
+			},
+		}
+
+		result := ValidateConfig(cfg)
+		assert.True(t, result.Valid)
+		assert.Empty(t, result.Errors)
+
+		// Check that defaults were set
+		assert.Equal(t, "gpt-3.5-turbo", cfg.Global.DefaultModel)
+		assert.Equal(t, "8080", cfg.API.Port)
+	})
+
+	t.Run("config with validation errors", func(t *testing.T) {
+		cfg := &Config{
+			Database: DatabaseConfig{
+				Path: "", // Invalid - empty path
+			},
+			API: APIConfig{
+				Port:      "invalid",
+				JWTSecret: "short", // Too short
+			},
+		}
+
+		result := ValidateConfig(cfg)
+		assert.False(t, result.Valid)
+		assert.NotEmpty(t, result.Errors)
+	})
+
+	t.Run("config with invalid LLM endpoint", func(t *testing.T) {
+		cfg := &Config{
+			Database: DatabaseConfig{
+				Path: "./test.db",
+			},
+			LLMs: []LLMConfig{
+				{
+					Name:     "Invalid LLM",
+					Endpoint: "not-a-url",
+					APIKey:   "test-key",
+				},
+			},
+		}
+
+		result := ValidateConfig(cfg)
+		assert.False(t, result.Valid)
+	})
+}
+
+// Test validateGlobalConfig internal function
+func TestValidateGlobalConfigInternal(t *testing.T) {
+	t.Run("valid global config", func(t *testing.T) {
+		cfg := &GlobalConfig{
+			DefaultModel: "gpt-4",
+			Timeout:      30 * time.Second,
+		}
+		result := validateGlobalConfig(cfg)
+		assert.True(t, result.Valid)
+	})
+
+	t.Run("invalid base URL scheme", func(t *testing.T) {
+		cfg := &GlobalConfig{
+			BaseURL:      "ftp://invalid.com",
+			DefaultModel: "gpt-4",
+			Timeout:      30 * time.Second,
+		}
+		result := validateGlobalConfig(cfg)
+		assert.False(t, result.Valid)
+	})
+}
+
+// Test validateLLMConfig internal function
+func TestValidateLLMConfigInternal(t *testing.T) {
+	t.Run("valid LLM config", func(t *testing.T) {
+		cfg := LLMConfig{
+			Name:     "Test",
+			Endpoint: "https://api.test.com",
+			APIKey:   "key",
+		}
+		result := validateLLMConfig(cfg, 0)
+		assert.True(t, result.Valid)
+	})
+
+	t.Run("well-known provider without API key", func(t *testing.T) {
+		cfg := LLMConfig{
+			Name:     "OpenAI",
+			Endpoint: "https://api.openai.com/v1",
+			APIKey:   "", // Well-known provider allows empty key in config
+		}
+		result := validateLLMConfig(cfg, 0)
+		assert.True(t, result.Valid) // Should pass for well-known provider
+	})
+
+	t.Run("custom endpoint without API key", func(t *testing.T) {
+		cfg := LLMConfig{
+			Name:     "Custom",
+			Endpoint: "https://custom.api.com",
+			APIKey:   "",
+		}
+		result := validateLLMConfig(cfg, 0)
+		assert.False(t, result.Valid) // Should fail for custom endpoint
+	})
+}
+
+// Test validateDatabaseConfig internal function
+func TestValidateDatabaseConfigInternal(t *testing.T) {
+	t.Run("valid database config", func(t *testing.T) {
+		cfg := &DatabaseConfig{
+			Path: "./test.db",
+		}
+		result := validateDatabaseConfig(cfg)
+		assert.True(t, result.Valid)
+	})
+
+	t.Run("empty database path", func(t *testing.T) {
+		cfg := &DatabaseConfig{
+			Path: "",
+		}
+		result := validateDatabaseConfig(cfg)
+		assert.False(t, result.Valid)
+	})
+}
+
+// Test validateAPIConfig internal function
+func TestValidateAPIConfigInternal(t *testing.T) {
+	t.Run("valid API config", func(t *testing.T) {
+		cfg := &APIConfig{
+			Port:      "8080",
+			JWTSecret: "a-very-secure-secret-key",
+			RateLimit: 100,
+		}
+		result := validateAPIConfig(cfg)
+		assert.True(t, result.Valid)
+	})
+
+	t.Run("invalid port format", func(t *testing.T) {
+		cfg := &APIConfig{
+			Port:      "not-a-number",
+			JWTSecret: "a-very-secure-secret-key",
+		}
+		result := validateAPIConfig(cfg)
+		assert.False(t, result.Valid)
+	})
+
+	t.Run("port out of range", func(t *testing.T) {
+		cfg := &APIConfig{
+			Port:      "99999",
+			JWTSecret: "a-very-secure-secret-key",
+		}
+		result := validateAPIConfig(cfg)
+		assert.False(t, result.Valid)
+	})
+}
+
+// Test validateMonitoringConfig internal function
+func TestValidateMonitoringConfigInternal(t *testing.T) {
+	t.Run("metrics enabled without port", func(t *testing.T) {
+		cfg := &MonitoringConfig{
+			EnableMetrics: true,
+			MetricsPort:   "",
+		}
+		result := validateMonitoringConfig(cfg)
+		assert.False(t, result.Valid)
+	})
+
+	t.Run("health enabled without port", func(t *testing.T) {
+		cfg := &MonitoringConfig{
+			EnableHealth: true,
+			HealthPort:   "",
+		}
+		result := validateMonitoringConfig(cfg)
+		assert.False(t, result.Valid)
+	})
+
+	t.Run("valid monitoring config", func(t *testing.T) {
+		cfg := &MonitoringConfig{
+			EnableMetrics: true,
+			MetricsPort:   "9090",
+			EnableHealth:  true,
+			HealthPort:    "9091",
+		}
+		result := validateMonitoringConfig(cfg)
+		assert.True(t, result.Valid)
+	})
+}
+
+// Test isWellKnownProvider
+func TestIsWellKnownProvider(t *testing.T) {
+	tests := []struct {
+		endpoint string
+		expected bool
+	}{
+		{"https://api.openai.com/v1", true},
+		{"https://api.anthropic.com/v1", true},
+		{"https://generativelanguage.googleapis.com/v1", true},
+		{"https://api.replicate.com/v1", true},
+		{"https://api-inference.huggingface.co/models", true},
+		{"https://custom.api.com", false},
+		{"https://my-local-llm.com", false},
+		{"not-a-url", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.endpoint, func(t *testing.T) {
+			result := isWellKnownProvider(tt.endpoint)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// Test ValidationResult methods
+func TestValidationResult(t *testing.T) {
+	t.Run("addError", func(t *testing.T) {
+		result := &ValidationResult{Valid: true, Errors: []ValidationError{}}
+		result.addError("field1", "error1")
+
+		assert.False(t, result.Valid)
+		assert.Len(t, result.Errors, 1)
+		assert.Equal(t, "field1", result.Errors[0].Field)
+	})
+
+	t.Run("merge", func(t *testing.T) {
+		result1 := &ValidationResult{Valid: true, Errors: []ValidationError{}}
+		result2 := &ValidationResult{
+			Valid: false,
+			Errors: []ValidationError{
+				{Field: "field1", Message: "error1"},
+			},
+		}
+
+		result1.merge(result2)
+		assert.False(t, result1.Valid)
+		assert.Len(t, result1.Errors, 1)
+	})
+
+	t.Run("Error string", func(t *testing.T) {
+		result := &ValidationResult{Valid: true}
+		assert.Empty(t, result.Error())
+
+		result.addError("field1", "error1")
+		errStr := result.Error()
+		assert.Contains(t, errStr, "validation failed")
+		assert.Contains(t, errStr, "field1")
+	})
+}
+
+// Test setDefaults
+func TestSetDefaults(t *testing.T) {
+	cfg := &Config{}
+	setDefaults(cfg)
+
+	assert.Equal(t, 30*time.Second, cfg.Global.Timeout)
+	assert.Equal(t, 30*time.Second, cfg.Timeout)
+	assert.Equal(t, 3, cfg.Global.MaxRetries)
+	assert.Equal(t, "gpt-3.5-turbo", cfg.Global.DefaultModel)
+	assert.Equal(t, 10, cfg.Concurrency)
+	assert.Equal(t, "8080", cfg.API.Port)
+	assert.Equal(t, "info", cfg.Logging.Level)
+	assert.Equal(t, "json", cfg.Logging.Format)
+	assert.Equal(t, "stdout", cfg.Logging.Output)
+}
+
+// Test validateLoggingConfig internal function
+func TestValidateLoggingConfigInternal(t *testing.T) {
+	t.Run("valid logging config", func(t *testing.T) {
+		cfg := &LoggingConfig{
+			Level:  "info",
+			Format: "json",
+			Output: "stdout",
+		}
+		result := validateLoggingConfig(cfg)
+		assert.True(t, result.Valid)
+	})
+
+	t.Run("file output without path", func(t *testing.T) {
+		cfg := &LoggingConfig{
+			Level:  "info",
+			Format: "json",
+			Output: "file",
+		}
+		result := validateLoggingConfig(cfg)
+		assert.False(t, result.Valid)
+	})
+}
+
+// Test ValidateAndFixConfig
+func TestValidateAndFixConfig(t *testing.T) {
+	cfg := &Config{
+		Global: GlobalConfig{
+			DefaultModel: "", // Will be fixed
+		},
+		API: APIConfig{
+			Port: "", // Will be fixed
+		},
+		Database: DatabaseConfig{
+			Path: "", // Will be fixed
+		},
+	}
+
+	result := ValidateAndFixConfig(cfg)
+
+	// Should have set defaults
+	assert.Equal(t, "gpt-3.5-turbo", cfg.Global.DefaultModel)
+	assert.Equal(t, "8080", cfg.API.Port)
+	assert.Equal(t, "./llm-verifier.db", cfg.Database.Path)
+
+	// After fixes, should be valid
+	assert.True(t, result.Valid)
+}
