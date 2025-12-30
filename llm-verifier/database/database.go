@@ -638,6 +638,20 @@ func (d *Database) initializeSchema() error {
 		FOREIGN KEY (target_id) REFERENCES models(id) ON DELETE CASCADE
 	);
 
+	-- Schedule runs table
+	CREATE TABLE IF NOT EXISTS schedule_runs (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		schedule_id INTEGER NOT NULL,
+		started_at TIMESTAMP NOT NULL,
+		completed_at TIMESTAMP,
+		status TEXT NOT NULL,
+		results_count INTEGER DEFAULT 0,
+		errors_count INTEGER DEFAULT 0,
+		error_message TEXT,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (schedule_id) REFERENCES schedules(id) ON DELETE CASCADE
+	);
+
 	-- Configuration exports table
 	CREATE TABLE IF NOT EXISTS config_exports (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -675,6 +689,32 @@ func (d *Database) initializeSchema() error {
 		FOREIGN KEY (verification_result_id) REFERENCES verification_results(id) ON DELETE CASCADE
 	);
 
+	-- Verification scores table
+	CREATE TABLE IF NOT EXISTS verification_scores (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		model_id INTEGER NOT NULL,
+		verification_result_id INTEGER,
+		score INTEGER NOT NULL,
+		score_type TEXT NOT NULL,
+		scoring_method TEXT NOT NULL,
+		category TEXT NOT NULL,
+		code_correctness_score INTEGER,
+		code_quality_score INTEGER,
+		code_speed_score INTEGER,
+		error_handling_score INTEGER,
+		context_understanding_score INTEGER,
+		evidence TEXT,
+		benchmark_version TEXT NOT NULL,
+		scored_by TEXT NOT NULL,
+		confidence_level INTEGER NOT NULL,
+		scored_at TIMESTAMP NOT NULL,
+		expires_at TIMESTAMP,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE CASCADE,
+		FOREIGN KEY (verification_result_id) REFERENCES verification_results(id) ON DELETE SET NULL
+	);
+
 	-- Basic indexes
 	CREATE INDEX IF NOT EXISTS idx_providers_name ON providers(name);
 	CREATE INDEX IF NOT EXISTS idx_providers_endpoint ON providers(endpoint);
@@ -694,6 +734,9 @@ func (d *Database) initializeSchema() error {
 	CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at);
 	CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON logs(timestamp);
 	CREATE INDEX IF NOT EXISTS idx_logs_level ON logs(level);
+	CREATE INDEX IF NOT EXISTS idx_verification_scores_model ON verification_scores(model_id);
+	CREATE INDEX IF NOT EXISTS idx_verification_scores_score_type ON verification_scores(score_type);
+	CREATE INDEX IF NOT EXISTS idx_verification_scores_scored_at ON verification_scores(scored_at);
 	`
 
 	_, err := d.conn.Exec(schema)

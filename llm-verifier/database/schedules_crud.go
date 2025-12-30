@@ -467,7 +467,7 @@ func (d *Database) GetScheduleRun(id int64) (*ScheduleRun, error) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil
+			return nil, fmt.Errorf("schedule run with id %d not found", id)
 		}
 		return nil, fmt.Errorf("failed to scan schedule run: %w", err)
 	}

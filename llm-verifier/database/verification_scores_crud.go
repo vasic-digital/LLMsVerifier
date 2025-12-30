@@ -282,7 +282,7 @@ func (d *Database) UpdateVerificationScore(score *VerificationScore) error {
 			code_correctness_score = ?, code_quality_score = ?, code_speed_score = ?,
 			error_handling_score = ?, context_understanding_score = ?,
 			evidence = ?, benchmark_version = ?, scored_by = ?, confidence_level = ?,
-			scored_at = ?, expires_at = ?, updated_at = NOW()
+			scored_at = ?, expires_at = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
 	`
 
@@ -387,7 +387,7 @@ func (d *Database) GetTopScoringModels(scoreType string, limit int) ([]*Verifica
 			context_understanding_score, evidence, benchmark_version, scored_by, confidence_level,
 			scored_at, expires_at, created_at, updated_at
 		FROM verification_scores
-		WHERE score_type = ? AND (expires_at IS NULL OR expires_at > NOW())
+		WHERE score_type = ? AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
 		ORDER BY score DESC, scored_at DESC
 		LIMIT ?
 	`
