@@ -1860,10 +1860,19 @@ func validateCorrectOpenCodeConfigStructure(config map[string]interface{}) error
 
 // validateOpenCodeConfigMap validates OpenCode config from map[string]interface{}
 // This is used during export to validate before writing
+// OpenCode conventions:
+// - apiKey must be a string (empty string is valid - OpenCode reads from env vars automatically)
+// - providers must have: apiKey, provider, disabled fields
+// - agents must have at least: coder with model and maxTokens
+// - model references must be in format "provider.modelId"
 func validateOpenCodeConfigMap(config map[string]interface{}) error {
 	// Check schema
-	if _, hasSchema := config["$schema"]; !hasSchema {
+	schema, hasSchema := config["$schema"]
+	if !hasSchema {
 		return fmt.Errorf("missing $schema field")
+	}
+	if schemaStr, ok := schema.(string); !ok || schemaStr == "" {
+		return fmt.Errorf("$schema must be a non-empty string")
 	}
 
 	// Check required sections
@@ -1891,9 +1900,31 @@ func validateOpenCodeConfigMap(config map[string]interface{}) error {
 			return fmt.Errorf("provider '%s' must be an object", providerName)
 		}
 
-		// Check required provider fields
-		if _, hasAPIKey := provider["apiKey"]; !hasAPIKey {
+		// Check apiKey field exists and is a string (empty string is valid)
+		// OpenCode reads from environment variables automatically when apiKey is empty
+		// e.g., OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.
+		apiKeyVal, hasAPIKey := provider["apiKey"]
+		if !hasAPIKey {
 			return fmt.Errorf("provider '%s' missing apiKey field", providerName)
+		}
+		if _, isString := apiKeyVal.(string); !isString {
+			return fmt.Errorf("provider '%s' apiKey must be a string (empty string is valid for env var fallback)", providerName)
+		}
+		// Validate apiKey doesn't use unsupported syntax
+		if apiKeyStr, ok := apiKeyVal.(string); ok {
+			if strings.HasPrefix(apiKeyStr, "${") {
+				return fmt.Errorf("provider '%s' apiKey uses unsupported ${VAR} syntax - use empty string for env var fallback", providerName)
+			}
+		}
+
+		// Check disabled field
+		if _, hasDisabled := provider["disabled"]; !hasDisabled {
+			return fmt.Errorf("provider '%s' missing disabled field", providerName)
+		}
+
+		// Check provider field
+		if _, hasProvider := provider["provider"]; !hasProvider {
+			return fmt.Errorf("provider '%s' missing provider field", providerName)
 		}
 
 		// Check for models
@@ -1909,6 +1940,18 @@ func validateOpenCodeConfigMap(config map[string]interface{}) error {
 						return fmt.Errorf("provider '%s' model %d missing name field", providerName, i)
 					}
 				}
+			} else if modelsSlice, ok := models.([]interface{}); ok {
+				totalModels += len(modelsSlice)
+				for i, modelData := range modelsSlice {
+					if model, ok := modelData.(map[string]interface{}); ok {
+						if _, hasID := model["id"]; !hasID {
+							return fmt.Errorf("provider '%s' model %d missing id field", providerName, i)
+						}
+						if _, hasName := model["name"]; !hasName {
+							return fmt.Errorf("provider '%s' model %d missing name field", providerName, i)
+						}
+					}
+				}
 			}
 		}
 	}
@@ -1920,8 +1963,25 @@ func validateOpenCodeConfigMap(config map[string]interface{}) error {
 	}
 
 	// At least coder agent is required
-	if _, hasCoder := agents["coder"]; !hasCoder {
+	coderAgent, hasCoder := agents["coder"]
+	if !hasCoder {
 		return fmt.Errorf("missing required agent: coder")
+	}
+
+	// Validate coder agent has model and maxTokens
+	if coder, ok := coderAgent.(map[string]interface{}); ok {
+		if _, hasModel := coder["model"]; !hasModel {
+			return fmt.Errorf("coder agent missing model field")
+		}
+		if _, hasMaxTokens := coder["maxTokens"]; !hasMaxTokens {
+			return fmt.Errorf("coder agent missing maxTokens field")
+		}
+		// Validate model reference format (provider.modelId)
+		if modelRef, ok := coder["model"].(string); ok {
+			if !strings.Contains(modelRef, ".") {
+				return fmt.Errorf("coder agent model reference must be in format 'provider.modelId', got '%s'", modelRef)
+			}
+		}
 	}
 
 	fmt.Printf("✅ OpenCode config validation passed: %d providers, %d models\n", len(providers), totalModels)
@@ -2834,11 +2894,10 @@ func createCorrectOpenCodeConfig(results []VerificationResult, options *ExportOp
 			modelsArray = append(modelsArray, modelConfig)
 		}
 
-		// Get API key for provider (use environment variable reference)
-		apiKey := getAPIKeyForProvider(providerName, options)
-		if apiKey == "" {
-			apiKey = fmt.Sprintf("${%s_API_KEY}", strings.ToUpper(providerName))
-		}
+		// OpenCode reads from environment variables automatically when apiKey is empty
+		// e.g., OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.
+		// IMPORTANT: OpenCode does NOT support ${VAR} syntax - always use empty string
+		apiKey := "" // OpenCode will read from env vars automatically
 
 		// Provider config with models and API key
 		providerConfig := map[string]interface{}{

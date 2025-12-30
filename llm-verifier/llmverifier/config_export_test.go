@@ -78,8 +78,8 @@ func TestOpenCodeConfigExport(t *testing.T) {
 	if !ok {
 		t.Fatal("Expected openai provider to be a map")
 	}
-	if apiKey, ok := openaiProvider["apiKey"].(string); !ok || apiKey != "${OPENAI_API_KEY}" {
-		t.Errorf("Expected API key '${OPENAI_API_KEY}', got '%v'", openaiProvider["apiKey"])
+	if apiKey, ok := openaiProvider["apiKey"].(string); !ok || apiKey != "" {
+		t.Errorf("Expected empty API key (OpenCode reads from env vars), got '%v'", openaiProvider["apiKey"])
 	}
 
 	// Check Anthropic provider
@@ -91,8 +91,8 @@ func TestOpenCodeConfigExport(t *testing.T) {
 	if !ok {
 		t.Fatal("Expected anthropic provider to be a map")
 	}
-	if apiKey, ok := anthropicProvider["apiKey"].(string); !ok || apiKey != "${ANTHROPIC_API_KEY}" {
-		t.Errorf("Expected API key '${ANTHROPIC_API_KEY}', got '%v'", anthropicProvider["apiKey"])
+	if apiKey, ok := anthropicProvider["apiKey"].(string); !ok || apiKey != "" {
+		t.Errorf("Expected empty API key (OpenCode reads from env vars), got '%v'", anthropicProvider["apiKey"])
 	}
 
 	// Check agents section

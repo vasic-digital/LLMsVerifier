@@ -719,10 +719,9 @@ func TestOpenCodeProviderWithModels(t *testing.T) {
 	assert.Contains(t, model1, "verified", "Model should have verified")
 	assert.Contains(t, model1["name"].(string), "(llmsvd)", "Model name should have (llmsvd) suffix")
 
-	// Verify API key is environment variable reference
+	// Verify API key is empty string (OpenCode reads from env vars automatically)
 	apiKey := openaiProvider["apiKey"].(string)
-	assert.Contains(t, apiKey, "${", "API key should be environment variable reference")
-	assert.Contains(t, apiKey, "OPENAI", "API key should reference OPENAI")
+	assert.Equal(t, "", apiKey, "API key should be empty - OpenCode reads from env vars automatically")
 }
 
 // TestCrushProviderWithModels tests that Crush providers include models with features
@@ -905,12 +904,12 @@ func TestOpenCodeValidation(t *testing.T) {
 		errorMsg    string
 	}{
 		{
-			name: "valid config with all required fields",
+			name: "valid config with empty apiKey (OpenCode reads from env vars)",
 			config: map[string]interface{}{
 				"$schema": "./opencode-schema.json",
 				"providers": map[string]interface{}{
 					"openai": map[string]interface{}{
-						"apiKey":   "${OPENAI_API_KEY}",
+						"apiKey":   "", // Empty is valid - OpenCode reads from OPENAI_API_KEY env var
 						"disabled": false,
 						"provider": "openai",
 						"models": []map[string]interface{}{
@@ -923,6 +922,24 @@ func TestOpenCodeValidation(t *testing.T) {
 				},
 			},
 			expectError: false,
+		},
+		{
+			name: "invalid apiKey with ${VAR} syntax - not supported by OpenCode",
+			config: map[string]interface{}{
+				"$schema": "./opencode-schema.json",
+				"providers": map[string]interface{}{
+					"openai": map[string]interface{}{
+						"apiKey":   "${OPENAI_API_KEY}", // Invalid - OpenCode doesn't parse this
+						"disabled": false,
+						"provider": "openai",
+					},
+				},
+				"agents": map[string]interface{}{
+					"coder": map[string]interface{}{"model": "openai.gpt-4o", "maxTokens": 5000},
+				},
+			},
+			expectError: true,
+			errorMsg:    "unsupported ${VAR} syntax",
 		},
 		{
 			name: "missing schema",
@@ -955,7 +972,7 @@ func TestOpenCodeValidation(t *testing.T) {
 			errorMsg:    "must contain at least one provider",
 		},
 		{
-			name: "provider missing apiKey",
+			name: "provider missing apiKey field",
 			config: map[string]interface{}{
 				"$schema": "./opencode-schema.json",
 				"providers": map[string]interface{}{
@@ -965,11 +982,45 @@ func TestOpenCodeValidation(t *testing.T) {
 					},
 				},
 				"agents": map[string]interface{}{
-					"coder": map[string]interface{}{},
+					"coder": map[string]interface{}{"model": "openai.gpt-4o", "maxTokens": 5000},
 				},
 			},
 			expectError: true,
 			errorMsg:    "missing apiKey",
+		},
+		{
+			name: "provider missing disabled field",
+			config: map[string]interface{}{
+				"$schema": "./opencode-schema.json",
+				"providers": map[string]interface{}{
+					"openai": map[string]interface{}{
+						"apiKey":   "",
+						"provider": "openai",
+					},
+				},
+				"agents": map[string]interface{}{
+					"coder": map[string]interface{}{"model": "openai.gpt-4o", "maxTokens": 5000},
+				},
+			},
+			expectError: true,
+			errorMsg:    "missing disabled field",
+		},
+		{
+			name: "provider missing provider field",
+			config: map[string]interface{}{
+				"$schema": "./opencode-schema.json",
+				"providers": map[string]interface{}{
+					"openai": map[string]interface{}{
+						"apiKey":   "",
+						"disabled": false,
+					},
+				},
+				"agents": map[string]interface{}{
+					"coder": map[string]interface{}{"model": "openai.gpt-4o", "maxTokens": 5000},
+				},
+			},
+			expectError: true,
+			errorMsg:    "missing provider field",
 		},
 		{
 			name: "missing coder agent",
@@ -977,8 +1028,9 @@ func TestOpenCodeValidation(t *testing.T) {
 				"$schema": "./opencode-schema.json",
 				"providers": map[string]interface{}{
 					"openai": map[string]interface{}{
-						"apiKey":   "${OPENAI_API_KEY}",
+						"apiKey":   "",
 						"disabled": false,
+						"provider": "openai",
 					},
 				},
 				"agents": map[string]interface{}{
@@ -987,6 +1039,60 @@ func TestOpenCodeValidation(t *testing.T) {
 			},
 			expectError: true,
 			errorMsg:    "missing required agent: coder",
+		},
+		{
+			name: "coder agent missing model field",
+			config: map[string]interface{}{
+				"$schema": "./opencode-schema.json",
+				"providers": map[string]interface{}{
+					"openai": map[string]interface{}{
+						"apiKey":   "",
+						"disabled": false,
+						"provider": "openai",
+					},
+				},
+				"agents": map[string]interface{}{
+					"coder": map[string]interface{}{"maxTokens": 5000},
+				},
+			},
+			expectError: true,
+			errorMsg:    "coder agent missing model field",
+		},
+		{
+			name: "coder agent missing maxTokens field",
+			config: map[string]interface{}{
+				"$schema": "./opencode-schema.json",
+				"providers": map[string]interface{}{
+					"openai": map[string]interface{}{
+						"apiKey":   "",
+						"disabled": false,
+						"provider": "openai",
+					},
+				},
+				"agents": map[string]interface{}{
+					"coder": map[string]interface{}{"model": "openai.gpt-4o"},
+				},
+			},
+			expectError: true,
+			errorMsg:    "coder agent missing maxTokens field",
+		},
+		{
+			name: "coder agent invalid model reference format",
+			config: map[string]interface{}{
+				"$schema": "./opencode-schema.json",
+				"providers": map[string]interface{}{
+					"openai": map[string]interface{}{
+						"apiKey":   "",
+						"disabled": false,
+						"provider": "openai",
+					},
+				},
+				"agents": map[string]interface{}{
+					"coder": map[string]interface{}{"model": "gpt-4o", "maxTokens": 5000}, // Missing provider prefix
+				},
+			},
+			expectError: true,
+			errorMsg:    "must be in format 'provider.modelId'",
 		},
 	}
 
@@ -1007,12 +1113,12 @@ func TestOpenCodeValidation(t *testing.T) {
 
 // TestOpenCodeFileValidation tests OpenCode config file validation
 func TestOpenCodeFileValidation(t *testing.T) {
-	// Create a valid config file
+	// Create a valid config file with empty apiKey (OpenCode reads from env vars)
 	validConfig := map[string]interface{}{
 		"$schema": "./opencode-schema.json",
 		"providers": map[string]interface{}{
 			"anthropic": map[string]interface{}{
-				"apiKey":   "${ANTHROPIC_API_KEY}",
+				"apiKey":   "", // Empty - OpenCode reads from ANTHROPIC_API_KEY env var
 				"disabled": false,
 				"provider": "anthropic",
 				"baseUrl":  "https://api.anthropic.com/v1",
@@ -1108,10 +1214,9 @@ func TestOpenCodeExportWithValidation(t *testing.T) {
 	providers := config["providers"].(map[string]interface{})
 	openai := providers["openai"].(map[string]interface{})
 
-	// Check API key is set
+	// Check API key is empty (OpenCode reads from env vars automatically)
 	apiKey := openai["apiKey"].(string)
-	assert.NotEmpty(t, apiKey, "API key should be set")
-	assert.Contains(t, apiKey, "OPENAI", "API key should reference environment variable")
+	assert.Equal(t, "", apiKey, "API key should be empty - OpenCode reads from env vars like OPENAI_API_KEY automatically")
 
 	// Check models exist
 	models := openai["models"].([]interface{})
