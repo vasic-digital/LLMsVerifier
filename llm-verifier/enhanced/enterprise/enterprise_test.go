@@ -108,31 +108,40 @@ func TestMultiTenantManager(t *testing.T) {
 
 func TestSAMLAuthenticator(t *testing.T) {
 	config := SAMLConfig{
-		IdentityProviderURL: "https://idp.example.com/saml",
+		IdentityProviderURL: "https://idp.example.com",
 		SSOURL:              "https://app.example.com/saml/sso",
-		CertificateFile:     "/path/to/cert.pem",
-		KeyFile:             "/path/to/key.pem",
+		// Note: CertificateFile intentionally omitted for testing without certificate validation
 		AttributeMapping: map[string]string{
-			"username":  "NameID",
-			"email":     "EmailAddress",
-			"firstName": "FirstName",
-			"lastName":  "LastName",
+			"username":   "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name",
+			"email":      "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
+			"first_name": "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname",
+			"last_name":  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname",
 		},
-		EntityID: "https://app.example.com",
+		EntityID:         "https://app.example.com",
+		AllowedAudiences: []string{"https://app.example.com"},
 	}
 
 	saml := NewSAMLAuthenticator(config)
 
-	// Test SAML response processing
-	samlResponse := "<samlResponse>mock</samlResponse>"
-	user, err := saml.ProcessSAMLResponse(samlResponse)
-	if err != nil {
-		t.Fatalf("SAML processing failed: %v", err)
+	// Verify SAML is configured
+	if !saml.IsConfigured() {
+		t.Errorf("Expected SAML to be configured")
 	}
 
-	if user.Username != "saml_user" {
-		t.Errorf("Expected username saml_user, got %s", user.Username)
+	// Verify login URL
+	loginURL := saml.GetLoginURL("")
+	if loginURL != "https://app.example.com/saml/sso" {
+		t.Errorf("Expected login URL https://app.example.com/saml/sso, got %s", loginURL)
 	}
+
+	// Test with invalid SAML response (should fail with proper error)
+	_, err := saml.ProcessSAMLResponse("invalid-base64-data")
+	if err == nil {
+		t.Error("Expected error for invalid SAML response, got nil")
+	}
+
+	// Note: Valid SAML response processing is tested in saml_test.go
+	// with TestProcessSAMLResponse_ValidResponse
 }
 
 func TestEnterpriseManager(t *testing.T) {

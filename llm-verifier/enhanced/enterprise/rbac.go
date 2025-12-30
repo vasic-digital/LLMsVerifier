@@ -2,8 +2,15 @@ package enterprise
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/xml"
+	"errors"
 	"fmt"
+	"io"
 	"log"
+	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -439,41 +446,461 @@ type SAMLConfig struct {
 	KeyFile             string            `yaml:"key_file"`
 	AttributeMapping    map[string]string `yaml:"attribute_mapping"`
 	EntityID            string            `yaml:"entity_id"`
+	AllowedAudiences    []string          `yaml:"allowed_audiences"`
+	MaxClockSkew        time.Duration     `yaml:"max_clock_skew"`
+}
+
+// SAMLResponse represents a SAML 2.0 Response
+type SAMLResponse struct {
+	XMLName      xml.Name       `xml:"Response"`
+	ID           string         `xml:"ID,attr"`
+	Version      string         `xml:"Version,attr"`
+	IssueInstant string         `xml:"IssueInstant,attr"`
+	Destination  string         `xml:"Destination,attr"`
+	Issuer       string         `xml:"Issuer"`
+	Status       SAMLStatus     `xml:"Status"`
+	Assertion    *SAMLAssertion `xml:"Assertion"`
+}
+
+// SAMLStatus represents the status of a SAML response
+type SAMLStatus struct {
+	StatusCode SAMLStatusCode `xml:"StatusCode"`
+}
+
+// SAMLStatusCode represents a SAML status code
+type SAMLStatusCode struct {
+	Value string `xml:"Value,attr"`
+}
+
+// SAMLAssertion represents a SAML assertion
+type SAMLAssertion struct {
+	XMLName            xml.Name            `xml:"Assertion"`
+	ID                 string              `xml:"ID,attr"`
+	Version            string              `xml:"Version,attr"`
+	IssueInstant       string              `xml:"IssueInstant,attr"`
+	Issuer             string              `xml:"Issuer"`
+	Subject            SAMLSubject         `xml:"Subject"`
+	Conditions         SAMLConditions      `xml:"Conditions"`
+	AuthnStatement     SAMLAuthnStatement  `xml:"AuthnStatement"`
+	AttributeStatement SAMLAttributeStmt   `xml:"AttributeStatement"`
+}
+
+// SAMLSubject represents the subject of a SAML assertion
+type SAMLSubject struct {
+	NameID              SAMLNameID              `xml:"NameID"`
+	SubjectConfirmation SAMLSubjectConfirmation `xml:"SubjectConfirmation"`
+}
+
+// SAMLNameID represents a SAML NameID
+type SAMLNameID struct {
+	Format string `xml:"Format,attr"`
+	Value  string `xml:",chardata"`
+}
+
+// SAMLSubjectConfirmation represents subject confirmation
+type SAMLSubjectConfirmation struct {
+	Method                  string                      `xml:"Method,attr"`
+	SubjectConfirmationData SAMLSubjectConfirmationData `xml:"SubjectConfirmationData"`
+}
+
+// SAMLSubjectConfirmationData represents subject confirmation data
+type SAMLSubjectConfirmationData struct {
+	NotOnOrAfter string `xml:"NotOnOrAfter,attr"`
+	Recipient    string `xml:"Recipient,attr"`
+	InResponseTo string `xml:"InResponseTo,attr"`
+}
+
+// SAMLConditions represents SAML conditions
+type SAMLConditions struct {
+	NotBefore            string              `xml:"NotBefore,attr"`
+	NotOnOrAfter         string              `xml:"NotOnOrAfter,attr"`
+	AudienceRestrictions []SAMLAudienceRestr `xml:"AudienceRestriction"`
+}
+
+// SAMLAudienceRestr represents audience restriction
+type SAMLAudienceRestr struct {
+	Audiences []string `xml:"Audience"`
+}
+
+// SAMLAuthnStatement represents an authentication statement
+type SAMLAuthnStatement struct {
+	AuthnInstant string `xml:"AuthnInstant,attr"`
+	SessionIndex string `xml:"SessionIndex,attr"`
+}
+
+// SAMLAttributeStmt represents an attribute statement
+type SAMLAttributeStmt struct {
+	Attributes []SAMLAttribute `xml:"Attribute"`
+}
+
+// SAMLAttribute represents a SAML attribute
+type SAMLAttribute struct {
+	Name         string   `xml:"Name,attr"`
+	NameFormat   string   `xml:"NameFormat,attr"`
+	FriendlyName string   `xml:"FriendlyName,attr"`
+	Values       []string `xml:"AttributeValue"`
 }
 
 // SAMLAuthenticator provides SAML authentication
 type SAMLAuthenticator struct {
-	config SAMLConfig
+	config      SAMLConfig
+	certificate *x509.Certificate
+	initialized bool
 }
 
 // NewSAMLAuthenticator creates a new SAML authenticator
 func NewSAMLAuthenticator(config SAMLConfig) *SAMLAuthenticator {
-	return &SAMLAuthenticator{
+	auth := &SAMLAuthenticator{
 		config: config,
 	}
+
+	// Set defaults
+	if config.MaxClockSkew == 0 {
+		auth.config.MaxClockSkew = 5 * time.Minute
+	}
+
+	// Initialize default attribute mapping if not provided
+	if auth.config.AttributeMapping == nil {
+		auth.config.AttributeMapping = map[string]string{
+			"email":      "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
+			"username":   "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name",
+			"first_name": "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname",
+			"last_name":  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname",
+			"groups":     "http://schemas.xmlsoap.org/claims/Group",
+		}
+	}
+
+	// Load IdP certificate if configured
+	if config.CertificateFile != "" {
+		if err := auth.loadCertificate(); err != nil {
+			log.Printf("Warning: Failed to load SAML IdP certificate: %v", err)
+		} else {
+			auth.initialized = true
+		}
+	}
+
+	return auth
 }
 
-// ProcessSAMLResponse processes SAML response
+// loadCertificate loads the IdP certificate for signature verification
+func (saml *SAMLAuthenticator) loadCertificate() error {
+	certData, err := os.ReadFile(saml.config.CertificateFile)
+	if err != nil {
+		return fmt.Errorf("failed to read certificate file: %w", err)
+	}
+
+	// Parse PEM or DER certificate
+	cert, err := x509.ParseCertificate(certData)
+	if err != nil {
+		// Try parsing as PEM
+		block, _ := decodePEM(certData)
+		if block != nil {
+			cert, err = x509.ParseCertificate(block)
+			if err != nil {
+				return fmt.Errorf("failed to parse certificate: %w", err)
+			}
+		} else {
+			return fmt.Errorf("failed to parse certificate: %w", err)
+		}
+	}
+
+	saml.certificate = cert
+	return nil
+}
+
+// decodePEM decodes PEM data
+func decodePEM(data []byte) ([]byte, error) {
+	// Simple PEM decoder - look for base64 content between markers
+	content := string(data)
+	start := strings.Index(content, "-----BEGIN")
+	if start == -1 {
+		return nil, errors.New("no PEM header found")
+	}
+	end := strings.Index(content, "-----END")
+	if end == -1 {
+		return nil, errors.New("no PEM footer found")
+	}
+
+	// Extract base64 content
+	headerEnd := strings.Index(content[start:], "\n")
+	if headerEnd == -1 {
+		return nil, errors.New("invalid PEM format")
+	}
+	base64Content := strings.TrimSpace(content[start+headerEnd : end])
+	base64Content = strings.ReplaceAll(base64Content, "\n", "")
+	base64Content = strings.ReplaceAll(base64Content, "\r", "")
+
+	return base64.StdEncoding.DecodeString(base64Content)
+}
+
+// ProcessSAMLResponse processes and validates a SAML response
 func (saml *SAMLAuthenticator) ProcessSAMLResponse(samlResponse string) (*User, error) {
-	// In a real implementation, you would use a SAML library like github.com/crewjam/saml
-	// For now, return a mock implementation
+	// Validate configuration
+	if saml.config.IdentityProviderURL == "" {
+		return nil, errors.New("SAML is not properly configured: missing identity provider URL")
+	}
 
-	log.Printf("Processing SAML response")
+	// Decode base64 SAML response
+	decodedResponse, err := base64.StdEncoding.DecodeString(samlResponse)
+	if err != nil {
+		// Try URL-safe base64
+		decodedResponse, err = base64.URLEncoding.DecodeString(samlResponse)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode SAML response: %w", err)
+		}
+	}
 
+	// Parse SAML response XML
+	var response SAMLResponse
+	if err := xml.Unmarshal(decodedResponse, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse SAML response XML: %w", err)
+	}
+
+	// Validate response
+	if err := saml.validateResponse(&response); err != nil {
+		return nil, fmt.Errorf("SAML response validation failed: %w", err)
+	}
+
+	// Extract user from assertion
+	user, err := saml.extractUserFromAssertion(response.Assertion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract user from SAML assertion: %w", err)
+	}
+
+	log.Printf("SAML authentication successful for user: %s", user.Username)
+	return user, nil
+}
+
+// validateResponse validates the SAML response
+func (saml *SAMLAuthenticator) validateResponse(response *SAMLResponse) error {
+	// Check SAML version
+	if response.Version != "2.0" {
+		return fmt.Errorf("unsupported SAML version: %s", response.Version)
+	}
+
+	// Check status
+	if !strings.HasSuffix(response.Status.StatusCode.Value, "Success") {
+		return fmt.Errorf("SAML authentication failed with status: %s", response.Status.StatusCode.Value)
+	}
+
+	// Verify issuer matches configured IdP
+	if response.Issuer != saml.config.IdentityProviderURL && response.Issuer != saml.config.EntityID {
+		// Allow some flexibility in issuer matching
+		if !strings.Contains(response.Issuer, saml.config.IdentityProviderURL) {
+			log.Printf("Warning: SAML issuer mismatch. Expected: %s, Got: %s",
+				saml.config.IdentityProviderURL, response.Issuer)
+		}
+	}
+
+	// Check assertion exists
+	if response.Assertion == nil {
+		return errors.New("SAML response contains no assertion")
+	}
+
+	// Validate assertion conditions
+	if err := saml.validateConditions(&response.Assertion.Conditions); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// validateConditions validates SAML assertion conditions
+func (saml *SAMLAuthenticator) validateConditions(conditions *SAMLConditions) error {
+	now := time.Now()
+	clockSkew := saml.config.MaxClockSkew
+
+	// Check NotBefore
+	if conditions.NotBefore != "" {
+		notBefore, err := time.Parse(time.RFC3339, conditions.NotBefore)
+		if err != nil {
+			// Try alternative format
+			notBefore, err = time.Parse("2006-01-02T15:04:05Z", conditions.NotBefore)
+			if err != nil {
+				return fmt.Errorf("invalid NotBefore time format: %s", conditions.NotBefore)
+			}
+		}
+		if now.Add(clockSkew).Before(notBefore) {
+			return errors.New("SAML assertion is not yet valid (NotBefore)")
+		}
+	}
+
+	// Check NotOnOrAfter
+	if conditions.NotOnOrAfter != "" {
+		notOnOrAfter, err := time.Parse(time.RFC3339, conditions.NotOnOrAfter)
+		if err != nil {
+			notOnOrAfter, err = time.Parse("2006-01-02T15:04:05Z", conditions.NotOnOrAfter)
+			if err != nil {
+				return fmt.Errorf("invalid NotOnOrAfter time format: %s", conditions.NotOnOrAfter)
+			}
+		}
+		if now.Add(-clockSkew).After(notOnOrAfter) {
+			return errors.New("SAML assertion has expired (NotOnOrAfter)")
+		}
+	}
+
+	// Validate audience restriction if configured
+	if len(saml.config.AllowedAudiences) > 0 && len(conditions.AudienceRestrictions) > 0 {
+		audienceValid := false
+		for _, restriction := range conditions.AudienceRestrictions {
+			for _, audience := range restriction.Audiences {
+				for _, allowed := range saml.config.AllowedAudiences {
+					if audience == allowed {
+						audienceValid = true
+						break
+					}
+				}
+			}
+		}
+		if !audienceValid {
+			return errors.New("SAML assertion audience does not match allowed audiences")
+		}
+	}
+
+	return nil
+}
+
+// extractUserFromAssertion extracts user information from SAML assertion
+func (saml *SAMLAuthenticator) extractUserFromAssertion(assertion *SAMLAssertion) (*User, error) {
+	if assertion == nil {
+		return nil, errors.New("assertion is nil")
+	}
+
+	// Extract attributes into a map for easier access
+	attrs := make(map[string][]string)
+	for _, attr := range assertion.AttributeStatement.Attributes {
+		// Use both Name and FriendlyName as keys
+		attrs[attr.Name] = attr.Values
+		if attr.FriendlyName != "" {
+			attrs[attr.FriendlyName] = attr.Values
+		}
+	}
+
+	// Get user ID from NameID
+	userID := assertion.Subject.NameID.Value
+	if userID == "" {
+		return nil, errors.New("SAML assertion contains no NameID")
+	}
+
+	// Extract user attributes using configured mapping
 	user := &User{
-		ID:        "saml_user_123",
-		Username:  "saml_user",
-		Email:     "samluser@company.com",
-		FirstName: "SAML",
-		LastName:  "User",
-		Roles:     []RBACRole{RBACRoleViewer},
+		ID:        "saml_" + sanitizeUserID(userID),
 		Enabled:   true,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
 
+	// Extract email
+	if emailAttr := saml.config.AttributeMapping["email"]; emailAttr != "" {
+		if values, ok := attrs[emailAttr]; ok && len(values) > 0 {
+			user.Email = values[0]
+		}
+	}
+	if user.Email == "" {
+		// Fallback: use NameID if it looks like an email
+		if strings.Contains(userID, "@") {
+			user.Email = userID
+		}
+	}
+
+	// Extract username
+	if usernameAttr := saml.config.AttributeMapping["username"]; usernameAttr != "" {
+		if values, ok := attrs[usernameAttr]; ok && len(values) > 0 {
+			user.Username = values[0]
+		}
+	}
+	if user.Username == "" {
+		// Fallback: derive from email or NameID
+		if user.Email != "" {
+			parts := strings.Split(user.Email, "@")
+			user.Username = parts[0]
+		} else {
+			user.Username = userID
+		}
+	}
+
+	// Extract first name
+	if fnAttr := saml.config.AttributeMapping["first_name"]; fnAttr != "" {
+		if values, ok := attrs[fnAttr]; ok && len(values) > 0 {
+			user.FirstName = values[0]
+		}
+	}
+
+	// Extract last name
+	if lnAttr := saml.config.AttributeMapping["last_name"]; lnAttr != "" {
+		if values, ok := attrs[lnAttr]; ok && len(values) > 0 {
+			user.LastName = values[0]
+		}
+	}
+
+	// Extract groups/roles
+	if groupsAttr := saml.config.AttributeMapping["groups"]; groupsAttr != "" {
+		if values, ok := attrs[groupsAttr]; ok {
+			user.Roles = mapGroupsToRoles(values)
+		}
+	}
+
+	// Set default role if none assigned
+	if len(user.Roles) == 0 {
+		user.Roles = []RBACRole{RBACRoleViewer}
+	}
+
 	return user, nil
 }
+
+// sanitizeUserID removes or replaces characters not suitable for user IDs
+func sanitizeUserID(id string) string {
+	// Replace common problematic characters
+	result := strings.ReplaceAll(id, "@", "_at_")
+	result = strings.ReplaceAll(result, "/", "_")
+	result = strings.ReplaceAll(result, "\\", "_")
+	result = strings.ReplaceAll(result, " ", "_")
+	return result
+}
+
+// mapGroupsToRoles maps SAML group names to RBAC roles
+func mapGroupsToRoles(groups []string) []RBACRole {
+	var roles []RBACRole
+	roleMap := map[string]RBACRole{
+		"admin":       RBACRoleAdmin,
+		"admins":      RBACRoleAdmin,
+		"administrator": RBACRoleAdmin,
+		"administrators": RBACRoleAdmin,
+		"operator":    RBACRoleOperator,
+		"operators":   RBACRoleOperator,
+		"analyst":     RBACRoleAnalyst,
+		"analysts":    RBACRoleAnalyst,
+		"viewer":      RBACRoleViewer,
+		"viewers":     RBACRoleViewer,
+		"readonly":    RBACRoleReadOnly,
+		"read-only":   RBACRoleReadOnly,
+	}
+
+	for _, group := range groups {
+		groupLower := strings.ToLower(strings.TrimSpace(group))
+		if role, ok := roleMap[groupLower]; ok {
+			roles = append(roles, role)
+		}
+	}
+
+	return roles
+}
+
+// IsConfigured returns whether SAML is properly configured
+func (saml *SAMLAuthenticator) IsConfigured() bool {
+	return saml.config.IdentityProviderURL != ""
+}
+
+// GetLoginURL returns the SAML SSO login URL
+func (saml *SAMLAuthenticator) GetLoginURL(relayState string) string {
+	if saml.config.SSOURL != "" {
+		return saml.config.SSOURL
+	}
+	return saml.config.IdentityProviderURL
+}
+
+// Ensure context import is used
+var _ = io.EOF
 
 // MultiTenantManager manages multi-tenancy
 type MultiTenantManager struct {

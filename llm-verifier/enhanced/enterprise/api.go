@@ -2,32 +2,122 @@ package enterprise
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
+
+// EnterpriseJWTClaims represents JWT token claims for enterprise users
+type EnterpriseJWTClaims struct {
+	UserID    string     `json:"user_id"`
+	Username  string     `json:"username"`
+	Email     string     `json:"email"`
+	Roles     []RBACRole `json:"roles"`
+	TenantID  string     `json:"tenant_id,omitempty"`
+	jwt.RegisteredClaims
+}
+
+// TokenBlacklist manages invalidated tokens (for logout)
+type TokenBlacklist struct {
+	tokens map[string]time.Time // token -> expiry time
+	mu     sync.RWMutex
+}
 
 // EnterpriseAPI provides HTTP API for enterprise features
 type EnterpriseAPI struct {
-	manager    *EnterpriseManager
-	server     *http.Server
-	middleware map[string]func(http.Handler) http.Handler
+	manager        *EnterpriseManager
+	server         *http.Server
+	middleware     map[string]func(http.Handler) http.Handler
+	jwtSecret      []byte
+	tokenBlacklist *TokenBlacklist
+	tokenTTL       time.Duration
 }
 
 // NewEnterpriseAPI creates a new enterprise API
 func NewEnterpriseAPI(manager *EnterpriseManager) *EnterpriseAPI {
+	// Generate secure JWT secret if not configured
+	jwtSecret := make([]byte, 32)
+	if _, err := rand.Read(jwtSecret); err != nil {
+		// Fallback to a default (should be overridden via configuration)
+		jwtSecret = []byte("llm-verifier-enterprise-jwt-secret-change-in-production")
+	}
+
 	api := &EnterpriseAPI{
 		manager:    manager,
 		middleware: make(map[string]func(http.Handler) http.Handler),
+		jwtSecret:  jwtSecret,
+		tokenBlacklist: &TokenBlacklist{
+			tokens: make(map[string]time.Time),
+		},
+		tokenTTL: time.Hour, // Default 1 hour token lifetime
 	}
 
 	// Initialize middleware
 	api.initializeMiddleware()
 
+	// Start background cleanup of expired blacklist entries
+	go api.cleanupBlacklist()
+
 	return api
+}
+
+// NewEnterpriseAPIWithSecret creates a new enterprise API with a specified JWT secret
+func NewEnterpriseAPIWithSecret(manager *EnterpriseManager, jwtSecret []byte, tokenTTL time.Duration) *EnterpriseAPI {
+	api := &EnterpriseAPI{
+		manager:    manager,
+		middleware: make(map[string]func(http.Handler) http.Handler),
+		jwtSecret:  jwtSecret,
+		tokenBlacklist: &TokenBlacklist{
+			tokens: make(map[string]time.Time),
+		},
+		tokenTTL: tokenTTL,
+	}
+
+	api.initializeMiddleware()
+	go api.cleanupBlacklist()
+
+	return api
+}
+
+// cleanupBlacklist removes expired tokens from the blacklist periodically
+func (api *EnterpriseAPI) cleanupBlacklist() {
+	ticker := time.NewTicker(10 * time.Minute)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		api.tokenBlacklist.mu.Lock()
+		now := time.Now()
+		for token, expiry := range api.tokenBlacklist.tokens {
+			if now.After(expiry) {
+				delete(api.tokenBlacklist.tokens, token)
+			}
+		}
+		api.tokenBlacklist.mu.Unlock()
+	}
+}
+
+// blacklistToken adds a token to the blacklist
+func (api *EnterpriseAPI) blacklistToken(token string, expiry time.Time) {
+	api.tokenBlacklist.mu.Lock()
+	defer api.tokenBlacklist.mu.Unlock()
+	api.tokenBlacklist.tokens[token] = expiry
+}
+
+// isTokenBlacklisted checks if a token is blacklisted
+func (api *EnterpriseAPI) isTokenBlacklisted(token string) bool {
+	api.tokenBlacklist.mu.RLock()
+	defer api.tokenBlacklist.mu.RUnlock()
+	_, exists := api.tokenBlacklist.tokens[token]
+	return exists
 }
 
 // initializeMiddleware sets up HTTP middleware
@@ -290,25 +380,46 @@ func (api *EnterpriseAPI) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate input
+	if loginReq.Username == "" || loginReq.Password == "" {
+		api.writeError(w, "Username and password are required", http.StatusBadRequest)
+		return
+	}
+
 	// Authenticate user
 	user, err := api.authenticateUser(loginReq.Username, loginReq.Password)
 	if err != nil {
+		// Log failed login attempt
+		api.manager.RBAC.logAudit("", "user.login_failed", "auth", api.getClientIP(r), false, map[string]interface{}{
+			"username": loginReq.Username,
+			"error":    err.Error(),
+		})
 		api.writeError(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
 
-	// Generate token (in real implementation, you'd generate JWT)
-	token := fmt.Sprintf("token_%s_%d", user.ID, time.Now().Unix())
+	// Generate JWT token
+	token, expiresAt, err := api.generateToken(user)
+	if err != nil {
+		log.Printf("Failed to generate token for user %s: %v", user.ID, err)
+		api.writeError(w, "Failed to generate authentication token", http.StatusInternalServerError)
+		return
+	}
 
-	// Log audit entry
+	// Log successful login
 	api.manager.RBAC.logAudit(user.ID, "user.login", "auth", api.getClientIP(r), true, map[string]interface{}{
 		"username": loginReq.Username,
 	})
 
+	// Calculate expires_in in seconds
+	expiresIn := int(time.Until(expiresAt).Seconds())
+
 	api.writeJSON(w, map[string]interface{}{
 		"token":      token,
+		"token_type": "Bearer",
 		"user":       user,
-		"expires_in": 3600, // 1 hour
+		"expires_in": expiresIn,
+		"expires_at": expiresAt.Format(time.RFC3339),
 	})
 }
 
@@ -320,7 +431,31 @@ func (api *EnterpriseAPI) handleLogout(w http.ResponseWriter, r *http.Request) {
 
 	user := r.Context().Value("user").(*User)
 
-	// Invalidate token (in real implementation, you'd add to blacklist)
+	// Extract the token from Authorization header to blacklist it
+	authHeader := r.Header.Get("Authorization")
+	if authHeader != "" {
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) == 2 && parts[0] == "Bearer" {
+			token := parts[1]
+
+			// Parse token to get expiry time for blacklist cleanup
+			parsedToken, err := jwt.ParseWithClaims(token, &EnterpriseJWTClaims{}, func(t *jwt.Token) (interface{}, error) {
+				return api.jwtSecret, nil
+			})
+
+			if err == nil {
+				if claims, ok := parsedToken.Claims.(*EnterpriseJWTClaims); ok {
+					// Add token to blacklist until its original expiry
+					if claims.ExpiresAt != nil {
+						api.blacklistToken(token, claims.ExpiresAt.Time)
+					} else {
+						// If no expiry, blacklist for default TTL
+						api.blacklistToken(token, time.Now().Add(api.tokenTTL))
+					}
+				}
+			}
+		}
+	}
 
 	// Log audit entry
 	api.manager.RBAC.logAudit(user.ID, "user.logout", "auth", api.getClientIP(r), true, nil)
@@ -334,8 +469,39 @@ func (api *EnterpriseAPI) handleTokenRefresh(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Refresh token logic would go here
-	api.writeJSON(w, map[string]string{"message": "Token refreshed"})
+	// Get the current user from context (set by auth middleware)
+	user := r.Context().Value("user").(*User)
+
+	// Blacklist the old token
+	authHeader := r.Header.Get("Authorization")
+	if authHeader != "" {
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) == 2 && parts[0] == "Bearer" {
+			oldToken := parts[1]
+			// Blacklist old token immediately
+			api.blacklistToken(oldToken, time.Now().Add(api.tokenTTL))
+		}
+	}
+
+	// Generate new token
+	newToken, expiresAt, err := api.generateToken(user)
+	if err != nil {
+		log.Printf("Failed to refresh token for user %s: %v", user.ID, err)
+		api.writeError(w, "Failed to refresh token", http.StatusInternalServerError)
+		return
+	}
+
+	// Log token refresh
+	api.manager.RBAC.logAudit(user.ID, "user.token_refresh", "auth", api.getClientIP(r), true, nil)
+
+	expiresIn := int(time.Until(expiresAt).Seconds())
+
+	api.writeJSON(w, map[string]interface{}{
+		"token":      newToken,
+		"token_type": "Bearer",
+		"expires_in": expiresIn,
+		"expires_at": expiresAt.Format(time.RFC3339),
+	})
 }
 
 func (api *EnterpriseAPI) handleUsers(w http.ResponseWriter, r *http.Request) {
@@ -524,15 +690,81 @@ func (api *EnterpriseAPI) writeError(w http.ResponseWriter, message string, stat
 }
 
 func (api *EnterpriseAPI) validateToken(token string) (*User, error) {
-	// In a real implementation, you'd validate JWT token
-	// For now, return a mock user
-	return &User{
-		ID:       "mock_user",
-		Username: "mockuser",
-		Email:    "mockuser@example.com",
-		Roles:    []RBACRole{RBACRoleAnalyst},
-		Enabled:  true,
-	}, nil
+	// Check if token is blacklisted (logged out)
+	if api.isTokenBlacklisted(token) {
+		return nil, errors.New("token has been revoked")
+	}
+
+	// Parse and validate the JWT token
+	parsedToken, err := jwt.ParseWithClaims(token, &EnterpriseJWTClaims{}, func(t *jwt.Token) (interface{}, error) {
+		// Verify signing method
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+		}
+		return api.jwtSecret, nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("invalid token: %w", err)
+	}
+
+	// Extract claims
+	claims, ok := parsedToken.Claims.(*EnterpriseJWTClaims)
+	if !ok || !parsedToken.Valid {
+		return nil, errors.New("invalid token claims")
+	}
+
+	// Check token expiration (jwt library handles this, but double-check)
+	if claims.ExpiresAt != nil && claims.ExpiresAt.Time.Before(time.Now()) {
+		return nil, errors.New("token has expired")
+	}
+
+	// Verify the user still exists and is enabled
+	user, err := api.manager.RBAC.GetUser(claims.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("user not found: %w", err)
+	}
+
+	if !user.Enabled {
+		return nil, errors.New("user account is disabled")
+	}
+
+	return user, nil
+}
+
+// generateToken creates a new JWT token for a user
+func (api *EnterpriseAPI) generateToken(user *User) (string, time.Time, error) {
+	expiresAt := time.Now().Add(api.tokenTTL)
+
+	claims := &EnterpriseJWTClaims{
+		UserID:   user.ID,
+		Username: user.Username,
+		Email:    user.Email,
+		Roles:    user.Roles,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expiresAt),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			NotBefore: jwt.NewNumericDate(time.Now()),
+			Issuer:    "llm-verifier-enterprise",
+			Subject:   user.ID,
+			ID:        generateTokenID(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(api.jwtSecret)
+	if err != nil {
+		return "", time.Time{}, fmt.Errorf("failed to sign token: %w", err)
+	}
+
+	return tokenString, expiresAt, nil
+}
+
+// generateTokenID creates a unique token ID
+func generateTokenID() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return base64.RawURLEncoding.EncodeToString(b)
 }
 
 func (api *EnterpriseAPI) authenticateUser(username, password string) (*User, error) {
