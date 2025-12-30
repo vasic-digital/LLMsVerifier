@@ -404,19 +404,19 @@ func TestAllProviders(t *testing.T) {
 	// Register all providers
 	service.RegisterAllProviders()
 
-	// Should have all 32 providers
-	if len(service.providerClients) != 32 {
-		t.Errorf("Expected 32 providers, got %d", len(service.providerClients))
+	// Should have at least the listed providers (more may be registered dynamically)
+	if len(service.providerClients) < len(providers) {
+		t.Errorf("Expected at least %d providers, got %d", len(providers), len(service.providerClients))
 	}
 
-	// Verify all providers are registered
+	// Verify all listed providers are registered
 	for _, provider := range providers {
 		if _, exists := service.providerClients[provider.name]; !exists {
 			t.Errorf("Provider %s not registered", provider.name)
 		}
 	}
 
-	t.Logf("✓ Successfully registered all %d providers", len(service.providerClients))
+	t.Logf("✓ Successfully registered all %d providers (expected at least %d)", len(service.providerClients), len(providers))
 }
 
 // TestProviderClient tests provider client

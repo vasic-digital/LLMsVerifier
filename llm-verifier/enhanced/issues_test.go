@@ -245,7 +245,7 @@ func TestAutoDetectIssuesLogic(t *testing.T) {
 		{
 			name: "High latency should trigger performance issue",
 			verificationResult: &database.VerificationResult{
-				LatencyMs: intPtr(6000), // 6 seconds
+				LatencyMs: testIntPtr(6000), // 6 seconds
 			},
 			expectedIssues: []string{"high_latency"},
 		},
@@ -274,8 +274,8 @@ func TestAutoDetectIssuesLogic(t *testing.T) {
 	}
 }
 
-// Helper function to create int pointer
-func intPtr(i int) *int {
+// Helper function to create int pointer for tests
+func testIntPtr(i int) *int {
 	return &i
 }
 
