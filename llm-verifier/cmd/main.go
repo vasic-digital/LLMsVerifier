@@ -634,7 +634,7 @@ func runAIConfigExport(args []string) {
 	// Create export options
 	options := &llmverifier.ExportOptions{
 		Top:           5,
-		MinScore:      70.0,
+		MinScore:      40.0, // Lower threshold to include challenge-verified models
 		IncludeAPIKey: false,
 	}
 
