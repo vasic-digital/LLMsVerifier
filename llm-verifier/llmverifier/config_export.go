@@ -314,6 +314,11 @@ func ExportAIConfig(db *database.Database, cfg *config.Config, aiFormat, outputP
 			return fmt.Errorf("failed to create OpenCode config: %w", err)
 		}
 
+		// Validate config before writing
+		if err := validateOpenCodeConfigMap(opencodeConfig); err != nil {
+			return fmt.Errorf("OpenCode config validation failed: %w", err)
+		}
+
 		// Marshal to JSON
 		data, err := json.MarshalIndent(opencodeConfig, "", "  ")
 		if err != nil {
@@ -327,9 +332,15 @@ func ExportAIConfig(db *database.Database, cfg *config.Config, aiFormat, outputP
 			return fmt.Errorf("failed to write OpenCode config: %w", err)
 		}
 
+		// Validate written file can be parsed back
+		if err := validateOpenCodeConfigFile(outputPath); err != nil {
+			return fmt.Errorf("OpenCode config file validation failed: %w", err)
+		}
+
 		// Record successful export
 		RecordOpenCodeExport(opencodeConfig, true, "")
 
+		fmt.Printf("✅ OpenCode config validated and exported successfully\n")
 		return nil
 	}
 
@@ -1847,6 +1858,103 @@ func validateCorrectOpenCodeConfigStructure(config map[string]interface{}) error
 	return nil
 }
 
+// validateOpenCodeConfigMap validates OpenCode config from map[string]interface{}
+// This is used during export to validate before writing
+func validateOpenCodeConfigMap(config map[string]interface{}) error {
+	// Check schema
+	if _, hasSchema := config["$schema"]; !hasSchema {
+		return fmt.Errorf("missing $schema field")
+	}
+
+	// Check required sections
+	requiredSections := []string{"providers", "agents"}
+	for _, section := range requiredSections {
+		if _, exists := config[section]; !exists {
+			return fmt.Errorf("missing required section: %s", section)
+		}
+	}
+
+	// Validate providers
+	providers, ok := config["providers"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("providers section must be an object")
+	}
+	if len(providers) == 0 {
+		return fmt.Errorf("providers section must contain at least one provider")
+	}
+
+	// Count total models across all providers
+	totalModels := 0
+	for providerName, providerData := range providers {
+		provider, ok := providerData.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("provider '%s' must be an object", providerName)
+		}
+
+		// Check required provider fields
+		if _, hasAPIKey := provider["apiKey"]; !hasAPIKey {
+			return fmt.Errorf("provider '%s' missing apiKey field", providerName)
+		}
+
+		// Check for models
+		if models, hasModels := provider["models"]; hasModels {
+			if modelsArray, ok := models.([]map[string]interface{}); ok {
+				totalModels += len(modelsArray)
+				// Validate each model
+				for i, model := range modelsArray {
+					if _, hasID := model["id"]; !hasID {
+						return fmt.Errorf("provider '%s' model %d missing id field", providerName, i)
+					}
+					if _, hasName := model["name"]; !hasName {
+						return fmt.Errorf("provider '%s' model %d missing name field", providerName, i)
+					}
+				}
+			}
+		}
+	}
+
+	// Validate agents
+	agents, ok := config["agents"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("agents section must be an object")
+	}
+
+	// At least coder agent is required
+	if _, hasCoder := agents["coder"]; !hasCoder {
+		return fmt.Errorf("missing required agent: coder")
+	}
+
+	fmt.Printf("✅ OpenCode config validation passed: %d providers, %d models\n", len(providers), totalModels)
+	return nil
+}
+
+// validateOpenCodeConfigFile validates an OpenCode config file after it's written
+func validateOpenCodeConfigFile(filepath string) error {
+	// Read the file
+	data, err := os.ReadFile(filepath)
+	if err != nil {
+		return fmt.Errorf("failed to read config file: %w", err)
+	}
+
+	// Parse JSON
+	var config map[string]interface{}
+	if err := json.Unmarshal(data, &config); err != nil {
+		return fmt.Errorf("failed to parse config JSON: %w", err)
+	}
+
+	// Validate structure
+	if err := validateOpenCodeConfigMap(config); err != nil {
+		return fmt.Errorf("config structure validation failed: %w", err)
+	}
+
+	// Check file size is reasonable
+	if len(data) < 100 {
+		return fmt.Errorf("config file too small (%d bytes), likely incomplete", len(data))
+	}
+
+	return nil
+}
+
 // fetchVerificationResults fetches real verification results from database
 func fetchVerificationResults(db *database.Database, options *ExportOptions) ([]VerificationResult, error) {
 	filters := make(map[string]any)
@@ -2684,12 +2792,61 @@ func createCorrectOpenCodeConfig(results []VerificationResult, options *ExportOp
 	for providerName, models := range providerModels {
 		fmt.Printf("DEBUG: Adding provider %s with %d models\n", providerName, len(models))
 
-		// OpenCode format: simple provider config without models array
-		// Models are referenced in agents section as "provider.model"
+		// Build models array for this provider with all features
+		modelsArray := make([]map[string]interface{}, 0, len(models))
+
+		for _, result := range models {
+			// Detect features
+			supportsBrotli := result.FeatureDetection.SupportsBrotli || result.ModelInfo.SupportsBrotli || detectBrotliSupport(result.ModelInfo.Endpoint)
+			supportsHTTP3 := result.FeatureDetection.SupportsHTTP3 || result.ModelInfo.SupportsHTTP3 || detectHTTP3Support(result.ModelInfo.Endpoint)
+			supportsToon := result.FeatureDetection.SupportsToon || result.ModelInfo.SupportsToon || detectToonSupport(result.ModelInfo.ID)
+			supportsStreaming := result.FeatureDetection.Streaming
+			isFreeProvider := isProviderFree(providerName)
+
+			// Format model name with suffixes
+			modelName := formatModelNameWithSuffixes(result.ModelInfo.ID, result, true)
+
+			// Get context window with default
+			contextWindow := result.ModelInfo.ContextWindow.TotalMaxTokens
+			if contextWindow == 0 {
+				contextWindow = 128000
+			}
+			maxOutputTokens := result.ModelInfo.MaxOutputTokens
+			if maxOutputTokens == 0 {
+				maxOutputTokens = 4096
+			}
+
+			modelConfig := map[string]interface{}{
+				"id":                 result.ModelInfo.ID,
+				"name":               modelName,
+				"context_window":     contextWindow,
+				"max_output_tokens":  maxOutputTokens,
+				"supports_brotli":    supportsBrotli,
+				"supports_http3":     supportsHTTP3,
+				"supports_toon":      supportsToon,
+				"supports_streaming": supportsStreaming,
+				"supports_vision":    result.ModelInfo.SupportsVision,
+				"supports_audio":     result.ModelInfo.SupportsAudio,
+				"supports_reasoning": result.ModelInfo.SupportsReasoning,
+				"free_to_use":        isFreeProvider,
+				"verified":           true,
+			}
+			modelsArray = append(modelsArray, modelConfig)
+		}
+
+		// Get API key for provider (use environment variable reference)
+		apiKey := getAPIKeyForProvider(providerName, options)
+		if apiKey == "" {
+			apiKey = fmt.Sprintf("${%s_API_KEY}", strings.ToUpper(providerName))
+		}
+
+		// Provider config with models and API key
 		providerConfig := map[string]interface{}{
-			"apiKey":   getAPIKeyForProvider(providerName, options),
+			"apiKey":   apiKey,
 			"disabled": false,
 			"provider": providerName,
+			"models":   modelsArray,
+			"baseUrl":  getProviderBaseURL(providerName, models),
 		}
 		providersSection[providerName] = providerConfig
 

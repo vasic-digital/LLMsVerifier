@@ -563,14 +563,15 @@ func TestOpenCodeConfigFormat(t *testing.T) {
 	assert.Contains(t, config, "tui", "OpenCode config should have tui section")
 	assert.Contains(t, config, "shell", "OpenCode config should have shell section")
 
-	// Verify providers don't have models array (OpenCode format)
+	// Verify providers have all required fields including models array
 	providers := config["providers"].(map[string]interface{})
 	for providerName, providerData := range providers {
 		provider := providerData.(map[string]interface{})
 		assert.Contains(t, provider, "apiKey", "Provider %s should have apiKey", providerName)
 		assert.Contains(t, provider, "disabled", "Provider %s should have disabled", providerName)
 		assert.Contains(t, provider, "provider", "Provider %s should have provider field", providerName)
-		assert.NotContains(t, provider, "models", "OpenCode provider %s should NOT have models array", providerName)
+		assert.Contains(t, provider, "models", "OpenCode provider %s should have models array", providerName)
+		assert.Contains(t, provider, "baseUrl", "OpenCode provider %s should have baseUrl", providerName)
 	}
 
 	// Verify agents have model references
@@ -657,19 +658,29 @@ func TestCrushConfigFormat(t *testing.T) {
 	}
 }
 
-// TestOpenCodeProviderWithoutModels tests that OpenCode providers don't include models
-func TestOpenCodeProviderWithoutModels(t *testing.T) {
+// TestOpenCodeProviderWithModels tests that OpenCode providers include models with all features
+func TestOpenCodeProviderWithModels(t *testing.T) {
 	results := []VerificationResult{
 		{
 			ModelInfo: ModelInfo{
-				ID:       "test-model-1",
-				Endpoint: "https://api.openai.com/v1",
+				ID:             "test-model-1",
+				Endpoint:       "https://api.openai.com/v1",
+				SupportsBrotli: true,
+				ContextWindow:  ContextWindow{TotalMaxTokens: 128000},
+			},
+			FeatureDetection: FeatureDetectionResult{
+				SupportsBrotli: true,
+				Streaming:      true,
 			},
 		},
 		{
 			ModelInfo: ModelInfo{
 				ID:       "test-model-2",
 				Endpoint: "https://api.openai.com/v1",
+				ContextWindow: ContextWindow{TotalMaxTokens: 64000},
+			},
+			FeatureDetection: FeatureDetectionResult{
+				Streaming: true,
 			},
 		},
 	}
@@ -685,7 +696,7 @@ func TestOpenCodeProviderWithoutModels(t *testing.T) {
 	data, err := os.ReadFile(tmpFile.Name())
 	require.NoError(t, err)
 
-	// Check raw JSON doesn't contain "models" key in providers
+	// Check raw JSON contains "models" key in providers
 	var rawConfig map[string]interface{}
 	json.Unmarshal(data, &rawConfig)
 
@@ -693,7 +704,25 @@ func TestOpenCodeProviderWithoutModels(t *testing.T) {
 	openaiProvider := providers["openai"].(map[string]interface{})
 
 	_, hasModels := openaiProvider["models"]
-	assert.False(t, hasModels, "OpenCode provider should NOT have models key")
+	assert.True(t, hasModels, "OpenCode provider should have models key")
+
+	// Verify models array content
+	models := openaiProvider["models"].([]interface{})
+	assert.Equal(t, 2, len(models), "Provider should have 2 models")
+
+	// Verify first model has all required fields
+	model1 := models[0].(map[string]interface{})
+	assert.Contains(t, model1, "id", "Model should have id")
+	assert.Contains(t, model1, "name", "Model should have name")
+	assert.Contains(t, model1, "supports_brotli", "Model should have supports_brotli")
+	assert.Contains(t, model1, "supports_streaming", "Model should have supports_streaming")
+	assert.Contains(t, model1, "verified", "Model should have verified")
+	assert.Contains(t, model1["name"].(string), "(llmsvd)", "Model name should have (llmsvd) suffix")
+
+	// Verify API key is environment variable reference
+	apiKey := openaiProvider["apiKey"].(string)
+	assert.Contains(t, apiKey, "${", "API key should be environment variable reference")
+	assert.Contains(t, apiKey, "OPENAI", "API key should reference OPENAI")
 }
 
 // TestCrushProviderWithModels tests that Crush providers include models with features
@@ -865,4 +894,299 @@ func exportOpenCodeConfigCorrect(results []VerificationResult, outputPath string
 	}
 
 	return os.WriteFile(outputPath, data, 0644)
+}
+
+// TestOpenCodeValidation tests OpenCode config validation
+func TestOpenCodeValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      map[string]interface{}
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name: "valid config with all required fields",
+			config: map[string]interface{}{
+				"$schema": "./opencode-schema.json",
+				"providers": map[string]interface{}{
+					"openai": map[string]interface{}{
+						"apiKey":   "${OPENAI_API_KEY}",
+						"disabled": false,
+						"provider": "openai",
+						"models": []map[string]interface{}{
+							{"id": "gpt-4o", "name": "gpt-4o (llmsvd)"},
+						},
+					},
+				},
+				"agents": map[string]interface{}{
+					"coder": map[string]interface{}{"model": "openai.gpt-4o", "maxTokens": 5000},
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "missing schema",
+			config: map[string]interface{}{
+				"providers": map[string]interface{}{},
+				"agents":    map[string]interface{}{},
+			},
+			expectError: true,
+			errorMsg:    "missing $schema",
+		},
+		{
+			name: "missing providers section",
+			config: map[string]interface{}{
+				"$schema": "./opencode-schema.json",
+				"agents":  map[string]interface{}{},
+			},
+			expectError: true,
+			errorMsg:    "missing required section: providers",
+		},
+		{
+			name: "empty providers",
+			config: map[string]interface{}{
+				"$schema":   "./opencode-schema.json",
+				"providers": map[string]interface{}{},
+				"agents": map[string]interface{}{
+					"coder": map[string]interface{}{},
+				},
+			},
+			expectError: true,
+			errorMsg:    "must contain at least one provider",
+		},
+		{
+			name: "provider missing apiKey",
+			config: map[string]interface{}{
+				"$schema": "./opencode-schema.json",
+				"providers": map[string]interface{}{
+					"openai": map[string]interface{}{
+						"disabled": false,
+						"provider": "openai",
+					},
+				},
+				"agents": map[string]interface{}{
+					"coder": map[string]interface{}{},
+				},
+			},
+			expectError: true,
+			errorMsg:    "missing apiKey",
+		},
+		{
+			name: "missing coder agent",
+			config: map[string]interface{}{
+				"$schema": "./opencode-schema.json",
+				"providers": map[string]interface{}{
+					"openai": map[string]interface{}{
+						"apiKey":   "${OPENAI_API_KEY}",
+						"disabled": false,
+					},
+				},
+				"agents": map[string]interface{}{
+					"task": map[string]interface{}{},
+				},
+			},
+			expectError: true,
+			errorMsg:    "missing required agent: coder",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateOpenCodeConfigMap(tt.config)
+			if tt.expectError {
+				assert.Error(t, err, "Expected validation error")
+				if tt.errorMsg != "" {
+					assert.Contains(t, err.Error(), tt.errorMsg)
+				}
+			} else {
+				assert.NoError(t, err, "Expected no validation error")
+			}
+		})
+	}
+}
+
+// TestOpenCodeFileValidation tests OpenCode config file validation
+func TestOpenCodeFileValidation(t *testing.T) {
+	// Create a valid config file
+	validConfig := map[string]interface{}{
+		"$schema": "./opencode-schema.json",
+		"providers": map[string]interface{}{
+			"anthropic": map[string]interface{}{
+				"apiKey":   "${ANTHROPIC_API_KEY}",
+				"disabled": false,
+				"provider": "anthropic",
+				"baseUrl":  "https://api.anthropic.com/v1",
+				"models": []map[string]interface{}{
+					{
+						"id":               "claude-3-opus",
+						"name":             "claude-3-opus (brotli) (llmsvd)",
+						"context_window":   200000,
+						"supports_brotli":  true,
+						"supports_http3":   false,
+						"verified":         true,
+					},
+				},
+			},
+		},
+		"agents": map[string]interface{}{
+			"coder": map[string]interface{}{"model": "anthropic.claude-3-opus", "maxTokens": 5000},
+			"task":  map[string]interface{}{"model": "anthropic.claude-3-opus", "maxTokens": 5000},
+			"title": map[string]interface{}{"model": "anthropic.claude-3-opus", "maxTokens": 80},
+		},
+		"data":       map[string]interface{}{"directory": ".opencode"},
+		"debug":      false,
+		"autoCompact": true,
+	}
+
+	tmpFile, err := os.CreateTemp("", "opencode_valid_*.json")
+	require.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	data, err := json.MarshalIndent(validConfig, "", "  ")
+	require.NoError(t, err)
+	err = os.WriteFile(tmpFile.Name(), data, 0644)
+	require.NoError(t, err)
+	tmpFile.Close()
+
+	// Test valid file
+	err = validateOpenCodeConfigFile(tmpFile.Name())
+	assert.NoError(t, err, "Valid config file should pass validation")
+
+	// Test invalid file (too small)
+	smallFile, err := os.CreateTemp("", "opencode_small_*.json")
+	require.NoError(t, err)
+	defer os.Remove(smallFile.Name())
+	os.WriteFile(smallFile.Name(), []byte("{}"), 0644)
+	smallFile.Close()
+
+	err = validateOpenCodeConfigFile(smallFile.Name())
+	assert.Error(t, err, "Too small file should fail validation")
+}
+
+// TestOpenCodeExportWithValidation tests that export includes validation
+func TestOpenCodeExportWithValidation(t *testing.T) {
+	results := []VerificationResult{
+		{
+			ModelInfo: ModelInfo{
+				ID:            "gpt-4o",
+				Endpoint:      "https://api.openai.com/v1",
+				ContextWindow: ContextWindow{TotalMaxTokens: 128000},
+			},
+			FeatureDetection: FeatureDetectionResult{
+				SupportsBrotli: true,
+				Streaming:      true,
+			},
+			PerformanceScores: PerformanceScore{
+				OverallScore:   85.0,
+				CodeCapability: 80.0,
+			},
+		},
+	}
+
+	tmpFile, err := os.CreateTemp("", "opencode_export_*.json")
+	require.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+	tmpFile.Close()
+
+	// Export should include validation
+	err = exportOpenCodeConfigCorrect(results, tmpFile.Name(), nil)
+	require.NoError(t, err)
+
+	// Verify the exported file is valid
+	err = validateOpenCodeConfigFile(tmpFile.Name())
+	assert.NoError(t, err, "Exported config should pass validation")
+
+	// Read and verify content
+	data, err := os.ReadFile(tmpFile.Name())
+	require.NoError(t, err)
+
+	var config map[string]interface{}
+	err = json.Unmarshal(data, &config)
+	require.NoError(t, err)
+
+	// Verify providers have models
+	providers := config["providers"].(map[string]interface{})
+	openai := providers["openai"].(map[string]interface{})
+
+	// Check API key is set
+	apiKey := openai["apiKey"].(string)
+	assert.NotEmpty(t, apiKey, "API key should be set")
+	assert.Contains(t, apiKey, "OPENAI", "API key should reference environment variable")
+
+	// Check models exist
+	models := openai["models"].([]interface{})
+	assert.NotEmpty(t, models, "Provider should have models")
+
+	// Check model has required fields
+	model := models[0].(map[string]interface{})
+	assert.Contains(t, model, "id", "Model should have id")
+	assert.Contains(t, model, "name", "Model should have name")
+	assert.Contains(t, model, "verified", "Model should have verified flag")
+	assert.Contains(t, model["name"].(string), "(llmsvd)", "Model name should have (llmsvd) suffix")
+}
+
+// TestOpenCodeExportHasAllFeatures tests that exported models have all feature flags
+func TestOpenCodeExportHasAllFeatures(t *testing.T) {
+	results := []VerificationResult{
+		{
+			ModelInfo: ModelInfo{
+				ID:             "gemini-pro",
+				Endpoint:       "https://generativelanguage.googleapis.com/v1",
+				SupportsBrotli: true,
+				SupportsHTTP3:  true,
+				ContextWindow:  ContextWindow{TotalMaxTokens: 32000},
+			},
+			FeatureDetection: FeatureDetectionResult{
+				SupportsBrotli: true,
+				SupportsHTTP3:  true,
+				Streaming:      true,
+			},
+			PerformanceScores: PerformanceScore{
+				OverallScore:   80.0,
+				CodeCapability: 75.0,
+			},
+		},
+	}
+
+	tmpFile, err := os.CreateTemp("", "opencode_features_*.json")
+	require.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+	tmpFile.Close()
+
+	err = exportOpenCodeConfigCorrect(results, tmpFile.Name(), nil)
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(tmpFile.Name())
+	require.NoError(t, err)
+
+	var config map[string]interface{}
+	json.Unmarshal(data, &config)
+
+	providers := config["providers"].(map[string]interface{})
+	gemini := providers["gemini"].(map[string]interface{})
+	models := gemini["models"].([]interface{})
+	model := models[0].(map[string]interface{})
+
+	// Verify all feature flags are present
+	assert.Contains(t, model, "supports_brotli", "Model should have supports_brotli")
+	assert.Contains(t, model, "supports_http3", "Model should have supports_http3")
+	assert.Contains(t, model, "supports_streaming", "Model should have supports_streaming")
+	assert.Contains(t, model, "supports_vision", "Model should have supports_vision")
+	assert.Contains(t, model, "supports_audio", "Model should have supports_audio")
+	assert.Contains(t, model, "supports_reasoning", "Model should have supports_reasoning")
+	assert.Contains(t, model, "free_to_use", "Model should have free_to_use")
+	assert.Contains(t, model, "verified", "Model should have verified")
+	assert.Contains(t, model, "context_window", "Model should have context_window")
+	assert.Contains(t, model, "max_output_tokens", "Model should have max_output_tokens")
+
+	// Verify feature values
+	assert.True(t, model["supports_brotli"].(bool), "Brotli should be true for Google")
+	assert.True(t, model["supports_http3"].(bool), "HTTP3 should be true for Google")
+	assert.True(t, model["verified"].(bool), "Model should be verified")
+
+	// Verify model name has all suffixes
+	modelName := model["name"].(string)
+	assert.Contains(t, modelName, "(brotli)", "Model name should have (brotli)")
+	assert.Contains(t, modelName, "(http3)", "Model name should have (http3)")
+	assert.Contains(t, modelName, "(llmsvd)", "Model name should have (llmsvd)")
 }
