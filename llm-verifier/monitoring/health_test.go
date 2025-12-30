@@ -253,6 +253,9 @@ func TestHealthCheckerSchedulerHealth(t *testing.T) {
 	db := (*database.Database)(nil)
 	hc := NewHealthChecker(db)
 
+	// Set scheduler as running for the test
+	hc.metricsTracker.SetSchedulerRunning(true)
+
 	hc.checkSchedulerHealth()
 
 	component := hc.GetComponentHealth()["scheduler"]
