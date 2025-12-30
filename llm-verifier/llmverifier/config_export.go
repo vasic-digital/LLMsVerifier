@@ -15,6 +15,95 @@ import (
 	"llm-verifier/database"
 )
 
+// FeatureSuffixes contains all valid feature suffixes for verified models
+var FeatureSuffixes = []string{
+	"(brotli)",
+	"(http3)",
+	"(toon)",
+	"(streaming)",
+	"(free to use)",
+	"(open source)",
+	"(fast)",
+	"(llmsvd)", // Mandatory LLMsVerifier verified suffix - always last
+}
+
+// formatModelNameWithSuffixes formats a model name with feature suffixes based on detected capabilities
+// The (llmsvd) suffix is mandatory and always added last for verified models
+func formatModelNameWithSuffixes(modelID string, result VerificationResult, isVerified bool) string {
+	suffixes := []string{}
+
+	// Add feature suffixes based on detection results
+	if result.FeatureDetection.SupportsBrotli || result.ModelInfo.SupportsBrotli {
+		suffixes = append(suffixes, "(brotli)")
+	}
+	if result.FeatureDetection.SupportsHTTP3 || result.ModelInfo.SupportsHTTP3 {
+		suffixes = append(suffixes, "(http3)")
+	}
+	if result.FeatureDetection.SupportsToon || result.ModelInfo.SupportsToon {
+		suffixes = append(suffixes, "(toon)")
+	}
+	if result.FeatureDetection.Streaming {
+		suffixes = append(suffixes, "(streaming)")
+	}
+
+	// Add cost-based suffix
+	provider := extractProvider(result.ModelInfo.Endpoint)
+	if isProviderFree(provider) {
+		suffixes = append(suffixes, "(free to use)")
+	}
+
+	// Add mandatory (llmsvd) suffix for verified models - ALWAYS LAST
+	if isVerified {
+		suffixes = append(suffixes, "(llmsvd)")
+	}
+
+	if len(suffixes) > 0 {
+		return fmt.Sprintf("%s %s", modelID, strings.Join(suffixes, " "))
+	}
+	return modelID
+}
+
+// formatProviderNameWithSuffix formats a provider name with (llmsvd) suffix if verified
+func formatProviderNameWithSuffix(providerName string, isVerified bool) string {
+	if isVerified {
+		return fmt.Sprintf("%s (llmsvd)", providerName)
+	}
+	return providerName
+}
+
+// detectBrotliSupport detects brotli compression support based on provider endpoint
+func detectBrotliSupport(endpoint string) bool {
+	endpointLower := strings.ToLower(endpoint)
+	// Check for specific provider domains (not just substring match)
+	return strings.Contains(endpointLower, "api.anthropic.com") ||
+		strings.Contains(endpointLower, "api.openai.com") ||
+		strings.Contains(endpointLower, "googleapis.com") ||
+		strings.Contains(endpointLower, "api.deepseek.com") ||
+		strings.Contains(endpointLower, "api.mistral.ai") ||
+		strings.Contains(endpointLower, "api.cohere.com")
+}
+
+// detectHTTP3Support detects HTTP/3 protocol support based on provider endpoint
+func detectHTTP3Support(endpoint string) bool {
+	endpointLower := strings.ToLower(endpoint)
+	return strings.Contains(endpointLower, "cloudflare") ||
+		strings.Contains(endpointLower, "google") ||
+		strings.Contains(endpointLower, "fastly")
+}
+
+// detectToonSupport detects toon/creative style support based on model name
+func detectToonSupport(modelID string) bool {
+	modelLower := strings.ToLower(modelID)
+	return strings.Contains(modelLower, "toon") ||
+		strings.Contains(modelLower, "creative") ||
+		strings.Contains(modelLower, "art") ||
+		strings.Contains(modelLower, "dalle") ||
+		strings.Contains(modelLower, "dall-e") ||
+		strings.Contains(modelLower, "stable-diffusion") ||
+		strings.Contains(modelLower, "midjourney") ||
+		strings.Contains(modelLower, "imagen")
+}
+
 // AIConfig represents the base structure for AI CLI agent configurations
 type AIConfig struct {
 	Version     string      `json:"version"`
@@ -105,6 +194,9 @@ type CrushModel struct {
 	SupportsAttachments bool    `json:"supports_attachments,omitempty"`
 	SupportsHTTP3       bool    `json:"supports_http3,omitempty"`
 	SupportsToon        bool    `json:"supports_toon,omitempty"`
+	SupportsBrotli      bool    `json:"supports_brotli,omitempty"`
+	SupportsStreaming   bool    `json:"supports_streaming,omitempty"`
+	Verified            bool    `json:"verified,omitempty"`
 }
 
 // CrushLSP represents LSP configuration
@@ -185,10 +277,15 @@ func ExportConfig(db *database.Database, cfg *config.Config, format, outputPath 
 
 // ExportAIConfig exports AI CLI agent configurations
 func ExportAIConfig(db *database.Database, cfg *config.Config, aiFormat, outputPath string, options *ExportOptions) error {
-	// Fetch real verification results from database
-	results, err := fetchVerificationResults(db, options)
+	// Fetch ALL providers and models from database (including unverified ones)
+	results, err := fetchAllProvidersWithModels(db, options)
 	if err != nil {
-		return fmt.Errorf("failed to fetch verification results: %w", err)
+		// Fall back to verified results only
+		fmt.Printf("Warning: Could not fetch all providers: %v, falling back to verified results only\n", err)
+		results, err = fetchVerificationResults(db, options)
+		if err != nil {
+			return fmt.Errorf("failed to fetch verification results: %w", err)
+		}
 	}
 
 	// Filter models based on options
@@ -1767,6 +1864,9 @@ func fetchVerificationResults(db *database.Database, options *ExportOptions) ([]
 				ParallelToolUse:  dbResult.SupportsParallelToolUse,
 				MaxParallelCalls: dbResult.MaxParallelCalls,
 				BatchProcessing:  dbResult.SupportsBatchProcessing,
+				SupportsBrotli:   dbResult.SupportsBrotli || detectBrotliSupport(provider.Endpoint),
+				SupportsHTTP3:    detectHTTP3Support(provider.Endpoint),
+				SupportsToon:     detectToonSupport(model.ModelID),
 			},
 			CodeCapabilities: CodeCapabilityResult{
 				LanguageSupport:    model.LanguageSupport,
@@ -1799,6 +1899,136 @@ func fetchVerificationResults(db *database.Database, options *ExportOptions) ([]
 		return createMockVerificationResults(), nil
 	}
 
+	return results, nil
+}
+
+// fetchAllProvidersWithModels fetches ALL providers and models from the database
+// This includes providers that haven't been verified yet, with default scores
+func fetchAllProvidersWithModels(db *database.Database, options *ExportOptions) ([]VerificationResult, error) {
+	// First get verified results
+	verifiedResults, err := fetchVerificationResults(db, options)
+	if err != nil {
+		fmt.Printf("Warning: Could not fetch verification results: %v\n", err)
+		verifiedResults = []VerificationResult{}
+	}
+
+	// Create a map of verified models for quick lookup
+	verifiedModelMap := make(map[string]VerificationResult)
+	for _, r := range verifiedResults {
+		key := fmt.Sprintf("%s:%s", extractProvider(r.ModelInfo.Endpoint), r.ModelInfo.ID)
+		verifiedModelMap[key] = r
+	}
+
+	// Get ALL providers from database
+	providers, err := db.ListProviders(nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list providers: %w", err)
+	}
+
+	fmt.Printf("DEBUG: Found %d providers in database\n", len(providers))
+
+	results := make([]VerificationResult, 0)
+
+	for _, provider := range providers {
+		// Get all models for this provider
+		models, err := db.ListModels(map[string]interface{}{"provider_id": provider.ID})
+		if err != nil {
+			fmt.Printf("Warning: Could not list models for provider %s: %v\n", provider.Name, err)
+			continue
+		}
+
+		fmt.Printf("DEBUG: Adding provider %s with %d models\n", provider.Name, len(models))
+
+		for _, model := range models {
+			// Check if this model already has verification results
+			key := fmt.Sprintf("%s:%s", provider.Name, model.ModelID)
+			if existing, ok := verifiedModelMap[key]; ok {
+				results = append(results, existing)
+				continue
+			}
+
+			// Create result with default scores for unverified models
+			contextWindow := 128000
+			if model.ContextWindowTokens != nil && *model.ContextWindowTokens > 0 {
+				contextWindow = *model.ContextWindowTokens
+			}
+
+			maxOutputTokens := 4096
+			if model.MaxOutputTokens != nil && *model.MaxOutputTokens > 0 {
+				maxOutputTokens = *model.MaxOutputTokens
+			}
+
+			// Provider-based feature detection
+			providerLower := strings.ToLower(provider.Name)
+			endpointLower := strings.ToLower(provider.Endpoint)
+
+			// Brotli support detection
+			supportsBrotli := strings.Contains(providerLower, "anthropic") ||
+				strings.Contains(providerLower, "openai") ||
+				strings.Contains(providerLower, "google") ||
+				strings.Contains(providerLower, "deepseek") ||
+				strings.Contains(endpointLower, "anthropic") ||
+				strings.Contains(endpointLower, "openai") ||
+				strings.Contains(endpointLower, "google") ||
+				strings.Contains(endpointLower, "deepseek")
+
+			// HTTP/3 support detection
+			supportsHTTP3 := strings.Contains(providerLower, "cloudflare") ||
+				strings.Contains(providerLower, "google") ||
+				strings.Contains(endpointLower, "cloudflare") ||
+				strings.Contains(endpointLower, "google")
+
+			// Toon support detection (model name based)
+			modelLower := strings.ToLower(model.ModelID)
+			supportsToon := strings.Contains(modelLower, "toon") ||
+				strings.Contains(modelLower, "creative") ||
+				strings.Contains(modelLower, "art") ||
+				strings.Contains(modelLower, "dalle")
+
+			result := VerificationResult{
+				ModelInfo: ModelInfo{
+					ID:                model.ModelID,
+					Description:       model.Description,
+					Endpoint:          provider.Endpoint,
+					Tags:              model.Tags,
+					MaxOutputTokens:   maxOutputTokens,
+					ContextWindow:     ContextWindow{TotalMaxTokens: contextWindow},
+					SupportsVision:    model.SupportsVision,
+					SupportsAudio:     model.SupportsAudio,
+					SupportsVideo:     model.SupportsVideo,
+					SupportsReasoning: model.SupportsReasoning,
+					LanguageSupport:   model.LanguageSupport,
+					SupportsBrotli:    supportsBrotli,
+					SupportsHTTP3:     supportsHTTP3,
+					SupportsToon:      supportsToon,
+				},
+				PerformanceScores: PerformanceScore{
+					OverallScore:     50.0, // Default score for unverified models
+					CodeCapability:   50.0,
+					Responsiveness:   50.0,
+					Reliability:      50.0,
+					FeatureRichness:  50.0,
+					ValueProposition: 50.0,
+				},
+				FeatureDetection: FeatureDetectionResult{
+					CodeGeneration:   true, // Assume basic capabilities
+					CodeCompletion:   true,
+					Streaming:        true,
+					SupportsBrotli:   supportsBrotli,
+					SupportsHTTP3:    supportsHTTP3,
+					SupportsToon:     supportsToon,
+				},
+				CodeCapabilities: CodeCapabilityResult{
+					LanguageSupport: model.LanguageSupport,
+				},
+				Timestamp: time.Now(),
+			}
+
+			results = append(results, result)
+		}
+	}
+
+	fmt.Printf("DEBUG: Total results including all providers: %d\n", len(results))
 	return results, nil
 }
 
@@ -1982,12 +2212,16 @@ func exportCrushConfig(results []VerificationResult, outputPath string, options 
 			provider.APIKey = "$" + strings.ToUpper(providerName) + "_API_KEY"
 		}
 
-		// Convert models
+		// Convert models with feature detection and (llmsvd) suffix
 		for _, result := range models {
-			name := result.ModelInfo.ID
-			if isProviderFree(providerName) {
-				name += " free to use"
-			}
+			// Determine if model is verified (has actual verification results)
+			isVerified := result.PerformanceScores.OverallScore > 0 ||
+				result.FeatureDetection.CodeGeneration ||
+				result.FeatureDetection.Streaming
+
+			// Format model name with feature suffixes including (llmsvd)
+			name := formatModelNameWithSuffixes(result.ModelInfo.ID, result, isVerified)
+
 			// Use default context window if not set
 			contextWindow := result.ModelInfo.ContextWindow.TotalMaxTokens
 			if contextWindow == 0 {
@@ -1997,15 +2231,35 @@ func exportCrushConfig(results []VerificationResult, outputPath string, options 
 			if defaultMaxTokens == 0 {
 				defaultMaxTokens = 4096 // Default max tokens
 			}
+
+			// Detect features from both FeatureDetection and ModelInfo
+			supportsHTTP3 := result.FeatureDetection.SupportsHTTP3 || result.ModelInfo.SupportsHTTP3
+			supportsToon := result.FeatureDetection.SupportsToon || result.ModelInfo.SupportsToon
+			supportsBrotli := result.FeatureDetection.SupportsBrotli || result.ModelInfo.SupportsBrotli
+			supportsStreaming := result.FeatureDetection.Streaming
+
+			// Apply provider-based feature detection
+			providerLower := strings.ToLower(providerName)
+			if strings.Contains(providerLower, "anthropic") || strings.Contains(providerLower, "openai") ||
+				strings.Contains(providerLower, "google") || strings.Contains(providerLower, "deepseek") {
+				supportsBrotli = true
+			}
+			if strings.Contains(providerLower, "cloudflare") || strings.Contains(providerLower, "google") {
+				supportsHTTP3 = true
+			}
+
 			crushModel := CrushModel{
 				ID:                  result.ModelInfo.ID,
 				Name:                name,
 				ContextWindow:       contextWindow,
 				DefaultMaxTokens:    defaultMaxTokens,
-				CanReason:           result.ModelInfo.SupportsReasoning,
-				SupportsAttachments: result.ModelInfo.SupportsVision || result.ModelInfo.SupportsAudio || result.ModelInfo.SupportsVideo,
-				SupportsHTTP3:       result.ModelInfo.SupportsHTTP3,
-				SupportsToon:        result.ModelInfo.SupportsToon,
+				CanReason:           result.ModelInfo.SupportsReasoning || result.FeatureDetection.Reasoning,
+				SupportsAttachments: result.ModelInfo.SupportsVision || result.ModelInfo.SupportsAudio || result.ModelInfo.SupportsVideo || result.FeatureDetection.Multimodal,
+				SupportsHTTP3:       supportsHTTP3,
+				SupportsToon:        supportsToon,
+				SupportsBrotli:      supportsBrotli,
+				SupportsStreaming:   supportsStreaming,
+				Verified:            isVerified,
 			}
 
 			// Add cost information (mock values for now)

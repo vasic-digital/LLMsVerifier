@@ -631,10 +631,11 @@ func runAIConfigExport(args []string) {
 		log.Fatalf("❌ Failed to load configuration: %v", err)
 	}
 
-	// Create export options
+	// Create export options - include ALL providers and models
 	options := &llmverifier.ExportOptions{
-		Top:           5,
-		MinScore:      40.0, // Lower threshold to include challenge-verified models
+		Top:           0,    // No limit - include ALL models
+		MinScore:      0,    // No minimum score - include ALL providers
+		MaxModels:     0,    // No limit
 		IncludeAPIKey: false,
 	}
 
