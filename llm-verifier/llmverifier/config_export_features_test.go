@@ -110,7 +110,7 @@ func TestFormatModelNameWithSuffixes(t *testing.T) {
 			modelID: "free-model",
 			result: VerificationResult{
 				ModelInfo: ModelInfo{
-					Endpoint: "https://api.groq.com/openai/v1",
+					Endpoint: "https://api.chutes.ai/v1", // Chutes is a free provider
 				},
 				FeatureDetection: FeatureDetectionResult{
 					Streaming: true,
