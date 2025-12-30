@@ -607,62 +607,161 @@ func (s *Supervisor) GetSystemStatus() map[string]interface{} {
 	}
 }
 
+// Helper functions for pointer values
+func intPtr(i int) *int          { return &i }
+func float64Ptr(f float64) *float64 { return &f }
+
 // registerDefaultHandlers registers built-in task handlers
 func (s *Supervisor) registerDefaultHandlers() {
-	// Analysis task handler
+	// Analysis task handler - performs real LLM-based analysis
 	s.taskHandlers["analysis"] = func(ctx context.Context, task *Task) (interface{}, error) {
 		description := task.Data["description"].(string)
 		log.Printf("Executing analysis task: %s", description)
 
-		// Simulate analysis work
-		time.Sleep(2 * time.Second)
+		// Use real LLM for analysis if verifier is available
+		if s.verifier != nil {
+			client := s.verifier.GetGlobalClient()
+			if client != nil {
+				prompt := fmt.Sprintf("Analyze the following: %s\n\nProvide a detailed analysis including key findings, potential issues, and recommendations.", description)
+				resp, err := client.ChatCompletion(ctx, llmverifier.ChatCompletionRequest{
+					Model: "gpt-3.5-turbo", // Default model, can be configured
+					Messages: []llmverifier.Message{
+						{Role: "system", Content: "You are an expert analyst. Provide thorough and actionable analysis."},
+						{Role: "user", Content: prompt},
+					},
+					MaxTokens:   intPtr(1000),
+					Temperature: float64Ptr(0.7),
+				})
+				if err != nil {
+					log.Printf("Analysis LLM call failed: %v", err)
+					return nil, fmt.Errorf("analysis failed: %w", err)
+				}
 
-		return map[string]any{
-			"analysis_result": "Analysis completed",
-			"description":     description,
-		}, nil
+				if len(resp.Choices) > 0 {
+					return map[string]any{
+						"analysis_result": resp.Choices[0].Message.Content,
+						"description":     description,
+						"model_used":      resp.Model,
+						"tokens_used":     resp.Usage.TotalTokens,
+					}, nil
+				}
+			}
+		}
+
+		return nil, fmt.Errorf("analysis unavailable: LLM verifier not configured")
 	}
 
-	// Generation task handler
+	// Generation task handler - performs real LLM-based content generation
 	s.taskHandlers["generation"] = func(ctx context.Context, task *Task) (interface{}, error) {
 		description := task.Data["description"].(string)
 		log.Printf("Executing generation task: %s", description)
 
-		// Simulate generation work
-		time.Sleep(3 * time.Second)
+		// Use real LLM for generation if verifier is available
+		if s.verifier != nil {
+			client := s.verifier.GetGlobalClient()
+			if client != nil {
+				prompt := fmt.Sprintf("Generate content based on: %s", description)
+				resp, err := client.ChatCompletion(ctx, llmverifier.ChatCompletionRequest{
+					Model: "gpt-3.5-turbo", // Default model, can be configured
+					Messages: []llmverifier.Message{
+						{Role: "system", Content: "You are a helpful content generator. Create high-quality, relevant content based on the user's request."},
+						{Role: "user", Content: prompt},
+					},
+					MaxTokens:   intPtr(2000),
+					Temperature: float64Ptr(0.8),
+				})
+				if err != nil {
+					log.Printf("Generation LLM call failed: %v", err)
+					return nil, fmt.Errorf("generation failed: %w", err)
+				}
 
-		return map[string]interface{}{
-			"generated_content": "Generated content placeholder",
-			"description":       description,
-		}, nil
+				if len(resp.Choices) > 0 {
+					return map[string]interface{}{
+						"generated_content": resp.Choices[0].Message.Content,
+						"description":       description,
+						"model_used":        resp.Model,
+						"tokens_used":       resp.Usage.TotalTokens,
+					}, nil
+				}
+			}
+		}
+
+		return nil, fmt.Errorf("generation unavailable: LLM verifier not configured")
 	}
 
-	// Testing task handler
+	// Testing task handler - performs real LLM-based test generation/analysis
 	s.taskHandlers["testing"] = func(ctx context.Context, task *Task) (interface{}, error) {
 		description := task.Data["description"].(string)
 		log.Printf("Executing testing task: %s", description)
 
-		// Simulate testing work
-		time.Sleep(1 * time.Second)
+		// Use real LLM for test analysis if verifier is available
+		if s.verifier != nil {
+			client := s.verifier.GetGlobalClient()
+			if client != nil {
+				prompt := fmt.Sprintf("Generate test cases and analyze testing requirements for: %s\n\nProvide:\n1. Test case descriptions\n2. Expected outcomes\n3. Edge cases to consider\n4. Testing recommendations", description)
+				resp, err := client.ChatCompletion(ctx, llmverifier.ChatCompletionRequest{
+					Model: "gpt-3.5-turbo", // Default model, can be configured
+					Messages: []llmverifier.Message{
+						{Role: "system", Content: "You are a software testing expert. Generate comprehensive test cases and testing recommendations."},
+						{Role: "user", Content: prompt},
+					},
+					MaxTokens:   intPtr(1500),
+					Temperature: float64Ptr(0.6),
+				})
+				if err != nil {
+					log.Printf("Testing LLM call failed: %v", err)
+					return nil, fmt.Errorf("testing task failed: %w", err)
+				}
 
-		return map[string]interface{}{
-			"test_results": "All tests passed",
-			"description":  description,
-		}, nil
+				if len(resp.Choices) > 0 {
+					return map[string]interface{}{
+						"test_results": resp.Choices[0].Message.Content,
+						"description":  description,
+						"model_used":   resp.Model,
+						"tokens_used":  resp.Usage.TotalTokens,
+					}, nil
+				}
+			}
+		}
+
+		return nil, fmt.Errorf("testing unavailable: LLM verifier not configured")
 	}
 
-	// General task handler (fallback)
+	// General task handler (fallback) - performs real LLM-based task processing
 	s.taskHandlers["general"] = func(ctx context.Context, task *Task) (interface{}, error) {
 		description := task.Data["description"].(string)
 		log.Printf("Executing general task: %s", description)
 
-		// Simulate general work
-		time.Sleep(2 * time.Second)
+		// Use real LLM for general tasks if verifier is available
+		if s.verifier != nil {
+			client := s.verifier.GetGlobalClient()
+			if client != nil {
+				resp, err := client.ChatCompletion(ctx, llmverifier.ChatCompletionRequest{
+					Model: "gpt-3.5-turbo", // Default model, can be configured
+					Messages: []llmverifier.Message{
+						{Role: "system", Content: "You are a helpful assistant. Complete the requested task thoroughly and provide useful output."},
+						{Role: "user", Content: description},
+					},
+					MaxTokens:   intPtr(1500),
+					Temperature: float64Ptr(0.7),
+				})
+				if err != nil {
+					log.Printf("General task LLM call failed: %v", err)
+					return nil, fmt.Errorf("task failed: %w", err)
+				}
 
-		return map[string]interface{}{
-			"result":      "Task completed",
-			"description": description,
-		}, nil
+				if len(resp.Choices) > 0 {
+					return map[string]interface{}{
+						"result":      resp.Choices[0].Message.Content,
+						"description": description,
+						"model_used":  resp.Model,
+						"tokens_used": resp.Usage.TotalTokens,
+					}, nil
+				}
+			}
+		}
+
+		return nil, fmt.Errorf("task unavailable: LLM verifier not configured")
 	}
 }
 

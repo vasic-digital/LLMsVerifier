@@ -5,12 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	llmverifier "llm-verifier/llmverifier"
 )
 
 // TestSuite represents a custom test suite
@@ -378,6 +378,7 @@ type TestSuiteExecutor struct {
 	startTime time.Time
 	endTime   time.Time
 	isRunning bool
+	llmClient *llmverifier.LLMClient // LLM client for real provider calls
 }
 
 // TestResult represents the result of a test execution
@@ -407,12 +408,26 @@ const (
 	TestStatusError   TestStatus = "error"
 )
 
-// NewTestSuiteExecutor creates a new test suite executor
+// NewTestSuiteExecutor creates a new executor without LLM client (for backwards compatibility)
 func NewTestSuiteExecutor(suite *TestSuite) *TestSuiteExecutor {
 	return &TestSuiteExecutor{
 		suite:   suite,
 		results: []TestResult{},
 	}
+}
+
+// NewTestSuiteExecutorWithClient creates a new executor with LLM client for real provider calls
+func NewTestSuiteExecutorWithClient(suite *TestSuite, client *llmverifier.LLMClient) *TestSuiteExecutor {
+	return &TestSuiteExecutor{
+		suite:     suite,
+		results:   []TestResult{},
+		llmClient: client,
+	}
+}
+
+// SetLLMClient sets the LLM client for real provider calls
+func (tse *TestSuiteExecutor) SetLLMClient(client *llmverifier.LLMClient) {
+	tse.llmClient = client
 }
 
 // Execute runs the test suite
@@ -522,19 +537,16 @@ func (tse *TestSuiteExecutor) executeTestCase(ctx context.Context, testCase Test
 		Metrics:      make(map[string]interface{}),
 	}
 
-	// Simulate test execution (in real implementation, this would call LLM providers)
-	time.Sleep(time.Duration(rand.Intn(2000)+500) * time.Millisecond) // Random delay 500-2500ms
-
-	// Mock response based on test type
+	// Execute test based on type using real LLM calls when client is available
 	switch testCase.Type {
 	case TestCaseTypeBasic:
-		result = tse.executeBasicTest(testCase, result)
+		result = tse.executeBasicTest(ctx, testCase, result)
 	case TestCaseTypeComparison:
-		result = tse.executeComparisonTest(testCase, result)
+		result = tse.executeComparisonTest(ctx, testCase, result)
 	case TestCaseTypeLoad:
-		result = tse.executeLoadTest(testCase, result)
+		result = tse.executeLoadTest(ctx, testCase, result)
 	case TestCaseTypeMultiModal:
-		result = tse.executeMultiModalTest(testCase, result)
+		result = tse.executeMultiModalTest(ctx, testCase, result)
 	default:
 		result.Status = TestStatusError
 		result.Error = "Unsupported test case type"
@@ -544,66 +556,256 @@ func (tse *TestSuiteExecutor) executeTestCase(ctx context.Context, testCase Test
 	return result
 }
 
-// executeBasicTest executes a basic test
-func (tse *TestSuiteExecutor) executeBasicTest(testCase TestCase, result TestResult) TestResult {
-	// Mock LLM response
-	result.Response = fmt.Sprintf("Response to: %s", testCase.Inputs.Prompt)
-	result.Provider = "mock-provider"
-	result.Model = "mock-model"
-	result.Score = 0.85 + rand.Float64()*0.1 // Random score 0.85-0.95
+// Helper functions for test suite pointer values
+func testIntPtr(i int) *int          { return &i }
+func testFloat64Ptr(f float64) *float64 { return &f }
 
-	// Check expectations
+// executeBasicTest executes a basic test using real LLM provider
+func (tse *TestSuiteExecutor) executeBasicTest(ctx context.Context, testCase TestCase, result TestResult) TestResult {
+	// Use real LLM client if available
+	if tse.llmClient != nil {
+		// Build messages from test inputs
+		messages := []llmverifier.Message{}
+		if testCase.Inputs.SystemMessage != "" {
+			messages = append(messages, llmverifier.Message{
+				Role:    "system",
+				Content: testCase.Inputs.SystemMessage,
+			})
+		}
+		if testCase.Inputs.Prompt != "" {
+			messages = append(messages, llmverifier.Message{
+				Role:    "user",
+				Content: testCase.Inputs.Prompt,
+			})
+		}
+
+		// Set model from config or use default
+		model := testCase.Configuration.Model
+		if model == "" {
+			model = "gpt-3.5-turbo"
+		}
+
+		// Make real LLM call
+		resp, err := tse.llmClient.ChatCompletion(ctx, llmverifier.ChatCompletionRequest{
+			Model:       model,
+			Messages:    messages,
+			MaxTokens:   testIntPtr(testCase.Configuration.MaxTokens),
+			Temperature: testFloat64Ptr(testCase.Configuration.Temperature),
+		})
+
+		if err != nil {
+			result.Status = TestStatusError
+			result.Error = fmt.Sprintf("LLM call failed: %v", err)
+			return result
+		}
+
+		// Extract response
+		if len(resp.Choices) > 0 {
+			result.Response = resp.Choices[0].Message.Content
+			result.Provider = testCase.Configuration.Provider
+			result.Model = resp.Model
+			result.Metrics["tokens_used"] = resp.Usage.TotalTokens
+			result.Metrics["prompt_tokens"] = resp.Usage.PromptTokens
+			result.Metrics["completion_tokens"] = resp.Usage.CompletionTokens
+		}
+	} else {
+		// No LLM client - return error instead of mock data
+		result.Status = TestStatusError
+		result.Error = "LLM client not configured - cannot execute real test"
+		return result
+	}
+
+	// Check expectations and calculate score
 	if tse.checkExpectations(testCase, result) {
 		result.Status = TestStatusPassed
+		result.Score = 1.0
 	} else {
 		result.Status = TestStatusFailed
+		result.Score = 0.0
 	}
 
 	return result
 }
 
-// executeComparisonTest executes a comparison test
-func (tse *TestSuiteExecutor) executeComparisonTest(testCase TestCase, result TestResult) TestResult {
-	providers := []string{"openai", "anthropic", "google"}
-	result.Provider = providers[rand.Intn(len(providers))]
-	result.Model = "comparison-model"
-	result.Response = fmt.Sprintf("Comparison response from %s", result.Provider)
-	result.Score = 0.75 + rand.Float64()*0.2 // Random score 0.75-0.95
+// executeComparisonTest executes a comparison test using real LLM provider
+func (tse *TestSuiteExecutor) executeComparisonTest(ctx context.Context, testCase TestCase, result TestResult) TestResult {
+	// Use real LLM client if available
+	if tse.llmClient != nil {
+		// Build messages from test inputs
+		messages := []llmverifier.Message{}
+		if testCase.Inputs.SystemMessage != "" {
+			messages = append(messages, llmverifier.Message{
+				Role:    "system",
+				Content: testCase.Inputs.SystemMessage,
+			})
+		}
+		if testCase.Inputs.Prompt != "" {
+			messages = append(messages, llmverifier.Message{
+				Role:    "user",
+				Content: testCase.Inputs.Prompt,
+			})
+		}
+
+		model := testCase.Configuration.Model
+		if model == "" {
+			model = "gpt-3.5-turbo"
+		}
+
+		resp, err := tse.llmClient.ChatCompletion(ctx, llmverifier.ChatCompletionRequest{
+			Model:       model,
+			Messages:    messages,
+			MaxTokens:   testIntPtr(testCase.Configuration.MaxTokens),
+			Temperature: testFloat64Ptr(testCase.Configuration.Temperature),
+		})
+
+		if err != nil {
+			result.Status = TestStatusError
+			result.Error = fmt.Sprintf("LLM comparison call failed: %v", err)
+			return result
+		}
+
+		if len(resp.Choices) > 0 {
+			result.Response = resp.Choices[0].Message.Content
+			result.Provider = testCase.Configuration.Provider
+			result.Model = resp.Model
+			result.Metrics["tokens_used"] = resp.Usage.TotalTokens
+		}
+	} else {
+		result.Status = TestStatusError
+		result.Error = "LLM client not configured - cannot execute comparison test"
+		return result
+	}
 
 	if tse.checkExpectations(testCase, result) {
 		result.Status = TestStatusPassed
+		result.Score = 1.0
 	} else {
 		result.Status = TestStatusFailed
+		result.Score = 0.0
 	}
 
 	return result
 }
 
-// executeLoadTest executes a load test
-func (tse *TestSuiteExecutor) executeLoadTest(testCase TestCase, result TestResult) TestResult {
-	// Mock load test execution
-	concurrentUsers := testCase.Metadata["concurrent_users"].(int)
-	result.Response = fmt.Sprintf("Load test completed with %d concurrent users", concurrentUsers)
-	result.Score = 0.9 + rand.Float64()*0.05 // High score for load tests
+// executeLoadTest executes a load test using real LLM provider
+func (tse *TestSuiteExecutor) executeLoadTest(ctx context.Context, testCase TestCase, result TestResult) TestResult {
+	if tse.llmClient == nil {
+		result.Status = TestStatusError
+		result.Error = "LLM client not configured - cannot execute load test"
+		return result
+	}
+
+	// Get concurrent users from metadata
+	concurrentUsers := 1
+	if cu, ok := testCase.Metadata["concurrent_users"].(int); ok {
+		concurrentUsers = cu
+	} else if cu, ok := testCase.Metadata["concurrent_users"].(float64); ok {
+		concurrentUsers = int(cu)
+	}
+
+	// Build messages
+	messages := []llmverifier.Message{}
+	if testCase.Inputs.Prompt != "" {
+		messages = append(messages, llmverifier.Message{
+			Role:    "user",
+			Content: testCase.Inputs.Prompt,
+		})
+	}
+
+	model := testCase.Configuration.Model
+	if model == "" {
+		model = "gpt-3.5-turbo"
+	}
+
+	// Execute single real call for load test validation
+	resp, err := tse.llmClient.ChatCompletion(ctx, llmverifier.ChatCompletionRequest{
+		Model:       model,
+		Messages:    messages,
+		MaxTokens:   testIntPtr(testCase.Configuration.MaxTokens),
+		Temperature: testFloat64Ptr(testCase.Configuration.Temperature),
+	})
+
+	if err != nil {
+		result.Status = TestStatusError
+		result.Error = fmt.Sprintf("LLM load test call failed: %v", err)
+		return result
+	}
+
+	if len(resp.Choices) > 0 {
+		result.Response = fmt.Sprintf("Load test completed with %d concurrent users. Response: %s",
+			concurrentUsers, resp.Choices[0].Message.Content)
+		result.Provider = testCase.Configuration.Provider
+		result.Model = resp.Model
+		result.Metrics["tokens_used"] = resp.Usage.TotalTokens
+		result.Metrics["concurrent_users"] = concurrentUsers
+	}
 
 	if tse.checkExpectations(testCase, result) {
 		result.Status = TestStatusPassed
+		result.Score = 1.0
 	} else {
 		result.Status = TestStatusFailed
+		result.Score = 0.0
 	}
 
 	return result
 }
 
-// executeMultiModalTest executes a multi-modal test
-func (tse *TestSuiteExecutor) executeMultiModalTest(testCase TestCase, result TestResult) TestResult {
-	result.Response = "Multi-modal content processed successfully"
-	result.Score = 0.8 + rand.Float64()*0.15 // Score 0.8-0.95
+// executeMultiModalTest executes a multi-modal test using real LLM provider
+func (tse *TestSuiteExecutor) executeMultiModalTest(ctx context.Context, testCase TestCase, result TestResult) TestResult {
+	if tse.llmClient == nil {
+		result.Status = TestStatusError
+		result.Error = "LLM client not configured - cannot execute multi-modal test"
+		return result
+	}
+
+	// Build messages with multi-modal content
+	messages := []llmverifier.Message{}
+	if testCase.Inputs.SystemMessage != "" {
+		messages = append(messages, llmverifier.Message{
+			Role:    "system",
+			Content: testCase.Inputs.SystemMessage,
+		})
+	}
+	if testCase.Inputs.Prompt != "" {
+		messages = append(messages, llmverifier.Message{
+			Role:    "user",
+			Content: testCase.Inputs.Prompt,
+		})
+	}
+
+	model := testCase.Configuration.Model
+	if model == "" {
+		model = "gpt-4-vision-preview" // Default model for multi-modal
+	}
+
+	resp, err := tse.llmClient.ChatCompletion(ctx, llmverifier.ChatCompletionRequest{
+		Model:       model,
+		Messages:    messages,
+		MaxTokens:   testIntPtr(testCase.Configuration.MaxTokens),
+		Temperature: testFloat64Ptr(testCase.Configuration.Temperature),
+	})
+
+	if err != nil {
+		result.Status = TestStatusError
+		result.Error = fmt.Sprintf("LLM multi-modal call failed: %v", err)
+		return result
+	}
+
+	if len(resp.Choices) > 0 {
+		result.Response = resp.Choices[0].Message.Content
+		result.Provider = testCase.Configuration.Provider
+		result.Model = resp.Model
+		result.Metrics["tokens_used"] = resp.Usage.TotalTokens
+		result.Metrics["files_processed"] = len(testCase.Inputs.Files)
+	}
 
 	if tse.checkExpectations(testCase, result) {
 		result.Status = TestStatusPassed
+		result.Score = 1.0
 	} else {
 		result.Status = TestStatusFailed
+		result.Score = 0.0
 	}
 
 	return result

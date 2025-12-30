@@ -335,38 +335,92 @@ func (hc *HealthChecker) checkDatabaseHealth() {
 	}
 }
 
-// checkAPIHealth checks API server health (placeholder)
+// checkAPIHealth checks API server health using real metrics
 func (hc *HealthChecker) checkAPIHealth() {
+	// Get real API metrics from the tracker
+	apiMetrics := hc.metricsTracker.GetAPIMetrics()
+
 	hc.mu.Lock()
 	defer hc.mu.Unlock()
 
 	component := hc.components["api"]
 	component.LastChecked = time.Now()
-	component.Status = HealthStatusHealthy
-	component.Message = "API server is responding"
-	component.ResponseTime = time.Millisecond * 10
+	component.ResponseTime = apiMetrics.AverageResponseTime
+
+	// Determine health status based on real metrics
+	if apiMetrics.ErrorRate > 0.5 { // More than 50% errors
+		component.Status = HealthStatusUnhealthy
+		component.Message = fmt.Sprintf("API error rate critical: %.1f%%", apiMetrics.ErrorRate*100)
+	} else if apiMetrics.ErrorRate > 0.1 { // More than 10% errors
+		component.Status = HealthStatusDegraded
+		component.Message = fmt.Sprintf("API error rate elevated: %.1f%%", apiMetrics.ErrorRate*100)
+	} else if apiMetrics.AverageResponseTime > 5*time.Second {
+		component.Status = HealthStatusDegraded
+		component.Message = fmt.Sprintf("API response slow: %v", apiMetrics.AverageResponseTime)
+	} else {
+		component.Status = HealthStatusHealthy
+		component.Message = "API server is responding normally"
+	}
 
 	component.Details = map[string]interface{}{
-		"endpoints_available": 15,
-		"active_connections":  5,
+		"total_requests":       apiMetrics.TotalRequests,
+		"active_requests":      apiMetrics.ActiveRequests,
+		"error_rate_percent":   apiMetrics.ErrorRate * 100,
+		"requests_per_second":  apiMetrics.RequestRate,
+		"avg_response_time_ms": apiMetrics.AverageResponseTime.Milliseconds(),
+		"endpoints_tracked":    len(apiMetrics.EndpointStats),
 	}
 }
 
-// checkSchedulerHealth checks job scheduler health (placeholder)
+// checkSchedulerHealth checks job scheduler health using real metrics
 func (hc *HealthChecker) checkSchedulerHealth() {
+	// Get real scheduler metrics from the tracker
+	schedStats := hc.metricsTracker.GetSchedulerStats()
+
 	hc.mu.Lock()
 	defer hc.mu.Unlock()
 
 	component := hc.components["scheduler"]
 	component.LastChecked = time.Now()
-	component.Status = HealthStatusHealthy
-	component.Message = "Scheduler is running"
-	component.ResponseTime = time.Millisecond * 5
+
+	// Calculate failure rate
+	totalJobs := schedStats.CompletedJobs + schedStats.FailedJobs
+	failureRate := float64(0)
+	if totalJobs > 0 {
+		failureRate = float64(schedStats.FailedJobs) / float64(totalJobs)
+	}
+
+	// Determine health status based on real metrics
+	if !schedStats.IsRunning {
+		component.Status = HealthStatusUnhealthy
+		component.Message = "Scheduler is not running"
+		component.ResponseTime = 0
+	} else if failureRate > 0.5 { // More than 50% failures
+		component.Status = HealthStatusUnhealthy
+		component.Message = fmt.Sprintf("Scheduler failure rate critical: %.1f%%", failureRate*100)
+		component.ResponseTime = time.Millisecond * 100
+	} else if failureRate > 0.1 { // More than 10% failures
+		component.Status = HealthStatusDegraded
+		component.Message = fmt.Sprintf("Scheduler failure rate elevated: %.1f%%", failureRate*100)
+		component.ResponseTime = time.Millisecond * 50
+	} else if schedStats.QueuedJobs > 100 { // Large queue backlog
+		component.Status = HealthStatusDegraded
+		component.Message = fmt.Sprintf("Scheduler queue backlog: %d jobs", schedStats.QueuedJobs)
+		component.ResponseTime = time.Millisecond * 20
+	} else {
+		component.Status = HealthStatusHealthy
+		component.Message = "Scheduler is running normally"
+		component.ResponseTime = time.Millisecond * 5
+	}
 
 	component.Details = map[string]interface{}{
-		"active_jobs":    3,
-		"completed_jobs": 150,
-		"failed_jobs":    2,
+		"is_running":      schedStats.IsRunning,
+		"active_jobs":     schedStats.ActiveJobs,
+		"queued_jobs":     schedStats.QueuedJobs,
+		"completed_jobs":  schedStats.CompletedJobs,
+		"failed_jobs":     schedStats.FailedJobs,
+		"failure_rate":    failureRate * 100,
+		"last_check_time": schedStats.LastCheckTime,
 	}
 }
 

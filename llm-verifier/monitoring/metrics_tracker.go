@@ -44,6 +44,14 @@ type MetricsTracker struct {
 	notifMessagesSent       int
 	notifDeliveryRate       float64
 
+	// Scheduler metrics
+	schedActiveJobs     int
+	schedCompletedJobs  int64
+	schedFailedJobs     int64
+	schedQueuedJobs     int
+	schedIsRunning      bool
+	schedLastCheckTime  time.Time
+
 	startTime time.Time
 }
 
@@ -371,4 +379,73 @@ func (mt *MetricsTracker) RecordNotificationSent(delivered bool) {
 		}
 		mt.notifDeliveryRate = deliveredCount / float64(totalSent)
 	}
+}
+
+// Scheduler Stats Methods
+
+// SchedulerStats represents scheduler performance statistics
+type SchedulerStats struct {
+	ActiveJobs     int       `json:"active_jobs"`
+	CompletedJobs  int64     `json:"completed_jobs"`
+	FailedJobs     int64     `json:"failed_jobs"`
+	QueuedJobs     int       `json:"queued_jobs"`
+	IsRunning      bool      `json:"is_running"`
+	LastCheckTime  time.Time `json:"last_check_time"`
+}
+
+func (mt *MetricsTracker) GetSchedulerStats() SchedulerStats {
+	mt.mu.RLock()
+	defer mt.mu.RUnlock()
+
+	return SchedulerStats{
+		ActiveJobs:     mt.schedActiveJobs,
+		CompletedJobs:  mt.schedCompletedJobs,
+		FailedJobs:     mt.schedFailedJobs,
+		QueuedJobs:     mt.schedQueuedJobs,
+		IsRunning:      mt.schedIsRunning,
+		LastCheckTime:  mt.schedLastCheckTime,
+	}
+}
+
+func (mt *MetricsTracker) SetSchedulerRunning(running bool) {
+	mt.mu.Lock()
+	defer mt.mu.Unlock()
+	mt.schedIsRunning = running
+	mt.schedLastCheckTime = time.Now()
+}
+
+func (mt *MetricsTracker) RecordSchedulerJobStarted() {
+	mt.mu.Lock()
+	defer mt.mu.Unlock()
+	mt.schedActiveJobs++
+	if mt.schedQueuedJobs > 0 {
+		mt.schedQueuedJobs--
+	}
+}
+
+func (mt *MetricsTracker) RecordSchedulerJobCompleted(success bool) {
+	mt.mu.Lock()
+	defer mt.mu.Unlock()
+	if mt.schedActiveJobs > 0 {
+		mt.schedActiveJobs--
+	}
+	if success {
+		mt.schedCompletedJobs++
+	} else {
+		mt.schedFailedJobs++
+	}
+}
+
+func (mt *MetricsTracker) QueueSchedulerJob() {
+	mt.mu.Lock()
+	defer mt.mu.Unlock()
+	mt.schedQueuedJobs++
+}
+
+func (mt *MetricsTracker) SetSchedulerJobCount(active, queued int) {
+	mt.mu.Lock()
+	defer mt.mu.Unlock()
+	mt.schedActiveJobs = active
+	mt.schedQueuedJobs = queued
+	mt.schedLastCheckTime = time.Now()
 }

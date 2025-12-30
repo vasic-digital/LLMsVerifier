@@ -199,14 +199,22 @@ export class ApiService {
       let completed = 0;
       const total = 3;
 
+      // Store verification results for average calculation
+      let verificationResults: VerificationResult[] = [];
+
       const checkComplete = () => {
         completed++;
         if (completed === total) {
           // Calculate derived stats
           stats.pendingModels = stats.totalModels - stats.verifiedModels;
-          if (stats.verifiedModels > 0) {
-            // This would need to be calculated from actual verification results
-            stats.averageScore = 87.5; // Mock for now
+
+          // Calculate real average score from verification results
+          if (verificationResults.length > 0) {
+            const completedResults = verificationResults.filter(r => r.status === 'completed' && r.overall_score > 0);
+            if (completedResults.length > 0) {
+              const totalScore = completedResults.reduce((sum, r) => sum + r.overall_score, 0);
+              stats.averageScore = Math.round((totalScore / completedResults.length) * 10) / 10; // Round to 1 decimal
+            }
           }
 
           observer.next(stats);
@@ -239,6 +247,9 @@ export class ApiService {
 
       results$.subscribe({
         next: (results) => {
+          // Store results for average score calculation
+          verificationResults = results;
+
           if (results.length > 0) {
             // Create activity items from recent results
             stats.recentActivity = results.slice(0, 5).map(result => ({

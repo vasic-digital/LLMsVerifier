@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAlertSeverityConstants(t *testing.T) {
+func TestAlertSeverityConstants_Monitoring(t *testing.T) {
 	assert.Equal(t, AlertSeverity("info"), AlertSeverityInfo)
 	assert.Equal(t, AlertSeverity("warning"), AlertSeverityWarning)
 	assert.Equal(t, AlertSeverity("error"), AlertSeverityError)
@@ -383,17 +383,17 @@ func TestCriticalMetricsTrackerGetPerformanceReport(t *testing.T) {
 	assert.Equal(t, "ok", report["status"])
 }
 
-func TestNewAlertManager(t *testing.T) {
-	mc := NewMetricsCollector()
-	am := NewAlertManager(mc)
+func TestNewAlertManager_Monitoring(t *testing.T) {
+	mt := NewMetricsTracker()
+	am := NewAlertManager(mt)
 
 	assert.NotNil(t, am)
 	assert.NotNil(t, am.metricsTracker)
 }
 
-func TestAlertManagerGetActiveAlerts(t *testing.T) {
-	mc := NewMetricsCollector()
-	am := NewAlertManager(mc)
+func TestAlertManagerGetActiveAlerts_Monitoring(t *testing.T) {
+	mt := NewMetricsTracker()
+	am := NewAlertManager(mt)
 
 	alerts := am.GetActiveAlerts()
 
