@@ -591,11 +591,11 @@ func runAIConfigExport(args []string) {
 	var format, outputFile string
 	switch len(args) {
 	case 0:
-		format = "opencode"        // default
-		outputFile = "export.json" // default
+		format = "opencode"                                       // default
+		outputFile = fmt.Sprintf("%s_config.json", format) // use format-specific default
 	case 1:
 		format = args[0]
-		outputFile = "export.json" // default
+		outputFile = fmt.Sprintf("%s_config.json", format) // use format-specific default
 	case 2:
 		format = args[0]
 		outputFile = args[1]

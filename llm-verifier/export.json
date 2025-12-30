@@ -1,0 +1,31 @@
+{
+  "$schema": "./opencode-schema.json",
+  "agents": {
+    "title": {
+      "maxTokens": 80,
+      "model": "https://api.tripod"
+    }
+  },
+  "autoCompact": true,
+  "data": {
+    "directory": ".opencode"
+  },
+  "debug": false,
+  "debugLSP": false,
+  "providers": {
+    "https://api": {
+      "apiKey": "",
+      "disabled": false,
+      "provider": "https://api"
+    }
+  },
+  "shell": {
+    "args": [
+      "-l"
+    ],
+    "path": "/bin/bash"
+  },
+  "tui": {
+    "theme": "opencode"
+  }
+}

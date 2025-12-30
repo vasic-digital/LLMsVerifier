@@ -1,0 +1,78 @@
+{
+  "$schema": "https://charm.land/crush.json",
+  "providers": {
+    "upstage": {
+      "name": "upstage",
+      "type": "openai-compat",
+      "base_url": "https://api.upstage.ai/v1",
+      "models": [
+        {
+          "id": "tripod",
+          "name": "tripod",
+          "cost_per_1m_in": 3,
+          "cost_per_1m_out": 15,
+          "cost_per_1m_in_cached": 1.5,
+          "cost_per_1m_out_cached": 7.5,
+          "context_window": 128000,
+          "default_max_tokens": 4096
+        },
+        {
+          "id": "syn-pro-251021",
+          "name": "syn-pro-251021",
+          "cost_per_1m_in": 3,
+          "cost_per_1m_out": 15,
+          "cost_per_1m_in_cached": 1.5,
+          "cost_per_1m_out_cached": 7.5,
+          "context_window": 128000,
+          "default_max_tokens": 4096
+        },
+        {
+          "id": "syn-250326",
+          "name": "syn-250326",
+          "cost_per_1m_in": 3,
+          "cost_per_1m_out": 15,
+          "cost_per_1m_in_cached": 1.5,
+          "cost_per_1m_out_cached": 7.5,
+          "context_window": 128000,
+          "default_max_tokens": 4096
+        },
+        {
+          "id": "solar-syn",
+          "name": "solar-syn",
+          "cost_per_1m_in": 3,
+          "cost_per_1m_out": 15,
+          "cost_per_1m_in_cached": 1.5,
+          "cost_per_1m_out_cached": 7.5,
+          "context_window": 128000,
+          "default_max_tokens": 4096
+        },
+        {
+          "id": "solar-pro2-quant",
+          "name": "solar-pro2-quant",
+          "cost_per_1m_in": 3,
+          "cost_per_1m_out": 15,
+          "cost_per_1m_in_cached": 1.5,
+          "cost_per_1m_out_cached": 7.5,
+          "context_window": 128000,
+          "default_max_tokens": 4096
+        }
+      ]
+    }
+  },
+  "lsp": {
+    "go": {
+      "command": "gopls",
+      "enabled": true
+    },
+    "typescript": {
+      "command": "typescript-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "enabled": true
+    }
+  },
+  "options": {
+    "disable_provider_auto_update": true
+  }
+}

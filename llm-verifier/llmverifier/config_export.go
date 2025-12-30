@@ -946,6 +946,15 @@ func extractProvider(endpoint string) string {
 	// Clean and normalize endpoint
 	endpoint = strings.ToLower(strings.TrimSpace(endpoint))
 
+	// Strip protocol prefix
+	endpoint = strings.TrimPrefix(endpoint, "https://")
+	endpoint = strings.TrimPrefix(endpoint, "http://")
+
+	// Strip path suffix (keep just the domain)
+	if idx := strings.Index(endpoint, "/"); idx > 0 {
+		endpoint = endpoint[:idx]
+	}
+
 	// Primary provider detection
 	providerPatterns := map[string]string{
 		// Major providers
@@ -1001,6 +1010,8 @@ func extractProvider(endpoint string) string {
 		"api.cerebras.ai":    "cerebras",
 		"hyperbolic.xyz":     "hyperbolic",
 		"api.hyperbolic.xyz": "hyperbolic",
+		"vercel.com":         "vercel",
+		"api.vercel.com":     "vercel",
 
 		// Local and custom endpoints
 		"localhost": "local",
@@ -1939,9 +1950,9 @@ func exportCrushConfig(results []VerificationResult, outputPath string, options 
 			continue
 		}
 
-		// Crush focuses on coding capabilities - filter for high coding scores
-		if result.PerformanceScores.CodeCapability < 75 {
-			continue // Skip models with poor coding capability
+		// Include all models with non-zero scores (lower threshold to include more models)
+		if result.PerformanceScores.CodeCapability < 20 && result.PerformanceScores.OverallScore < 30 {
+			continue // Skip only models with very poor capability
 		}
 
 		provider := extractProvider(result.ModelInfo.Endpoint)
@@ -1977,11 +1988,20 @@ func exportCrushConfig(results []VerificationResult, outputPath string, options 
 			if isProviderFree(providerName) {
 				name += " free to use"
 			}
+			// Use default context window if not set
+			contextWindow := result.ModelInfo.ContextWindow.TotalMaxTokens
+			if contextWindow == 0 {
+				contextWindow = 128000 // Default 128K context window
+			}
+			defaultMaxTokens := result.ModelInfo.MaxOutputTokens
+			if defaultMaxTokens == 0 {
+				defaultMaxTokens = 4096 // Default max tokens
+			}
 			crushModel := CrushModel{
 				ID:                  result.ModelInfo.ID,
 				Name:                name,
-				ContextWindow:       result.ModelInfo.ContextWindow.TotalMaxTokens,
-				DefaultMaxTokens:    result.ModelInfo.MaxOutputTokens,
+				ContextWindow:       contextWindow,
+				DefaultMaxTokens:    defaultMaxTokens,
 				CanReason:           result.ModelInfo.SupportsReasoning,
 				SupportsAttachments: result.ModelInfo.SupportsVision || result.ModelInfo.SupportsAudio || result.ModelInfo.SupportsVideo,
 				SupportsHTTP3:       result.ModelInfo.SupportsHTTP3,
@@ -2349,32 +2369,52 @@ func createCorrectOpenCodeConfig(results []VerificationResult, options *ExportOp
 			// Categorize models by priority for different agents
 			modelLower := strings.ToLower(modelID)
 
-			// CODER: High-capability models
+			// CODER: High-capability coding models
 			if strings.Contains(modelLower, "gpt-4o") ||
 				strings.Contains(modelLower, "claude-3-5-sonnet") ||
 				strings.Contains(modelLower, "claude-3-opus") ||
-				strings.Contains(modelLower, "gpt-4-turbo") {
+				strings.Contains(modelLower, "gpt-4-turbo") ||
+				strings.Contains(modelLower, "deepseek-v3") ||
+				strings.Contains(modelLower, "deepseek-r1") ||
+				strings.Contains(modelLower, "qwen3-235b") ||
+				strings.Contains(modelLower, "qwen-coder") ||
+				strings.Contains(modelLower, "qwen3-coder") ||
+				strings.Contains(modelLower, "coder") {
 				modelsByPriority["coder_primary"] = append(modelsByPriority["coder_primary"], modelRef)
 			} else if strings.Contains(modelLower, "gpt-4") ||
-				strings.Contains(modelLower, "claude-3") {
+				strings.Contains(modelLower, "claude-3") ||
+				strings.Contains(modelLower, "qwen3") ||
+				strings.Contains(modelLower, "qwen2.5") ||
+				strings.Contains(modelLower, "llama-3.3") ||
+				strings.Contains(modelLower, "llama-4") ||
+				strings.Contains(modelLower, "deepseek") {
 				modelsByPriority["coder_secondary"] = append(modelsByPriority["coder_secondary"], modelRef)
 			}
 
-			// TASK: Balanced models
+			// TASK: Balanced general-purpose models
 			if strings.Contains(modelLower, "claude-3-5-haiku") ||
 				strings.Contains(modelLower, "gpt-4o-mini") ||
-				strings.Contains(modelLower, "claude-3-haiku") {
+				strings.Contains(modelLower, "claude-3-haiku") ||
+				strings.Contains(modelLower, "qwen3-30b") ||
+				strings.Contains(modelLower, "qwen3-32b") ||
+				strings.Contains(modelLower, "llama-3.1-8b") {
 				modelsByPriority["task_primary"] = append(modelsByPriority["task_primary"], modelRef)
 			} else if strings.Contains(modelLower, "gpt-4") ||
 				strings.Contains(modelLower, "claude-3") ||
-				strings.Contains(modelLower, "gpt-3.5") {
+				strings.Contains(modelLower, "gpt-3.5") ||
+				strings.Contains(modelLower, "qwen") ||
+				strings.Contains(modelLower, "llama") ||
+				strings.Contains(modelLower, "instruct") {
 				modelsByPriority["task_secondary"] = append(modelsByPriority["task_secondary"], modelRef)
 			}
 
-			// TITLE: Lightweight models
+			// TITLE: Lightweight models for title generation
 			if strings.Contains(modelLower, "gpt-3.5-turbo") ||
 				strings.Contains(modelLower, "claude-3-haiku") ||
-				strings.Contains(modelLower, "gpt-4o-mini") {
+				strings.Contains(modelLower, "gpt-4o-mini") ||
+				strings.Contains(modelLower, "qwen3-8b") ||
+				strings.Contains(modelLower, "qwen3-14b") ||
+				strings.Contains(modelLower, "llama-3.1-8b") {
 				modelsByPriority["title_primary"] = append(modelsByPriority["title_primary"], modelRef)
 			} else {
 				modelsByPriority["title_fallback"] = append(modelsByPriority["title_fallback"], modelRef)
@@ -2386,12 +2426,18 @@ func createCorrectOpenCodeConfig(results []VerificationResult, options *ExportOp
 			bestCoderModel = modelsByPriority["coder_primary"][0]
 		} else if len(modelsByPriority["coder_secondary"]) > 0 {
 			bestCoderModel = modelsByPriority["coder_secondary"][0]
+		} else if len(modelsByPriority["title_fallback"]) > 0 && bestCoderModel == "" {
+			// Fallback: use any available model for coder
+			bestCoderModel = modelsByPriority["title_fallback"][0]
 		}
 
 		if len(modelsByPriority["task_primary"]) > 0 {
 			bestTaskModel = modelsByPriority["task_primary"][0]
 		} else if len(modelsByPriority["task_secondary"]) > 0 {
 			bestTaskModel = modelsByPriority["task_secondary"][0]
+		} else if len(modelsByPriority["title_fallback"]) > 0 && bestTaskModel == "" {
+			// Fallback: use any available model for task
+			bestTaskModel = modelsByPriority["title_fallback"][0]
 		}
 
 		if len(modelsByPriority["title_primary"]) > 0 {
