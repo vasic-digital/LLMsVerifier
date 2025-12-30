@@ -1,9 +1,11 @@
 package providers
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -449,4 +451,165 @@ func TestRetryConfig_WithAllFields(t *testing.T) {
 	assert.NotNil(t, handler)
 	assert.Equal(t, 5, handler.retryConfig.MaxRetries)
 	assert.Equal(t, 2.5, handler.retryConfig.BackoffFactor)
+}
+
+// ==================== Recovery Strategies Tests ====================
+
+// MockCircuitBreaker implements CircuitBreaker for testing
+type MockCircuitBreaker struct {
+	ShouldFail bool
+	CallCount  int
+}
+
+func (m *MockCircuitBreaker) Call(fn func() error) error {
+	m.CallCount++
+	if m.ShouldFail {
+		return fmt.Errorf("circuit breaker open")
+	}
+	return fn()
+}
+
+func TestRecoveryStrategies_CircuitBreakerRecovery_Success(t *testing.T) {
+	rs := &RecoveryStrategies{}
+	cb := &MockCircuitBreaker{ShouldFail: false}
+
+	successResp := &http.Response{
+		StatusCode: 200,
+		Body:       io.NopCloser(strings.NewReader("success")),
+	}
+
+	fn := func() (*http.Response, []byte, error) {
+		return successResp, []byte("success"), nil
+	}
+
+	resp, body, err := rs.CircuitBreakerRecovery(cb, fn)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, []byte("success"), body)
+	assert.Equal(t, 1, cb.CallCount)
+}
+
+func TestRecoveryStrategies_CircuitBreakerRecovery_CircuitOpen(t *testing.T) {
+	rs := &RecoveryStrategies{}
+	cb := &MockCircuitBreaker{ShouldFail: true}
+
+	fn := func() (*http.Response, []byte, error) {
+		return &http.Response{StatusCode: 200}, nil, nil
+	}
+
+	resp, body, err := rs.CircuitBreakerRecovery(cb, fn)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "circuit breaker open")
+	assert.Nil(t, resp)
+	assert.Nil(t, body)
+}
+
+func TestRecoveryStrategies_CircuitBreakerRecovery_ServerError(t *testing.T) {
+	rs := &RecoveryStrategies{}
+	cb := &MockCircuitBreaker{ShouldFail: false}
+
+	serverErrorResp := &http.Response{
+		StatusCode: 500,
+		Body:       io.NopCloser(strings.NewReader("server error")),
+	}
+
+	fn := func() (*http.Response, []byte, error) {
+		return serverErrorResp, []byte("server error"), nil
+	}
+
+	resp, body, err := rs.CircuitBreakerRecovery(cb, fn)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "server error: 500")
+	assert.Nil(t, resp)
+	assert.Nil(t, body)
+}
+
+func TestRecoveryStrategies_CircuitBreakerRecovery_FunctionError(t *testing.T) {
+	rs := &RecoveryStrategies{}
+	cb := &MockCircuitBreaker{ShouldFail: false}
+
+	fn := func() (*http.Response, []byte, error) {
+		return nil, nil, fmt.Errorf("connection refused")
+	}
+
+	resp, body, err := rs.CircuitBreakerRecovery(cb, fn)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "connection refused")
+	assert.Nil(t, resp)
+	assert.Nil(t, body)
+}
+
+func TestRecoveryStrategies_FallbackRecovery_FirstEndpointSuccess(t *testing.T) {
+	rs := &RecoveryStrategies{}
+	endpoints := []string{"http://primary.api", "http://backup.api"}
+
+	callCount := 0
+	fn := func(endpoint string) (*http.Response, []byte, error) {
+		callCount++
+		return &http.Response{StatusCode: 200}, []byte(endpoint), nil
+	}
+
+	resp, body, err := rs.FallbackRecovery(endpoints, fn)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, []byte("http://primary.api"), body)
+	assert.Equal(t, 1, callCount)
+}
+
+func TestRecoveryStrategies_FallbackRecovery_FallbackToSecond(t *testing.T) {
+	rs := &RecoveryStrategies{}
+	endpoints := []string{"http://primary.api", "http://backup.api"}
+
+	callCount := 0
+	fn := func(endpoint string) (*http.Response, []byte, error) {
+		callCount++
+		if endpoint == "http://primary.api" {
+			return &http.Response{StatusCode: 500}, nil, nil
+		}
+		return &http.Response{StatusCode: 200}, []byte(endpoint), nil
+	}
+
+	resp, body, err := rs.FallbackRecovery(endpoints, fn)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, []byte("http://backup.api"), body)
+	assert.Equal(t, 2, callCount)
+}
+
+func TestRecoveryStrategies_FallbackRecovery_AllEndpointsFail(t *testing.T) {
+	rs := &RecoveryStrategies{}
+	endpoints := []string{"http://primary.api", "http://backup.api", "http://tertiary.api"}
+
+	fn := func(endpoint string) (*http.Response, []byte, error) {
+		return nil, nil, fmt.Errorf("connection refused to %s", endpoint)
+	}
+
+	resp, body, err := rs.FallbackRecovery(endpoints, fn)
+
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+	assert.Nil(t, body)
+	assert.Contains(t, err.Error(), "connection refused")
+}
+
+func TestRecoveryStrategies_FallbackRecovery_EmptyEndpoints(t *testing.T) {
+	rs := &RecoveryStrategies{}
+	endpoints := []string{}
+
+	fn := func(endpoint string) (*http.Response, []byte, error) {
+		return &http.Response{StatusCode: 200}, nil, nil
+	}
+
+	resp, body, err := rs.FallbackRecovery(endpoints, fn)
+
+	// With empty endpoints, lastErr is nil
+	assert.NoError(t, err)
+	assert.Nil(t, resp)
+	assert.Nil(t, body)
 }
