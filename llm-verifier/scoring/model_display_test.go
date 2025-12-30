@@ -19,6 +19,7 @@ func TestNewModelDisplayName(t *testing.T) {
 func TestFormatWithFeatureSuffixes(t *testing.T) {
 	md := NewModelDisplayName()
 	
+	// Note: (llmsvd) suffix is mandatory branding for all LLMsVerifier-generated model names
 	tests := []struct {
 		name        string
 		modelName   string
@@ -31,7 +32,7 @@ func TestFormatWithFeatureSuffixes(t *testing.T) {
 			features: map[string]interface{}{
 				"supports_brotli": true,
 			},
-			expected: "GPT-4 (brotli)",
+			expected: "GPT-4 (brotli) (llmsvd)",
 		},
 		{
 			name:      "multiple features",
@@ -41,7 +42,7 @@ func TestFormatWithFeatureSuffixes(t *testing.T) {
 				"supports_http3":  true,
 				"open_weights":    true,
 			},
-			expected: "Llama-2-70B (brotli) (http3) (open source)",
+			expected: "Llama-2-70B (brotli) (http3) (open source) (llmsvd)",
 		},
 		{
 			name:      "free model",
@@ -52,7 +53,7 @@ func TestFormatWithFeatureSuffixes(t *testing.T) {
 					"output": 0.0,
 				},
 			},
-			expected: "Free-Model (free to use)",
+			expected: "Free-Model (free to use) (llmsvd)",
 		},
 		{
 			name:      "toon feature",
@@ -60,13 +61,13 @@ func TestFormatWithFeatureSuffixes(t *testing.T) {
 			features: map[string]interface{}{
 				"supports_toon": true,
 			},
-			expected: "Toon-Model (toon)",
+			expected: "Toon-Model (toon) (llmsvd)",
 		},
 		{
 			name:      "no features",
 			modelName: "Standard-Model",
 			features:  map[string]interface{}{},
-			expected:  "Standard-Model",
+			expected:  "Standard-Model (llmsvd)",
 		},
 		{
 			name:      "fast model",
@@ -74,7 +75,7 @@ func TestFormatWithFeatureSuffixes(t *testing.T) {
 			features: map[string]interface{}{
 				"response_time_ms": 500.0,
 			},
-			expected: "Fast-Model (fast)",
+			expected: "Fast-Model (fast) (llmsvd)",
 		},
 		{
 			name:      "all features",
@@ -90,7 +91,7 @@ func TestFormatWithFeatureSuffixes(t *testing.T) {
 					"output": 0.0,
 				},
 			},
-			expected: "Premium-Model (brotli) (http3) (toon) (open source) (free to use) (fast)",
+			expected: "Premium-Model (brotli) (http3) (toon) (open source) (free to use) (fast) (llmsvd)",
 		},
 	}
 	
@@ -269,17 +270,18 @@ func TestExtractFeatures(t *testing.T) {
 // TestGetAllFeatureSuffixes tests getting all suffixes
 func TestGetAllFeatureSuffixes(t *testing.T) {
 	suffixes := GetAllFeatureSuffixes()
-	
+
+	// Note: (llmsvd) is mandatory branding suffix for all LLMsVerifier-generated model names
 	expectedSuffixes := []string{
 		"(brotli)", "(http3)", "(toon)", "(free to use)", "(open source)",
 		"(fast)", "(optimized)", "(premium)", "(experimental)", "(beta)",
-		"(prod)", "(stable)", "(deprecated)", "(legacy)",
+		"(prod)", "(stable)", "(deprecated)", "(legacy)", "(llmsvd)",
 	}
-	
+
 	if len(suffixes) != len(expectedSuffixes) {
 		t.Errorf("Expected %d suffixes, got %d", len(expectedSuffixes), len(suffixes))
 	}
-	
+
 	for _, expected := range expectedSuffixes {
 		found := false
 		for _, actual := range suffixes {
@@ -295,9 +297,10 @@ func TestGetAllFeatureSuffixes(t *testing.T) {
 }
 
 // TestFormatModelNameWithScoreAndFeatures tests combined formatting
+// Note: (llmsvd) suffix is mandatory branding for all LLMsVerifier-generated model names
 func TestFormatModelNameWithScoreAndFeatures(t *testing.T) {
 	md := NewModelDisplayName()
-	
+
 	tests := []struct {
 		name         string
 		modelName    string
@@ -312,7 +315,7 @@ func TestFormatModelNameWithScoreAndFeatures(t *testing.T) {
 			score:        8.5,
 			features:     map[string]interface{}{"supports_brotli": true},
 			includeScore: true,
-			expected:     "GPT-4 (brotli) (SC:8.5)",
+			expected:     "GPT-4 (brotli) (llmsvd) (SC:8.5)",
 		},
 		{
 			name:         "features only",
@@ -320,7 +323,7 @@ func TestFormatModelNameWithScoreAndFeatures(t *testing.T) {
 			score:        7.2,
 			features:     map[string]interface{}{"open_weights": true},
 			includeScore: false,
-			expected:     "Llama-2 (open source)",
+			expected:     "Llama-2 (open source) (llmsvd)",
 		},
 		{
 			name:         "score only",
@@ -328,7 +331,7 @@ func TestFormatModelNameWithScoreAndFeatures(t *testing.T) {
 			score:        6.0,
 			features:     map[string]interface{}{},
 			includeScore: true,
-			expected:     "Standard-Model (SC:6.0)",
+			expected:     "Standard-Model (llmsvd) (SC:6.0)",
 		},
 		{
 			name:         "complex model",
@@ -341,7 +344,7 @@ func TestFormatModelNameWithScoreAndFeatures(t *testing.T) {
 				"response_time_ms": 200.0,
 			},
 			includeScore: true,
-			expected:     "Premium-Model (brotli) (http3) (open source) (fast) (SC:9.2)",
+			expected:     "Premium-Model (brotli) (http3) (open source) (fast) (llmsvd) (SC:9.2)",
 		},
 	}
 	
@@ -494,15 +497,16 @@ func TestComplexRealWorldScenario(t *testing.T) {
 	}
 	
 	// Format with all features and score
+	// Note: (llmsvd) suffix is mandatory branding for all LLMsVerifier-generated model names
 	result := md.FormatModelNameWithScoreAndFeatures(
 		"GPT-4 Turbo",
 		8.7,
 		modelData,
 		true,
 	)
-	
-	expected := "GPT-4 Turbo (brotli) (http3) (fast) (SC:8.7)"
-	
+
+	expected := "GPT-4 Turbo (brotli) (http3) (fast) (llmsvd) (SC:8.7)"
+
 	if result != expected {
 		t.Errorf("Complex real-world scenario failed\nGot:      %v\nExpected: %v", result, expected)
 	}
@@ -523,19 +527,20 @@ func TestComplexRealWorldScenario(t *testing.T) {
 }
 
 // TestEmptyAndEdgeCases tests empty and edge cases
+// Note: (llmsvd) suffix is mandatory branding for all LLMsVerifier-generated model names
 func TestEmptyAndEdgeCases(t *testing.T) {
 	md := NewModelDisplayName()
-	
-	// Test with empty model name
+
+	// Test with empty model name - still gets mandatory branding suffix
 	result := md.FormatWithFeatureSuffixes("", map[string]interface{}{})
-	if result != "" {
-		t.Errorf("Empty model name should return empty, got: %v", result)
+	if result != " (llmsvd)" {
+		t.Errorf("Empty model name should return branding suffix, got: %v", result)
 	}
-	
-	// Test with nil features
+
+	// Test with nil features - model name gets mandatory branding suffix
 	result = md.FormatWithFeatureSuffixes("Model", nil)
-	if result != "Model" {
-		t.Errorf("Nil features should return clean name, got: %v", result)
+	if result != "Model (llmsvd)" {
+		t.Errorf("Nil features should return name with branding suffix, got: %v", result)
 	}
 	
 	// Test with only cost.output = 0 (not free)

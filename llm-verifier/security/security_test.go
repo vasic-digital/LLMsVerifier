@@ -102,11 +102,14 @@ func TestNewAPIKeyMasker(t *testing.T) {
 func TestAPIKeyMaskerMaskOpenAI(t *testing.T) {
 	akm := NewAPIKeyMasker()
 
-	input := "Authorization: Bearer ${API_KEY}"
+	// Use a realistic OpenAI API key pattern (sk- followed by 48 alphanumeric chars)
+	input := "Authorization: Bearer sk-abc123def456ghi789jkl012mno345pqr678stu901vwx234"
 	result := akm.MaskAPIKeys(input)
 
+	// The masker should modify the input by masking the API key
 	assert.NotEqual(t, input, result)
-	
+
+	// The masked result should contain asterisks
 	assert.Contains(t, result, "*")
 }
 
