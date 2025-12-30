@@ -751,3 +751,203 @@ func findSubstring(s, substr string) bool {
 	}
 	return false
 }
+
+// TestScoringEngine_CalculateBatchScores tests batch score calculation
+func TestScoringEngine_CalculateBatchScores(t *testing.T) {
+	db := setupTestDatabase(t)
+	defer cleanupTestDatabase(t, db)
+
+	mockClient := NewMockModelsDevClient()
+	logger := setupTestLogger()
+
+	// Create provider
+	provider := &database.Provider{
+		Name:     "Test Provider",
+		Endpoint: "https://api.test.com",
+		IsActive: true,
+	}
+	err := db.CreateProvider(provider)
+	if err != nil {
+		t.Fatalf("Failed to create provider: %v", err)
+	}
+
+	// Create test models
+	modelIDs := []string{"model-1", "model-2", "model-3"}
+	for _, modelID := range modelIDs {
+		model := &database.Model{
+			ProviderID: provider.ID,
+			ModelID:    modelID,
+			Name:       "Test Model " + modelID,
+		}
+		err := db.CreateModel(model)
+		if err != nil {
+			t.Fatalf("Failed to create model: %v", err)
+		}
+
+		mockClient.AddMockModel(ModelsDevModel{
+			ModelID:        modelID,
+			Model:          "Test Model " + modelID,
+			InputCostPer1M: 5.0,
+			ContextLimit:   8000,
+			ReleaseDate:    "2024-01-01",
+		})
+	}
+
+	engine := NewScoringEngine(db, mockClient, logger)
+
+	ctx := context.Background()
+	weights := DefaultScoreWeights()
+
+	scores, err := engine.CalculateBatchScores(ctx, modelIDs, &weights)
+	if err != nil {
+		t.Fatalf("Failed to calculate batch scores: %v", err)
+	}
+
+	// Should have calculated scores for all valid models
+	t.Logf("Calculated %d scores", len(scores))
+}
+
+// TestScoringEngine_GetTopModels tests getting top scoring models
+func TestScoringEngine_GetTopModels(t *testing.T) {
+	db := setupTestDatabase(t)
+	defer cleanupTestDatabase(t, db)
+
+	mockClient := NewMockModelsDevClient()
+	logger := setupTestLogger()
+
+	// Create provider
+	provider := &database.Provider{
+		Name:     "Test Provider",
+		Endpoint: "https://api.test.com",
+		IsActive: true,
+	}
+	err := db.CreateProvider(provider)
+	if err != nil {
+		t.Fatalf("Failed to create provider: %v", err)
+	}
+
+	// Create test models with scores
+	for i := 0; i < 5; i++ {
+		model := &database.Model{
+			ProviderID:   provider.ID,
+			ModelID:      fmt.Sprintf("top-model-%d", i),
+			Name:         fmt.Sprintf("Top Model %d", i),
+			OverallScore: float64(5 + i),
+		}
+		err := db.CreateModel(model)
+		if err != nil {
+			t.Fatalf("Failed to create model: %v", err)
+		}
+	}
+
+	engine := NewScoringEngine(db, mockClient, logger)
+	ctx := context.Background()
+
+	models, err := engine.GetTopModels(ctx, 3)
+	if err != nil {
+		t.Fatalf("Failed to get top models: %v", err)
+	}
+
+	if len(models) > 3 {
+		t.Errorf("Expected at most 3 models, got %d", len(models))
+	}
+
+	// Verify descending order
+	for i := 0; i < len(models)-1; i++ {
+		if models[i].OverallScore < models[i+1].OverallScore {
+			t.Errorf("Models not in descending score order")
+		}
+	}
+}
+
+// TestScoringEngine_GetModelsByScoreRange tests getting models by score range
+func TestScoringEngine_GetModelsByScoreRange(t *testing.T) {
+	db := setupTestDatabase(t)
+	defer cleanupTestDatabase(t, db)
+
+	mockClient := NewMockModelsDevClient()
+	logger := setupTestLogger()
+
+	// Create provider
+	provider := &database.Provider{
+		Name:     "Test Provider",
+		Endpoint: "https://api.test.com",
+		IsActive: true,
+	}
+	err := db.CreateProvider(provider)
+	if err != nil {
+		t.Fatalf("Failed to create provider: %v", err)
+	}
+
+	// Create test models with various scores
+	scores := []float64{3.0, 5.5, 7.0, 8.5, 9.0}
+	for i, score := range scores {
+		model := &database.Model{
+			ProviderID:   provider.ID,
+			ModelID:      fmt.Sprintf("range-model-%d", i),
+			Name:         fmt.Sprintf("Range Model %d", i),
+			OverallScore: score,
+		}
+		err := db.CreateModel(model)
+		if err != nil {
+			t.Fatalf("Failed to create model: %v", err)
+		}
+	}
+
+	engine := NewScoringEngine(db, mockClient, logger)
+	ctx := context.Background()
+
+	t.Run("get models in mid range", func(t *testing.T) {
+		models, err := engine.GetModelsByScoreRange(ctx, 5.0, 8.0, 10)
+		if err != nil {
+			t.Fatalf("Failed to get models by range: %v", err)
+		}
+		// Should include models with scores 5.5 and 7.0
+		t.Logf("Found %d models in range 5.0-8.0", len(models))
+	})
+
+	t.Run("get models in high range", func(t *testing.T) {
+		models, err := engine.GetModelsByScoreRange(ctx, 8.0, 10.0, 10)
+		if err != nil {
+			t.Fatalf("Failed to get models by range: %v", err)
+		}
+		// Should include models with scores 8.5 and 9.0
+		t.Logf("Found %d models in range 8.0-10.0", len(models))
+	})
+}
+
+// TestScoringEngine_SetAndGetWeights tests setting and getting weights
+func TestScoringEngine_SetAndGetWeights(t *testing.T) {
+	db := setupTestDatabase(t)
+	defer cleanupTestDatabase(t, db)
+
+	mockClient := NewMockModelsDevClient()
+	logger := setupTestLogger()
+
+	engine := NewScoringEngine(db, mockClient, logger)
+
+	// Get default weights
+	defaultWeights := engine.GetWeights()
+	t.Logf("Default weights: Speed=%.2f, Efficiency=%.2f, Cost=%.2f",
+		defaultWeights.ResponseSpeed, defaultWeights.ModelEfficiency, defaultWeights.CostEffectiveness)
+
+	// Set custom weights
+	customWeights := ScoreWeights{
+		ResponseSpeed:     0.3,
+		ModelEfficiency:   0.2,
+		CostEffectiveness: 0.2,
+		Capability:        0.2,
+		Recency:           0.1,
+	}
+
+	engine.SetWeights(customWeights)
+
+	// Verify weights were set
+	retrievedWeights := engine.GetWeights()
+	if retrievedWeights.ResponseSpeed != 0.3 {
+		t.Errorf("Expected ResponseSpeed 0.3, got %.2f", retrievedWeights.ResponseSpeed)
+	}
+	if retrievedWeights.ModelEfficiency != 0.2 {
+		t.Errorf("Expected ModelEfficiency 0.2, got %.2f", retrievedWeights.ModelEfficiency)
+	}
+}
