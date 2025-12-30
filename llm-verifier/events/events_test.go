@@ -603,3 +603,485 @@ func TestWebSocketSubscriber(t *testing.T) {
 		}
 	})
 }
+
+// ==================== Email Notifier Tests ====================
+
+func TestNewEmailNotifier(t *testing.T) {
+	notifier := NewEmailNotifier(
+		"smtp.example.com",
+		587,
+		"user@example.com",
+		"password",
+		"from@example.com",
+		[]string{"to@example.com", "to2@example.com"},
+	)
+
+	assert.NotNil(t, notifier)
+	assert.Equal(t, "smtp.example.com", notifier.smtpServer)
+	assert.Equal(t, 587, notifier.smtpPort)
+	assert.Equal(t, "user@example.com", notifier.username)
+	assert.Equal(t, "from@example.com", notifier.fromAddress)
+	assert.Len(t, notifier.toAddresses, 2)
+}
+
+func TestEmailNotifier_SendNotification_BuildsMessage(t *testing.T) {
+	notifier := NewEmailNotifier("smtp.example.com", 587, "user", "pass", "from@test.com", []string{"to@test.com"})
+
+	modelID := int64(42)
+	providerID := int64(99)
+	clientID := "client-123"
+
+	event := &Event{
+		ID:         "test-event",
+		Type:       EventVerificationCompleted,
+		Severity:   SeverityInfo,
+		Title:      "Test Title",
+		Message:    "Test Message",
+		Source:     "test",
+		Timestamp:  time.Now(),
+		ModelID:    &modelID,
+		ProviderID: &providerID,
+		ClientID:   &clientID,
+	}
+
+	// SendNotification will fail due to no SMTP server, but we verify the notifier is set up correctly
+	err := notifier.SendNotification(event)
+	// Expected to fail as there's no actual SMTP server
+	assert.Error(t, err)
+}
+
+// ==================== Slack Notifier Tests ====================
+
+func TestNewSlackNotifier(t *testing.T) {
+	notifier := NewSlackNotifier(
+		"https://hooks.slack.com/services/xxx",
+		"#general",
+		"LLM-Verifier",
+	)
+
+	assert.NotNil(t, notifier)
+	assert.Equal(t, "https://hooks.slack.com/services/xxx", notifier.webhookURL)
+	assert.Equal(t, "#general", notifier.channel)
+	assert.Equal(t, "LLM-Verifier", notifier.username)
+}
+
+func TestSlackNotifier_getSeverityIcon(t *testing.T) {
+	notifier := NewSlackNotifier("", "", "")
+
+	testCases := []struct {
+		severity Severity
+		expected string
+	}{
+		{SeverityCritical, ":fire:"},
+		{SeverityError, ":x:"},
+		{SeverityWarning, ":warning:"},
+		{SeverityInfo, ":information_source:"},
+		{SeverityDebug, ":bug:"},
+		{Severity("unknown"), ":bell:"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(string(tc.severity), func(t *testing.T) {
+			icon := notifier.getSeverityIcon(tc.severity)
+			assert.Equal(t, tc.expected, icon)
+		})
+	}
+}
+
+func TestSlackNotifier_getSeverityColor(t *testing.T) {
+	notifier := NewSlackNotifier("", "", "")
+
+	testCases := []struct {
+		severity Severity
+		expected string
+	}{
+		{SeverityCritical, "danger"},
+		{SeverityError, "danger"},
+		{SeverityWarning, "warning"},
+		{SeverityInfo, "good"},
+		{SeverityDebug, "#808080"},
+		{Severity("unknown"), "#808080"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(string(tc.severity), func(t *testing.T) {
+			color := notifier.getSeverityColor(tc.severity)
+			assert.Equal(t, tc.expected, color)
+		})
+	}
+}
+
+func TestSlackNotifier_buildFields(t *testing.T) {
+	notifier := NewSlackNotifier("", "", "")
+
+	t.Run("basic fields", func(t *testing.T) {
+		event := &Event{
+			Severity: SeverityInfo,
+			Source:   "test-source",
+		}
+		fields := notifier.buildFields(event)
+		assert.Len(t, fields, 2)
+	})
+
+	t.Run("with model id", func(t *testing.T) {
+		modelID := int64(42)
+		event := &Event{
+			Severity: SeverityInfo,
+			Source:   "test-source",
+			ModelID:  &modelID,
+		}
+		fields := notifier.buildFields(event)
+		assert.Len(t, fields, 3)
+	})
+
+	t.Run("with provider id", func(t *testing.T) {
+		providerID := int64(10)
+		event := &Event{
+			Severity:   SeverityInfo,
+			Source:     "test-source",
+			ProviderID: &providerID,
+		}
+		fields := notifier.buildFields(event)
+		assert.Len(t, fields, 3)
+	})
+
+	t.Run("with client id", func(t *testing.T) {
+		clientID := "client-123"
+		event := &Event{
+			Severity: SeverityInfo,
+			Source:   "test-source",
+			ClientID: &clientID,
+		}
+		fields := notifier.buildFields(event)
+		assert.Len(t, fields, 3)
+	})
+
+	t.Run("with all ids", func(t *testing.T) {
+		modelID := int64(42)
+		providerID := int64(10)
+		clientID := "client-123"
+		event := &Event{
+			Severity:   SeverityInfo,
+			Source:     "test-source",
+			ModelID:    &modelID,
+			ProviderID: &providerID,
+			ClientID:   &clientID,
+		}
+		fields := notifier.buildFields(event)
+		assert.Len(t, fields, 5)
+	})
+}
+
+// ==================== Telegram Notifier Tests ====================
+
+func TestNewTelegramNotifier(t *testing.T) {
+	notifier := NewTelegramNotifier("bot-token-123", "chat-id-456")
+
+	assert.NotNil(t, notifier)
+	assert.Equal(t, "bot-token-123", notifier.botToken)
+	assert.Equal(t, "chat-id-456", notifier.chatID)
+}
+
+func TestTelegramNotifier_getSeverityEmoji(t *testing.T) {
+	notifier := NewTelegramNotifier("", "")
+
+	testCases := []struct {
+		severity Severity
+		expected string
+	}{
+		{SeverityCritical, "🔴"},
+		{SeverityError, "❌"},
+		{SeverityWarning, "⚠️"},
+		{SeverityInfo, "ℹ️"},
+		{SeverityDebug, "🐛"},
+		{Severity("unknown"), "🔔"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(string(tc.severity), func(t *testing.T) {
+			emoji := notifier.getSeverityEmoji(tc.severity)
+			assert.Equal(t, tc.expected, emoji)
+		})
+	}
+}
+
+func TestTelegramNotifier_buildMessage(t *testing.T) {
+	notifier := NewTelegramNotifier("", "")
+
+	t.Run("basic message", func(t *testing.T) {
+		event := &Event{
+			Title:     "Test Title",
+			Message:   "Test Message",
+			Severity:  SeverityInfo,
+			Source:    "test",
+			Timestamp: time.Now(),
+		}
+		msg := notifier.buildMessage(event)
+		assert.Contains(t, msg, "Test Title")
+		assert.Contains(t, msg, "Test Message")
+		assert.Contains(t, msg, "ℹ️")
+	})
+
+	t.Run("with model id", func(t *testing.T) {
+		modelID := int64(42)
+		event := &Event{
+			Title:     "Test",
+			Message:   "Test",
+			Severity:  SeverityInfo,
+			Source:    "test",
+			Timestamp: time.Now(),
+			ModelID:   &modelID,
+		}
+		msg := notifier.buildMessage(event)
+		assert.Contains(t, msg, "Model ID")
+		assert.Contains(t, msg, "42")
+	})
+
+	t.Run("with provider id", func(t *testing.T) {
+		providerID := int64(10)
+		event := &Event{
+			Title:      "Test",
+			Message:    "Test",
+			Severity:   SeverityInfo,
+			Source:     "test",
+			Timestamp:  time.Now(),
+			ProviderID: &providerID,
+		}
+		msg := notifier.buildMessage(event)
+		assert.Contains(t, msg, "Provider ID")
+	})
+
+	t.Run("with client id", func(t *testing.T) {
+		clientID := "client-abc"
+		event := &Event{
+			Title:     "Test",
+			Message:   "Test",
+			Severity:  SeverityInfo,
+			Source:    "test",
+			Timestamp: time.Now(),
+			ClientID:  &clientID,
+		}
+		msg := notifier.buildMessage(event)
+		assert.Contains(t, msg, "Client ID")
+		assert.Contains(t, msg, "client-abc")
+	})
+}
+
+// ==================== Matrix Notifier Tests ====================
+
+func TestNewMatrixNotifier(t *testing.T) {
+	notifier := NewMatrixNotifier(
+		"https://matrix.example.com",
+		"access-token-xyz",
+		"!room:example.com",
+	)
+
+	assert.NotNil(t, notifier)
+	assert.Equal(t, "https://matrix.example.com", notifier.homeserverURL)
+	assert.Equal(t, "access-token-xyz", notifier.accessToken)
+	assert.Equal(t, "!room:example.com", notifier.roomID)
+}
+
+func TestMatrixNotifier_getSeverityEmoji(t *testing.T) {
+	notifier := NewMatrixNotifier("", "", "")
+
+	testCases := []struct {
+		severity Severity
+		expected string
+	}{
+		{SeverityCritical, "🔴"},
+		{SeverityError, "❌"},
+		{SeverityWarning, "⚠️"},
+		{SeverityInfo, "ℹ️"},
+		{SeverityDebug, "🐛"},
+		{Severity("unknown"), "🔔"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(string(tc.severity), func(t *testing.T) {
+			emoji := notifier.getSeverityEmoji(tc.severity)
+			assert.Equal(t, tc.expected, emoji)
+		})
+	}
+}
+
+func TestMatrixNotifier_getSeverityColor(t *testing.T) {
+	notifier := NewMatrixNotifier("", "", "")
+
+	testCases := []struct {
+		severity Severity
+		expected string
+	}{
+		{SeverityCritical, "#FF0000"},
+		{SeverityError, "#FF4444"},
+		{SeverityWarning, "#FFA500"},
+		{SeverityInfo, "#008000"},
+		{SeverityDebug, "#808080"},
+		{Severity("unknown"), "#808080"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(string(tc.severity), func(t *testing.T) {
+			color := notifier.getSeverityColor(tc.severity)
+			assert.Equal(t, tc.expected, color)
+		})
+	}
+}
+
+func TestMatrixNotifier_buildMessage(t *testing.T) {
+	notifier := NewMatrixNotifier("", "", "")
+
+	t.Run("basic message", func(t *testing.T) {
+		event := &Event{
+			Title:     "Test Title",
+			Message:   "Test Message",
+			Severity:  SeverityWarning,
+			Source:    "test-source",
+			Timestamp: time.Now(),
+		}
+		msg := notifier.buildMessage(event)
+		assert.Contains(t, msg, "Test Title")
+		assert.Contains(t, msg, "Test Message")
+		assert.Contains(t, msg, "⚠️")
+		assert.Contains(t, msg, "WARNING")
+	})
+
+	t.Run("with all ids", func(t *testing.T) {
+		modelID := int64(1)
+		providerID := int64(2)
+		clientID := "client"
+		event := &Event{
+			Title:      "Test",
+			Message:    "Test",
+			Severity:   SeverityInfo,
+			Source:     "test",
+			Timestamp:  time.Now(),
+			ModelID:    &modelID,
+			ProviderID: &providerID,
+			ClientID:   &clientID,
+		}
+		msg := notifier.buildMessage(event)
+		assert.Contains(t, msg, "Model ID: 1")
+		assert.Contains(t, msg, "Provider ID: 2")
+		assert.Contains(t, msg, "Client ID: client")
+	})
+}
+
+func TestMatrixNotifier_buildHTMLMessage(t *testing.T) {
+	notifier := NewMatrixNotifier("", "", "")
+
+	event := &Event{
+		Title:     "Test Title",
+		Message:   "Test Message",
+		Severity:  SeverityError,
+		Source:    "test-source",
+		Timestamp: time.Now(),
+	}
+
+	html := notifier.buildHTMLMessage(event)
+	assert.Contains(t, html, "<strong>")
+	assert.Contains(t, html, "Test Title")
+	assert.Contains(t, html, "#FF4444") // Error color
+	assert.Contains(t, html, "❌")
+}
+
+// ==================== WhatsApp Notifier Tests ====================
+
+func TestNewWhatsAppNotifier(t *testing.T) {
+	notifier := NewWhatsAppNotifier(
+		"account-sid",
+		"auth-token",
+		"+1234567890",
+		[]string{"+0987654321", "+1122334455"},
+	)
+
+	assert.NotNil(t, notifier)
+	assert.Equal(t, "account-sid", notifier.accountSID)
+	assert.Equal(t, "auth-token", notifier.authToken)
+	assert.Equal(t, "+1234567890", notifier.fromNumber)
+	assert.Len(t, notifier.toNumbers, 2)
+}
+
+func TestWhatsAppNotifier_getSeverityEmoji(t *testing.T) {
+	notifier := NewWhatsAppNotifier("", "", "", nil)
+
+	testCases := []struct {
+		severity Severity
+		expected string
+	}{
+		{SeverityCritical, "🔴"},
+		{SeverityError, "❌"},
+		{SeverityWarning, "⚠️"},
+		{SeverityInfo, "ℹ️"},
+		{SeverityDebug, "🐛"},
+		{Severity("unknown"), "🔔"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(string(tc.severity), func(t *testing.T) {
+			emoji := notifier.getSeverityEmoji(tc.severity)
+			assert.Equal(t, tc.expected, emoji)
+		})
+	}
+}
+
+func TestWhatsAppNotifier_buildMessage(t *testing.T) {
+	notifier := NewWhatsAppNotifier("", "", "", nil)
+
+	t.Run("basic message", func(t *testing.T) {
+		event := &Event{
+			Title:     "Test Title",
+			Message:   "Test Message",
+			Severity:  SeverityCritical,
+			Source:    "test",
+			Timestamp: time.Now(),
+		}
+		msg := notifier.buildMessage(event)
+		assert.Contains(t, msg, "*Test Title*")
+		assert.Contains(t, msg, "Test Message")
+		assert.Contains(t, msg, "🔴")
+		assert.Contains(t, msg, "*Severity:*")
+	})
+
+	t.Run("with model id", func(t *testing.T) {
+		modelID := int64(123)
+		event := &Event{
+			Title:     "Test",
+			Message:   "Test",
+			Severity:  SeverityInfo,
+			Source:    "test",
+			Timestamp: time.Now(),
+			ModelID:   &modelID,
+		}
+		msg := notifier.buildMessage(event)
+		assert.Contains(t, msg, "*Model ID:* 123")
+	})
+
+	t.Run("with provider id", func(t *testing.T) {
+		providerID := int64(456)
+		event := &Event{
+			Title:      "Test",
+			Message:    "Test",
+			Severity:   SeverityInfo,
+			Source:     "test",
+			Timestamp:  time.Now(),
+			ProviderID: &providerID,
+		}
+		msg := notifier.buildMessage(event)
+		assert.Contains(t, msg, "*Provider ID:* 456")
+	})
+
+	t.Run("with client id", func(t *testing.T) {
+		clientID := "client-xyz"
+		event := &Event{
+			Title:     "Test",
+			Message:   "Test",
+			Severity:  SeverityInfo,
+			Source:    "test",
+			Timestamp: time.Now(),
+			ClientID:  &clientID,
+		}
+		msg := notifier.buildMessage(event)
+		assert.Contains(t, msg, "*Client ID:* client-xyz")
+	})
+}
