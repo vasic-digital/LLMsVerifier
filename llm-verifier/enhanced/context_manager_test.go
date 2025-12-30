@@ -274,7 +274,18 @@ func TestShutdown(t *testing.T) {
 }
 
 func TestShutdownMultiple(t *testing.T) {
-	t.Skip("Skip - Shutdown() panics when called twice")
+	verifier := llmverifier.New(nil)
+	cm := NewContextManager(verifier)
+
+	// First shutdown should work
+	assert.NotPanics(t, func() { cm.Shutdown() })
+
+	// Second shutdown should also not panic (should be a no-op)
+	assert.NotPanics(t, func() { cm.Shutdown() })
+
+	// Multiple calls should also not panic
+	assert.NotPanics(t, func() { cm.Shutdown() })
+	assert.NotPanics(t, func() { cm.Shutdown() })
 }
 
 func TestAddMessageDifferentRoles(t *testing.T) {

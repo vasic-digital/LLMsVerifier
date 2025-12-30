@@ -8,8 +8,26 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"llm-verifier/database"
 )
+
+// setupTestDB creates an in-memory database for testing
+func setupTestDB(t *testing.T) *database.Database {
+	db, err := database.New(":memory:")
+	require.NoError(t, err, "Failed to create test database")
+	return db
+}
+
+// cleanupTestDB closes the test database
+func cleanupTestDB(t *testing.T, db *database.Database) {
+	if db != nil {
+		err := db.Close()
+		if err != nil {
+			t.Logf("Warning: failed to close test database: %v", err)
+		}
+	}
+}
 
 func TestHealthStatusConstants(t *testing.T) {
 	assert.Equal(t, HealthStatus("healthy"), HealthStatusHealthy)
@@ -147,7 +165,22 @@ func TestNewHealthChecker(t *testing.T) {
 }
 
 func TestHealthCheckerStart(t *testing.T) {
-	t.Skip("Skipping test due to nil database")
+	db := setupTestDB(t)
+	defer cleanupTestDB(t, db)
+
+	hc := NewHealthChecker(db)
+
+	// Start with a short interval for testing
+	hc.Start(100 * time.Millisecond)
+
+	// Wait for at least one check cycle
+	time.Sleep(150 * time.Millisecond)
+
+	// Check that health status is available
+	status := hc.GetHealthStatus()
+	assert.NotEmpty(t, string(status))
+
+	hc.Stop()
 }
 
 func TestHealthCheckerStop(t *testing.T) {
@@ -198,7 +231,18 @@ func TestHealthCheckerGetSystemMetrics(t *testing.T) {
 }
 
 func TestHealthCheckerComponentDetails(t *testing.T) {
-	t.Skip("Skipping test due to nil database")
+	db := setupTestDB(t)
+	defer cleanupTestDB(t, db)
+
+	hc := NewHealthChecker(db)
+
+	components := hc.GetComponentHealth()
+	assert.NotNil(t, components)
+
+	// Check that database component exists
+	dbComponent, exists := components["database"]
+	assert.True(t, exists, "database component should exist")
+	assert.Equal(t, "Database", dbComponent.Name)
 }
 
 func TestHealthCheckerInitializeComponents(t *testing.T) {
@@ -215,8 +259,20 @@ func TestHealthCheckerInitializeComponents(t *testing.T) {
 }
 
 func TestHealthCheckerCheckAllComponents(t *testing.T) {
-	t.Skip("Skipping test due to nil database")
+	db := setupTestDB(t)
+	defer cleanupTestDB(t, db)
 
+	hc := NewHealthChecker(db)
+
+	// Run check on all components
+	hc.checkAllComponents()
+
+	// Verify all components have been checked
+	components := hc.GetComponentHealth()
+	for name, component := range components {
+		assert.NotEmpty(t, component.Name, "Component %s should have a name", name)
+		assert.NotEmpty(t, string(component.Status), "Component %s should have a status", name)
+	}
 }
 
 func TestHealthCheckerUpdateSystemMetrics(t *testing.T) {
@@ -233,7 +289,19 @@ func TestHealthCheckerUpdateSystemMetrics(t *testing.T) {
 }
 
 func TestHealthCheckerDatabaseHealth(t *testing.T) {
-	t.Skip("Skipping test due to nil database")
+	db := setupTestDB(t)
+	defer cleanupTestDB(t, db)
+
+	hc := NewHealthChecker(db)
+
+	// Check database health
+	hc.checkDatabaseHealth()
+
+	// Verify database component status
+	components := hc.GetComponentHealth()
+	dbComponent, exists := components["database"]
+	assert.True(t, exists, "database component should exist")
+	assert.Equal(t, HealthStatusHealthy, dbComponent.Status, "database should be healthy with a valid connection")
 }
 
 func TestHealthCheckerAPIHealth(t *testing.T) {
@@ -348,12 +416,43 @@ func TestHealthCheckerConcurrentAccess(t *testing.T) {
 }
 
 func TestHealthCheckerStartStopMultipleTimes(t *testing.T) {
-	t.Skip("Skipping test due to nil database")
+	db := setupTestDB(t)
+	defer cleanupTestDB(t, db)
 
+	hc := NewHealthChecker(db)
+
+	// Start and stop multiple times
+	for i := 0; i < 3; i++ {
+		hc.Start(100 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
+		hc.Stop()
+	}
+
+	// Final verification - should still be functional
+	hc.Start(100 * time.Millisecond)
+	status := hc.GetHealthStatus()
+	assert.NotEmpty(t, string(status))
+	hc.Stop()
 }
 
 func TestHealthCheckerLongRunning(t *testing.T) {
-	t.Skip("Skipping test due to nil database")
+	db := setupTestDB(t)
+	defer cleanupTestDB(t, db)
+
+	hc := NewHealthChecker(db)
+
+	// Start with short interval
+	hc.Start(50 * time.Millisecond)
+
+	// Let it run for a few cycles
+	time.Sleep(200 * time.Millisecond)
+
+	// Verify metrics are being updated
+	metrics := hc.GetSystemMetrics()
+	assert.NotZero(t, metrics.Timestamp)
+	assert.NotZero(t, metrics.Uptime)
+
+	hc.Stop()
 }
 
 func TestHealthCheckerRegisterHealthEndpoints(t *testing.T) {
@@ -409,8 +508,19 @@ func TestHealthCheckerRegisterHealthEndpoints(t *testing.T) {
 }
 
 func TestHealthCheckerEmptyDatabase(t *testing.T) {
-	t.Skip("Skipping test due to nil database")
+	db := setupTestDB(t)
+	defer cleanupTestDB(t, db)
 
+	hc := NewHealthChecker(db)
+
+	// Check database health with empty database (no data)
+	hc.checkDatabaseHealth()
+
+	// Database should still be healthy even if empty
+	components := hc.GetComponentHealth()
+	dbComponent, exists := components["database"]
+	assert.True(t, exists, "database component should exist")
+	assert.Equal(t, HealthStatusHealthy, dbComponent.Status, "empty database should still be healthy")
 }
 
 func TestHealthCheckerMemoryMetrics(t *testing.T) {

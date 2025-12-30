@@ -1,5 +1,13 @@
 # LLM Verifier - Complete User Manual
 
+<p align="center">
+  <img src="images/Logo.jpeg" alt="LLMsVerifier Logo" width="180" height="180">
+</p>
+
+<p align="center">
+  <strong>Verify. Monitor. Optimize.</strong>
+</p>
+
 ## Table of Contents
 
 1. [Introduction](#introduction)

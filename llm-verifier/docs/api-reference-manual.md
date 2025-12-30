@@ -1,5 +1,15 @@
 # LLM Verifier API Reference Manual
 
+<p align="center">
+  <img src="images/Logo.jpeg" alt="LLMsVerifier Logo" width="150" height="150">
+</p>
+
+<p align="center">
+  <strong>Verify. Monitor. Optimize.</strong>
+</p>
+
+---
+
 ## Overview
 
 The LLM Verifier API provides comprehensive programmatic access to all verification capabilities. This reference manual covers all endpoints, request/response formats, authentication, and integration patterns.

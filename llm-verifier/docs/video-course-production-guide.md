@@ -1,5 +1,15 @@
 # LLM Verifier Video Course Production Guide
 
+<p align="center">
+  <img src="images/Logo.jpeg" alt="LLMsVerifier Logo" width="150" height="150">
+</p>
+
+<p align="center">
+  <strong>Verify. Monitor. Optimize.</strong>
+</p>
+
+---
+
 ## Course Overview
 
 This guide outlines the production of comprehensive video courses for LLM Verifier, covering all aspects from basic usage to advanced enterprise deployment.

@@ -1,5 +1,15 @@
 # Course 1: LLM Verifier Fundamentals - Video Scripts
 
+<p align="center">
+  <img src="images/Logo.jpeg" alt="LLMsVerifier Logo" width="150" height="150">
+</p>
+
+<p align="center">
+  <strong>Verify. Monitor. Optimize.</strong>
+</p>
+
+---
+
 ## Module 1: Getting Started with LLM Verification
 
 ### Video 1.1: Welcome to LLM Verifier (5:00)

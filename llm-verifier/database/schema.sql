@@ -160,7 +160,8 @@ CREATE TABLE verification_results (
     supports_parallel_tool_use BOOLEAN DEFAULT 0,
     max_parallel_calls INTEGER DEFAULT 0,
     supports_batch_processing BOOLEAN DEFAULT 0,
-    
+    supports_brotli BOOLEAN DEFAULT 0,
+
     -- Code capability results
     code_language_support TEXT, -- JSON array
     code_debugging BOOLEAN DEFAULT 0,

@@ -210,15 +210,21 @@ func (d *Database) VerifyAPIKey(apiKey string) (*User, *APIKey, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to query API keys: %w", err)
 	}
-	defer rows.Close()
 
-	// Check each API key
+	// Collect all API keys first, then close the rows cursor
+	// This is necessary to avoid nested query issues with SQLite
+	var apiKeys []*APIKey
 	for rows.Next() {
 		dbAPIKey, err := d.scanAPIKeyFromRows(rows)
 		if err != nil {
 			continue
 		}
+		apiKeys = append(apiKeys, dbAPIKey)
+	}
+	rows.Close()
 
+	// Check each API key
+	for _, dbAPIKey := range apiKeys {
 		// Compare the provided key with the stored hash
 		err = bcrypt.CompareHashAndPassword([]byte(dbAPIKey.KeyHash), []byte(apiKey))
 		if err == nil {

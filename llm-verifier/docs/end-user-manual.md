@@ -1,5 +1,15 @@
 # LLM Verifier End-User Manual
 
+<p align="center">
+  <img src="images/Logo.jpeg" alt="LLMsVerifier Logo" width="150" height="150">
+</p>
+
+<p align="center">
+  <strong>Verify. Monitor. Optimize.</strong>
+</p>
+
+---
+
 ## Welcome to LLM Verifier
 
 LLM Verifier is your comprehensive tool for evaluating and comparing Large Language Models across multiple providers. This manual will guide you through using the system to make informed decisions about which models work best for your needs.

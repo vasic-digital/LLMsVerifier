@@ -1,5 +1,15 @@
 # LLM Verifier CLI Reference
 
+<p align="center">
+  <img src="images/Logo.jpeg" alt="LLMsVerifier Logo" width="150" height="150">
+</p>
+
+<p align="center">
+  <strong>Verify. Monitor. Optimize.</strong>
+</p>
+
+---
+
 ## Overview
 
 The LLM Verifier CLI provides comprehensive command-line interface for managing, verifying, and benchmarking Large Language Models (LLMs). It supports all core functionality including model management, verification workflows, reporting, and system administration.

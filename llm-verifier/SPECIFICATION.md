@@ -1,5 +1,15 @@
 # LLM Verifier - Complete Specification
 
+<p align="center">
+  <img src="docs/images/Logo.jpeg" alt="LLMsVerifier Logo" width="150" height="150">
+</p>
+
+<p align="center">
+  <strong>Verify. Monitor. Optimize.</strong>
+</p>
+
+---
+
 ## Overview
 LLM Verifier is a comprehensive tool to verify, test, and benchmark LLMs with full OpenAI API compatibility. The tool must support configuration-based operations and automatic discovery of all available models.
 

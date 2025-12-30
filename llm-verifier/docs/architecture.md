@@ -1,5 +1,15 @@
 # LLM Verifier Architecture Documentation
 
+<p align="center">
+  <img src="images/Logo.jpeg" alt="LLMsVerifier Logo" width="150" height="150">
+</p>
+
+<p align="center">
+  <strong>Verify. Monitor. Optimize.</strong>
+</p>
+
+---
+
 ## System Overview
 
 LLM Verifier is a comprehensive platform for testing, benchmarking, and verifying Large Language Models across multiple providers. The system provides enterprise-grade reliability with 99.9% uptime guarantees and supports 17+ LLM providers through an extensible architecture.

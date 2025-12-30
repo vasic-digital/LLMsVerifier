@@ -1,5 +1,15 @@
 # LLM Verifier Developer Manual
 
+<p align="center">
+  <img src="images/Logo.jpeg" alt="LLMsVerifier Logo" width="150" height="150">
+</p>
+
+<p align="center">
+  <strong>Verify. Monitor. Optimize.</strong>
+</p>
+
+---
+
 ## Introduction
 
 This manual provides comprehensive guidance for developers working on the LLM Verifier codebase. It covers development workflows, architecture patterns, testing strategies, and contribution guidelines.

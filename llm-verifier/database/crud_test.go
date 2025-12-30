@@ -324,31 +324,247 @@ func TestListModels(t *testing.T) {
 }
 
 // ==================== Verification Result CRUD Tests ====================
-// Note: These tests are skipped due to schema mismatch in GetVerificationResult
-// (expects 64 destination arguments in Scan, but only 63 provided in existing code)
+
+func createTestModelForVerification(t *testing.T, db *Database) *Model {
+	// First create a provider
+	provider := &Provider{
+		Name:     "Test Verification Provider",
+		Endpoint: "https://api.testverify.com/v1",
+		IsActive: true,
+	}
+	err := db.CreateProvider(provider)
+	require.NoError(t, err)
+
+	// Create a model
+	model := &Model{
+		ProviderID:  provider.ID,
+		ModelID:     "test-model-id",
+		Name:        "test-model",
+		Description: "Test Model for verification",
+	}
+	err = db.CreateModel(model)
+	require.NoError(t, err)
+
+	return model
+}
+
+func createTestVerificationResult(t *testing.T, db *Database, modelID int64) *VerificationResult {
+	now := time.Now()
+	completedAt := now.Add(5 * time.Second)
+	latencyMs := 150
+	modelExists := true
+	responsive := true
+	overloaded := false
+
+	vr := &VerificationResult{
+		ModelID:                  modelID,
+		VerificationType:         "comprehensive",
+		StartedAt:                now,
+		CompletedAt:              &completedAt,
+		Status:                   "completed",
+		ModelExists:              &modelExists,
+		Responsive:               &responsive,
+		Overloaded:               &overloaded,
+		LatencyMs:                &latencyMs,
+		SupportsToolUse:          true,
+		SupportsFunctionCalling:  true,
+		SupportsCodeGeneration:   true,
+		SupportsCodeCompletion:   true,
+		SupportsCodeReview:       true,
+		SupportsCodeExplanation:  true,
+		SupportsEmbeddings:       false,
+		SupportsReranking:        false,
+		SupportsImageGeneration:  false,
+		SupportsAudioGeneration:  false,
+		SupportsVideoGeneration:  false,
+		SupportsMCPs:             true,
+		SupportsLSPs:             true,
+		SupportsACPs:             false,
+		SupportsMultimodal:       false,
+		SupportsStreaming:        true,
+		SupportsJSONMode:         true,
+		SupportsStructuredOutput: true,
+		SupportsReasoning:        true,
+		SupportsParallelToolUse:  true,
+		MaxParallelCalls:         10,
+		SupportsBatchProcessing:  true,
+		SupportsBrotli:           true,
+		CodeLanguageSupport:      []string{"go", "python", "javascript"},
+		CodeDebugging:            true,
+		CodeOptimization:         true,
+		TestGeneration:           true,
+		DocumentationGeneration:  true,
+		Refactoring:              true,
+		ErrorResolution:          true,
+		ArchitectureDesign:       true,
+		SecurityAssessment:       true,
+		PatternRecognition:       true,
+		DebuggingAccuracy:        95.5,
+		MaxHandledDepth:          10,
+		CodeQualityScore:         92.0,
+		LogicCorrectnessScore:    94.5,
+		RuntimeEfficiencyScore:   88.0,
+		OverallScore:             91.5,
+		CodeCapabilityScore:      90.0,
+		ResponsivenessScore:      95.0,
+		ReliabilityScore:         93.0,
+		FeatureRichnessScore:     89.0,
+		ValuePropositionScore:    90.5,
+		ScoreDetails:             `{"test": "details"}`,
+		AvgLatencyMs:             150,
+		P95LatencyMs:             250,
+		MinLatencyMs:             50,
+		MaxLatencyMs:             500,
+		ThroughputRPS:            100.5,
+		CreatedAt:                now,
+	}
+
+	return vr
+}
 
 func TestCreateVerificationResult(t *testing.T) {
-	t.Skip("Skipping due to existing schema mismatch in GetVerificationResult - needs code fix")
+	db := setupTestDB(t)
+	defer cleanupTestDB(t, db)
+
+	model := createTestModelForVerification(t, db)
+	vr := createTestVerificationResult(t, db, model.ID)
+
+	err := db.CreateVerificationResult(vr)
+	require.NoError(t, err)
+	assert.NotZero(t, vr.ID)
+
+	// Verify creation by retrieving
+	retrieved, err := db.GetVerificationResult(vr.ID)
+	require.NoError(t, err)
+	assert.Equal(t, vr.ModelID, retrieved.ModelID)
+	assert.Equal(t, vr.VerificationType, retrieved.VerificationType)
+	assert.Equal(t, vr.Status, retrieved.Status)
+	assert.Equal(t, vr.SupportsToolUse, retrieved.SupportsToolUse)
+	assert.Equal(t, vr.SupportsBrotli, retrieved.SupportsBrotli)
+	assert.Equal(t, vr.OverallScore, retrieved.OverallScore)
 }
 
 func TestGetVerificationResult(t *testing.T) {
-	t.Skip("Skipping due to existing schema mismatch in GetVerificationResult - needs code fix")
+	db := setupTestDB(t)
+	defer cleanupTestDB(t, db)
+
+	model := createTestModelForVerification(t, db)
+	vr := createTestVerificationResult(t, db, model.ID)
+
+	err := db.CreateVerificationResult(vr)
+	require.NoError(t, err)
+
+	// Get by ID
+	retrieved, err := db.GetVerificationResult(vr.ID)
+	require.NoError(t, err)
+	assert.Equal(t, vr.ID, retrieved.ID)
+	assert.Equal(t, vr.VerificationType, retrieved.VerificationType)
+	assert.Equal(t, vr.SupportsBrotli, retrieved.SupportsBrotli)
+
+	// Get non-existent
+	_, err = db.GetVerificationResult(9999)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "verification result not found")
 }
 
 func TestListVerificationResults(t *testing.T) {
-	t.Skip("Skipping due to existing schema mismatch in GetVerificationResult - needs code fix")
+	db := setupTestDB(t)
+	defer cleanupTestDB(t, db)
+
+	model := createTestModelForVerification(t, db)
+
+	// Create multiple verification results
+	for i := 0; i < 3; i++ {
+		vr := createTestVerificationResult(t, db, model.ID)
+		vr.VerificationType = "test_" + time.Now().Format("150405.000000")
+		err := db.CreateVerificationResult(vr)
+		require.NoError(t, err)
+	}
+
+	// List all with filter
+	results, err := db.ListVerificationResults(map[string]interface{}{"model_id": model.ID})
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, len(results), 3)
+
+	// List with empty filters
+	results, err = db.ListVerificationResults(map[string]interface{}{})
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, len(results), 3)
 }
 
 func TestGetLatestVerificationResults(t *testing.T) {
-	t.Skip("Skipping due to existing schema mismatch in verification result scanning - needs code fix")
+	db := setupTestDB(t)
+	defer cleanupTestDB(t, db)
+
+	model := createTestModelForVerification(t, db)
+
+	// Create verification results with different times
+	for i := 0; i < 5; i++ {
+		vr := createTestVerificationResult(t, db, model.ID)
+		vr.OverallScore = float64(80 + i*2) // Different scores
+		err := db.CreateVerificationResult(vr)
+		require.NoError(t, err)
+	}
+
+	// Get latest results for the model
+	results, err := db.GetLatestVerificationResults([]int64{model.ID})
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, len(results), 1)
+
+	// Get with empty slice returns empty
+	results, err = db.GetLatestVerificationResults([]int64{})
+	require.NoError(t, err)
+	assert.Len(t, results, 0)
 }
 
 func TestUpdateVerificationResult(t *testing.T) {
-	t.Skip("Skipping due to existing schema mismatch in verification result scanning - needs code fix")
+	db := setupTestDB(t)
+	defer cleanupTestDB(t, db)
+
+	model := createTestModelForVerification(t, db)
+	vr := createTestVerificationResult(t, db, model.ID)
+
+	err := db.CreateVerificationResult(vr)
+	require.NoError(t, err)
+
+	// Update fields
+	vr.Status = "updated"
+	vr.OverallScore = 99.9
+	vr.SupportsBrotli = false
+
+	err = db.UpdateVerificationResult(vr)
+	require.NoError(t, err)
+
+	// Verify update
+	retrieved, err := db.GetVerificationResult(vr.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "updated", retrieved.Status)
+	assert.Equal(t, 99.9, retrieved.OverallScore)
+	assert.False(t, retrieved.SupportsBrotli)
 }
 
 func TestDeleteVerificationResult(t *testing.T) {
-	t.Skip("Skipping due to existing schema mismatch in verification result scanning - needs code fix")
+	db := setupTestDB(t)
+	defer cleanupTestDB(t, db)
+
+	model := createTestModelForVerification(t, db)
+	vr := createTestVerificationResult(t, db, model.ID)
+
+	err := db.CreateVerificationResult(vr)
+	require.NoError(t, err)
+
+	// Delete
+	err = db.DeleteVerificationResult(vr.ID)
+	require.NoError(t, err)
+
+	// Verify deletion
+	_, err = db.GetVerificationResult(vr.ID)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "verification result not found")
+
+	// Delete non-existent should not error
+	err = db.DeleteVerificationResult(9999)
+	assert.NoError(t, err)
 }
 
 // ==================== Count Tests ====================

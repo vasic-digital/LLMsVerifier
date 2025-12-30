@@ -1,5 +1,13 @@
 # LLM Verifier
 
+<p align="center">
+  <img src="../Assets/Logo.jpeg" alt="LLMsVerifier Logo" width="180" height="180">
+</p>
+
+<p align="center">
+  <strong>Verify. Monitor. Optimize.</strong>
+</p>
+
 LLM Verifier is a comprehensive tool to verify, test, and benchmark LLMs based on their coding capabilities and other features. It supports OpenAI-compatible APIs and provides detailed analysis of model capabilities.
 
 ## Supported Providers (12 Implemented Adapters)

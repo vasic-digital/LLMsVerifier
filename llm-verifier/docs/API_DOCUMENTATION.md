@@ -1,5 +1,9 @@
 # LLM Verifier REST API Documentation
 
+<p align="center">
+  <img src="images/Logo.jpeg" alt="LLMsVerifier Logo" width="150" height="150">
+</p>
+
 ## Overview
 
 The LLM Verifier REST API provides programmatic access to all functionality of the LLM Verifier system. It is built using the GinGonic framework and provides a comprehensive set of endpoints for managing models, providers, verification results, and system configuration.

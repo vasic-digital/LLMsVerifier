@@ -1,5 +1,13 @@
 # Enhanced LLM Verifier - Complete System Documentation
 
+<p align="center">
+  <img src="images/Logo.jpeg" alt="LLMsVerifier Logo" width="180" height="180">
+</p>
+
+<p align="center">
+  <strong>Enterprise-Grade LLM Verification Platform</strong>
+</p>
+
 ## Table of Contents
 
 1. [System Overview](#system-overview)

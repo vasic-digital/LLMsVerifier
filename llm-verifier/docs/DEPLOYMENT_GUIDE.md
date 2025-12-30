@@ -1,5 +1,15 @@
 # Deployment Guide
 
+<p align="center">
+  <img src="images/Logo.jpeg" alt="LLMsVerifier Logo" width="150" height="150">
+</p>
+
+<p align="center">
+  <strong>Verify. Monitor. Optimize.</strong>
+</p>
+
+---
+
 This guide covers deploying LLM Verifier in production environments.
 
 ## Prerequisites

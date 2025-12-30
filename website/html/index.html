@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="LLMsVerifier - Enterprise-Grade LLM Verification Platform. Verify, Monitor, and Optimize Large Language Models.">
+    <meta name="keywords" content="LLM, AI, verification, OpenAI, Anthropic, Claude, GPT, model testing, benchmarking">
+    <title>LLMsVerifier - Enterprise-Grade LLM Verification Platform</title>
+    <link rel="icon" type="image/jpeg" href="../assets/images/Logo.jpeg">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">
+                <img src="../assets/images/Logo.jpeg" alt="LLMsVerifier Logo" width="50" height="50">
+                <span class="logo-text">LLMsVerifier</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#providers">Providers</a></li>
+                <li><a href="#documentation">Documentation</a></li>
+                <li><a href="#getting-started">Get Started</a></li>
+                <li><a href="https://github.com/vasic-digital/LLMsVerifier" target="_blank">GitHub</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <img src="../assets/images/Logo.jpeg" alt="LLMsVerifier Logo" class="hero-logo" width="200" height="200">
+                <h1>LLMsVerifier</h1>
+                <p class="tagline">Verify. Monitor. Optimize.</p>
+                <p class="subtitle">Enterprise-Grade LLM Verification Platform for Multi-Provider Model Assessment</p>
+                <div class="cta-buttons">
+                    <a href="#getting-started" class="btn btn-primary">Get Started</a>
+                    <a href="#documentation" class="btn btn-secondary">Documentation</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="features">
+            <h2>Key Features</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>Comprehensive Verification</h3>
+                    <p>40+ verification tests including code visibility, streaming, function calling, and multimodal capabilities.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Multi-Provider Support</h3>
+                    <p>33+ providers supported including OpenAI, Anthropic, Google, Groq, Together AI, and more.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>(llmsvd) Verification</h3>
+                    <p>Mandatory "Do you see my code?" verification ensures models can actually process your code.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Enterprise Ready</h3>
+                    <p>LDAP/SSO integration, SQL Cipher encryption, RBAC, and multi-tenancy support.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Config Export</h3>
+                    <p>Export verified configurations for OpenCode, Crush, and other AI CLI tools.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Multi-Platform</h3>
+                    <p>CLI, TUI, Web, Desktop, and Mobile interfaces for complete accessibility.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="providers" class="providers">
+            <h2>Supported Providers</h2>
+            <div class="provider-grid">
+                <div class="provider-badge">OpenAI</div>
+                <div class="provider-badge">Anthropic</div>
+                <div class="provider-badge">Google Gemini</div>
+                <div class="provider-badge">Groq</div>
+                <div class="provider-badge">Together AI</div>
+                <div class="provider-badge">Mistral</div>
+                <div class="provider-badge">DeepSeek</div>
+                <div class="provider-badge">Cohere</div>
+                <div class="provider-badge">Fireworks AI</div>
+                <div class="provider-badge">OpenRouter</div>
+                <div class="provider-badge">Nvidia</div>
+                <div class="provider-badge">Cerebras</div>
+                <div class="provider-badge">SambaNova</div>
+                <div class="provider-badge">Hugging Face</div>
+                <div class="provider-badge">Replicate</div>
+                <div class="provider-badge">And 18+ more...</div>
+            </div>
+        </section>
+
+        <section id="documentation" class="documentation">
+            <h2>Documentation</h2>
+            <div class="doc-grid">
+                <div class="doc-card">
+                    <h3>User Manual</h3>
+                    <p>Complete guide for end users on how to use LLMsVerifier.</p>
+                    <a href="https://github.com/vasic-digital/LLMsVerifier/blob/main/llm-verifier/docs/COMPLETE_USER_MANUAL.md">Read More</a>
+                </div>
+                <div class="doc-card">
+                    <h3>API Documentation</h3>
+                    <p>REST API reference with Swagger documentation.</p>
+                    <a href="https://github.com/vasic-digital/LLMsVerifier/blob/main/llm-verifier/docs/API_DOCUMENTATION.md">Read More</a>
+                </div>
+                <div class="doc-card">
+                    <h3>Deployment Guide</h3>
+                    <p>Docker, Kubernetes, and cloud deployment instructions.</p>
+                    <a href="https://github.com/vasic-digital/LLMsVerifier/blob/main/llm-verifier/docs/DEPLOYMENT_GUIDE.md">Read More</a>
+                </div>
+                <div class="doc-card">
+                    <h3>System Architecture</h3>
+                    <p>Technical documentation for developers and architects.</p>
+                    <a href="https://github.com/vasic-digital/LLMsVerifier/blob/main/docs/COMPLETE_SYSTEM_DOCUMENTATION.md">Read More</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="getting-started" class="getting-started">
+            <h2>Getting Started</h2>
+            <div class="code-block">
+                <pre><code># Clone the repository
+git clone https://github.com/vasic-digital/LLMsVerifier.git
+cd LLMsVerifier/llm-verifier
+
+# Build the application
+go build -o llm-verifier cmd/main.go
+
+# Run verification
+./llm-verifier verify --all
+
+# Export verified configurations
+./llm-verifier export --format opencode --output ~/Downloads/</code></pre>
+            </div>
+            <div class="docker-block">
+                <h3>Docker Installation</h3>
+                <pre><code># Start with Docker Compose
+docker-compose up -d
+
+# Access the web interface at http://localhost:8080</code></pre>
+            </div>
+        </section>
+
+        <section class="stats">
+            <h2>Platform Stats</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-number">33+</span>
+                    <span class="stat-label">Providers</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">2000+</span>
+                    <span class="stat-label">Models Verified</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">40+</span>
+                    <span class="stat-label">Verification Tests</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">100%</span>
+                    <span class="stat-label">Open Source</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-logo">
+                <img src="../assets/images/Logo.jpeg" alt="LLMsVerifier Logo" width="40" height="40">
+                <span>LLMsVerifier</span>
+            </div>
+            <p>Enterprise-Grade LLM Verification Platform</p>
+            <p class="copyright">MIT License. Built with dedication for the AI community.</p>
+            <div class="footer-links">
+                <a href="https://github.com/vasic-digital/LLMsVerifier">GitHub</a>
+                <a href="https://github.com/vasic-digital/LLMsVerifier/issues">Issues</a>
+                <a href="https://github.com/vasic-digital/LLMsVerifier/discussions">Discussions</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../js/main.js"></script>
+</body>
+</html>

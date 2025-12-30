@@ -1,5 +1,15 @@
 # LLM Verifier - Detailed Implementation Roadmap
 
+<p align="center">
+  <img src="docs/images/Logo.jpeg" alt="LLMsVerifier Logo" width="150" height="150">
+</p>
+
+<p align="center">
+  <strong>Verify. Monitor. Optimize.</strong>
+</p>
+
+---
+
 ## Executive Summary
 
 This roadmap provides a comprehensive 20-week implementation plan to take the LLM Verifier from its current 35% completion state to 100% feature completion with enterprise-grade quality, security, and performance.

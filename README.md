@@ -1,5 +1,13 @@
 # LLM Verifier - Enterprise-Grade LLM Verification Platform
 
+<p align="center">
+  <img src="Assets/Logo.jpeg" alt="LLMsVerifier Logo" width="200" height="200">
+</p>
+
+<p align="center">
+  <strong>Verify. Monitor. Optimize.</strong>
+</p>
+
 [![Go Version](https://img.shields.io/badge/go-1.21+-blue.svg)](https://golang.org)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://docker.com)
 [![Kubernetes](https://img.shields.io/badge/kubernetes-ready-blue.svg)](https://kubernetes.io)

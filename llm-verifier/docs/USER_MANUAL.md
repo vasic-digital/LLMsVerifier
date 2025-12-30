@@ -1,5 +1,9 @@
 # LLM Verifier - User Manual
 
+<p align="center">
+  <img src="images/Logo.jpeg" alt="LLMsVerifier Logo" width="150" height="150">
+</p>
+
 ## Table of Contents
 
 1. [Introduction](#introduction)
