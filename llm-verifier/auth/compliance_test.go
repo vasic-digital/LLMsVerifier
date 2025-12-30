@@ -294,6 +294,125 @@ func TestDataManager_DeleteUserData(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestDataManager_AnonymizeUserData(t *testing.T) {
+	dm := NewDataManager()
+
+	err := dm.AnonymizeUserData("user123")
+	assert.NoError(t, err)
+}
+
+func TestDataManager_AnonymizeUserData_MultipleUsers(t *testing.T) {
+	dm := NewDataManager()
+
+	// Anonymize multiple users
+	users := []string{"user1", "user2", "user3"}
+	for _, userID := range users {
+		err := dm.AnonymizeUserData(userID)
+		assert.NoError(t, err)
+	}
+}
+
+// ==================== ComplianceReport Tests ====================
+
+func TestGenerateComplianceReport_GDPR(t *testing.T) {
+	report, err := GenerateComplianceReport("GDPR", "2024-Q1")
+	require.NoError(t, err)
+	assert.NotNil(t, report)
+	assert.Equal(t, "GDPR", report.ReportType)
+	assert.Equal(t, "2024-Q1", report.Period)
+	assert.NotEmpty(t, report.Findings)
+	assert.NotNil(t, report.Metrics)
+
+	// Check GDPR-specific finding
+	hasDataProcessingFinding := false
+	for _, finding := range report.Findings {
+		if finding.Category == "data_processing" {
+			hasDataProcessingFinding = true
+			assert.Equal(t, "info", finding.Severity)
+			assert.Equal(t, "consent_manager", finding.Resource)
+		}
+	}
+	assert.True(t, hasDataProcessingFinding)
+}
+
+func TestGenerateComplianceReport_SOC2(t *testing.T) {
+	report, err := GenerateComplianceReport("SOC2", "2024-Q2")
+	require.NoError(t, err)
+	assert.NotNil(t, report)
+	assert.Equal(t, "SOC2", report.ReportType)
+	assert.Equal(t, "2024-Q2", report.Period)
+	assert.NotEmpty(t, report.Findings)
+
+	// Check SOC2-specific finding
+	hasAccessControlFinding := false
+	for _, finding := range report.Findings {
+		if finding.Category == "access_control" {
+			hasAccessControlFinding = true
+			assert.Equal(t, "info", finding.Severity)
+			assert.Equal(t, "auth_system", finding.Resource)
+		}
+	}
+	assert.True(t, hasAccessControlFinding)
+}
+
+func TestGenerateComplianceReport_UnknownType(t *testing.T) {
+	report, err := GenerateComplianceReport("HIPAA", "2024-Q1")
+	require.NoError(t, err)
+	assert.NotNil(t, report)
+	assert.Equal(t, "HIPAA", report.ReportType)
+	// Unknown type should still have metrics but no specific findings
+	assert.Empty(t, report.Findings)
+	assert.NotEmpty(t, report.Metrics)
+}
+
+func TestGenerateComplianceReport_Metrics(t *testing.T) {
+	report, err := GenerateComplianceReport("GDPR", "2024-Q1")
+	require.NoError(t, err)
+
+	// Check metrics are populated
+	assert.Contains(t, report.Metrics, "total_audit_events")
+	assert.Contains(t, report.Metrics, "active_users")
+	assert.Contains(t, report.Metrics, "data_subjects")
+}
+
+func TestComplianceReport_Struct(t *testing.T) {
+	report := ComplianceReport{
+		ReportType:  "Test",
+		GeneratedAt: time.Now(),
+		Period:      "2024-Q1",
+		Findings: []ComplianceFinding{
+			{
+				Severity:    "high",
+				Category:    "security",
+				Description: "Test finding",
+				Resource:    "test_resource",
+				Action:      "fix_required",
+			},
+		},
+		Metrics: map[string]interface{}{
+			"total": 100,
+		},
+	}
+
+	assert.Equal(t, "Test", report.ReportType)
+	assert.Len(t, report.Findings, 1)
+	assert.Equal(t, "high", report.Findings[0].Severity)
+}
+
+func TestComplianceFinding_Struct(t *testing.T) {
+	finding := ComplianceFinding{
+		Severity:    "critical",
+		Category:    "authentication",
+		Description: "Weak password detected",
+		Resource:    "user_accounts",
+		Action:      "reset_password",
+	}
+
+	assert.Equal(t, "critical", finding.Severity)
+	assert.Equal(t, "authentication", finding.Category)
+	assert.Equal(t, "reset_password", finding.Action)
+}
+
 // ==================== Struct Tests ====================
 
 func TestAuditEvent_Struct(t *testing.T) {

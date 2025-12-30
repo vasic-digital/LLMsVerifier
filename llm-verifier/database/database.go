@@ -665,9 +665,11 @@ func (d *Database) initializeSchema() error {
 		message TEXT NOT NULL,
 		details TEXT,
 		request_id TEXT,
+		user_id INTEGER,
 		model_id INTEGER,
 		provider_id INTEGER,
 		verification_result_id INTEGER,
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
 		FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE CASCADE,
 		FOREIGN KEY (provider_id) REFERENCES providers(id) ON DELETE CASCADE,
 		FOREIGN KEY (verification_result_id) REFERENCES verification_results(id) ON DELETE CASCADE
