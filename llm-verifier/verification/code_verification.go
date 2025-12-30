@@ -85,11 +85,13 @@ func (cvs *CodeVerificationService) VerifyModelCodeVisibility(ctx context.Contex
 		TestedAt:       time.Now(),
 	}
 
-	cvs.logger.Info(fmt.Sprintf("Starting code visibility verification for model %s from provider %s", modelID, providerID), map[string]interface{}{
-		"verification_id": verificationID,
-		"model_id":        modelID,
-		"provider_id":     providerID,
-	})
+	if cvs.logger != nil {
+		cvs.logger.Info(fmt.Sprintf("Starting code visibility verification for model %s from provider %s", modelID, providerID), map[string]interface{}{
+			"verification_id": verificationID,
+			"model_id":        modelID,
+			"provider_id":     providerID,
+		})
+	}
 
 	if providerClient == nil {
 		result.Status = "error"
@@ -105,11 +107,13 @@ func (cvs *CodeVerificationService) VerifyModelCodeVisibility(ctx context.Contex
 	for _, sample := range codeSamples {
 		response, err := cvs.testCodeVisibility(ctx, providerID, modelID, providerClient, sample)
 		if err != nil {
-			cvs.logger.Warning(fmt.Sprintf("Failed to test code visibility for sample %s: %v", sample.Language, err), map[string]interface{}{
-				"model_id":    modelID,
-				"provider_id": providerID,
-				"language":    sample.Language,
-			})
+			if cvs.logger != nil {
+				cvs.logger.Warning(fmt.Sprintf("Failed to test code visibility for sample %s: %v", sample.Language, err), map[string]interface{}{
+					"model_id":    modelID,
+					"provider_id": providerID,
+					"language":    sample.Language,
+				})
+			}
 			continue
 		}
 		verificationResponses = append(verificationResponses, *response)
@@ -136,15 +140,17 @@ func (cvs *CodeVerificationService) VerifyModelCodeVisibility(ctx context.Contex
 	completedAt := time.Now()
 	result.CompletedAt = &completedAt
 
-	cvs.logger.Info(fmt.Sprintf("Code visibility verification completed for model %s: %s (score: %.2f)", 
-		modelID, result.Status, result.VerificationScore), map[string]interface{}{
-		"verification_id": verificationID,
-		"model_id":        modelID,
-		"provider_id":     providerID,
-		"status":          result.Status,
-		"score":           result.VerificationScore,
-		"code_visibility": result.CodeVisibility,
-	})
+	if cvs.logger != nil {
+		cvs.logger.Info(fmt.Sprintf("Code visibility verification completed for model %s: %s (score: %.2f)",
+			modelID, result.Status, result.VerificationScore), map[string]interface{}{
+			"verification_id": verificationID,
+			"model_id":        modelID,
+			"provider_id":     providerID,
+			"status":          result.Status,
+			"score":           result.VerificationScore,
+			"code_visibility": result.CodeVisibility,
+		})
+	}
 
 	return result, nil
 }

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -505,13 +506,17 @@ func TestVerifier_Verify_NoModels(t *testing.T) {
 // TestVerifier_checkOverload_Advanced tests overload detection with various scenarios
 func TestVerifier_checkOverload_Advanced(t *testing.T) {
 	// Server that simulates various overload scenarios
+	var mu sync.Mutex
 	requestCount := 0
 
 	mockOverloadServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
 		requestCount++
+		currentCount := requestCount
+		mu.Unlock()
 
 		// Simulate latency based on request count
-		if requestCount > 10 {
+		if currentCount > 10 {
 			time.Sleep(500 * time.Millisecond) // Slow responses under load
 		} else {
 			time.Sleep(50 * time.Millisecond) // Fast responses normally
@@ -548,8 +553,11 @@ func TestVerifier_checkOverload_Advanced(t *testing.T) {
 	t.Logf("Overload detection: Overloaded=%v, AvgLatency=%v, Throughput=%.2f req/s",
 		overloaded, responseTime.AverageLatency, responseTime.Throughput)
 
-	if requestCount < 10 {
-		t.Errorf("Expected at least 10 requests for overload testing, got %d", requestCount)
+	mu.Lock()
+	finalCount := requestCount
+	mu.Unlock()
+	if finalCount < 10 {
+		t.Errorf("Expected at least 10 requests for overload testing, got %d", finalCount)
 	}
 }
 

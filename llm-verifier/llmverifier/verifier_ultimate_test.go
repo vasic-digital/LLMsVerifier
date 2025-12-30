@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -484,20 +485,24 @@ func TestVerifier_AdvancedErrorScenarios(t *testing.T) {
 // TestVerifier_PerformanceBoundaryTests tests performance at system boundaries
 func TestVerifier_PerformanceBoundaryTests(t *testing.T) {
 	// Server with controlled performance characteristics
+	var mu sync.Mutex
 	requestCounter := 0
 	var latencies []time.Duration
-	
+
 	mockPerfServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
 		requestCounter++
-		t.Logf("Perf request %d: path %s", requestCounter, r.URL.Path)
+		currentCounter := requestCounter
+		mu.Unlock()
+		t.Logf("Perf request %d: path %s", currentCounter, r.URL.Path)
 		start := time.Now()
 		
 		// Simulate varying response times
 		switch {
-		case requestCounter%20 == 0:
+		case currentCounter%20 == 0:
 			// Occasional very slow response
 			time.Sleep(2 * time.Second)
-		case requestCounter%10 == 0:
+		case currentCounter%10 == 0:
 			// Occasional slow response
 			time.Sleep(1 * time.Second)
 		default:
@@ -538,7 +543,9 @@ func TestVerifier_PerformanceBoundaryTests(t *testing.T) {
 				}
 			}`))
 			latency := time.Since(start)
+			mu.Lock()
 			latencies = append(latencies, latency)
+			mu.Unlock()
 		}
 	}))
 	defer mockPerfServer.Close()

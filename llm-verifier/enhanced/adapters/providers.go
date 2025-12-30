@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -364,6 +365,7 @@ func (da *DeepSeekAdapter) GetRateLimitInfo(headers http.Header) RateLimitInfo {
 // AdapterRegistry manages provider adapters
 type AdapterRegistry struct {
 	adapters map[string]ProviderAdapter
+	mu       sync.RWMutex
 }
 
 // NewAdapterRegistry creates a new adapter registry
@@ -381,17 +383,23 @@ func NewAdapterRegistry() *AdapterRegistry {
 
 // RegisterAdapter registers a provider adapter
 func (ar *AdapterRegistry) RegisterAdapter(adapter ProviderAdapter) {
+	ar.mu.Lock()
+	defer ar.mu.Unlock()
 	ar.adapters[adapter.GetProviderName()] = adapter
 }
 
 // GetAdapter returns the adapter for a provider
 func (ar *AdapterRegistry) GetAdapter(providerName string) (ProviderAdapter, bool) {
+	ar.mu.RLock()
+	defer ar.mu.RUnlock()
 	adapter, exists := ar.adapters[strings.ToLower(providerName)]
 	return adapter, exists
 }
 
 // GetAvailableProviders returns all registered provider names
 func (ar *AdapterRegistry) GetAvailableProviders() []string {
+	ar.mu.RLock()
+	defer ar.mu.RUnlock()
 	providers := make([]string, 0, len(ar.adapters))
 	for provider := range ar.adapters {
 		providers = append(providers, provider)

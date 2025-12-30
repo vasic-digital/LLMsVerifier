@@ -203,6 +203,11 @@ func (cvi *CodeVerificationIntegration) verifyModel(ctx context.Context, model M
 
 // storeVerificationResult stores the verification result in the database
 func (cvi *CodeVerificationIntegration) storeVerificationResult(result *CodeVerificationResult) (*database.VerificationResult, error) {
+	// Skip storage if database is not configured
+	if cvi.db == nil {
+		return nil, nil
+	}
+
 	// Find the model in the database
 	models, err := cvi.db.ListModels(map[string]interface{}{
 		"model_id":    result.ModelID,
@@ -282,6 +287,11 @@ func (cvi *CodeVerificationIntegration) updateModelVerificationStatus(model Mode
 
 // GetVerificationStatus returns the verification status for a specific model
 func (cvi *CodeVerificationIntegration) GetVerificationStatus(modelID, providerID string) (*VerificationResult, error) {
+	// Check if database is configured
+	if cvi.db == nil {
+		return nil, fmt.Errorf("database not configured")
+	}
+
 	// Get the latest verification result from the database
 	models, err := cvi.db.ListModels(map[string]interface{}{
 		"model_id":    modelID,
@@ -331,6 +341,11 @@ func (cvi *CodeVerificationIntegration) GetVerificationStatus(modelID, providerI
 
 // GetAllVerifiedModels returns all models that have been verified for code visibility
 func (cvi *CodeVerificationIntegration) GetAllVerifiedModels() ([]VerificationResult, error) {
+	// Check if database is configured
+	if cvi.db == nil {
+		return []VerificationResult{}, nil
+	}
+
 	// Get all models with verification status
 	models, err := cvi.db.ListModels(map[string]interface{}{
 		"supports_tool_use": true,
