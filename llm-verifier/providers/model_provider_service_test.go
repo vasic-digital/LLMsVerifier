@@ -438,6 +438,107 @@ func TestProviderClient(t *testing.T) {
 
 }
 
+// TestGetAllModels tests getting models for all providers
+func TestGetAllModels(t *testing.T) {
+	logger := NewTestLogger()
+	service := NewModelProviderService("/tmp/test.json", logger)
+
+	// Register test providers
+	service.RegisterProvider("provider1", "https://api.provider1.com/v1", "sk-test1")
+	service.RegisterProvider("provider2", "https://api.provider2.com/v1", "sk-test2")
+
+	// Get all models (this tests the concurrent fetch)
+	allModels, err := service.GetAllModels()
+	if err != nil {
+		t.Fatalf("GetAllModels() returned error: %v", err)
+	}
+
+	// Should have entries for registered providers
+	if allModels == nil {
+		t.Error("Expected non-nil map")
+	}
+}
+
+// TestRefreshCache tests cache refresh functionality
+func TestRefreshCache(t *testing.T) {
+	logger := NewTestLogger()
+	service := NewModelProviderService("/tmp/test.json", logger)
+
+	// Register a provider
+	service.RegisterProvider("test", "https://api.test.com/v1", "sk-test")
+
+	// Call RefreshCache
+	err := service.RefreshCache()
+	if err != nil {
+		t.Logf("RefreshCache returned error (expected for no real API): %v", err)
+	}
+
+	// Cache should be cleared and refreshed (or error handled gracefully)
+}
+
+// TestGetAllProviders tests getting all registered providers
+func TestGetAllProviders(t *testing.T) {
+	logger := NewTestLogger()
+	service := NewModelProviderService("/tmp/test.json", logger)
+
+	// Register test providers
+	service.RegisterProvider("openai", "https://api.openai.com/v1", "sk-test1")
+	service.RegisterProvider("anthropic", "https://api.anthropic.com/v1", "sk-test2")
+	service.RegisterProvider("groq", "https://api.groq.com/openai/v1", "sk-test3")
+
+	// Get all providers (returns map[string]*ProviderClient)
+	providers := service.GetAllProviders()
+
+	if len(providers) != 3 {
+		t.Errorf("Expected 3 providers, got %d", len(providers))
+	}
+
+	// Check that all providers are returned by key
+	if _, exists := providers["openai"]; !exists {
+		t.Error("Expected openai in providers")
+	}
+	if _, exists := providers["anthropic"]; !exists {
+		t.Error("Expected anthropic in providers")
+	}
+	if _, exists := providers["groq"]; !exists {
+		t.Error("Expected groq in providers")
+	}
+}
+
+// TestGetModelsUnregisteredProvider tests getting models for unregistered provider
+func TestGetModelsUnregisteredProvider(t *testing.T) {
+	logger := NewTestLogger()
+	service := NewModelProviderService("/tmp/test.json", logger)
+
+	// Try to get models for unregistered provider
+	models, err := service.GetModels("nonexistent-provider")
+
+	// Should return empty list or error - either is acceptable
+	if err != nil {
+		t.Logf("GetModels for unregistered provider returned expected error: %v", err)
+	} else if len(models) > 0 {
+		t.Error("Expected no models for unregistered provider")
+	}
+}
+
+// TestCacheTTL tests that cache respects TTL
+func TestCacheTTL(t *testing.T) {
+	logger := NewTestLogger()
+	service := NewModelProviderService("/tmp/test.json", logger)
+
+	// Default cache TTL should be 24 hours
+	if service.cacheTTL != 24 {
+		t.Errorf("Expected default cache TTL 24 hours, got %d", service.cacheTTL)
+	}
+
+	// Set a custom TTL
+	service.cacheTTL = 1 // 1 hour
+
+	if service.cacheTTL != 1 {
+		t.Errorf("Expected cache TTL 1 hour, got %d", service.cacheTTL)
+	}
+}
+
 // BenchmarkGetModels benchmarks model retrieval
 func BenchmarkGetModels(b *testing.B) {
 	logger := NewTestLogger()

@@ -23,40 +23,40 @@ func SanitizeInput(input string) string {
 
 // SanitizeHTML allows safe HTML but removes dangerous tags and attributes
 func SanitizeHTML(input string) string {
-	// Remove script tags and their content
-	reScript := regexp.MustCompile(`<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>`)
+	// Remove script tags and their content (Go-compatible regex)
+	reScript := regexp.MustCompile(`(?i)<script[^>]*>[\s\S]*?</script>`)
 	input = reScript.ReplaceAllString(input, "")
 
 	// Remove on* attributes (onclick, onload, etc.)
-	reOnAttr := regexp.MustCompile(`\s+on\w+\s*=\s*["'][^"']*["']`)
+	reOnAttr := regexp.MustCompile(`(?i)\s+on\w+\s*=\s*["'][^"']*["']`)
 	input = reOnAttr.ReplaceAllString(input, "")
 
 	// Remove javascript: protocol from href/src
-	reJSProtocol := regexp.MustCompile(`(href|src)\s*=\s*["']\s*javascript:[^"']*["']`)
+	reJSProtocol := regexp.MustCompile(`(?i)(href|src)\s*=\s*["']\s*javascript:[^"']*["']`)
 	input = reJSProtocol.ReplaceAllString(input, "")
 
 	// Remove data: protocol (can be used for XSS)
-	reDataProtocol := regexp.MustCompile(`(href|src)\s*=\s*["']\s*data:[^"']*["']`)
+	reDataProtocol := regexp.MustCompile(`(?i)(href|src)\s*=\s*["']\s*data:[^"']*["']`)
 	input = reDataProtocol.ReplaceAllString(input, "")
 
 	// Remove style tags and their content
-	reStyle := regexp.MustCompile(`<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>`)
+	reStyle := regexp.MustCompile(`(?i)<style[^>]*>[\s\S]*?</style>`)
 	input = reStyle.ReplaceAllString(input, "")
 
 	// Remove iframe tags
-	reIframe := regexp.MustCompile(`<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>`)
+	reIframe := regexp.MustCompile(`(?i)<iframe[^>]*>[\s\S]*?</iframe>`)
 	input = reIframe.ReplaceAllString(input, "")
 
 	// Remove object tags
-	reObject := regexp.MustCompile(`<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>`)
+	reObject := regexp.MustCompile(`(?i)<object[^>]*>[\s\S]*?</object>`)
 	input = reObject.ReplaceAllString(input, "")
 
 	// Remove embed tags
-	reEmbed := regexp.MustCompile(`<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>`)
+	reEmbed := regexp.MustCompile(`(?i)<embed[^>]*>[\s\S]*?</embed>`)
 	input = reEmbed.ReplaceAllString(input, "")
 
 	// Remove applet tags
-	reApplet := regexp.MustCompile(`<applet\b[^<]*(?:(?!<\/applet>)<[^<]*)*<\/applet>`)
+	reApplet := regexp.MustCompile(`(?i)<applet[^>]*>[\s\S]*?</applet>`)
 	input = reApplet.ReplaceAllString(input, "")
 
 	return input
@@ -303,12 +303,12 @@ func SanitizeJSONOutput(data interface{}) interface{} {
 
 // SanitizeHTMLResponse sanitizes HTML responses
 func SanitizeHTMLResponse(html string) string {
-	// Remove any script tags that might have been injected
-	reScript := regexp.MustCompile(`<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>`)
+	// Remove any script tags that might have been injected (Go-compatible regex)
+	reScript := regexp.MustCompile(`(?i)<script[^>]*>[\s\S]*?</script>`)
 	html = reScript.ReplaceAllString(html, "")
 
 	// Remove javascript: URLs
-	reJSURL := regexp.MustCompile(`javascript:[^"'\s]*`)
+	reJSURL := regexp.MustCompile(`(?i)javascript:[^"'\s]*`)
 	html = reJSURL.ReplaceAllString(html, "#")
 
 	return html
