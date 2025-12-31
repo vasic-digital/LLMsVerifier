@@ -232,3 +232,437 @@ func BenchmarkIntervalParsing(b *testing.B) {
 		parseIntervalExpressionForTest(expression, now)
 	}
 }
+
+// ==================== Structure Tests ====================
+
+func TestSchedule_StructureBasic(t *testing.T) {
+	now := time.Now()
+	lastRun := now.Add(-1 * time.Hour)
+
+	schedule := &Schedule{
+		ID:          "sched_123",
+		Name:        "Test Schedule",
+		Description: "Test description",
+		Type:        ScheduleTypeCron,
+		JobType:     JobTypeVerification,
+		Expression:  "0 2 * * *",
+		Enabled:     true,
+		Targets:     []string{"model1", "model2"},
+		Options:     map[string]interface{}{"full_verification": true},
+		CreatedAt:   now,
+		UpdatedAt:   now,
+		NextRun:     now.Add(time.Hour),
+		LastRun:     &lastRun,
+		RunCount:    5,
+		ErrorCount:  1,
+	}
+
+	if schedule.ID != "sched_123" {
+		t.Error("ID not set correctly")
+	}
+	if schedule.Name != "Test Schedule" {
+		t.Error("Name not set correctly")
+	}
+	if schedule.Description != "Test description" {
+		t.Error("Description not set correctly")
+	}
+	if schedule.Type != ScheduleTypeCron {
+		t.Error("Type not set correctly")
+	}
+	if schedule.JobType != JobTypeVerification {
+		t.Error("JobType not set correctly")
+	}
+	if schedule.Expression != "0 2 * * *" {
+		t.Error("Expression not set correctly")
+	}
+	if !schedule.Enabled {
+		t.Error("Enabled not set correctly")
+	}
+	if len(schedule.Targets) != 2 {
+		t.Errorf("Expected 2 targets, got %d", len(schedule.Targets))
+	}
+	if schedule.RunCount != 5 {
+		t.Errorf("Expected RunCount 5, got %d", schedule.RunCount)
+	}
+	if schedule.ErrorCount != 1 {
+		t.Errorf("Expected ErrorCount 1, got %d", schedule.ErrorCount)
+	}
+	if schedule.LastRun == nil {
+		t.Error("LastRun should not be nil")
+	}
+}
+
+func TestScheduleRun_StructureBasic(t *testing.T) {
+	now := time.Now()
+	completed := now.Add(time.Minute)
+
+	run := &ScheduleRun{
+		ID:          "run_123",
+		ScheduleID:  "sched_456",
+		StartedAt:   now,
+		CompletedAt: &completed,
+		Status:      "completed",
+		Error:       "",
+		Results: map[string]interface{}{
+			"message":  "Success",
+			"duration": 60,
+		},
+	}
+
+	if run.ID != "run_123" {
+		t.Error("ID not set correctly")
+	}
+	if run.ScheduleID != "sched_456" {
+		t.Error("ScheduleID not set correctly")
+	}
+	if run.Status != "completed" {
+		t.Error("Status not set correctly")
+	}
+	if run.CompletedAt == nil {
+		t.Error("CompletedAt should not be nil")
+	}
+	if len(run.Results) != 2 {
+		t.Errorf("Expected 2 results, got %d", len(run.Results))
+	}
+}
+
+func TestScheduleRun_FailedStatusCase(t *testing.T) {
+	now := time.Now()
+	completed := now.Add(time.Second)
+
+	run := &ScheduleRun{
+		ID:          "run_failed",
+		ScheduleID:  "sched_1",
+		StartedAt:   now,
+		CompletedAt: &completed,
+		Status:      "failed",
+		Error:       "connection timeout",
+	}
+
+	if run.Status != "failed" {
+		t.Error("Status should be failed")
+	}
+	if run.Error != "connection timeout" {
+		t.Error("Error message not set correctly")
+	}
+}
+
+// ==================== Schedule Management Tests (in-memory) ====================
+
+func TestScheduler_InMemoryScheduleOperations(t *testing.T) {
+	scheduler := NewScheduler(nil)
+
+	// Manually add schedule to test in-memory operations
+	schedule := &Schedule{
+		ID:         "test_1",
+		Name:       "Test Schedule",
+		Type:       ScheduleTypeCron,
+		JobType:    JobTypeVerification,
+		Expression: "0 * * * *",
+		Enabled:    true,
+		Targets:    []string{"all"},
+		NextRun:    time.Now().Add(time.Hour),
+	}
+
+	scheduler.schedules[schedule.ID] = schedule
+
+	// Test GetSchedules
+	t.Run("GetSchedules", func(t *testing.T) {
+		schedules := scheduler.GetSchedules()
+		if len(schedules) != 1 {
+			t.Errorf("Expected 1 schedule, got %d", len(schedules))
+		}
+	})
+
+	// Test GetSchedule
+	t.Run("GetSchedule_Found", func(t *testing.T) {
+		sched, err := scheduler.GetSchedule("test_1")
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+		if sched.Name != "Test Schedule" {
+			t.Error("Wrong schedule returned")
+		}
+	})
+
+	// Test UpdateSchedule
+	t.Run("UpdateSchedule_Found", func(t *testing.T) {
+		updates := &Schedule{
+			Name:        "Updated Schedule",
+			Description: "New description",
+			Enabled:     false,
+		}
+		err := scheduler.UpdateSchedule("test_1", updates)
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+		if scheduler.schedules["test_1"].Name != "Updated Schedule" {
+			t.Error("Name not updated")
+		}
+		if scheduler.schedules["test_1"].Enabled != false {
+			t.Error("Enabled not updated")
+		}
+	})
+
+	// Test EnableSchedule
+	t.Run("EnableSchedule_Found", func(t *testing.T) {
+		err := scheduler.EnableSchedule("test_1")
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+		if !scheduler.schedules["test_1"].Enabled {
+			t.Error("Schedule should be enabled")
+		}
+	})
+
+	// Test DisableSchedule
+	t.Run("DisableSchedule_Found", func(t *testing.T) {
+		err := scheduler.DisableSchedule("test_1")
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+		if scheduler.schedules["test_1"].Enabled {
+			t.Error("Schedule should be disabled")
+		}
+	})
+
+	// Test DeleteSchedule
+	t.Run("DeleteSchedule_Found", func(t *testing.T) {
+		// Add a run for the schedule
+		scheduler.runs["run_1"] = &ScheduleRun{
+			ID:         "run_1",
+			ScheduleID: "test_1",
+		}
+
+		err := scheduler.DeleteSchedule("test_1")
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+		if _, exists := scheduler.schedules["test_1"]; exists {
+			t.Error("Schedule should be deleted")
+		}
+		if _, exists := scheduler.runs["run_1"]; exists {
+			t.Error("Associated runs should be deleted")
+		}
+	})
+}
+
+// ==================== GetScheduleRuns Tests ====================
+
+func TestScheduler_GetScheduleRunsExtended(t *testing.T) {
+	scheduler := NewScheduler(nil)
+
+	// Add test runs
+	now := time.Now()
+	scheduler.runs["run_1"] = &ScheduleRun{
+		ID:         "run_1",
+		ScheduleID: "sched_1",
+		StartedAt:  now.Add(-3 * time.Hour),
+		Status:     "completed",
+	}
+	scheduler.runs["run_2"] = &ScheduleRun{
+		ID:         "run_2",
+		ScheduleID: "sched_1",
+		StartedAt:  now.Add(-2 * time.Hour),
+		Status:     "completed",
+	}
+	scheduler.runs["run_3"] = &ScheduleRun{
+		ID:         "run_3",
+		ScheduleID: "sched_1",
+		StartedAt:  now.Add(-1 * time.Hour),
+		Status:     "failed",
+	}
+	scheduler.runs["run_4"] = &ScheduleRun{
+		ID:         "run_4",
+		ScheduleID: "sched_2",
+		StartedAt:  now,
+		Status:     "running",
+	}
+
+	t.Run("GetAllRuns", func(t *testing.T) {
+		runs := scheduler.GetScheduleRuns("sched_1", 0)
+		if len(runs) != 3 {
+			t.Errorf("Expected 3 runs, got %d", len(runs))
+		}
+	})
+
+	t.Run("GetLimitedRuns", func(t *testing.T) {
+		runs := scheduler.GetScheduleRuns("sched_1", 2)
+		if len(runs) != 2 {
+			t.Errorf("Expected 2 runs, got %d", len(runs))
+		}
+	})
+
+	t.Run("GetRunsSortedByTime", func(t *testing.T) {
+		runs := scheduler.GetScheduleRuns("sched_1", 0)
+		// Should be sorted by newest first
+		if runs[0].ID != "run_3" {
+			t.Error("Runs should be sorted by start time (newest first)")
+		}
+	})
+
+	t.Run("GetRunsForDifferentSchedule", func(t *testing.T) {
+		runs := scheduler.GetScheduleRuns("sched_2", 0)
+		if len(runs) != 1 {
+			t.Errorf("Expected 1 run, got %d", len(runs))
+		}
+	})
+}
+
+// ==================== IsCronWildcard Tests ====================
+
+func TestScheduler_IsCronWildcardCheck(t *testing.T) {
+	scheduler := NewScheduler(nil)
+
+	testCases := []struct {
+		field    string
+		expected bool
+	}{
+		{"*", true},
+		{"0", false},
+		{"1-5", false},
+		{"0,30", false},
+		{"", false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.field, func(t *testing.T) {
+			result := scheduler.isCronWildcard(tc.field)
+			if result != tc.expected {
+				t.Errorf("For field '%s', expected %v, got %v", tc.field, tc.expected, result)
+			}
+		})
+	}
+}
+
+// ==================== ParseCronExpression Tests ====================
+
+func TestScheduler_ParseCronExpression_InvalidCases(t *testing.T) {
+	scheduler := NewScheduler(nil)
+	now := time.Now()
+
+	testCases := []struct {
+		name       string
+		expression string
+	}{
+		{"too few fields", "* * *"},
+		{"too many fields", "* * * * * *"},
+		{"empty", ""},
+		{"single field", "*"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := scheduler.parseCronExpression(tc.expression, now)
+			// Invalid expressions should return a future time (fallback to now + 1 hour)
+			if !result.After(now) {
+				t.Error("Invalid expression should return future time")
+			}
+		})
+	}
+}
+
+// ==================== GetSchedules Sorting Tests ====================
+
+func TestScheduler_GetSchedules_SortingByNextRun(t *testing.T) {
+	scheduler := NewScheduler(nil)
+	now := time.Now()
+
+	scheduler.schedules["sched_3"] = &Schedule{
+		ID:      "sched_3",
+		Name:    "Third",
+		NextRun: now.Add(3 * time.Hour),
+	}
+	scheduler.schedules["sched_1"] = &Schedule{
+		ID:      "sched_1",
+		Name:    "First",
+		NextRun: now.Add(1 * time.Hour),
+	}
+	scheduler.schedules["sched_2"] = &Schedule{
+		ID:      "sched_2",
+		Name:    "Second",
+		NextRun: now.Add(2 * time.Hour),
+	}
+
+	schedules := scheduler.GetSchedules()
+
+	if len(schedules) != 3 {
+		t.Fatalf("Expected 3 schedules, got %d", len(schedules))
+	}
+	if schedules[0].Name != "First" {
+		t.Error("Schedules should be sorted by NextRun (First should be first)")
+	}
+	if schedules[1].Name != "Second" {
+		t.Error("Schedules should be sorted by NextRun (Second should be second)")
+	}
+	if schedules[2].Name != "Third" {
+		t.Error("Schedules should be sorted by NextRun (Third should be third)")
+	}
+}
+
+// ==================== Update Schedule Partial Fields Tests ====================
+
+func TestScheduler_UpdateSchedule_PartialFieldUpdates(t *testing.T) {
+	scheduler := NewScheduler(nil)
+
+	original := &Schedule{
+		ID:          "test_partial",
+		Name:        "Original Name",
+		Description: "Original Description",
+		Expression:  "0 * * * *",
+		Enabled:     true,
+		Targets:     []string{"target1"},
+		Options:     map[string]interface{}{"key": "value"},
+		Type:        ScheduleTypeCron,
+		JobType:     JobTypeVerification,
+	}
+	scheduler.schedules["test_partial"] = original
+
+	// Update only name
+	t.Run("Update only name", func(t *testing.T) {
+		err := scheduler.UpdateSchedule("test_partial", &Schedule{Name: "New Name"})
+		if err != nil {
+			t.Errorf("Unexpected error: %v", err)
+		}
+		if scheduler.schedules["test_partial"].Name != "New Name" {
+			t.Error("Name should be updated")
+		}
+		if scheduler.schedules["test_partial"].Description != "Original Description" {
+			t.Error("Description should remain unchanged")
+		}
+	})
+
+	// Update expression
+	t.Run("Update expression", func(t *testing.T) {
+		err := scheduler.UpdateSchedule("test_partial", &Schedule{Expression: "0 2 * * *"})
+		if err != nil {
+			t.Errorf("Unexpected error: %v", err)
+		}
+		if scheduler.schedules["test_partial"].Expression != "0 2 * * *" {
+			t.Error("Expression should be updated")
+		}
+	})
+
+	// Update targets
+	t.Run("Update targets", func(t *testing.T) {
+		err := scheduler.UpdateSchedule("test_partial", &Schedule{Targets: []string{"new_target"}})
+		if err != nil {
+			t.Errorf("Unexpected error: %v", err)
+		}
+		if len(scheduler.schedules["test_partial"].Targets) != 1 || scheduler.schedules["test_partial"].Targets[0] != "new_target" {
+			t.Error("Targets should be updated")
+		}
+	})
+
+	// Update options
+	t.Run("Update options", func(t *testing.T) {
+		newOptions := map[string]interface{}{"new_key": "new_value"}
+		err := scheduler.UpdateSchedule("test_partial", &Schedule{Options: newOptions})
+		if err != nil {
+			t.Errorf("Unexpected error: %v", err)
+		}
+		if _, ok := scheduler.schedules["test_partial"].Options["new_key"]; !ok {
+			t.Error("Options should be updated")
+		}
+	})
+}
