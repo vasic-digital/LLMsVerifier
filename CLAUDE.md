@@ -57,12 +57,43 @@ go run ./cmd server     # Run API server directly
 ./bin/llm-verifier      # Run built binary
 ```
 
-### Docker
+### Container Runtime (Docker/Podman)
+
+LLMsVerifier supports both Docker and Podman as container runtimes. Use the unified container commands for automatic detection:
+
+```bash
+# Automatic runtime detection
+make container-detect   # Show detected runtime (Docker or Podman)
+make container-build    # Build image with detected runtime
+make container-start    # Start services with compose
+make container-stop     # Stop services
+make container-logs     # View logs
+make container-status   # Check status
+
+# Or use the script directly
+./scripts/container-runtime.sh build
+./scripts/container-runtime.sh start
+./scripts/container-runtime.sh stop
+```
+
+### Docker (Direct)
 
 ```bash
 make docker-build       # Build Docker image
 make docker-run         # Run Docker container on port 8080
 docker-compose up -d    # Start with Docker Compose
+```
+
+### Podman (Alternative)
+
+```bash
+make podman-build       # Build with Podman
+make podman-run         # Run with Podman
+make podman-compose-up  # Start with podman-compose
+make podman-compose-down # Stop with podman-compose
+
+# Enable Podman socket for Docker compatibility
+systemctl --user enable --now podman.socket
 ```
 
 ### Development Setup

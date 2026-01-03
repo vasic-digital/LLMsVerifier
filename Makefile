@@ -1,7 +1,10 @@
 # LLM Verifier Makefile
 # Comprehensive build, test, and development automation
 
-.PHONY: help build test clean docker deps lint format security check all
+.PHONY: help build test clean docker deps lint format security check all \
+        container-detect container-build container-start container-stop \
+        container-logs container-status container-run \
+        podman-build podman-run podman-compose-up podman-compose-down
 
 # Default target
 help: ## Show this help message
@@ -86,7 +89,29 @@ security-scan: ## Comprehensive security scanning
 	trivy fs .
 	govulncheck ./...
 
-# Docker
+# Container Runtime (Docker/Podman)
+container-detect: ## Detect available container runtime
+	@./scripts/container-runtime.sh detect
+
+container-build: ## Build container image (Docker or Podman)
+	@./scripts/container-runtime.sh build
+
+container-start: ## Start services with compose (Docker or Podman)
+	@./scripts/container-runtime.sh start
+
+container-stop: ## Stop services
+	@./scripts/container-runtime.sh stop
+
+container-logs: ## View container logs
+	@./scripts/container-runtime.sh logs
+
+container-status: ## Check container status
+	@./scripts/container-runtime.sh status
+
+container-run: ## Run container directly (without compose)
+	@./scripts/container-runtime.sh run
+
+# Docker (legacy commands, use container-* for cross-runtime support)
 docker-build: ## Build Docker image
 	docker build -t llm-verifier:latest .
 
@@ -96,6 +121,19 @@ docker-run: ## Run Docker container
 docker-test: ## Test in Docker environment
 	docker build -t llm-verifier:test -f Dockerfile.test .
 	docker run --rm llm-verifier:test
+
+# Podman (alternative runtime)
+podman-build: ## Build with Podman
+	podman build -t llm-verifier:latest .
+
+podman-run: ## Run with Podman
+	podman run -p 8080:8080 llm-verifier:latest
+
+podman-compose-up: ## Start with podman-compose
+	podman-compose up -d
+
+podman-compose-down: ## Stop with podman-compose
+	podman-compose down
 
 # Development
 run: ## Run the application locally
