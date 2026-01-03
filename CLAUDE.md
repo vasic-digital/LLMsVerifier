@@ -15,6 +15,7 @@ All commands should be run from the repository root unless otherwise specified.
 ```bash
 make build              # Build for current platform (outputs to bin/)
 make build-all          # Build for Linux, macOS, Windows
+make build-acp          # Build ACP CLI tool
 go build -o bin/llm-verifier ./cmd   # Direct Go build
 ```
 
@@ -33,6 +34,9 @@ go test -v -run TestFunctionName ./path/to/package
 
 # Run tests in specific package
 go test -v ./llm-verifier/providers/...
+
+# Run ACP-specific tests
+make test-acp
 ```
 
 ### Code Quality
@@ -61,16 +65,24 @@ make docker-run         # Run Docker container on port 8080
 docker-compose up -d    # Start with Docker Compose
 ```
 
+### Development Setup
+
+```bash
+make setup              # Install dev tools (golangci-lint, staticcheck, govulncheck)
+make dev-setup          # Complete setup including git hooks
+make deps               # Download and tidy dependencies
+```
+
 ## Architecture
 
 ### Directory Structure
 
 ```
 LLMsVerifier/
-├── llm-verifier/           # Core Go application
-│   ├── cmd/                # CLI entry points and commands
+├── llm-verifier/           # Core Go application (replace module)
+│   ├── cmd/                # CLI entry points (main.go, acp-cli/, model-verification/)
 │   ├── api/                # REST API handlers, middleware, validation
-│   ├── providers/          # LLM provider adapters (OpenAI, Anthropic, Google, etc.)
+│   ├── providers/          # LLM provider adapters (OpenAI, Anthropic, Cohere, Groq, etc.)
 │   ├── database/           # Data access layer with SQL Cipher encryption
 │   ├── verification/       # Model verification engine
 │   ├── auth/               # Authentication (JWT) and RBAC
@@ -91,9 +103,16 @@ LLMsVerifier/
 └── Makefile               # Build automation
 ```
 
+### Module Structure
+
+The project uses Go module replacement: the root `go.mod` replaces `llm-verifier` with the local `./llm-verifier` directory. When adding dependencies:
+```bash
+cd llm-verifier && go get <package>
+```
+
 ### Key Architectural Patterns
 
-- **Provider Adapter Pattern**: Each LLM provider (OpenAI, Anthropic, Google, etc.) has an independent adapter in `providers/`
+- **Provider Adapter Pattern**: Each LLM provider (OpenAI, Anthropic, Cohere, Groq, etc.) has an independent adapter in `providers/`. Add new providers by implementing the base interface in `providers/base.go`
 - **Circuit Breaker**: Automatic failover for provider outages in `failover/`
 - **Supervisor/Worker**: Distributed task processing in `enhanced/`
 - **Repository Pattern**: Clean data access layer in `database/`
@@ -102,13 +121,27 @@ LLMsVerifier/
 ### Core Components
 
 - **Verification Engine** (`verification/`): Runs 20+ capability tests including "Do you see my code?" verification
-- **Provider Service** (`providers/`): Manages 17+ LLM provider integrations with dynamic model discovery
+- **Provider Service** (`providers/model_provider_service.go`): Manages 17+ LLM provider integrations with dynamic model discovery
+- **Model Verification Service** (`providers/model_verification_service.go`): Validates model capabilities
 - **API Server** (`api/`): Gin-based REST API with JWT auth, rate limiting, Swagger docs at `/swagger/index.html`
 - **Database Layer** (`database/`): SQLite with SQL Cipher encryption, connection pooling
 
 ### (llmsvd) Suffix System
 
 All LLMsVerifier-generated providers and models include mandatory `(llmsvd)` branding suffix for verified models. This is a core feature - verified models must pass the "Do you see my code?" test.
+
+### Challenge System
+
+The verification system uses challenges (see `docs/CHALLENGES_CATALOG.md`):
+1. **Provider Models Discovery** - Discovers available models from providers
+2. **Model Verification** - Validates model capabilities and features
+3. **Configuration Generation** - Creates platform-specific configs (OpenCode, Crush, Claude Code)
+
+Run challenges:
+```bash
+go run llm-verifier/challenges/codebase/go_files/provider_models_discovery.go
+./llm-verifier/cmd/model-verification/model-verification --verify-all
+```
 
 ## Key Dependencies
 
@@ -119,16 +152,41 @@ All LLMsVerifier-generated providers and models include mandatory `(llmsvd)` bra
 - `mattn/go-sqlite3` - SQLite driver
 - `golang-jwt/jwt/v5` - JWT authentication
 - `stretchr/testify` - Testing utilities
+- `andybalholm/brotli` - Compression
 
 ## Configuration
 
-- Main config: `config.yaml` (copy from `config.yaml.example`)
+- Main config: `config.yaml` (copy from `llm-verifier/config.yaml.example`)
 - Environment variables supported via `${VAR_NAME}` substitution
 - Database encryption key required for SQL Cipher
 - API keys stored in `.env` (gitignored)
 
+Example config structure:
+```yaml
+global:
+  base_url: "https://api.openai.com/v1"
+  api_key: "${OPENAI_API_KEY}"
+database:
+  path: "./llm-verifier.db"
+api:
+  port: "8080"
+  jwt_secret: "your-secret-key"
+```
+
 ## CI/CD
 
 GitHub Actions workflows in `.github/workflows/`:
-- `ci.yml` - Main CI pipeline with tests, lint, security scans
+- `ci.yml` - Main CI pipeline with tests, lint, security scans (runs on main/develop)
 - `deploy.yml` - Deployment pipeline
+
+The CI runs tests in `llm-verifier/` subdirectory:
+```bash
+cd llm-verifier && go test ./providers/... ./database/... ./verification/...
+```
+
+## Adding New Providers
+
+1. Create adapter in `llm-verifier/providers/<provider>.go`
+2. Implement the provider interface from `providers/base.go`
+3. Register in `providers/model_provider_service.go`
+4. Add tests in `llm-verifier/providers/<provider>_test.go`

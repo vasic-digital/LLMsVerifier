@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -297,15 +298,43 @@ func TestDataManager_DeleteUserData(t *testing.T) {
 func TestDataManager_AnonymizeUserData(t *testing.T) {
 	dm := NewDataManager()
 
+	// First store user data
+	userData := &UserDataRecord{
+		UserID: "user123",
+		Email:  "test@example.com",
+		Name:   "Test User",
+	}
+	dm.StoreUserData(userData)
+
+	// Now anonymize should work
 	err := dm.AnonymizeUserData("user123")
 	assert.NoError(t, err)
+}
+
+func TestDataManager_AnonymizeUserData_NotFound(t *testing.T) {
+	dm := NewDataManager()
+
+	// Anonymizing non-existent user should return error
+	err := dm.AnonymizeUserData("nonexistent")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not found")
 }
 
 func TestDataManager_AnonymizeUserData_MultipleUsers(t *testing.T) {
 	dm := NewDataManager()
 
-	// Anonymize multiple users
+	// Store data for multiple users first
 	users := []string{"user1", "user2", "user3"}
+	for _, userID := range users {
+		userData := &UserDataRecord{
+			UserID: userID,
+			Email:  fmt.Sprintf("%s@example.com", userID),
+			Name:   fmt.Sprintf("User %s", userID),
+		}
+		dm.StoreUserData(userData)
+	}
+
+	// Now anonymize all users
 	for _, userID := range users {
 		err := dm.AnonymizeUserData(userID)
 		assert.NoError(t, err)

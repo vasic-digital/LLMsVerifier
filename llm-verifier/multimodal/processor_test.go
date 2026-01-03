@@ -138,8 +138,8 @@ func TestMultiModalProcessor_processVideo(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, analysis)
-	assert.Equal(t, "Video content processed", analysis.Description)
-	assert.Equal(t, 0.85, analysis.Confidence)
+	// Without configured vision provider, returns basic metadata
+	assert.NotEmpty(t, analysis.Description)
 	assert.Contains(t, analysis.Topics, "video")
 }
 
@@ -162,7 +162,8 @@ func TestMultiModalProcessor_generateLLMResponse(t *testing.T) {
 		response, err := processor.generateLLMResponse(ctx, req, analysis)
 
 		require.NoError(t, err)
-		assert.Contains(t, response, "Analysis complete")
+		// Without a provider, returns formatted analysis summary
+		assert.Contains(t, response, "Analysis")
 		assert.Contains(t, response, analysis.Description)
 	})
 
@@ -174,7 +175,8 @@ func TestMultiModalProcessor_generateLLMResponse(t *testing.T) {
 		response, err := processor.generateLLMResponse(ctx, req, analysis)
 
 		require.NoError(t, err)
-		assert.Contains(t, response, "Analysis complete")
+		// Returns analysis summary
+		assert.NotEmpty(t, response)
 	})
 
 	t.Run("with text analysis", func(t *testing.T) {
@@ -209,45 +211,17 @@ func TestMultiModalProcessor_generateLLMResponse(t *testing.T) {
 // ==================== ImageProcessor Tests ====================
 
 func TestNewImageProcessor(t *testing.T) {
-	processor := NewImageProcessor()
+	mmp := NewMultiModalProcessor()
+	processor := NewImageProcessor(mmp)
 
 	require.NotNil(t, processor)
-	assert.NotEmpty(t, processor.visionProviders)
-	assert.Contains(t, processor.visionProviders, "openai-gpt4v")
-	assert.Contains(t, processor.visionProviders, "anthropic-claude3")
+	assert.NotNil(t, processor.processor)
 }
 
 func TestImageProcessor_ProcessImage(t *testing.T) {
-	processor := NewImageProcessor()
+	mmp := NewMultiModalProcessor()
+	processor := NewImageProcessor(mmp)
 	ctx := context.Background()
-
-	t.Run("with base64 data", func(t *testing.T) {
-		content := &MultiModalContent{
-			Type:       ContentTypeImage,
-			Base64Data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
-		}
-
-		analysis, err := processor.ProcessImage(ctx, content, "")
-
-		require.NoError(t, err)
-		require.NotNil(t, analysis)
-		assert.NotEmpty(t, analysis.Description)
-		assert.NotEmpty(t, analysis.Objects)
-		assert.Greater(t, analysis.Confidence, 0.0)
-	})
-
-	t.Run("with raw data", func(t *testing.T) {
-		content := &MultiModalContent{
-			Type: ContentTypeImage,
-			Data: []byte{0x89, 0x50, 0x4E, 0x47}, // PNG header
-		}
-
-		analysis, err := processor.ProcessImage(ctx, content, "Describe the image")
-
-		require.NoError(t, err)
-		require.NotNil(t, analysis)
-		assert.NotEmpty(t, analysis.Description)
-	})
 
 	t.Run("no image data", func(t *testing.T) {
 		content := &MultiModalContent{
@@ -261,60 +235,49 @@ func TestImageProcessor_ProcessImage(t *testing.T) {
 		assert.Contains(t, err.Error(), "no image data")
 	})
 
-	t.Run("with custom prompt", func(t *testing.T) {
+	t.Run("no provider configured", func(t *testing.T) {
 		content := &MultiModalContent{
 			Type:       ContentTypeImage,
-			Base64Data: "dGVzdA==",
+			Base64Data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
 		}
 
-		analysis, err := processor.ProcessImage(ctx, content, "List all objects in this image")
+		// Without a provider configured, should return an error
+		analysis, err := processor.ProcessImage(ctx, content, "")
 
-		require.NoError(t, err)
-		require.NotNil(t, analysis)
+		assert.Error(t, err)
+		assert.Nil(t, analysis)
+		assert.Contains(t, err.Error(), "not configured")
+	})
+
+	t.Run("with raw data converted to base64", func(t *testing.T) {
+		content := &MultiModalContent{
+			Type: ContentTypeImage,
+			Data: []byte{0x89, 0x50, 0x4E, 0x47}, // PNG header
+		}
+
+		// Without a provider, expects error
+		analysis, err := processor.ProcessImage(ctx, content, "Describe the image")
+
+		assert.Error(t, err)
+		assert.Nil(t, analysis)
+		assert.Contains(t, err.Error(), "not configured")
 	})
 }
 
 // ==================== AudioProcessor Tests ====================
 
 func TestNewAudioProcessor(t *testing.T) {
-	processor := NewAudioProcessor()
+	mmp := NewMultiModalProcessor()
+	processor := NewAudioProcessor(mmp)
 
 	require.NotNil(t, processor)
-	assert.NotEmpty(t, processor.transcriptionProviders)
-	assert.Contains(t, processor.transcriptionProviders, "openai-whisper")
-	assert.Contains(t, processor.transcriptionProviders, "google-speech")
+	assert.NotNil(t, processor.processor)
 }
 
 func TestAudioProcessor_ProcessAudio(t *testing.T) {
-	processor := NewAudioProcessor()
+	mmp := NewMultiModalProcessor()
+	processor := NewAudioProcessor(mmp)
 	ctx := context.Background()
-
-	t.Run("with base64 data", func(t *testing.T) {
-		content := &MultiModalContent{
-			Type:       ContentTypeAudio,
-			Base64Data: "dGVzdCBhdWRpbyBkYXRh",
-		}
-
-		analysis, err := processor.ProcessAudio(ctx, content, "")
-
-		require.NoError(t, err)
-		require.NotNil(t, analysis)
-		assert.NotEmpty(t, analysis.Transcript)
-		assert.Equal(t, "en", analysis.Language)
-		assert.Greater(t, analysis.Confidence, 0.0)
-	})
-
-	t.Run("with raw data", func(t *testing.T) {
-		content := &MultiModalContent{
-			Type: ContentTypeAudio,
-			Data: []byte{0xFF, 0xFB}, // MP3 frame sync
-		}
-
-		analysis, err := processor.ProcessAudio(ctx, content, "Transcribe")
-
-		require.NoError(t, err)
-		require.NotNil(t, analysis)
-	})
 
 	t.Run("no audio data", func(t *testing.T) {
 		content := &MultiModalContent{
@@ -327,20 +290,49 @@ func TestAudioProcessor_ProcessAudio(t *testing.T) {
 		assert.Nil(t, analysis)
 		assert.Contains(t, err.Error(), "no audio data")
 	})
+
+	t.Run("no provider configured", func(t *testing.T) {
+		content := &MultiModalContent{
+			Type:       ContentTypeAudio,
+			Base64Data: "dGVzdCBhdWRpbyBkYXRh",
+		}
+
+		// Without a provider configured, should return an error
+		analysis, err := processor.ProcessAudio(ctx, content, "")
+
+		assert.Error(t, err)
+		assert.Nil(t, analysis)
+		assert.Contains(t, err.Error(), "not configured")
+	})
+
+	t.Run("with raw data converted to base64", func(t *testing.T) {
+		content := &MultiModalContent{
+			Type: ContentTypeAudio,
+			Data: []byte{0xFF, 0xFB}, // MP3 frame sync
+		}
+
+		// Without a provider, expects error
+		analysis, err := processor.ProcessAudio(ctx, content, "Transcribe")
+
+		assert.Error(t, err)
+		assert.Nil(t, analysis)
+		assert.Contains(t, err.Error(), "not configured")
+	})
 }
 
 // ==================== ContentSafetyChecker Tests ====================
 
 func TestNewContentSafetyChecker(t *testing.T) {
-	checker := NewContentSafetyChecker()
+	mmp := NewMultiModalProcessor()
+	checker := NewContentSafetyChecker(mmp)
 
 	require.NotNil(t, checker)
-	assert.NotEmpty(t, checker.safetyProviders)
-	assert.Contains(t, checker.safetyProviders, "openai-moderation")
+	assert.NotNil(t, checker.processor)
 }
 
 func TestContentSafetyChecker_CheckContent(t *testing.T) {
-	checker := NewContentSafetyChecker()
+	mmp := NewMultiModalProcessor()
+	checker := NewContentSafetyChecker(mmp)
 	ctx := context.Background()
 
 	content := &MultiModalContent{
@@ -348,13 +340,13 @@ func TestContentSafetyChecker_CheckContent(t *testing.T) {
 		Data: []byte("test image data"),
 	}
 
+	// Without a configured provider, it performs basic safety check
 	result, err := checker.CheckContent(ctx, content)
 
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	assert.True(t, result.Safe)
-	assert.Equal(t, 0.95, result.Score)
-	assert.Empty(t, result.Issues)
+	assert.GreaterOrEqual(t, result.Score, 0.9)
 }
 
 // ==================== ContentValidator Tests ====================

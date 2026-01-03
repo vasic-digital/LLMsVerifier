@@ -68,8 +68,8 @@ func TestCloudBackupManager(t *testing.T) {
 			t.Errorf("Expected 1 checkpoint, got %d", len(checkpoints))
 		}
 
-		if checkpoints[0] != "test-checkpoint" {
-			t.Errorf("Checkpoint ID mismatch: got %s, want %s", checkpoints[0], "test-checkpoint")
+		if checkpoints[0].ID != "test-checkpoint" {
+			t.Errorf("Checkpoint ID mismatch: got %s, want %s", checkpoints[0].ID, "test-checkpoint")
 		}
 	})
 

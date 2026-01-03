@@ -62,7 +62,7 @@ func TestCloudBackupManager_CleanupOldBackups(t *testing.T) {
 	assert.Len(t, checkpoints, 5)
 
 	// Cleanup, keeping only 2
-	err = manager.CleanupOldBackups(ctx, "agent-1", 2)
+	_, err = manager.CleanupOldBackups(ctx, "agent-1", 2)
 	require.NoError(t, err)
 
 	// Verify only 2 checkpoints remain
@@ -92,7 +92,7 @@ func TestCloudBackupManager_CleanupOldBackups_NoCleanupNeeded(t *testing.T) {
 	}
 
 	// Cleanup with maxBackups=5 (no cleanup needed)
-	err := manager.CleanupOldBackups(ctx, "agent-1", 5)
+	_, err := manager.CleanupOldBackups(ctx, "agent-1", 5)
 	require.NoError(t, err)
 
 	// Verify all 2 checkpoints still exist
@@ -108,11 +108,9 @@ func TestCloudBackupManager_SyncCheckpoints(t *testing.T) {
 	}
 	cloudManager := NewCloudBackupManager(mockProvider, "sync/")
 
-	// Create local checkpoint manager
-	localManager := NewCheckpointManager("/tmp/test-checkpoints", 100)
-
-	// Create checkpoints in local manager
+	// Create checkpoints
 	ctx := context.Background()
+	localCheckpoints := make([]*Checkpoint, 0, 3)
 	for i := 1; i <= 3; i++ {
 		checkpoint := &Checkpoint{
 			ID:        "local-checkpoint-" + strconv.Itoa(i),
@@ -124,11 +122,11 @@ func TestCloudBackupManager_SyncCheckpoints(t *testing.T) {
 				Status:   "completed",
 			},
 		}
-		localManager.checkpoints[checkpoint.ID] = checkpoint
+		localCheckpoints = append(localCheckpoints, checkpoint)
 	}
 
 	// Sync to cloud
-	err := cloudManager.SyncCheckpoints(ctx, localManager)
+	err := cloudManager.SyncCheckpoints(ctx, "sync-agent", localCheckpoints)
 	require.NoError(t, err)
 
 	// Verify all checkpoints were synced
@@ -146,27 +144,23 @@ func TestCloudBackupManager_GetBackupStats(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Create checkpoints for multiple agents
-	for idx, agentID := range []string{"agent-1", "agent-2", "agent-1"} {
+	// Create checkpoints for agent-1
+	for idx := 0; idx < 3; idx++ {
 		checkpoint := &Checkpoint{
-			ID:        "checkpoint-" + agentID + "-" + strconv.Itoa(idx),
-			AgentID:   agentID,
+			ID:        "checkpoint-" + strconv.Itoa(idx),
+			AgentID:   "agent-1",
 			Timestamp: time.Now(),
 		}
 		err := manager.BackupCheckpoint(ctx, checkpoint)
 		require.NoError(t, err)
 	}
 
-	// Get stats
-	stats, err := manager.GetBackupStats(ctx)
+	// Get stats for agent-1
+	stats, err := manager.GetBackupStats(ctx, "agent-1")
 	require.NoError(t, err)
 
-	assert.Equal(t, "test", stats["provider"])
-	assert.Equal(t, "stats/", stats["prefix"])
-	assert.Equal(t, 3, stats["total_checkpoints"])
-
-	agents := stats["agents"].([]string)
-	assert.GreaterOrEqual(t, len(agents), 1)
+	assert.Equal(t, 3, stats.TotalBackups)
+	assert.Greater(t, stats.TotalSize, int64(0))
 }
 
 func TestCloudBackupManager_GetBackupStats_Empty(t *testing.T) {
@@ -178,11 +172,10 @@ func TestCloudBackupManager_GetBackupStats_Empty(t *testing.T) {
 
 	ctx := context.Background()
 
-	stats, err := manager.GetBackupStats(ctx)
+	stats, err := manager.GetBackupStats(ctx, "agent-1")
 	require.NoError(t, err)
 
-	assert.Equal(t, "empty-test", stats["provider"])
-	assert.Equal(t, 0, stats["total_checkpoints"])
+	assert.Equal(t, 0, stats.TotalBackups)
 }
 
 func TestCloudBackupManager_BackupCheckpoint_Error(t *testing.T) {
@@ -236,10 +229,14 @@ func TestCloudBackupManager_ListCheckpoints_AllAgents(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// List all checkpoints (empty agentID)
-	checkpoints, err := manager.ListCheckpoints(ctx, "")
-	require.NoError(t, err)
-	assert.Len(t, checkpoints, 3)
+	// List checkpoints for each agent
+	totalCheckpoints := 0
+	for _, agentID := range agents {
+		checkpoints, err := manager.ListCheckpoints(ctx, agentID)
+		require.NoError(t, err)
+		totalCheckpoints += len(checkpoints)
+	}
+	assert.Equal(t, 3, totalCheckpoints)
 }
 
 func TestCloudBackupManager_getCheckpointKey(t *testing.T) {

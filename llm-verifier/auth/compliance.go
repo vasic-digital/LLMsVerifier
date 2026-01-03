@@ -2,10 +2,14 @@
 package auth
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"strings"
+	"sync"
 	"time"
 )
 
@@ -101,9 +105,98 @@ func (cm *ComplianceManager) Close() error {
 
 // QueryAuditLogs queries audit logs with filters
 func (cm *ComplianceManager) QueryAuditLogs(filters map[string]interface{}, limit int) ([]*AuditEvent, error) {
-	// In production, this would query a database
-	// For demo, we'll return empty slice
-	return []*AuditEvent{}, nil
+	// Get the audit log file path
+	if cm.auditLogFile == nil {
+		return nil, fmt.Errorf("audit log file not initialized")
+	}
+
+	// Get the file path from the file
+	filePath := cm.auditLogFile.Name()
+
+	// Open the file for reading
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open audit log for reading: %w", err)
+	}
+	defer file.Close()
+
+	var events []*AuditEvent
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		if limit > 0 && len(events) >= limit {
+			break
+		}
+
+		line := scanner.Text()
+		if line == "" {
+			continue
+		}
+
+		var event AuditEvent
+		if err := json.Unmarshal([]byte(line), &event); err != nil {
+			continue // Skip malformed lines
+		}
+
+		// Apply filters
+		if !cm.matchesFilters(&event, filters) {
+			continue
+		}
+
+		events = append(events, &event)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading audit log: %w", err)
+	}
+
+	return events, nil
+}
+
+// matchesFilters checks if an event matches the given filters
+func (cm *ComplianceManager) matchesFilters(event *AuditEvent, filters map[string]interface{}) bool {
+	if len(filters) == 0 {
+		return true
+	}
+
+	for key, value := range filters {
+		switch key {
+		case "event_type":
+			if v, ok := value.(string); ok && event.EventType != v {
+				return false
+			}
+		case "user_id":
+			if v, ok := value.(string); ok && event.UserID != v {
+				return false
+			}
+		case "client_id":
+			if v, ok := value.(string); ok && event.ClientID != v {
+				return false
+			}
+		case "resource":
+			if v, ok := value.(string); ok && event.Resource != v {
+				return false
+			}
+		case "action":
+			if v, ok := value.(string); ok && event.Action != v {
+				return false
+			}
+		case "status":
+			if v, ok := value.(string); ok && event.Status != v {
+				return false
+			}
+		case "from_date":
+			if v, ok := value.(time.Time); ok && event.Timestamp.Before(v) {
+				return false
+			}
+		case "to_date":
+			if v, ok := value.(time.Time); ok && event.Timestamp.After(v) {
+				return false
+			}
+		}
+	}
+
+	return true
 }
 
 // DataRetentionManager handles data retention policies
@@ -347,39 +440,295 @@ func (cm *ConsentManager) CheckConsent(userID, purpose string) bool {
 
 // DataManager handles user data operations for GDPR
 type DataManager struct {
-	// In production, this would interface with databases
+	mu           sync.RWMutex
+	userData     map[string]*UserDataRecord
+	deletedUsers map[string]time.Time
+	dataDir      string
+}
+
+// UserDataRecord stores user data for GDPR compliance
+type UserDataRecord struct {
+	UserID      string                 `json:"user_id"`
+	Email       string                 `json:"email,omitempty"`
+	Name        string                 `json:"name,omitempty"`
+	Preferences map[string]interface{} `json:"preferences,omitempty"`
+	APIKeys     []string               `json:"api_keys,omitempty"`
+	APILogs     []APILogEntry          `json:"api_logs,omitempty"`
+	AuditLogs   []AuditEvent           `json:"audit_logs,omitempty"`
+	CreatedAt   time.Time              `json:"created_at"`
+	UpdatedAt   time.Time              `json:"updated_at"`
+	Restricted  bool                   `json:"restricted"` // Processing restricted
+	Anonymized  bool                   `json:"anonymized"`
+}
+
+// APILogEntry represents an API log entry
+type APILogEntry struct {
+	Timestamp  time.Time `json:"timestamp"`
+	Endpoint   string    `json:"endpoint"`
+	Method     string    `json:"method"`
+	StatusCode int       `json:"status_code"`
+	IPAddress  string    `json:"ip_address,omitempty"`
 }
 
 // NewDataManager creates a data manager
 func NewDataManager() *DataManager {
-	return &DataManager{}
+	return &DataManager{
+		userData:     make(map[string]*UserDataRecord),
+		deletedUsers: make(map[string]time.Time),
+		dataDir:      "./data/gdpr",
+	}
+}
+
+// SetDataDir sets the directory for data storage
+func (dm *DataManager) SetDataDir(dir string) {
+	dm.mu.Lock()
+	defer dm.mu.Unlock()
+	dm.dataDir = dir
+}
+
+// StoreUserData stores user data record
+func (dm *DataManager) StoreUserData(record *UserDataRecord) error {
+	if record.UserID == "" {
+		return fmt.Errorf("user ID is required")
+	}
+
+	dm.mu.Lock()
+	defer dm.mu.Unlock()
+
+	record.UpdatedAt = time.Now()
+	if record.CreatedAt.IsZero() {
+		record.CreatedAt = time.Now()
+	}
+
+	dm.userData[record.UserID] = record
+	return nil
+}
+
+// GetUserData retrieves user data record
+func (dm *DataManager) GetUserData(userID string) (*UserDataRecord, error) {
+	dm.mu.RLock()
+	defer dm.mu.RUnlock()
+
+	record, exists := dm.userData[userID]
+	if !exists {
+		return nil, fmt.Errorf("user data not found: %s", userID)
+	}
+
+	return record, nil
 }
 
 // ExportUserData exports all user data for GDPR access requests
 func (dm *DataManager) ExportUserData(userID string) ([]byte, error) {
-	// In production, this would gather data from all systems
-	data := map[string]interface{}{
-		"user_id":      userID,
-		"exported_at":  time.Now(),
-		"data_sources": []string{"auth", "api_logs", "preferences"},
-		"note":         "This is a placeholder export",
+	dm.mu.RLock()
+	defer dm.mu.RUnlock()
+
+	record, exists := dm.userData[userID]
+	if !exists {
+		// Return minimal data structure if user not found
+		data := map[string]interface{}{
+			"user_id":       userID,
+			"exported_at":   time.Now(),
+			"data_found":    false,
+			"data_sources":  []string{"auth", "api_logs", "preferences", "audit_logs"},
+			"export_format": "GDPR-compliant",
+		}
+		return json.MarshalIndent(data, "", "  ")
 	}
 
-	return json.Marshal(data)
+	// Create comprehensive export
+	export := map[string]interface{}{
+		"user_id":       record.UserID,
+		"exported_at":   time.Now(),
+		"data_found":    true,
+		"export_format": "GDPR-compliant",
+		"data_sources":  []string{"auth", "api_logs", "preferences", "audit_logs"},
+		"user_data": map[string]interface{}{
+			"email":       record.Email,
+			"name":        record.Name,
+			"created_at":  record.CreatedAt,
+			"updated_at":  record.UpdatedAt,
+			"preferences": record.Preferences,
+		},
+		"api_activity": map[string]interface{}{
+			"api_keys_count": len(record.APIKeys),
+			"api_logs_count": len(record.APILogs),
+			"api_logs":       record.APILogs,
+		},
+		"audit_trail": map[string]interface{}{
+			"audit_logs_count": len(record.AuditLogs),
+			"audit_logs":       record.AuditLogs,
+		},
+	}
+
+	return json.MarshalIndent(export, "", "  ")
 }
 
 // DeleteUserData deletes all user data for GDPR erasure requests
 func (dm *DataManager) DeleteUserData(userID string) error {
-	// In production, this would delete data from all systems
-	log.Printf("Deleting data for user %s from all systems", userID)
+	dm.mu.Lock()
+	defer dm.mu.Unlock()
+
+	// Check if user exists
+	_, exists := dm.userData[userID]
+	if !exists {
+		log.Printf("No user data found for deletion: %s", userID)
+		return nil // Not an error - data may already be deleted
+	}
+
+	// Delete the user data
+	delete(dm.userData, userID)
+
+	// Record the deletion for audit purposes
+	dm.deletedUsers[userID] = time.Now()
+
+	log.Printf("User data deleted for GDPR erasure: %s", userID)
+
+	// In production, you would also:
+	// 1. Delete from database tables
+	// 2. Delete from file storage
+	// 3. Notify downstream systems
+	// 4. Update audit log
+
 	return nil
 }
 
 // AnonymizeUserData anonymizes user data for retention
 func (dm *DataManager) AnonymizeUserData(userID string) error {
-	// Replace PII with anonymized values
-	log.Printf("Anonymizing data for user %s", userID)
+	dm.mu.Lock()
+	defer dm.mu.Unlock()
+
+	record, exists := dm.userData[userID]
+	if !exists {
+		return fmt.Errorf("user data not found: %s", userID)
+	}
+
+	// Anonymize PII fields
+	record.Email = anonymizeEmail(record.Email)
+	record.Name = anonymizeName(record.Name)
+
+	// Anonymize IP addresses in API logs
+	for i := range record.APILogs {
+		record.APILogs[i].IPAddress = anonymizeIP(record.APILogs[i].IPAddress)
+	}
+
+	// Anonymize IP addresses in audit logs
+	for i := range record.AuditLogs {
+		record.AuditLogs[i].IPAddress = anonymizeIP(record.AuditLogs[i].IPAddress)
+	}
+
+	// Mark as anonymized
+	record.Anonymized = true
+	record.UpdatedAt = time.Now()
+
+	log.Printf("User data anonymized for GDPR compliance: %s", userID)
 	return nil
+}
+
+// RestrictProcessing marks user data as restricted
+func (dm *DataManager) RestrictProcessing(userID string) error {
+	dm.mu.Lock()
+	defer dm.mu.Unlock()
+
+	record, exists := dm.userData[userID]
+	if !exists {
+		return fmt.Errorf("user data not found: %s", userID)
+	}
+
+	record.Restricted = true
+	record.UpdatedAt = time.Now()
+
+	log.Printf("Processing restricted for user: %s", userID)
+	return nil
+}
+
+// IsProcessingRestricted checks if processing is restricted for a user
+func (dm *DataManager) IsProcessingRestricted(userID string) bool {
+	dm.mu.RLock()
+	defer dm.mu.RUnlock()
+
+	record, exists := dm.userData[userID]
+	if !exists {
+		return false
+	}
+
+	return record.Restricted
+}
+
+// anonymizeEmail anonymizes an email address
+func anonymizeEmail(email string) string {
+	if email == "" {
+		return ""
+	}
+	parts := strings.Split(email, "@")
+	if len(parts) != 2 {
+		return "***@***.***"
+	}
+	return fmt.Sprintf("***@%s", parts[1])
+}
+
+// anonymizeName anonymizes a name
+func anonymizeName(name string) string {
+	if name == "" {
+		return ""
+	}
+	return "[ANONYMIZED]"
+}
+
+// anonymizeIP anonymizes an IP address
+func anonymizeIP(ip string) string {
+	if ip == "" {
+		return ""
+	}
+	parts := strings.Split(ip, ".")
+	if len(parts) == 4 {
+		return fmt.Sprintf("%s.%s.0.0", parts[0], parts[1])
+	}
+	// IPv6 or other format
+	return "0.0.0.0"
+}
+
+// SaveToDisk saves user data to disk (for backup/export)
+func (dm *DataManager) SaveToDisk(userID string) error {
+	data, err := dm.ExportUserData(userID)
+	if err != nil {
+		return fmt.Errorf("failed to export user data: %w", err)
+	}
+
+	// Ensure directory exists
+	if err := os.MkdirAll(dm.dataDir, 0755); err != nil {
+		return fmt.Errorf("failed to create data directory: %w", err)
+	}
+
+	filePath := fmt.Sprintf("%s/%s_export.json", dm.dataDir, userID)
+	if err := os.WriteFile(filePath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write export file: %w", err)
+	}
+
+	log.Printf("User data exported to disk: %s", filePath)
+	return nil
+}
+
+// LoadFromDisk loads user data from disk
+func (dm *DataManager) LoadFromDisk(userID string) (*UserDataRecord, error) {
+	filePath := fmt.Sprintf("%s/%s_export.json", dm.dataDir, userID)
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open export file: %w", err)
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read export file: %w", err)
+	}
+
+	var record UserDataRecord
+	if err := json.Unmarshal(data, &record); err != nil {
+		return nil, fmt.Errorf("failed to parse export file: %w", err)
+	}
+
+	return &record, nil
 }
 
 // ComplianceReport generates compliance reports

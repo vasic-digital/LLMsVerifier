@@ -355,38 +355,49 @@ func TestAuthManager_AuthenticateWithLDAP_Disabled(t *testing.T) {
 	assert.Contains(t, err.Error(), "not enabled")
 }
 
-func TestAuthManager_AuthenticateWithLDAP_Success(t *testing.T) {
+func TestAuthManager_AuthenticateWithLDAP_NotConfigured(t *testing.T) {
 	am := NewAuthManager("test-secret")
 	am.EnableLDAP()
 
-	client, err := am.AuthenticateWithLDAP("ldap-user", "ldap-pass")
+	// Without configuring an LDAP manager, authentication fails
+	_, err := am.AuthenticateWithLDAP("ldap-user", "ldap-pass")
 
-	require.NoError(t, err)
-	require.NotNil(t, client)
-	assert.Equal(t, int64(999), client.ID)
-	assert.Equal(t, "LDAP User", client.Name)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not configured")
 }
 
-func TestAuthManager_AuthenticateWithLDAP_Failure(t *testing.T) {
+func TestAuthManager_AuthenticateWithLDAP_WithManager(t *testing.T) {
 	am := NewAuthManager("test-secret")
 	am.EnableLDAP()
 
+	// Configure an LDAP manager (will fail to connect but tests the flow)
+	config := &LDAPConfig{
+		Host:   "ldap.example.com",
+		Port:   389,
+		BaseDN: "dc=example,dc=com",
+	}
+	ldapMgr, _ := NewLDAPManager(config)
+	am.SetLDAPManager(ldapMgr)
+
+	// Will fail because there's no actual LDAP server
 	_, err := am.AuthenticateWithLDAP("wrong-user", "wrong-pass")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "authentication failed")
 }
 
-func TestAuthManager_CheckRBACPermission_Disabled(t *testing.T) {
+func TestAuthManager_CheckRBACPermission_NoPermissions(t *testing.T) {
 	am := NewAuthManager("test-secret")
 
 	client := &Client{
 		Name:        "Test",
 		Permissions: []string{},
+		IsActive:    true,
 	}
 
-	// When RBAC is disabled, all requests are allowed
+	// Even with RBAC disabled, permissions are still checked (security by default)
+	// A client with no permissions will be denied
 	err := am.CheckRBACPermission(client, "resource", "action")
-	assert.NoError(t, err)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "RBAC access denied")
 }
 
 func TestAuthManager_CheckRBACPermission_Success(t *testing.T) {
@@ -396,6 +407,7 @@ func TestAuthManager_CheckRBACPermission_Success(t *testing.T) {
 	client := &Client{
 		Name:        "Test",
 		Permissions: []string{"resource:action"},
+		IsActive:    true,
 	}
 
 	err := am.CheckRBACPermission(client, "resource", "action")
@@ -409,6 +421,7 @@ func TestAuthManager_CheckRBACPermission_Admin(t *testing.T) {
 	client := &Client{
 		Name:        "Admin",
 		Permissions: []string{"admin"},
+		IsActive:    true,
 	}
 
 	err := am.CheckRBACPermission(client, "any-resource", "any-action")
@@ -422,6 +435,7 @@ func TestAuthManager_CheckRBACPermission_Wildcard(t *testing.T) {
 	client := &Client{
 		Name:        "Super User",
 		Permissions: []string{"*"},
+		IsActive:    true,
 	}
 
 	err := am.CheckRBACPermission(client, "any-resource", "any-action")
@@ -435,11 +449,27 @@ func TestAuthManager_CheckRBACPermission_Denied(t *testing.T) {
 	client := &Client{
 		Name:        "Limited User",
 		Permissions: []string{"read"},
+		IsActive:    true,
 	}
 
 	err := am.CheckRBACPermission(client, "resource", "write")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "RBAC access denied")
+}
+
+func TestAuthManager_CheckRBACPermission_InactiveClient(t *testing.T) {
+	am := NewAuthManager("test-secret")
+	am.EnableRBAC()
+
+	client := &Client{
+		Name:        "Inactive User",
+		Permissions: []string{"*"},
+		IsActive:    false,
+	}
+
+	err := am.CheckRBACPermission(client, "resource", "action")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "client is inactive")
 }
 
 func TestAuthManager_AuthenticateWithSSO_Disabled(t *testing.T) {
@@ -450,28 +480,44 @@ func TestAuthManager_AuthenticateWithSSO_Disabled(t *testing.T) {
 	assert.Contains(t, err.Error(), "not enabled")
 }
 
-func TestAuthManager_AuthenticateWithSSO_Success(t *testing.T) {
+func TestAuthManager_AuthenticateWithSSO_NotConfigured(t *testing.T) {
 	am := NewAuthManager("test-secret")
 	am.EnableSSO()
 
-	client, err := am.AuthenticateWithSSO("google", "google-token-12345")
+	// Without configuring an SSO provider, authentication fails
+	_, err := am.AuthenticateWithSSO("google", "google-token-12345")
 
-	require.NoError(t, err)
-	require.NotNil(t, client)
-	assert.Equal(t, int64(1000), client.ID)
-	assert.Equal(t, "SSO User", client.Name)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not configured")
 }
 
-func TestAuthManager_AuthenticateWithSSO_Failure(t *testing.T) {
+func TestAuthManager_AuthenticateWithSSO_WithProvider(t *testing.T) {
 	am := NewAuthManager("test-secret")
 	am.EnableSSO()
 
+	// Register a Google SSO provider via the SSO manager
+	ssoMgr := GetSSOManager()
+	ssoMgr.AddProvider(&SSOConfig{
+		Provider:     "google",
+		ClientID:     "test-client-id",
+		ClientSecret: "test-client-secret",
+		TokenURL:     "https://oauth2.googleapis.com/token",
+		UserInfoURL:  "https://www.googleapis.com/oauth2/v3/userinfo",
+		Issuer:       "https://accounts.google.com",
+	})
+
+	// Will fail because token is not a valid JWT (wrong format)
 	_, err := am.AuthenticateWithSSO("google", "invalid-token")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "authentication failed")
+}
 
-	_, err = am.AuthenticateWithSSO("facebook", "google-token-12345")
+func TestAuthManager_AuthenticateWithSSO_UnknownProvider(t *testing.T) {
+	am := NewAuthManager("test-secret")
+	am.EnableSSO()
+
+	_, err := am.AuthenticateWithSSO("unknown-provider", "token")
 	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not configured")
 }
 
 func TestAuthManager_CreateRole(t *testing.T) {

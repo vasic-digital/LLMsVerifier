@@ -279,6 +279,95 @@ CREATE TABLE events (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
+-- Schedules table (scheduled verification tasks)
+CREATE TABLE schedules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT,
+    schedule_type TEXT NOT NULL, -- cron, interval, once
+    cron_expression TEXT, -- For cron-based schedules
+    interval_seconds INTEGER, -- For interval-based schedules
+    target_type TEXT NOT NULL, -- model, provider, all
+    target_id INTEGER, -- NULL for 'all' target type
+    verification_type TEXT DEFAULT 'full', -- quick, full, custom
+    is_active BOOLEAN DEFAULT 1,
+    next_run TIMESTAMP,
+    last_run TIMESTAMP,
+    run_count INTEGER DEFAULT 0,
+    failure_count INTEGER DEFAULT 0,
+    max_retries INTEGER DEFAULT 3,
+    timeout_seconds INTEGER DEFAULT 300,
+    created_by INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Schedule runs table (execution history for schedules)
+CREATE TABLE schedule_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    schedule_id INTEGER NOT NULL,
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP,
+    status TEXT DEFAULT 'running', -- running, completed, failed, cancelled
+    error_message TEXT,
+    models_verified INTEGER DEFAULT 0,
+    models_passed INTEGER DEFAULT 0,
+    models_failed INTEGER DEFAULT 0,
+    duration_ms INTEGER,
+    triggered_by TEXT DEFAULT 'scheduler', -- scheduler, manual, api
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (schedule_id) REFERENCES schedules(id) ON DELETE CASCADE
+);
+
+-- Configuration exports table (exported configurations for AI tools)
+CREATE TABLE config_exports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    export_type TEXT NOT NULL, -- opencode, crush, claudecode, custom
+    name TEXT NOT NULL,
+    description TEXT,
+    file_path TEXT,
+    file_size INTEGER,
+    file_hash TEXT, -- SHA-256 hash for integrity
+    config_data TEXT, -- JSON configuration
+    filters TEXT, -- JSON filters used for export
+    include_api_keys BOOLEAN DEFAULT 0,
+    is_verified BOOLEAN DEFAULT 0, -- Only verified models included
+    model_count INTEGER DEFAULT 0,
+    provider_count INTEGER DEFAULT 0,
+    min_score INTEGER, -- Minimum score filter
+    created_by INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP,
+    download_count INTEGER DEFAULT 0,
+    last_downloaded TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Logs table (application logs with structured data)
+CREATE TABLE logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    level TEXT NOT NULL, -- debug, info, warning, error, critical
+    logger TEXT NOT NULL, -- Component/module name
+    message TEXT NOT NULL,
+    context TEXT, -- JSON with additional context
+    request_id TEXT, -- For request tracing
+    user_id INTEGER,
+    client_id INTEGER,
+    model_id INTEGER,
+    provider_id INTEGER,
+    duration_ms INTEGER,
+    error_code TEXT,
+    error_stack TEXT,
+    ip_address TEXT,
+    user_agent TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE SET NULL,
+    FOREIGN KEY (provider_id) REFERENCES providers(id) ON DELETE SET NULL
+);
+
 -- Indexes for performance
 CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_email ON users(email);

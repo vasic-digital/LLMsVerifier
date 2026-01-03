@@ -5,7 +5,20 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"llm-verifier/logging"
 )
+
+// NewTestLogger creates a logger for testing
+func NewTestLogger() *logging.Logger {
+	config := map[string]any{
+		"level":       "debug",
+		"output":      "console",
+		"json_format": false,
+	}
+	logger, _ := logging.NewLogger(nil, config)
+	return logger
+}
 
 // TestNewModelProviderService tests service creation
 func TestNewModelProviderService(t *testing.T) {

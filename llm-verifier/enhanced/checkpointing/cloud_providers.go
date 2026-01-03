@@ -3,6 +3,7 @@ package checkpointing
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -14,6 +15,20 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"google.golang.org/api/option"
 )
+
+// Serialize serializes a checkpoint to JSON
+func (c *Checkpoint) Serialize() ([]byte, error) {
+	return json.Marshal(c)
+}
+
+// DeserializeCheckpoint deserializes a checkpoint from JSON
+func DeserializeCheckpoint(data []byte) (*Checkpoint, error) {
+	var checkpoint Checkpoint
+	if err := json.Unmarshal(data, &checkpoint); err != nil {
+		return nil, fmt.Errorf("failed to deserialize checkpoint: %w", err)
+	}
+	return &checkpoint, nil
+}
 
 // AWS S3 Backup Provider
 type S3BackupProvider struct {
@@ -555,4 +570,202 @@ func (p *AzureBackupProvider) HealthCheck(ctx context.Context) error {
 	// For a more thorough check, we could list containers or blobs, but client creation
 	// already validates credentials and network connectivity
 	return nil
+}
+
+// CloudProvider defines the interface for cloud backup providers
+type CloudProvider interface {
+	Upload(ctx context.Context, key string, data []byte) error
+	Download(ctx context.Context, key string) ([]byte, error)
+	List(ctx context.Context, prefix string) ([]string, error)
+	Delete(ctx context.Context, key string) error
+	Exists(ctx context.Context, key string) (bool, error)
+	GetProviderName() string
+	HealthCheck(ctx context.Context) error
+}
+
+// CloudBackupManager manages cloud backups with a specific prefix
+type CloudBackupManager struct {
+	provider CloudProvider
+	prefix   string
+}
+
+// NewCloudBackupManager creates a new cloud backup manager
+func NewCloudBackupManager(provider CloudProvider, prefix string) *CloudBackupManager {
+	// Normalize prefix - ensure it ends with "/" if non-empty
+	if prefix != "" && prefix[len(prefix)-1] != '/' {
+		prefix = prefix + "/"
+	}
+	return &CloudBackupManager{
+		provider: provider,
+		prefix:   prefix,
+	}
+}
+
+// Save saves a checkpoint to cloud storage
+func (m *CloudBackupManager) Save(ctx context.Context, checkpoint *Checkpoint) error {
+	data, err := checkpoint.Serialize()
+	if err != nil {
+		return fmt.Errorf("failed to serialize checkpoint: %w", err)
+	}
+	key := m.getCheckpointKey(checkpoint)
+	return m.provider.Upload(ctx, key, data)
+}
+
+// Load loads a checkpoint from cloud storage
+func (m *CloudBackupManager) Load(ctx context.Context, id, agentID string) (*Checkpoint, error) {
+	key := m.getCheckpointKeyByID(id, agentID)
+	data, err := m.provider.Download(ctx, key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download checkpoint: %w", err)
+	}
+	return DeserializeCheckpoint(data)
+}
+
+// List lists all checkpoints matching a prefix
+func (m *CloudBackupManager) List(ctx context.Context, agentID string) ([]string, error) {
+	prefix := m.prefix + agentID + "/"
+	return m.provider.List(ctx, prefix)
+}
+
+// Delete deletes a checkpoint from cloud storage
+func (m *CloudBackupManager) Delete(ctx context.Context, id, agentID string) error {
+	key := m.getCheckpointKeyByID(id, agentID)
+	return m.provider.Delete(ctx, key)
+}
+
+// CleanupOldBackups removes old backups, keeping only the specified number of recent ones
+func (m *CloudBackupManager) CleanupOldBackups(ctx context.Context, agentID string, keepCount int) (int, error) {
+	keys, err := m.List(ctx, agentID)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(keys) <= keepCount {
+		return 0, nil
+	}
+
+	// Delete oldest backups (keys are listed in order)
+	deleteCount := len(keys) - keepCount
+	deleted := 0
+	for i := 0; i < deleteCount; i++ {
+		if err := m.provider.Delete(ctx, keys[i]); err != nil {
+			// Continue deleting even if one fails
+			continue
+		}
+		deleted++
+	}
+	return deleted, nil
+}
+
+// Exists checks if a checkpoint exists
+func (m *CloudBackupManager) Exists(ctx context.Context, id, agentID string) (bool, error) {
+	key := m.getCheckpointKeyByID(id, agentID)
+	return m.provider.Exists(ctx, key)
+}
+
+// GetProviderName returns the provider name
+func (m *CloudBackupManager) GetProviderName() string {
+	return m.provider.GetProviderName()
+}
+
+// getCheckpointKey generates the storage key for a checkpoint
+func (m *CloudBackupManager) getCheckpointKey(checkpoint *Checkpoint) string {
+	return fmt.Sprintf("%s%s/%s.json", m.prefix, checkpoint.AgentID, checkpoint.ID)
+}
+
+// getCheckpointKeyByID generates the storage key for a checkpoint by ID
+func (m *CloudBackupManager) getCheckpointKeyByID(id, agentID string) string {
+	return fmt.Sprintf("%s%s/%s.json", m.prefix, agentID, id)
+}
+
+// BackupCheckpoint is an alias for Save for compatibility
+func (m *CloudBackupManager) BackupCheckpoint(ctx context.Context, checkpoint *Checkpoint) error {
+	return m.Save(ctx, checkpoint)
+}
+
+// ListCheckpoints lists all checkpoints for an agent
+func (m *CloudBackupManager) ListCheckpoints(ctx context.Context, agentID string) ([]*Checkpoint, error) {
+	keys, err := m.List(ctx, agentID)
+	if err != nil {
+		return nil, err
+	}
+
+	checkpoints := make([]*Checkpoint, 0, len(keys))
+	for _, key := range keys {
+		data, err := m.provider.Download(ctx, key)
+		if err != nil {
+			continue // Skip on error
+		}
+		checkpoint, err := DeserializeCheckpoint(data)
+		if err != nil {
+			continue // Skip on error
+		}
+		checkpoints = append(checkpoints, checkpoint)
+	}
+	return checkpoints, nil
+}
+
+// SyncCheckpoints syncs checkpoints between local and cloud storage
+func (m *CloudBackupManager) SyncCheckpoints(ctx context.Context, agentID string, localCheckpoints []*Checkpoint) error {
+	for _, checkpoint := range localCheckpoints {
+		exists, err := m.Exists(ctx, checkpoint.ID, checkpoint.AgentID)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			if err := m.Save(ctx, checkpoint); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// RestoreCheckpoint is an alias for Load for compatibility
+func (m *CloudBackupManager) RestoreCheckpoint(ctx context.Context, id, agentID string) (*Checkpoint, error) {
+	return m.Load(ctx, id, agentID)
+}
+
+// DeleteCheckpoint is an alias for Delete for compatibility
+func (m *CloudBackupManager) DeleteCheckpoint(ctx context.Context, id, agentID string) error {
+	return m.Delete(ctx, id, agentID)
+}
+
+// HealthCheck performs a health check on the underlying provider
+func (m *CloudBackupManager) HealthCheck(ctx context.Context) error {
+	return m.provider.HealthCheck(ctx)
+}
+
+// BackupStats contains statistics about backups
+type BackupStats struct {
+	TotalBackups int
+	TotalSize    int64
+	OldestBackup string
+	NewestBackup string
+}
+
+// GetBackupStats returns statistics about backups for an agent
+func (m *CloudBackupManager) GetBackupStats(ctx context.Context, agentID string) (*BackupStats, error) {
+	keys, err := m.List(ctx, agentID)
+	if err != nil {
+		return nil, err
+	}
+
+	stats := &BackupStats{
+		TotalBackups: len(keys),
+	}
+
+	if len(keys) > 0 {
+		stats.OldestBackup = keys[0]
+		stats.NewestBackup = keys[len(keys)-1]
+	}
+
+	for _, key := range keys {
+		data, err := m.provider.Download(ctx, key)
+		if err == nil {
+			stats.TotalSize += int64(len(data))
+		}
+	}
+
+	return stats, nil
 }

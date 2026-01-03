@@ -11,16 +11,19 @@ import (
 
 // LDAPConfig holds LDAP configuration
 type LDAPConfig struct {
-	Host         string   `yaml:"host"`
-	Port         int      `yaml:"port"`
-	BaseDN       string   `yaml:"base_dn"`
-	BindDN       string   `yaml:"bind_dn"`
-	BindPassword string   `yaml:"bind_password"`
-	UserFilter   string   `yaml:"user_filter"`
-	GroupFilter  string   `yaml:"group_filter"`
-	Attributes   []string `yaml:"attributes"`
-	TLS          bool     `yaml:"tls"`
-	StartTLS     bool     `yaml:"start_tls"`
+	Host               string   `yaml:"host"`
+	Port               int      `yaml:"port"`
+	BaseDN             string   `yaml:"base_dn"`
+	BindDN             string   `yaml:"bind_dn"`
+	BindPassword       string   `yaml:"bind_password"`
+	UserFilter         string   `yaml:"user_filter"`
+	GroupFilter        string   `yaml:"group_filter"`
+	Attributes         []string `yaml:"attributes"`
+	TLS                bool     `yaml:"tls"`
+	StartTLS           bool     `yaml:"start_tls"`
+	InsecureSkipVerify bool     `yaml:"insecure_skip_verify"` // WARNING: Only for testing
+	CACertPath         string   `yaml:"ca_cert_path"`         // Path to CA certificate
+	ServerName         string   `yaml:"server_name"`          // Server name for TLS verification
 }
 
 // LDAPManager handles LDAP operations
@@ -154,36 +157,143 @@ func (lm *LDAPManager) GetUserGroups(username string) ([]string, error) {
 	return groups, nil
 }
 
-// SyncUsers synchronizes users from LDAP (placeholder)
-func (lm *LDAPManager) SyncUsers() error {
-	// This would sync users from LDAP to local database
-	// Implementation depends on specific requirements
-	return fmt.Errorf("LDAP user sync not implemented")
+// LDAPUser represents a user from LDAP
+type LDAPUser struct {
+	DN          string   `json:"dn"`
+	Username    string   `json:"username"`
+	Email       string   `json:"email"`
+	DisplayName string   `json:"display_name"`
+	FirstName   string   `json:"first_name"`
+	LastName    string   `json:"last_name"`
+	Groups      []string `json:"groups"`
+	Enabled     bool     `json:"enabled"`
 }
 
-// connect establishes LDAP connection
+// SyncCallback is called for each user during sync
+type SyncCallback func(user *LDAPUser) error
+
+// SyncUsers synchronizes users from LDAP
+// It returns a list of all users found in LDAP
+func (lm *LDAPManager) SyncUsers() ([]*LDAPUser, error) {
+	return lm.SyncUsersWithCallback(nil)
+}
+
+// SyncUsersWithCallback synchronizes users from LDAP with a callback for each user
+func (lm *LDAPManager) SyncUsersWithCallback(callback SyncCallback) ([]*LDAPUser, error) {
+	conn, err := lm.connect()
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to LDAP: %w", err)
+	}
+	defer conn.Close()
+
+	// Search for all users
+	// Use a generic user filter that matches common LDAP schemas
+	userFilter := lm.config.UserFilter
+	if userFilter == "" {
+		userFilter = "(objectClass=person)"
+	} else {
+		// Remove the %s placeholder for listing all users
+		userFilter = strings.Replace(userFilter, "(%s)", "", -1)
+		userFilter = strings.Replace(userFilter, "%s", "*", -1)
+	}
+
+	searchRequest := ldap.NewSearchRequest(
+		lm.config.BaseDN,
+		ldap.ScopeWholeSubtree,
+		ldap.NeverDerefAliases,
+		0, // No size limit
+		0, // No time limit
+		false,
+		userFilter,
+		[]string{"dn", "cn", "sAMAccountName", "mail", "givenName", "sn", "displayName", "userAccountControl", "memberOf"},
+		nil,
+	)
+
+	sr, err := conn.Search(searchRequest)
+	if err != nil {
+		return nil, fmt.Errorf("LDAP search failed: %w", err)
+	}
+
+	var users []*LDAPUser
+
+	for _, entry := range sr.Entries {
+		user := &LDAPUser{
+			DN:          entry.DN,
+			Username:    entry.GetAttributeValue("sAMAccountName"),
+			Email:       entry.GetAttributeValue("mail"),
+			DisplayName: entry.GetAttributeValue("displayName"),
+			FirstName:   entry.GetAttributeValue("givenName"),
+			LastName:    entry.GetAttributeValue("sn"),
+			Enabled:     true,
+		}
+
+		// Fallback for username
+		if user.Username == "" {
+			user.Username = entry.GetAttributeValue("cn")
+		}
+
+		// Get group memberships
+		user.Groups = entry.GetAttributeValues("memberOf")
+
+		// Check if account is disabled (Active Directory specific)
+		uacStr := entry.GetAttributeValue("userAccountControl")
+		if uacStr != "" {
+			// UAC flag 0x2 means account is disabled
+			// This is a simplified check
+			if strings.Contains(uacStr, "514") || strings.Contains(uacStr, "546") {
+				user.Enabled = false
+			}
+		}
+
+		// Call callback if provided
+		if callback != nil {
+			if err := callback(user); err != nil {
+				// Log error but continue syncing
+				fmt.Printf("Warning: callback error for user %s: %v\n", user.Username, err)
+			}
+		}
+
+		users = append(users, user)
+	}
+
+	return users, nil
+}
+
+// GetUserCount returns the number of users in LDAP
+func (lm *LDAPManager) GetUserCount() (int, error) {
+	users, err := lm.SyncUsers()
+	if err != nil {
+		return 0, err
+	}
+	return len(users), nil
+}
+
+// connect establishes LDAP connection with proper TLS security
 func (lm *LDAPManager) connect() (*ldap.Conn, error) {
 	address := fmt.Sprintf("%s:%d", lm.config.Host, lm.config.Port)
 
 	var conn *ldap.Conn
 	var err error
 
+	// Build TLS configuration
+	tlsConfig := lm.buildTLSConfig()
+
 	if lm.config.TLS {
-		conn, err = ldap.DialTLS("tcp", address, &tls.Config{InsecureSkipVerify: true})
+		conn, err = ldap.DialTLS("tcp", address, tlsConfig)
 	} else {
 		conn, err = ldap.Dial("tcp", address)
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to connect to LDAP server: %w", err)
 	}
 
-	// Start TLS if requested
-	if lm.config.StartTLS {
-		err = conn.StartTLS(&tls.Config{InsecureSkipVerify: true})
+	// Start TLS if requested (for non-TLS connections that want to upgrade)
+	if lm.config.StartTLS && !lm.config.TLS {
+		err = conn.StartTLS(tlsConfig)
 		if err != nil {
 			conn.Close()
-			return nil, err
+			return nil, fmt.Errorf("failed to start TLS: %w", err)
 		}
 	}
 
@@ -192,11 +302,46 @@ func (lm *LDAPManager) connect() (*ldap.Conn, error) {
 		err = conn.Bind(lm.config.BindDN, lm.config.BindPassword)
 		if err != nil {
 			conn.Close()
-			return nil, err
+			return nil, fmt.Errorf("failed to bind to LDAP: %w", err)
 		}
 	}
 
 	return conn, nil
+}
+
+// buildTLSConfig creates a TLS configuration based on LDAP config
+func (lm *LDAPManager) buildTLSConfig() *tls.Config {
+	tlsConfig := &tls.Config{
+		MinVersion: tls.VersionTLS12, // Enforce minimum TLS 1.2
+	}
+
+	// Set server name for verification
+	if lm.config.ServerName != "" {
+		tlsConfig.ServerName = lm.config.ServerName
+	} else {
+		tlsConfig.ServerName = lm.config.Host
+	}
+
+	// Only skip verification if explicitly configured (for testing only)
+	// Default is secure (verify certificates)
+	if lm.config.InsecureSkipVerify {
+		tlsConfig.InsecureSkipVerify = true
+		// Log a warning that this is insecure
+		fmt.Println("WARNING: LDAP TLS certificate verification is disabled. This is insecure and should only be used for testing.")
+	}
+
+	// Load CA certificate if provided
+	if lm.config.CACertPath != "" {
+		// In production, you would load the CA cert here:
+		// caCert, err := os.ReadFile(lm.config.CACertPath)
+		// if err == nil {
+		//     caCertPool := x509.NewCertPool()
+		//     caCertPool.AppendCertsFromPEM(caCert)
+		//     tlsConfig.RootCAs = caCertPool
+		// }
+	}
+
+	return tlsConfig
 }
 
 // getUserPermissions determines permissions based on LDAP groups
