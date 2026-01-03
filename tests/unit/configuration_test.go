@@ -13,8 +13,6 @@ import (
 )
 
 func TestConfiguration_LoadFromFile(t *testing.T) {
-	t.Skip("Configuration test temporarily disabled - testing incompatible config system")
-	t.Skip("Configuration test temporarily disabled - testing incompatible config system")
 	tests := []struct {
 		name          string
 		configContent string
@@ -24,7 +22,6 @@ func TestConfiguration_LoadFromFile(t *testing.T) {
 		{
 			name: "Valid OpenCode configuration",
 			configContent: `{
-				"$schema": "https://opencode.sh/schema.json",
 				"username": "testuser",
 				"provider": {
 					"openai": {
@@ -32,64 +29,50 @@ func TestConfiguration_LoadFromFile(t *testing.T) {
 							"apiKey": "sk-test-key",
 							"baseURL": "https://api.openai.com/v1"
 						},
-						"models": {
-							"gpt-4": {
-								"id": "gpt-4",
-								"name": "GPT-4",
-								"displayName": "GPT-4 (SC:9.0)",
-								"provider": {
-									"id": "openai",
-									"npm": "@openai/sdk"
-								},
-								"maxTokens": 8192,
-								"supportsHTTP3": true
-							}
-						}
+						"model": "gpt-4"
 					}
 				},
 				"agent": {
-					"name": "test-agent"
+					"default": {
+						"model": "gpt-4",
+						"prompt": "You are a helpful assistant"
+					}
 				},
-				"mcp": {
-					"servers": []
-				}
+				"mcp": {}
 			}`,
 			expectError: false,
 			validateFunc: func(t *testing.T, cfg *opencodeConfig.Config) {
 				assert.NotNil(t, cfg)
 				assert.Equal(t, "testuser", cfg.Username)
-				assert.Contains(t, cfg.Providers, "openai")
-				assert.Contains(t, cfg.Providers["openai"].Models, "gpt-4")
+				assert.Contains(t, cfg.Provider, "openai")
+				assert.Equal(t, "gpt-4", cfg.Provider["openai"].Model)
 			},
 		},
 		{
-			name: "Valid Crush configuration",
+			name: "Configuration with MCP servers",
 			configContent: `{
-				"$schema": "https://charm.land/crush.json",
-				"providers": {
-					"openai": {
-						"name": "openai",
-						"type": "openai",
-						"base_url": "https://api.openai.com/v1",
-						"api_key": "sk-test-key",
-						"models": [
-							{
-								"id": "gpt-4",
-								"name": "GPT-4",
-								"cost_per_1m_in": 30.0,
-								"cost_per_1m_out": 60.0,
-								"context_window": 128000,
-								"supports_brotli": true
-							}
-						]
+				"username": "testuser",
+				"provider": {
+					"anthropic": {
+						"options": {
+							"apiKey": "sk-ant-test-key"
+						},
+						"model": "claude-3-opus"
+					}
+				},
+				"mcp": {
+					"test-server": {
+						"type": "stdio",
+						"command": ["npx", "test-server"],
+						"enabled": true
 					}
 				}
 			}`,
 			expectError: false,
 			validateFunc: func(t *testing.T, cfg *opencodeConfig.Config) {
 				assert.NotNil(t, cfg)
-				assert.Contains(t, cfg.Providers, "openai")
-				assert.Len(t, cfg.Providers["openai"].Models, 1)
+				assert.Contains(t, cfg.Mcp, "test-server")
+				assert.Equal(t, "stdio", cfg.Mcp["test-server"].Type)
 			},
 		},
 		{
@@ -103,27 +86,28 @@ func TestConfiguration_LoadFromFile(t *testing.T) {
 			},
 		},
 		{
-			name: "Missing required fields",
-			configContent: `{
-				"provider": {}
-			}`,
-			expectError: true,
+			name: "Empty configuration",
+			configContent: `{}`,
+			expectError:   false,
 			validateFunc: func(t *testing.T, cfg *opencodeConfig.Config) {
-				// Should have validation errors
+				assert.NotNil(t, cfg)
+				assert.Empty(t, cfg.Username)
 			},
 		},
 	}
+
+	loader := &opencodeConfig.ConfigLoader{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create temporary file
 			tmpDir := t.TempDir()
-			configPath := filepath.Join(tmpDir, "opencodeConfig.json")
+			configPath := filepath.Join(tmpDir, "opencode.json")
 			err := os.WriteFile(configPath, []byte(tt.configContent), 0644)
 			require.NoError(t, err)
 
 			// Load configuration
-			cfg, err := opencodeConfig.LoadFromFile(configPath)
+			cfg, err := loader.LoadFromFile(configPath)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -139,426 +123,66 @@ func TestConfiguration_LoadFromFile(t *testing.T) {
 	}
 }
 
-func TestConfiguration_EnvironmentVariableResolution(t *testing.T) {
-	t.Skip("Configuration test temporarily disabled - testing incompatible config system")
-	t.Skip("Configuration test temporarily disabled - testing incompatible config system")
-	// Set environment variables
-	os.Setenv("TEST_API_KEY", "sk-test-env-key")
-	os.Setenv("TEST_BASE_URL", "https://api.test.com/v1")
-	defer func() {
-		os.Unsetenv("TEST_API_KEY")
-		os.Unsetenv("TEST_BASE_URL")
-	}()
-
-	configContent := `{
-		"$schema": "https://opencode.sh/schema.json",
-		"username": "testuser",
-		"provider": {
-			"test": {
-				"options": {
-					"apiKey": "${TEST_API_KEY}",
-					"baseURL": "${TEST_BASE_URL}"
-				},
-				"models": {
-					"test-model": {
-						"id": "test-model",
-						"name": "Test Model",
-						"displayName": "Test Model",
-						"provider": {
-							"id": "test",
-							"npm": "@test/sdk"
-						},
-						"maxTokens": 4096,
-						"supportsHTTP3": true
-					}
-				}
-			}
-		},
-		"agent": {
-			"name": "test-agent"
-		},
-		"mcp": {
-			"servers": []
-		}
-	}`
-
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "opencodeConfig.json")
-	err := os.WriteFile(configPath, []byte(configContent), 0644)
-	require.NoError(t, err)
-
-	cfg, err := opencodeConfig.LoadFromFile(configPath)
-	require.NoError(t, err)
-	assert.NotNil(t, cfg)
-
-	// Verify environment variables were resolved
-	provider, exists := cfg.Providers["test"]
-	assert.True(t, exists)
-	assert.Equal(t, "sk-test-env-key", provider.Options["apiKey"])
-	assert.Equal(t, "https://api.test.com/v1", provider.Options["baseURL"])
-}
-
-func TestConfiguration_DefaultValues(t *testing.T) {
-	t.Skip("Configuration test temporarily disabled - testing incompatible config system")
-	t.Skip("Configuration test temporarily disabled - testing incompatible config system")
-	configContent := `{
-		"$schema": "https://opencode.sh/schema.json",
-		"username": "testuser",
-		"provider": {
-			"openai": {
-				"options": {
-					"apiKey": "sk-test-key",
-					"baseURL": "https://api.openai.com/v1"
-				},
-				"models": {
-					"gpt-4": {
-						"id": "gpt-4",
-						"name": "GPT-4",
-						"displayName": "GPT-4",
-						"provider": {
-							"id": "openai",
-							"npm": "@openai/sdk"
-						},
-						"maxTokens": 8192
-					}
-				}
-			}
-		},
-		"agent": {
-			"name": "test-agent"
-		},
-		"mcp": {
-			"servers": []
-		}
-	}`
-
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "opencodeConfig.json")
-	err := os.WriteFile(configPath, []byte(configContent), 0644)
-	require.NoError(t, err)
-
-	cfg, err := opencodeConfig.LoadFromFile(configPath)
-	require.NoError(t, err)
-
-	// Verify default values are applied
-	model := cfg.Providers["openai"].Models["gpt-4"]
-	assert.Equal(t, "gpt-4", model.ID)
-	assert.Equal(t, "GPT-4", model.Name)
-	assert.Equal(t, "GPT-4", model.DisplayName)
-	assert.Equal(t, 8192, model.MaxTokens)
-	assert.False(t, model.SupportsHTTP3) // Default should be false
-}
-
-func TestConfiguration_Validation(t *testing.T) {
-	t.Skip("Configuration test temporarily disabled - testing incompatible config system")
-	t.Skip("Configuration test temporarily disabled - testing incompatible config system")
-	tests := []struct {
-		name          string
-		config        map[string]interface{}
-		expectValid   bool
-		expectedError string
-	}{
-		{
-			name: "Valid OpenCode config",
-			config: map[string]interface{}{
-				"$schema":  "https://opencode.sh/schema.json",
-				"username": "testuser",
-				"provider": map[string]interface{}{
-					"openai": map[string]interface{}{
-						"options": map[string]interface{}{
-							"apiKey":  "sk-test-key",
-							"baseURL": "https://api.openai.com/v1",
-						},
-						"models": map[string]interface{}{
-							"gpt-4": map[string]interface{}{
-								"id":          "gpt-4",
-								"name":        "GPT-4",
-								"displayName": "GPT-4",
-								"provider": map[string]interface{}{
-									"id":  "openai",
-									"npm": "@openai/sdk",
-								},
-								"maxTokens":     8192,
-								"supportsHTTP3": true,
-							},
-						},
-					},
-				},
-				"agent": map[string]interface{}{
-					"name": "test-agent",
-				},
-				"mcp": map[string]interface{}{
-					"servers": []interface{}{},
-				},
-			},
-			expectValid: true,
-		},
-		{
-			name: "Missing required schema",
-			config: map[string]interface{}{
-				"username": "testuser",
-				"provider": map[string]interface{}{},
-				"agent":    map[string]interface{}{},
-				"mcp":      map[string]interface{}{},
-			},
-			expectValid:   false,
-			expectedError: "missing $schema",
-		},
-		{
-			name: "Invalid schema URL",
-			config: map[string]interface{}{
-				"$schema":  "invalid-schema-url",
-				"username": "testuser",
-				"provider": map[string]interface{}{},
-				"agent":    map[string]interface{}{},
-				"mcp":      map[string]interface{}{},
-			},
-			expectValid:   false,
-			expectedError: "invalid schema",
-		},
-		{
-			name: "Empty provider section",
-			config: map[string]interface{}{
-				"$schema":  "https://opencode.sh/schema.json",
-				"username": "testuser",
-				"provider": map[string]interface{}{},
-				"agent":    map[string]interface{}{},
-				"mcp":      map[string]interface{}{},
-			},
-			expectValid:   false,
-			expectedError: "no providers configured",
-		},
-		{
-			name: "Provider without API key",
-			config: map[string]interface{}{
-				"$schema":  "https://opencode.sh/schema.json",
-				"username": "testuser",
-				"provider": map[string]interface{}{
-					"openai": map[string]interface{}{
-						"options": map[string]interface{}{
-							"baseURL": "https://api.openai.com/v1",
-						},
-						"models": map[string]interface{}{},
-					},
-				},
-				"agent": map[string]interface{}{},
-				"mcp":   map[string]interface{}{},
-			},
-			expectValid:   false,
-			expectedError: "missing API key",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			validator := opencodeConfig.NewValidator()
-			err := validator.Validate(tt.config)
-
-			if tt.expectValid {
-				assert.NoError(t, err)
-			} else {
-				assert.Error(t, err)
-				if tt.expectedError != "" {
-					assert.Contains(t, err.Error(), tt.expectedError)
-				}
-			}
-		})
-	}
-}
-
 func TestConfiguration_SaveToFile(t *testing.T) {
-	t.Skip("Configuration test temporarily disabled - testing incompatible config system")
 	config := &opencodeConfig.Config{
-		Schema:   "https://opencode.sh/schema.json",
 		Username: "testuser",
-		Providers: map[string]opencodeConfig.Provider{
+		Provider: map[string]opencodeConfig.ProviderConfig{
 			"openai": {
 				Options: map[string]interface{}{
 					"apiKey":  "sk-test-key",
 					"baseURL": "https://api.openai.com/v1",
 				},
-				Models: map[string]opencodeConfig.Model{
-					"gpt-4": {
-						ID:          "gpt-4",
-						Name:        "GPT-4",
-						DisplayName: "GPT-4",
-						Provider: opencodeConfig.ProviderInfo{
-							ID:  "openai",
-							NPM: "@openai/sdk",
-						},
-						MaxTokens:     8192,
-						SupportsHTTP3: true,
-					},
-				},
+				Model: "gpt-4",
 			},
 		},
-		Agent: opencodeConfig.Agent{
-			Name: "test-agent",
+		Agent: map[string]opencodeConfig.AgentConfig{
+			"default": {
+				Model:  "gpt-4",
+				Prompt: "You are a helpful assistant",
+			},
 		},
-		MCP: opencodeConfig.MCP{
-			Servers: []interface{}{},
-		},
+		Mcp: map[string]opencodeConfig.McpConfig{},
 	}
 
 	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "saved_opencodeConfig.json")
+	configPath := filepath.Join(tmpDir, "saved_config.json")
 
-	err := opencodeConfig.SaveToFile(config, configPath)
+	loader := &opencodeConfig.ConfigLoader{}
+	err := loader.SaveToFile(config, configPath)
 	require.NoError(t, err)
 
 	// Verify file was created and can be loaded back
-	loadedConfig, err := opencodeConfig.LoadFromFile(configPath)
+	loadedConfig, err := loader.LoadFromFile(configPath)
 	require.NoError(t, err)
 	assert.NotNil(t, loadedConfig)
-	assert.Equal(t, opencodeConfig.Schema, loadedConfig.Schema)
-	assert.Equal(t, opencodeConfig.Username, loadedConfig.Username)
-	assert.Len(t, loadedConfig.Providers, 1)
-}
-
-func TestConfiguration_MergeConfigurations(t *testing.T) {
-	t.Skip("Configuration test temporarily disabled - testing incompatible config system")
-	baseConfig := &opencodeConfig.Config{
-		Schema:   "https://opencode.sh/schema.json",
-		Username: "baseuser",
-		Providers: map[string]opencodeConfig.Provider{
-			"openai": {
-				Options: map[string]interface{}{
-					"apiKey":  "sk-base-key",
-					"baseURL": "https://api.openai.com/v1",
-				},
-				Models: map[string]opencodeConfig.Model{
-					"gpt-4": {
-						ID:            "gpt-4",
-						Name:          "GPT-4",
-						DisplayName:   "GPT-4",
-						MaxTokens:     8192,
-						SupportsHTTP3: true,
-					},
-				},
-			},
-		},
-	}
-
-	overrideConfig := &opencodeConfig.Config{
-		Username: "overrideuser",
-		Providers: map[string]opencodeConfig.Provider{
-			"openai": {
-				Options: map[string]interface{}{
-					"apiKey": "sk-override-key",
-				},
-				Models: map[string]opencodeConfig.Model{
-					"gpt-4": {
-						ID:          "gpt-4",
-						Name:        "GPT-4-Override",
-						DisplayName: "GPT-4 Override",
-						MaxTokens:   16384,
-					},
-					"gpt-3.5-turbo": {
-						ID:          "gpt-3.5-turbo",
-						Name:        "GPT-3.5 Turbo",
-						DisplayName: "GPT-3.5 Turbo",
-						MaxTokens:   4096,
-					},
-				},
-			},
-		},
-	}
-
-	mergedConfig := opencodeConfig.Merge(baseConfig, overrideConfig)
-
-	assert.Equal(t, "overrideuser", mergedConfig.Username)
-	assert.Equal(t, "sk-override-key", mergedConfig.Providers["openai"].Options["apiKey"])
-	assert.Equal(t, "GPT-4-Override", mergedConfig.Providers["openai"].Models["gpt-4"].Name)
-	assert.Equal(t, 16384, mergedConfig.Providers["openai"].Models["gpt-4"].MaxTokens)
-	assert.Contains(t, mergedConfig.Providers["openai"].Models, "gpt-3.5-turbo")
-}
-
-func TestConfiguration_Security(t *testing.T) {
-	t.Skip("Configuration test temporarily disabled - testing incompatible config system")
-	configContent := `{
-		"$schema": "https://opencode.sh/schema.json",
-		"username": "testuser",
-		"provider": {
-			"openai": {
-				"options": {
-					"apiKey": "sk-test-key-with-sensitive-data",
-					"baseURL": "https://api.openai.com/v1"
-				},
-				"models": {
-					"gpt-4": {
-						"id": "gpt-4",
-						"name": "GPT-4",
-						"displayName": "GPT-4",
-						"provider": {
-							"id": "openai",
-							"npm": "@openai/sdk"
-						},
-						"maxTokens": 8192,
-						"supportsHTTP3": true
-					}
-				}
-			}
-		},
-		"agent": {
-			"name": "test-agent"
-		},
-		"mcp": {
-			"servers": []
-		}
-	}`
-
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "secure_opencodeConfig.json")
-	err := os.WriteFile(configPath, []byte(configContent), 0600) // Restrictive permissions
-	require.NoError(t, err)
-
-	// Verify file permissions
-	info, err := os.Stat(configPath)
-	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0600), info.Mode().Perm())
-
-	// Test secure loading
-	cfg, err := opencodeConfig.LoadFromFileSecure(configPath)
-	require.NoError(t, err)
-	assert.NotNil(t, cfg)
-	assert.Equal(t, "sk-test-key-with-sensitive-data", cfg.Providers["openai"].Options["apiKey"])
+	assert.Equal(t, "testuser", loadedConfig.Username)
+	assert.Len(t, loadedConfig.Provider, 1)
+	assert.Equal(t, "gpt-4", loadedConfig.Provider["openai"].Model)
 }
 
 func TestConfiguration_Serialization(t *testing.T) {
-	t.Skip("Configuration test temporarily disabled - testing incompatible config system")
 	originalConfig := &opencodeConfig.Config{
-		Schema:   "https://opencode.sh/schema.json",
 		Username: "serialization-test",
-		Providers: map[string]opencodeConfig.Provider{
+		Provider: map[string]opencodeConfig.ProviderConfig{
 			"test-provider": {
 				Options: map[string]interface{}{
 					"apiKey":  "sk-test-serialization",
 					"baseURL": "https://api.test.com/v1",
 				},
-				Models: map[string]opencodeConfig.Model{
-					"test-model": {
-						ID:            "test-model",
-						Name:          "Test Model",
-						DisplayName:   "Test Model (SC:8.5)",
-						MaxTokens:     4096,
-						SupportsHTTP3: true,
-						Provider: opencodeConfig.ProviderInfo{
-							ID:  "test-provider",
-							NPM: "@test/sdk",
-						},
-					},
-				},
+				Model: "test-model",
 			},
 		},
-		Agent: opencodeConfig.Agent{
-			Name: "serialization-test-agent",
+		Agent: map[string]opencodeConfig.AgentConfig{
+			"test-agent": {
+				Model:       "test-model",
+				Prompt:      "Test prompt",
+				Description: "Test agent description",
+			},
 		},
-		MCP: opencodeConfig.MCP{
-			Servers: []interface{}{
-				map[string]interface{}{
-					"name": "test-server",
-					"type": "test",
-				},
+		Mcp: map[string]opencodeConfig.McpConfig{
+			"test-server": {
+				Type:    "stdio",
+				Command: []string{"npx", "test-server"},
 			},
 		},
 	}
@@ -574,117 +198,231 @@ func TestConfiguration_Serialization(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify serialization round-trip
-	assert.Equal(t, originalConfig.Schema, deserializedConfig.Schema)
 	assert.Equal(t, originalConfig.Username, deserializedConfig.Username)
-	assert.Equal(t, originalConfig.Providers["test-provider"].Options["apiKey"],
-		deserializedConfig.Providers["test-provider"].Options["apiKey"])
-	assert.Equal(t, originalConfig.Providers["test-provider"].Models["test-model"].MaxTokens,
-		deserializedConfig.Providers["test-provider"].Models["test-model"].MaxTokens)
+	assert.Equal(t, originalConfig.Provider["test-provider"].Options["apiKey"],
+		deserializedConfig.Provider["test-provider"].Options["apiKey"])
+	assert.Equal(t, originalConfig.Provider["test-provider"].Model,
+		deserializedConfig.Provider["test-provider"].Model)
 }
 
-func TestConfiguration_ComplexScenarios(t *testing.T) {
-	t.Skip("Configuration test temporarily disabled - testing incompatible config system")
+func TestConfiguration_ProviderOptions(t *testing.T) {
 	tests := []struct {
-		name   string
-		config *opencodeConfig.Config
-		test   func(t *testing.T, cfg *opencodeConfig.Config)
+		name     string
+		provider opencodeConfig.ProviderConfig
+		validate func(t *testing.T, p opencodeConfig.ProviderConfig)
 	}{
 		{
-			name: "Large configuration with many providers",
-			config: &opencodeConfig.Config{
-				Schema:    "https://opencode.sh/schema.json",
-				Username:  "large-config-test",
-				Providers: generateLargeProviderSet(),
-				Agent:     opencodeConfig.Agent{Name: "large-test-agent"},
-				MCP:       opencodeConfig.MCP{Servers: []interface{}{}},
+			name: "Provider with API key",
+			provider: opencodeConfig.ProviderConfig{
+				Options: map[string]interface{}{
+					"apiKey": "sk-test-key",
+				},
+				Model: "gpt-4",
 			},
-			test: func(t *testing.T, cfg *opencodeConfig.Config) {
-				assert.Len(t, cfg.Providers, 50) // 50 providers
-				totalModels := 0
-				for _, provider := range cfg.Providers {
-					totalModels += len(provider.Models)
-				}
-				assert.Greater(t, totalModels, 100) // Should have many models
+			validate: func(t *testing.T, p opencodeConfig.ProviderConfig) {
+				assert.Equal(t, "sk-test-key", p.Options["apiKey"])
+				assert.Equal(t, "gpt-4", p.Model)
 			},
 		},
 		{
-			name: "Configuration with special characters",
-			config: &opencodeConfig.Config{
-				Schema:   "https://opencode.sh/schema.json",
-				Username: "user_with-special.chars",
-				Providers: map[string]opencodeConfig.Provider{
-					"test-provider": {
-						Options: map[string]interface{}{
-							"apiKey":  "sk-test-key-with-special-chars!@#$%^&*()",
-							"baseURL": "https://api.test.com/v1/with/path?param=value&other=test",
-						},
-						Models: map[string]opencodeConfig.Model{
-							"test-model": {
-								ID:          "test-model",
-								Name:        "Test Model (SC:8.5) (brotli) (http3)",
-								DisplayName: "Test Model (SC:8.5) (brotli) (http3) (free to use)",
-								MaxTokens:   4096,
-							},
-						},
-					},
+			name: "Provider with custom base URL",
+			provider: opencodeConfig.ProviderConfig{
+				Options: map[string]interface{}{
+					"apiKey":  "sk-test-key",
+					"baseURL": "https://custom.api.com/v1",
 				},
-				Agent: opencodeConfig.Agent{Name: "special-chars-agent"},
-				MCP:   opencodeConfig.MCP{Servers: []interface{}{}},
+				Model: "custom-model",
 			},
-			test: func(t *testing.T, cfg *opencodeConfig.Config) {
-				assert.Contains(t, cfg.Providers["test-provider"].Options["apiKey"], "!")
-				assert.Contains(t, cfg.Providers["test-provider"].Models["test-model"].Name, "(brotli)")
+			validate: func(t *testing.T, p opencodeConfig.ProviderConfig) {
+				assert.Equal(t, "https://custom.api.com/v1", p.Options["baseURL"])
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
-			configPath := filepath.Join(tmpDir, "complex_opencodeConfig.json")
-
-			err := opencodeConfig.SaveToFile(tt.config, configPath)
-			require.NoError(t, err)
-
-			loadedConfig, err := opencodeConfig.LoadFromFile(configPath)
-			require.NoError(t, err)
-
-			tt.test(t, loadedConfig)
+			tt.validate(t, tt.provider)
 		})
 	}
 }
 
-// Helper function to generate a large provider set for testing
-func generateLargeProviderSet() map[string]opencodeConfig.Provider {
-	providers := make(map[string]opencodeConfig.Provider)
+func TestConfiguration_AgentConfig(t *testing.T) {
+	temp := 0.7
+	topP := 0.9
+	maxSteps := 10
+	disable := false
 
-	for i := 0; i < 50; i++ {
-		providerName := fmt.Sprintf("provider-%d", i)
-		models := make(map[string]opencodeConfig.Model)
-
-		// Add 2-5 models per provider
-		for j := 0; j < 2+(i%4); j++ {
-			modelID := fmt.Sprintf("model-%d-%d", i, j)
-			models[modelID] = opencodeConfig.Model{
-				ID:          modelID,
-				Name:        fmt.Sprintf("Model %d-%d", i, j),
-				DisplayName: fmt.Sprintf("Model %d-%d (SC:%.1f)", i, j, 8.0+float64(j)*0.2),
-				MaxTokens:   1000 + j*1000,
-				Provider: opencodeConfig.ProviderInfo{
-					ID:  providerName,
-					NPM: fmt.Sprintf("@%s/sdk", providerName),
-				},
-			}
-		}
-
-		providers[providerName] = opencodeConfig.Provider{
-			Options: map[string]interface{}{
-				"apiKey":  fmt.Sprintf("sk-test-key-%d", i),
-				"baseURL": fmt.Sprintf("https://api.%s.com/v1", providerName),
-			},
-			Models: models,
-		}
+	agent := opencodeConfig.AgentConfig{
+		Model:       "gpt-4",
+		Temperature: &temp,
+		TopP:        &topP,
+		Prompt:      "You are a coding assistant",
+		Description: "Default coding agent",
+		MaxSteps:    &maxSteps,
+		Disable:     &disable,
+		Tools: map[string]bool{
+			"bash":   true,
+			"edit":   true,
+			"read":   true,
+			"search": true,
+		},
 	}
 
-	return providers
+	assert.Equal(t, "gpt-4", agent.Model)
+	assert.Equal(t, 0.7, *agent.Temperature)
+	assert.Equal(t, 0.9, *agent.TopP)
+	assert.Equal(t, 10, *agent.MaxSteps)
+	assert.False(t, *agent.Disable)
+	assert.True(t, agent.Tools["bash"])
+}
+
+func TestConfiguration_McpConfig(t *testing.T) {
+	enabled := true
+	timeout := 30
+
+	mcp := opencodeConfig.McpConfig{
+		Type:    "stdio",
+		Command: []string{"npx", "test-server"},
+		Environment: map[string]string{
+			"TEST_VAR": "test_value",
+		},
+		Enabled: &enabled,
+		Timeout: &timeout,
+	}
+
+	assert.Equal(t, "stdio", mcp.Type)
+	assert.Len(t, mcp.Command, 2)
+	assert.Equal(t, "test_value", mcp.Environment["TEST_VAR"])
+	assert.True(t, *mcp.Enabled)
+	assert.Equal(t, 30, *mcp.Timeout)
+}
+
+func TestConfiguration_SSEMcp(t *testing.T) {
+	mcp := opencodeConfig.McpConfig{
+		Type: "sse",
+		URL:  "http://localhost:8080/sse",
+		Headers: map[string]string{
+			"Authorization": "Bearer test-token",
+		},
+	}
+
+	assert.Equal(t, "sse", mcp.Type)
+	assert.Equal(t, "http://localhost:8080/sse", mcp.URL)
+	assert.Equal(t, "Bearer test-token", mcp.Headers["Authorization"])
+}
+
+func TestConfiguration_KeybindsConfig(t *testing.T) {
+	keybinds := opencodeConfig.KeybindsConfig{
+		Leader:          "space",
+		AppExit:         "ctrl+q",
+		EditorOpen:      "ctrl+e",
+		SessionNew:      "ctrl+n",
+		InputSubmit:     "enter",
+		InputClear:      "ctrl+u",
+		HistoryPrevious: "up",
+		HistoryNext:     "down",
+	}
+
+	assert.Equal(t, "space", keybinds.Leader)
+	assert.Equal(t, "ctrl+q", keybinds.AppExit)
+	assert.Equal(t, "enter", keybinds.InputSubmit)
+}
+
+func TestConfiguration_PermissionConfig(t *testing.T) {
+	perm := opencodeConfig.PermissionConfig{
+		Edit:              "ask",
+		Bash:              "allow",
+		Webfetch:          "allow",
+		ExternalDirectory: "deny",
+	}
+
+	assert.Equal(t, "ask", perm.Edit)
+	assert.Equal(t, "allow", perm.Bash)
+	assert.Equal(t, "deny", perm.ExternalDirectory)
+}
+
+func TestConfiguration_CompactionConfig(t *testing.T) {
+	auto := true
+	prune := false
+
+	compaction := opencodeConfig.CompactionConfig{
+		Auto:  &auto,
+		Prune: &prune,
+	}
+
+	assert.True(t, *compaction.Auto)
+	assert.False(t, *compaction.Prune)
+}
+
+func TestConfiguration_FileNotFound(t *testing.T) {
+	loader := &opencodeConfig.ConfigLoader{}
+	_, err := loader.LoadFromFile("/nonexistent/path/config.json")
+	assert.Error(t, err)
+}
+
+func TestConfiguration_CompleteConfig(t *testing.T) {
+	temp := 0.7
+	enabled := true
+
+	config := &opencodeConfig.Config{
+		Username:     "complete-test-user",
+		Instructions: []string{"Be helpful", "Write clean code"},
+		Provider: map[string]opencodeConfig.ProviderConfig{
+			"openai": {
+				Options: map[string]interface{}{
+					"apiKey": "sk-test",
+				},
+				Model: "gpt-4",
+			},
+			"anthropic": {
+				Options: map[string]interface{}{
+					"apiKey": "sk-ant-test",
+				},
+				Model: "claude-3-opus",
+			},
+		},
+		Agent: map[string]opencodeConfig.AgentConfig{
+			"default": {
+				Model:       "gpt-4",
+				Temperature: &temp,
+				Prompt:      "You are a helpful assistant",
+			},
+		},
+		Mcp: map[string]opencodeConfig.McpConfig{
+			"test-server": {
+				Type:    "stdio",
+				Command: []string{"npx", "test"},
+				Enabled: &enabled,
+			},
+		},
+		Command: map[string]opencodeConfig.CommandConfig{
+			"test": {
+				Template:    "echo test",
+				Description: "Test command",
+			},
+		},
+	}
+
+	// Verify complete config structure
+	assert.Equal(t, "complete-test-user", config.Username)
+	assert.Len(t, config.Instructions, 2)
+	assert.Len(t, config.Provider, 2)
+	assert.Contains(t, config.Provider, "openai")
+	assert.Contains(t, config.Provider, "anthropic")
+	assert.Len(t, config.Agent, 1)
+	assert.Len(t, config.Mcp, 1)
+	assert.Len(t, config.Command, 1)
+
+	// Test JSON round-trip
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "complete_config.json")
+
+	loader := &opencodeConfig.ConfigLoader{}
+	err := loader.SaveToFile(config, configPath)
+	require.NoError(t, err)
+
+	loadedConfig, err := loader.LoadFromFile(configPath)
+	require.NoError(t, err)
+	assert.Equal(t, config.Username, loadedConfig.Username)
+	assert.Len(t, loadedConfig.Provider, 2)
 }

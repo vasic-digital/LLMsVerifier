@@ -1,6 +1,14 @@
 package config
 
-import "time"
+import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/spf13/viper"
+)
 
 // LoggingConfig holds logging configuration options
 type LoggingConfig struct {
@@ -147,4 +155,52 @@ type APIConfig struct {
 	ReadTimeout       int    `mapstructure:"read_timeout"`          // HTTP read timeout in seconds
 	WriteTimeout      int    `mapstructure:"write_timeout"`         // HTTP write timeout in seconds
 	MaxHeaderBytes    int    `mapstructure:"max_header_bytes"`      // Maximum header size in bytes
+}
+
+// LoadFromFile loads configuration from a file path
+// Supports YAML, JSON, and TOML formats based on file extension
+func LoadFromFile(path string) (*Config, error) {
+	ext := strings.ToLower(filepath.Ext(path))
+
+	// For JSON files, use direct JSON parsing
+	if ext == ".json" {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil, err
+		}
+		var cfg Config
+		if err := json.Unmarshal(data, &cfg); err != nil {
+			return nil, err
+		}
+		return &cfg, nil
+	}
+
+	// For YAML/TOML files, use Viper
+	v := viper.New()
+	v.SetConfigFile(path)
+
+	if err := v.ReadInConfig(); err != nil {
+		return nil, err
+	}
+
+	var cfg Config
+	if err := v.Unmarshal(&cfg); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
+}
+
+// SaveToFile saves configuration to a file path
+func SaveToFile(cfg *Config, path string) error {
+	data, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0644)
+}
+
+// Export exports configuration to a file path (alias for SaveToFile)
+func Export(cfg *Config, path string) error {
+	return SaveToFile(cfg, path)
 }

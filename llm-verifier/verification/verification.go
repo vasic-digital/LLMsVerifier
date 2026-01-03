@@ -110,6 +110,17 @@ func (v *Verifier) Verify(ctx context.Context, req *Request) (*database.Verifica
 	return result, nil
 }
 
+// Result is an alias for VerificationResult for backward compatibility
+type Result = database.VerificationResult
+
+// ModelVerifier is an alias for Verifier for backward compatibility
+type ModelVerifier = Verifier
+
+// NewModelVerifier creates a new model verifier (alias for NewVerifier)
+func NewModelVerifier(db *database.Database) *ModelVerifier {
+	return NewVerifier(db)
+}
+
 // Helper functions
 func boolPtr(b bool) *bool {
 	return &b

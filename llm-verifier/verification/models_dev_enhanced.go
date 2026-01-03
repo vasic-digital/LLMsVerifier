@@ -105,6 +105,20 @@ func NewEnhancedModelsDevClient(logger *logging.Logger) *EnhancedModelsDevClient
 	}
 }
 
+// logInfo logs info message if logger is not nil
+func (c *EnhancedModelsDevClient) logInfo(msg string) {
+	if c.logger != nil {
+		c.logger.Info(msg, nil)
+	}
+}
+
+// logError logs error message if logger is not nil
+func (c *EnhancedModelsDevClient) logError(msg string) {
+	if c.logger != nil {
+		c.logger.Error(msg, nil)
+	}
+}
+
 // FetchAllProviders fetches all provider data from models.dev (no caching)
 func (c *EnhancedModelsDevClient) FetchAllProviders(ctx context.Context) (ModelsDevEnhancedResponse, error) {
 	// Force fresh fetch by ignoring cache
@@ -116,12 +130,12 @@ func (c *EnhancedModelsDevClient) fetchProviders(ctx context.Context, forceFresh
 	// Check cache only if enabled and not forced fresh
 	if c.cacheEnabled && !forceFresh && c.cachedData != nil {
 		if time.Since(c.lastFetchTime) < 5*time.Minute {
-			c.logger.Info("Using cached models.dev data", nil)
+			c.logInfo("Using cached models.dev data")
 			return *c.cachedData, nil
 		}
 	}
 
-	c.logger.Info("Fetching fresh data from models.dev API", nil)
+	c.logInfo("Fetching fresh data from models.dev API")
 
 	// Create request with no-cache headers
 	req, err := http.NewRequestWithContext(ctx, "GET", c.baseURL+"/api.json", nil)
@@ -152,7 +166,7 @@ func (c *EnhancedModelsDevClient) fetchProviders(ctx context.Context, forceFresh
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	c.logger.Info(fmt.Sprintf("Fetched %d bytes from models.dev API", len(body)), nil)
+	c.logInfo(fmt.Sprintf("Fetched %d bytes from models.dev API", len(body)))
 
 	// Try to parse with JSON unmarshaling (allows unknown fields by default)
 	var response ModelsDevEnhancedResponse
@@ -172,7 +186,7 @@ func (c *EnhancedModelsDevClient) fetchProviders(ctx context.Context, forceFresh
 		c.lastFetchTime = time.Now()
 	}
 
-	c.logger.Info(fmt.Sprintf("Successfully fetched %d providers from models.dev", len(response)), nil)
+	c.logInfo(fmt.Sprintf("Successfully fetched %d providers from models.dev", len(response)))
 	return response, nil
 }
 
@@ -371,7 +385,7 @@ func (c *EnhancedModelsDevClient) GetModelsByProviderID(ctx context.Context, pro
 func (c *EnhancedModelsDevClient) GetProvidersByNPM(ctx context.Context, npmPackage string) []ProviderData {
 	providers, err := c.FetchAllProviders(ctx)
 	if err != nil {
-		c.logger.Error(fmt.Sprintf("Failed to fetch providers: %v", err), nil)
+		c.logError(fmt.Sprintf("Failed to fetch providers: %v", err))
 		return nil
 	}
 

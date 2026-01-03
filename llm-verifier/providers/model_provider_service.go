@@ -54,10 +54,13 @@ type Model struct {
 	ID              string                 `json:"id"`
 	Name            string                 `json:"name"`
 	ProviderID      string                 `json:"provider_id"`
+	Provider        string                 `json:"provider"`       // Alias for ProviderID for compatibility
 	ProviderName    string                 `json:"provider_name"`
 	DisplayName     string                 `json:"display_name"`
 	Features        map[string]interface{} `json:"features"`
+	Metadata        map[string]interface{} `json:"metadata"`       // Additional metadata
 	MaxTokens       int                    `json:"max_tokens"`
+	ContextWindow   int                    `json:"context_window"` // Alias for MaxTokens for compatibility
 	CostPer1MInput  float64                `json:"cost_per_1m_input"`
 	CostPer1MOutput float64                `json:"cost_per_1m_output"`
 	SupportsBrotli  bool                   `json:"supports_brotli"`
@@ -80,7 +83,9 @@ type providerCacheEntry struct {
 func NewModelProviderService(configPath string, logger *logging.Logger) *ModelProviderService {
 	// Ensure config path exists
 	if _, err := os.Stat(configPath); err != nil {
-		logger.Warning(fmt.Sprintf("Config file not found: %s, will use defaults", configPath), nil)
+		if logger != nil {
+			logger.Warning(fmt.Sprintf("Config file not found: %s, will use defaults", configPath), nil)
+		}
 	}
 
 	return &ModelProviderService{
@@ -108,6 +113,34 @@ func createHTTPClient() *http.Client {
 	}
 }
 
+// logInfo logs info message if logger is not nil
+func (mps *ModelProviderService) logInfo(msg string) {
+	if mps.logger != nil {
+		mps.logger.Info(msg, nil)
+	}
+}
+
+// logDebug logs debug message if logger is not nil
+func (mps *ModelProviderService) logDebug(msg string) {
+	if mps.logger != nil {
+		mps.logger.Debug(msg, nil)
+	}
+}
+
+// logWarning logs warning message if logger is not nil
+func (mps *ModelProviderService) logWarning(msg string) {
+	if mps.logger != nil {
+		mps.logger.Warning(msg, nil)
+	}
+}
+
+// logError logs error message if logger is not nil
+func (mps *ModelProviderService) logError(msg string) {
+	if mps.logger != nil {
+		mps.logger.Error(msg, nil)
+	}
+}
+
 // RegisterProvider registers a provider API client
 func (mps *ModelProviderService) RegisterProvider(providerID, baseURL, apiKey string) {
 	client := &ProviderClient{
@@ -119,7 +152,7 @@ func (mps *ModelProviderService) RegisterProvider(providerID, baseURL, apiKey st
 	}
 
 	mps.providerClients[providerID] = client
-	mps.logger.Info(fmt.Sprintf("Registered provider: %s", providerID), nil)
+	mps.logInfo(fmt.Sprintf("Registered provider: %s", providerID))
 }
 
 // RegisterAllProviders registers all 32 providers from environment variables
@@ -130,7 +163,7 @@ func (mps *ModelProviderService) RegisterAllProviders() {
 		mps.RegisterProvider(providerID, config.BaseURL, config.APIKey)
 	}
 
-	mps.logger.Info(fmt.Sprintf("Registered %d providers", len(providerConfigs)), nil)
+	mps.logInfo(fmt.Sprintf("Registered %d providers", len(providerConfigs)))
 }
 
 // providerConfig holds provider configuration
@@ -192,11 +225,11 @@ func (mps *ModelProviderService) getAllProviderConfigs() map[string]providerConf
 
 // GetModels retrieves models using OpenCode's 3-tier priority system
 func (mps *ModelProviderService) GetModels(providerID string) ([]Model, error) {
-	mps.logger.Info(fmt.Sprintf("Getting models for provider: %s", providerID), nil)
+	mps.logInfo(fmt.Sprintf("Getting models for provider: %s", providerID))
 
 	// Check cache first
 	if cached := mps.getFromCache(providerID); cached != nil {
-		mps.logger.Info(fmt.Sprintf("Cache hit for %s: %d models", providerID, len(cached)), nil)
+		mps.logInfo(fmt.Sprintf("Cache hit for %s: %d models", providerID, len(cached)))
 		return cached, nil
 	}
 
@@ -204,38 +237,38 @@ func (mps *ModelProviderService) GetModels(providerID string) ([]Model, error) {
 	var source string
 
 	// Tier 1: Try user configuration first (highest priority)
-	mps.logger.Debug("Tier 1: Checking user configuration", nil)
+	mps.logDebug("Tier 1: Checking user configuration")
 	if configModels := mps.loadFromConfig(providerID); len(configModels) > 0 {
 		models = configModels
 		source = "config"
-		mps.logger.Info(fmt.Sprintf("Found %d models in user config", len(models)), nil)
+		mps.logInfo(fmt.Sprintf("Found %d models in user config", len(models)))
 	}
 
 	// Tier 2: Try provider API if no config models
 	if len(models) == 0 {
-		mps.logger.Debug("Tier 2: Checking provider API", nil)
+		mps.logDebug("Tier 2: Checking provider API")
 		if apiModels, err := mps.fetchFromProviderAPIEnhanced(providerID); err == nil && len(apiModels) > 0 {
 			models = apiModels
 			source = "api"
-			mps.logger.Info(fmt.Sprintf("Fetched %d models from provider API", len(models)), nil)
+			mps.logInfo(fmt.Sprintf("Fetched %d models from provider API", len(models)))
 		}
 	}
 
 	// Tier 3: Fall back to models.dev API
 	if len(models) == 0 {
-		mps.logger.Debug("Tier 3: Falling back to models.dev", nil)
+		mps.logDebug("Tier 3: Falling back to models.dev")
 		if devModels, err := mps.fetchFromModelsDev(providerID); err == nil && len(devModels) > 0 {
 			models = devModels
 			source = "models.dev"
-			mps.logger.Info(fmt.Sprintf("Fetched %d models from models.dev", len(models)), nil)
+			mps.logInfo(fmt.Sprintf("Fetched %d models from models.dev", len(models)))
 		} else if err != nil {
-			mps.logger.Error(fmt.Sprintf("Failed to fetch from models.dev: %v", err), nil)
+			mps.logError(fmt.Sprintf("Failed to fetch from models.dev: %v", err))
 		}
 	}
 
 	// If still no models, return empty list (not error)
 	if len(models) == 0 {
-		mps.logger.Warning(fmt.Sprintf("No models found for provider %s", providerID), nil)
+		mps.logWarning(fmt.Sprintf("No models found for provider %s", providerID))
 		return []Model{}, nil
 	}
 
@@ -257,8 +290,8 @@ func (mps *ModelProviderService) GetModels(providerID string) ([]Model, error) {
 	// Cache the result
 	mps.saveToCache(providerID, models)
 
-	mps.logger.Info(fmt.Sprintf("Returning %d models for %s (source: %s)",
-		len(models), providerID, source), nil)
+	mps.logInfo(fmt.Sprintf("Returning %d models for %s (source: %s)",
+		len(models), providerID, source))
 
 	return models, nil
 }
@@ -269,7 +302,7 @@ func (mps *ModelProviderService) GetAllModels() (map[string][]Model, error) {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 
-	mps.logger.Info("Fetching models for all providers", nil)
+	mps.logInfo("Fetching models for all providers")
 
 	for providerID := range mps.providerClients {
 		wg.Add(1)
@@ -279,7 +312,7 @@ func (mps *ModelProviderService) GetAllModels() (map[string][]Model, error) {
 
 			models, err := mps.GetModels(pid)
 			if err != nil {
-				mps.logger.Error(fmt.Sprintf("Failed to get models for %s: %v", pid, err), nil)
+				mps.logError(fmt.Sprintf("Failed to get models for %s: %v", pid, err))
 				return
 			}
 
@@ -291,7 +324,7 @@ func (mps *ModelProviderService) GetAllModels() (map[string][]Model, error) {
 
 	wg.Wait()
 
-	mps.logger.Info(fmt.Sprintf("Retrieved models for %d providers", len(allModels)), nil)
+	mps.logInfo(fmt.Sprintf("Retrieved models for %d providers", len(allModels)))
 
 	return allModels, nil
 }
@@ -302,13 +335,13 @@ func (mps *ModelProviderService) loadFromConfig(providerID string) []Model {
 	// In a full implementation, this would use the opencode config loader
 	configData, err := os.ReadFile(mps.configPath)
 	if err != nil {
-		mps.logger.Debug(fmt.Sprintf("No config file or error loading: %v", err), nil)
+		mps.logDebug(fmt.Sprintf("No config file or error loading: %v", err))
 		return nil
 	}
 
 	var config map[string]interface{}
 	if err := json.Unmarshal(configData, &config); err != nil {
-		mps.logger.Debug(fmt.Sprintf("Failed to parse config: %v", err), nil)
+		mps.logDebug(fmt.Sprintf("Failed to parse config: %v", err))
 		return nil
 	}
 
@@ -544,7 +577,7 @@ func (mps *ModelProviderService) deduplicateModels(models []Model) []Model {
 	}
 
 	if len(unique) < len(models) {
-		mps.logger.Debug(fmt.Sprintf("Deduplicated %d models to %d", len(models), len(unique)), nil)
+		mps.logDebug(fmt.Sprintf("Deduplicated %d models to %d", len(models), len(unique)))
 	}
 
 	return unique
@@ -574,12 +607,12 @@ func (mps *ModelProviderService) getFromCache(providerID string) []Model {
 	cacheDuration := 24 * time.Hour
 
 	if cacheAge > cacheDuration {
-		mps.logger.Debug(fmt.Sprintf("Cache expired for %s (age: %v, TTL: %v)", providerID, cacheAge.Round(time.Minute), cacheDuration), nil)
+		mps.logDebug(fmt.Sprintf("Cache expired for %s (age: %v, TTL: %v)", providerID, cacheAge.Round(time.Minute), cacheDuration))
 		delete(mps.cache, providerID)
 		return nil
 	}
 
-	mps.logger.Debug(fmt.Sprintf("Cache hit for %s (age: %v)", providerID, cacheAge.Round(time.Minute)), nil)
+	mps.logDebug(fmt.Sprintf("Cache hit for %s (age: %v)", providerID, cacheAge.Round(time.Minute)))
 	return entry.models
 }
 
@@ -601,12 +634,12 @@ func (mps *ModelProviderService) ClearCache() {
 	defer mps.cacheMutex.Unlock()
 
 	mps.cache = make(map[string]*providerCacheEntry)
-	mps.logger.Info("Cleared provider cache", nil)
+	mps.logInfo("Cleared provider cache")
 }
 
 // RefreshCache refreshes cache for all providers
 func (mps *ModelProviderService) RefreshCache() error {
-	mps.logger.Info("Refreshing cache for all providers", nil)
+	mps.logInfo("Refreshing cache for all providers")
 
 	mps.ClearCache()
 
@@ -673,7 +706,7 @@ func (mps *ModelProviderService) fetchFromProviderAPIEnhanced(providerID string)
 		models, err = mps.fetchModelsFromAdapter(adapter, providerID)
 	default:
 		// Fall back to generic OpenAI-compatible approach
-		mps.logger.Debug(fmt.Sprintf("No specific adapter for %s, using generic OpenAI approach", providerID), nil)
+		mps.logDebug(fmt.Sprintf("No specific adapter for %s, using generic OpenAI approach", providerID))
 		return mps.fetchFromProviderAPIGeneric(providerID)
 	}
 
@@ -717,7 +750,7 @@ func (mps *ModelProviderService) fetchModelsFromAdapter(adapter interface{}, pro
 			models = append(models, model)
 		}
 
-		mps.logger.Info(fmt.Sprintf("Fetched %d models from %s API", len(models), providerID), nil)
+		mps.logInfo(fmt.Sprintf("Fetched %d models from %s API", len(models), providerID))
 		return models, nil
 	}
 
@@ -754,7 +787,7 @@ func (mps *ModelProviderService) fetchFromProviderAPIGeneric(providerID string) 
 
 	if resp.StatusCode != http.StatusOK {
 		// Don't treat this as a fatal error - many providers don't support /v1/models
-		mps.logger.Debug(fmt.Sprintf("Provider %s returned status %d from /models endpoint", providerID, resp.StatusCode), nil)
+		mps.logDebug(fmt.Sprintf("Provider %s returned status %d from /models endpoint", providerID, resp.StatusCode))
 		return []Model{}, nil
 	}
 
@@ -767,7 +800,7 @@ func (mps *ModelProviderService) fetchFromProviderAPIGeneric(providerID string) 
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
-		mps.logger.Debug(fmt.Sprintf("Failed to decode response from %s: %v", providerID, err), nil)
+		mps.logDebug(fmt.Sprintf("Failed to decode response from %s: %v", providerID, err))
 		return []Model{}, nil
 	}
 
