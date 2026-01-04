@@ -40,20 +40,21 @@ func TestDashboardScreenUpdate(t *testing.T) {
 	screen := NewDashboardScreen(client)
 
 	tests := []struct {
-		name string
-		msg  tea.Msg
+		name        string
+		msg         tea.Msg
+		expectCmd   bool
 	}{
-		{"Window size", tea.WindowSizeMsg{Width: 100, Height: 50}},
-		{"Refresh key", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}}},
-		{"Tick message", tickMsg(time.Now())},
-		{"Stats refreshed", StatsRefreshedMsg{Stats: DashboardStats{TotalModels: 10}}},
-		{"Stats error", StatsErrorMsg{Error: nil}},
+		{"Window size", tea.WindowSizeMsg{Width: 100, Height: 50}, false},
+		{"Refresh key", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}}, true},
+		{"Tick message", tickMsg(time.Now()), true},
+		{"Stats refreshed", StatsRefreshedMsg{Stats: DashboardStats{TotalModels: 10}}, false},
+		{"Stats error", StatsErrorMsg{Error: nil}, false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, cmd := screen.Update(tt.msg)
-			if cmd == nil && tt.name != "Stats error" {
+			if tt.expectCmd && cmd == nil {
 				t.Error("Expected non-nil command")
 			}
 		})

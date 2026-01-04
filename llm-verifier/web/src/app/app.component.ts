@@ -2,23 +2,11 @@ import { Component, OnInit, OnDestroy, Renderer2, HostListener } from '@angular/
 import { ResponsiveService, ScreenSize } from './services/responsive.service';
 import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Routes } from '@angular/router';
+import { RouterModule } from '@angular/router';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatSidenavModule } from '@angular/material/sidenav';
-import { MatListModule } from '@angular/material/list';
-import { MatCardModule } from '@angular/material/card';
-import { MatTableModule } from '@angular/material/table';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatMenuModule } from '@angular/material/menu';
-import { MatSelectModule } from '@angular/material/select';
+
+// Shared Material Module - reduces bundle size by centralizing Material imports
+import { MaterialModule } from './shared/material.module';
 import { MobileNavModule } from './components/mobile-nav/mobile-nav.module';
 
 @Component({
@@ -28,22 +16,8 @@ import { MobileNavModule } from './components/mobile-nav/mobile-nav.module';
     CommonModule,
     RouterModule,
     BrowserAnimationsModule,
-    MatToolbarModule,
-    MatButtonModule,
-    MatIconModule,
-    MatSidenavModule,
-    MatListModule,
-
-    MatCardModule,
-    MatTableModule,
-    MatTabsModule,
-    MatProgressSpinnerModule,
-    MatProgressBarModule,
-    MatChipsModule,
-    MatTooltipModule,
-    MatSnackBarModule,
-    MatMenuModule,
-    MatSelectModule,
+    // Use shared MaterialModule instead of individual Material imports
+    MaterialModule,
     MobileNavModule
   ],
   templateUrl: './app.component.html',

@@ -1217,7 +1217,7 @@ func (d *Database) createVerificationResultTx(tx *sql.Tx, verificationResult *Ve
 			supports_function_calling, supports_code_generation, supports_code_completion,
 			supports_code_review, supports_code_explanation, supports_embeddings,
 			supports_reranking, supports_image_generation, supports_audio_generation,
-			supports_video_generation, supports_mcps, supports_lsps, supports_multimodal,
+			supports_video_generation, supports_mcps, supports_lsps, supports_acps, supports_multimodal,
 			supports_streaming, supports_json_mode, supports_structured_output,
 			supports_reasoning, supports_parallel_tool_use, max_parallel_calls,
 		supports_batch_processing, supports_brotli, code_language_support, code_debugging,
@@ -1229,7 +1229,7 @@ func (d *Database) createVerificationResultTx(tx *sql.Tx, verificationResult *Ve
 		reliability_score, feature_richness_score, value_proposition_score,
 		score_details, avg_latency_ms, p95_latency_ms, min_latency_ms,
 		max_latency_ms, throughput_rps, raw_request, raw_response
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := tx.Exec(query,
@@ -1256,6 +1256,7 @@ func (d *Database) createVerificationResultTx(tx *sql.Tx, verificationResult *Ve
 		verificationResult.SupportsVideoGeneration,
 		verificationResult.SupportsMCPs,
 		verificationResult.SupportsLSPs,
+		verificationResult.SupportsACPs,
 		verificationResult.SupportsMultimodal,
 		verificationResult.SupportsStreaming,
 		verificationResult.SupportsJSONMode,

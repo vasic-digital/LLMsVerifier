@@ -424,6 +424,6 @@ type AutomationResult struct {
 	ACPSupported bool
 }
 
-func setupAutomationEnvironment(t *testing.T) *config.Config {
+func setupE2EAutomationEnvironment(t *testing.T) *config.Config {
 	return &config.Config{}
 }
