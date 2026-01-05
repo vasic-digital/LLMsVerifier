@@ -277,10 +277,14 @@ These issues return fake/hardcoded data to end users in production.
 - **Fix Applied:** Updated links to point to existing `../DEPLOYMENT.md` file
 
 ### 5.2-5.6 HIGH - Missing Documentation Directories
-- **Issues:**
-  - [ ] `protocols/` - needs implementation guides
-  - [ ] `monitoring/` - needs Prometheus/Grafana setup docs
-  - [ ] `integration/` vs `integrations/` - clarify or consolidate
+- **Status:** [x] COMPLETED (2026-01-05)
+- **Fixes Applied:**
+  - [x] Created `docs/protocols/` directory with:
+    - `README.md` - Protocol overview (ACP, MCP, LSP)
+    - `ACP_GUIDE.md` - Complete ACP implementation guide
+  - [x] Created `docs/monitoring/` directory with:
+    - `README.md` - Prometheus/Grafana setup documentation
+  - [x] `integration/` vs `integrations/` - Clarified: `tests/integration/` is for integration tests (correct usage)
 
 ---
 
