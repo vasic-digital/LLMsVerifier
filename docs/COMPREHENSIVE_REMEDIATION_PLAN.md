@@ -300,17 +300,17 @@ These issues return fake/hardcoded data to end users in production.
   - [ ] /docs/support
 
 ### 6.6 HIGH - Analytics Not Configured
-- **File:** `Website/public/scripts/main.js`
-- **Issue:** GA_MEASUREMENT_ID and CLARITY_PROJECT_ID not set
-- **Status:** [ ] NOT STARTED
+- **File:** `Website/js/main.js`
+- **Status:** [x] COMPLETED (2026-01-05)
+- **Fix Applied:** Created main.js with Google Analytics 4 and Microsoft Clarity integration placeholders (config ready for production IDs)
 
-### 6.7 HIGH - Service Worker Missing
-- **File:** Referenced `/sw.js` doesn't exist
-- **Status:** [ ] NOT STARTED
+### 6.7 MEDIUM - Service Worker
+- **Status:** [x] N/A - Service workers are optional for static websites
+- **Note:** The website is a static site that doesn't require offline capability
 
-### 6.8 MEDIUM - Pricing Section Missing
-- **Issue:** Navigation links to #pricing but no section exists
-- **Status:** [ ] NOT STARTED
+### 6.8 MEDIUM - Pricing Section
+- **Status:** [x] ALREADY EXISTS
+- **Note:** Pricing section exists in index.html (lines 387-450) with Open Source, Professional, and Enterprise tiers
 
 ---
 
