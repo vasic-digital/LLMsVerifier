@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture - LLM Verifier</title>
+    <meta name="description" content="Technical architecture overview of LLM Verifier. Learn about system components, data flow, and design patterns.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/docs.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="/"><i class="fas fa-brain"></i> <span>LLM Verifier</span></a>
+            </div>
+            <div class="nav-menu">
+                <a href="/docs/getting-started" class="nav-link">Getting Started</a>
+                <a href="/docs/user-manual" class="nav-link">User Manual</a>
+                <a href="/docs/architecture" class="nav-link active">Architecture</a>
+                <a href="/docs/api-reference" class="nav-link">API Reference</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <aside class="docs-sidebar">
+            <nav class="sidebar-nav">
+                <h3>Architecture</h3>
+                <ul>
+                    <li><a href="#overview">Overview</a></li>
+                    <li><a href="#components">Core Components</a></li>
+                    <li><a href="#data-flow">Data Flow</a></li>
+                    <li><a href="#providers">Provider System</a></li>
+                    <li><a href="#verification">Verification Engine</a></li>
+                    <li><a href="#database">Database Layer</a></li>
+                    <li><a href="#security">Security</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="docs-content">
+            <article>
+                <h1>System Architecture</h1>
+                <p class="lead">LLM Verifier is built on a modular architecture designed for scalability, reliability, and extensibility.</p>
+
+                <section id="overview">
+                    <h2>Architecture Overview</h2>
+                    <p>LLM Verifier follows a layered architecture with clear separation of concerns:</p>
+
+                    <pre><code class="language-text">┌─────────────────────────────────────────────────────────────┐
+│                      API Layer (REST/gRPC)                   │
+├─────────────────────────────────────────────────────────────┤
+│                      Service Layer                           │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐│
+│  │ Verification│ │   Export    │ │      Analytics          ││
+│  │   Service   │ │   Service   │ │       Service           ││
+│  └─────────────┘ └─────────────┘ └─────────────────────────┘│
+├─────────────────────────────────────────────────────────────┤
+│                     Provider Layer                           │
+│  ┌────────┐ ┌──────────┐ ┌────────┐ ┌────────┐ ┌─────────┐ │
+│  │ OpenAI │ │Anthropic │ │ Google │ │  Groq  │ │  20+    │ │
+│  └────────┘ └──────────┘ └────────┘ └────────┘ └─────────┘ │
+├─────────────────────────────────────────────────────────────┤
+│                      Data Layer                              │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐│
+│  │   SQLite    │ │    Cache    │ │      Metrics            ││
+│  │  (SQLCipher)│ │   (Redis)   │ │    (Prometheus)         ││
+│  └─────────────┘ └─────────────┘ └─────────────────────────┘│
+└─────────────────────────────────────────────────────────────┘</code></pre>
+                </section>
+
+                <section id="components">
+                    <h2>Core Components</h2>
+
+                    <h3>1. API Server</h3>
+                    <p>The API server provides REST and gRPC interfaces for all operations:</p>
+                    <ul>
+                        <li><strong>REST API</strong> - HTTP endpoints for web clients</li>
+                        <li><strong>gRPC API</strong> - High-performance binary protocol</li>
+                        <li><strong>WebSocket</strong> - Real-time updates and streaming</li>
+                    </ul>
+
+                    <h3>2. Verification Engine</h3>
+                    <p>The core verification system that tests AI models:</p>
+                    <ul>
+                        <li><strong>Model Verifier</strong> - Runs verification tests</li>
+                        <li><strong>Scoring System</strong> - Calculates verification scores</li>
+                        <li><strong>Challenge Runner</strong> - Executes test challenges</li>
+                    </ul>
+
+                    <h3>3. Provider Adapters</h3>
+                    <p>Unified interface for 20+ AI providers:</p>
+                    <ul>
+                        <li><strong>Base Adapter</strong> - Common interface for all providers</li>
+                        <li><strong>Model Discovery</strong> - Automatic model detection</li>
+                        <li><strong>Rate Limiting</strong> - Provider-specific rate limits</li>
+                        <li><strong>Failover</strong> - Automatic retry and fallback</li>
+                    </ul>
+
+                    <h3>4. Configuration System</h3>
+                    <p>Export verified configurations to multiple formats:</p>
+                    <ul>
+                        <li><strong>OpenCode</strong> - OpenCode JSON format</li>
+                        <li><strong>Crush</strong> - Crush configuration format</li>
+                        <li><strong>Claude Code</strong> - Claude Code settings</li>
+                    </ul>
+                </section>
+
+                <section id="data-flow">
+                    <h2>Data Flow</h2>
+
+                    <h3>Verification Flow</h3>
+                    <pre><code class="language-text">User Request
+    │
+    ▼
+┌─────────────────┐
+│   API Server    │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Verification   │──────┐
+│    Service      │      │
+└────────┬────────┘      │
+         │               │
+         ▼               ▼
+┌─────────────────┐ ┌─────────────────┐
+│    Provider     │ │    Challenge    │
+│    Adapter      │ │     Runner      │
+└────────┬────────┘ └────────┬────────┘
+         │                   │
+         ▼                   ▼
+┌─────────────────┐ ┌─────────────────┐
+│   LLM Provider  │ │  Scoring Engine │
+│     (API)       │ │                 │
+└─────────────────┘ └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │    Database     │
+                    │  (Results/Cache)│
+                    └─────────────────┘</code></pre>
+                </section>
+
+                <section id="providers">
+                    <h2>Provider System</h2>
+                    <p>The provider adapter pattern enables unified access to diverse AI providers:</p>
+
+                    <pre><code class="language-go">type Provider interface {
+    // Core operations
+    Verify(model string) (*VerificationResult, error)
+    Chat(request *ChatRequest) (*ChatResponse, error)
+
+    // Model management
+    ListModels() ([]Model, error)
+    GetModel(id string) (*Model, error)
+
+    // Health and status
+    HealthCheck() (*HealthStatus, error)
+    GetCapabilities() *Capabilities
+}</code></pre>
+
+                    <h3>Supported Providers</h3>
+                    <div class="providers-grid">
+                        <span class="provider-badge">OpenAI</span>
+                        <span class="provider-badge">Anthropic</span>
+                        <span class="provider-badge">Google</span>
+                        <span class="provider-badge">Azure</span>
+                        <span class="provider-badge">Groq</span>
+                        <span class="provider-badge">Together</span>
+                        <span class="provider-badge">Fireworks</span>
+                        <span class="provider-badge">Perplexity</span>
+                        <span class="provider-badge">DeepSeek</span>
+                        <span class="provider-badge">Mistral</span>
+                        <span class="provider-badge">Cohere</span>
+                        <span class="provider-badge">+10 more</span>
+                    </div>
+                </section>
+
+                <section id="verification">
+                    <h2>Verification Engine</h2>
+                    <p>The verification engine runs comprehensive tests on AI models:</p>
+
+                    <h3>Test Categories</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Weight</th>
+                                <th>Tests</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Code Generation</td>
+                                <td>25%</td>
+                                <td>Syntax, correctness, completeness</td>
+                            </tr>
+                            <tr>
+                                <td>Reasoning</td>
+                                <td>25%</td>
+                                <td>Logic, problem-solving, explanation</td>
+                            </tr>
+                            <tr>
+                                <td>Context Handling</td>
+                                <td>20%</td>
+                                <td>Multi-turn, memory, coherence</td>
+                            </tr>
+                            <tr>
+                                <td>Response Quality</td>
+                                <td>20%</td>
+                                <td>Relevance, accuracy, formatting</td>
+                            </tr>
+                            <tr>
+                                <td>Error Handling</td>
+                                <td>10%</td>
+                                <td>Edge cases, graceful failures</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="database">
+                    <h2>Database Layer</h2>
+                    <p>LLM Verifier uses SQLite with SQLCipher for encrypted local storage:</p>
+
+                    <h3>Key Features</h3>
+                    <ul>
+                        <li><strong>SQLCipher Encryption</strong> - AES-256 database encryption</li>
+                        <li><strong>Connection Pooling</strong> - Efficient connection management</li>
+                        <li><strong>Migrations</strong> - Automatic schema updates</li>
+                        <li><strong>Caching</strong> - Optional Redis caching layer</li>
+                    </ul>
+
+                    <h3>Schema Overview</h3>
+                    <pre><code class="language-sql">-- Core tables
+CREATE TABLE providers (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    api_key_hash TEXT,
+    config JSON,
+    created_at TIMESTAMP
+);
+
+CREATE TABLE verifications (
+    id TEXT PRIMARY KEY,
+    provider_id TEXT REFERENCES providers(id),
+    model_id TEXT NOT NULL,
+    score REAL,
+    results JSON,
+    verified_at TIMESTAMP
+);
+
+CREATE TABLE models (
+    id TEXT PRIMARY KEY,
+    provider_id TEXT REFERENCES providers(id),
+    name TEXT NOT NULL,
+    capabilities JSON,
+    pricing JSON,
+    verified BOOLEAN DEFAULT FALSE
+);</code></pre>
+                </section>
+
+                <section id="security">
+                    <h2>Security Architecture</h2>
+
+                    <h3>Security Layers</h3>
+                    <ul>
+                        <li><strong>API Authentication</strong> - JWT token-based auth</li>
+                        <li><strong>Database Encryption</strong> - SQLCipher AES-256</li>
+                        <li><strong>API Key Protection</strong> - Encrypted storage, never logged</li>
+                        <li><strong>Rate Limiting</strong> - Per-user and per-IP limits</li>
+                        <li><strong>Input Validation</strong> - Strict input sanitization</li>
+                        <li><strong>Audit Logging</strong> - Comprehensive audit trail</li>
+                    </ul>
+
+                    <div class="info-box">
+                        <h4><i class="fas fa-shield-alt"></i> Enterprise Security</h4>
+                        <p>LLM Verifier follows SOC 2 compliant security practices. See our <a href="/security">Security Documentation</a> for details.</p>
+                    </div>
+                </section>
+
+                <div class="next-steps">
+                    <h3>Learn More</h3>
+                    <ul>
+                        <li><a href="/docs/developer-guide">Developer Guide</a> - Extend LLM Verifier</li>
+                        <li><a href="/docs/api-reference">API Reference</a> - Complete API docs</li>
+                        <li><a href="https://github.com/llm-verifier/llm-verifier">Source Code</a> - GitHub repository</li>
+                    </ul>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 LLM Verifier. Open source.</p>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>

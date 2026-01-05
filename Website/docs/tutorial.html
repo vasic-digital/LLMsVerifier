@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial - LLM Verifier</title>
+    <meta name="description" content="Step-by-step tutorials for using LLM Verifier to test, verify, and benchmark AI models.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/docs.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="/"><i class="fas fa-brain"></i> <span>LLM Verifier</span></a>
+            </div>
+            <div class="nav-menu">
+                <a href="/docs/getting-started" class="nav-link">Getting Started</a>
+                <a href="/docs/user-manual" class="nav-link">User Manual</a>
+                <a href="/docs/tutorial" class="nav-link active">Tutorials</a>
+                <a href="/docs/api-reference" class="nav-link">API Reference</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <aside class="docs-sidebar">
+            <nav class="sidebar-nav">
+                <h3>Tutorials</h3>
+                <ul>
+                    <li><a href="#basic-verification">Basic Verification</a></li>
+                    <li><a href="#batch-testing">Batch Testing</a></li>
+                    <li><a href="#export-configs">Export Configurations</a></li>
+                    <li><a href="#ci-integration">CI/CD Integration</a></li>
+                    <li><a href="#monitoring">Monitoring Setup</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="docs-content">
+            <article>
+                <h1>LLM Verifier Tutorials</h1>
+                <p class="lead">Learn how to use LLM Verifier with these step-by-step tutorials.</p>
+
+                <section id="basic-verification">
+                    <h2>Tutorial 1: Basic Model Verification</h2>
+                    <p>Learn how to verify a single AI model in under 5 minutes.</p>
+
+                    <h3>Step 1: Set Up API Key</h3>
+                    <pre><code class="language-bash">export OPENAI_API_KEY="sk-your-api-key"</code></pre>
+
+                    <h3>Step 2: Run Verification</h3>
+                    <pre><code class="language-bash">llm-verifier verify --provider openai --model gpt-4o</code></pre>
+
+                    <h3>Step 3: Review Results</h3>
+                    <pre><code class="language-text">Verification Results:
+--------------------------------------------------
+Model:    gpt-4o
+Provider: openai
+Status:   VERIFIED
+Score:    0.95/1.0
+--------------------------------------------------
+
+Capabilities Tested:
+  [PASS] Code generation
+  [PASS] Reasoning
+  [PASS] Context handling
+  [PASS] Response quality
+  [PASS] Error handling
+
+Model is ready for production use!</code></pre>
+
+                    <div class="success-box">
+                        <h4><i class="fas fa-check-circle"></i> Success!</h4>
+                        <p>You've verified your first model. The score of 0.95 indicates excellent performance.</p>
+                    </div>
+                </section>
+
+                <section id="batch-testing">
+                    <h2>Tutorial 2: Batch Testing Multiple Models</h2>
+                    <p>Test multiple models across providers in a single command.</p>
+
+                    <h3>Step 1: Create Models File</h3>
+                    <pre><code class="language-bash">cat > models.txt << EOF
+openai:gpt-4o
+openai:gpt-4-turbo
+anthropic:claude-3-5-sonnet-latest
+anthropic:claude-3-opus-latest
+google:gemini-2.0-flash
+EOF</code></pre>
+
+                    <h3>Step 2: Run Batch Verification</h3>
+                    <pre><code class="language-bash">llm-verifier batch \
+  --models-file models.txt \
+  --parallel 3 \
+  --output results.json</code></pre>
+
+                    <h3>Step 3: Generate Report</h3>
+                    <pre><code class="language-bash">llm-verifier report --input results.json --format html</code></pre>
+                </section>
+
+                <section id="export-configs">
+                    <h2>Tutorial 3: Export Configuration for OpenCode</h2>
+                    <p>Generate OpenCode-compatible configuration to resolve ProviderInitError.</p>
+
+                    <h3>Step 1: Verify Models</h3>
+                    <pre><code class="language-bash">llm-verifier verify --all-providers</code></pre>
+
+                    <h3>Step 2: Export Configuration</h3>
+                    <pre><code class="language-bash">llm-verifier export-config opencode \
+  --output opencode-config.json \
+  --verified-only \
+  --include-api-keys</code></pre>
+
+                    <h3>Step 3: Use in OpenCode</h3>
+                    <pre><code class="language-bash"># Copy to OpenCode config directory
+cp opencode-config.json ~/.opencode/providers.json
+
+# Restart OpenCode
+opencode restart</code></pre>
+
+                    <div class="warning-box">
+                        <h4><i class="fas fa-exclamation-triangle"></i> Security Note</h4>
+                        <p>The <code>--include-api-keys</code> flag embeds API keys in the config. Keep this file secure and don't commit to version control.</p>
+                    </div>
+                </section>
+
+                <section id="ci-integration">
+                    <h2>Tutorial 4: CI/CD Integration</h2>
+                    <p>Add model verification to your CI/CD pipeline.</p>
+
+                    <h3>GitHub Actions Example</h3>
+                    <pre><code class="language-yaml">name: Model Verification
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # Daily at 6 AM
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install LLM Verifier
+        run: |
+          go install github.com/llm-verifier/llm-verifier@latest
+
+      - name: Verify Critical Models
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          llm-verifier batch \
+            --models gpt-4o,claude-3-5-sonnet-latest \
+            --output results.json
+
+      - name: Check Results
+        run: |
+          failed=$(jq '[.[] | select(.score < 0.7)] | length' results.json)
+          if [ "$failed" -gt 0 ]; then
+            echo "Some models failed verification"
+            exit 1
+          fi</code></pre>
+                </section>
+
+                <section id="monitoring">
+                    <h2>Tutorial 5: Continuous Monitoring</h2>
+                    <p>Set up continuous monitoring for model health.</p>
+
+                    <h3>Start Monitoring</h3>
+                    <pre><code class="language-bash">llm-verifier monitor \
+  --models gpt-4o,claude-3-5-sonnet-latest \
+  --interval 300 \
+  --duration 86400 \
+  --alert-threshold 0.7 \
+  --webhook https://hooks.slack.com/your-webhook</code></pre>
+
+                    <h3>Prometheus Metrics</h3>
+                    <pre><code class="language-yaml"># prometheus.yml
+scrape_configs:
+  - job_name: 'llm-verifier'
+    static_configs:
+      - targets: ['localhost:8080']
+    metrics_path: /metrics</code></pre>
+                </section>
+
+                <div class="next-steps">
+                    <h3>More Resources</h3>
+                    <ul>
+                        <li><a href="/docs/user-manual">User Manual</a> - Complete documentation</li>
+                        <li><a href="/docs/api-reference">API Reference</a> - Full API docs</li>
+                        <li><a href="/docs/troubleshooting">Troubleshooting</a> - Common issues</li>
+                    </ul>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 LLM Verifier. Open source.</p>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>

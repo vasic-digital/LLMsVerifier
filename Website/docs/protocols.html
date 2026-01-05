@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protocols - LLM Verifier</title>
+    <meta name="description" content="Learn about the protocols supported by LLM Verifier: ACP, MCP, and LSP for AI coding assistants.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/docs.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="/"><i class="fas fa-brain"></i> <span>LLM Verifier</span></a>
+            </div>
+            <div class="nav-menu">
+                <a href="/docs/getting-started" class="nav-link">Getting Started</a>
+                <a href="/docs/user-manual" class="nav-link">User Manual</a>
+                <a href="/docs/api-reference" class="nav-link">API Reference</a>
+                <a href="/docs/protocols" class="nav-link active">Protocols</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <aside class="docs-sidebar">
+            <nav class="sidebar-nav">
+                <h3>Protocols</h3>
+                <ul>
+                    <li><a href="#overview">Overview</a></li>
+                    <li><a href="#acp">AI Coding Protocol (ACP)</a></li>
+                    <li><a href="#mcp">Model Context Protocol (MCP)</a></li>
+                    <li><a href="#lsp">Language Server Protocol (LSP)</a></li>
+                </ul>
+                <h3>Related</h3>
+                <ul>
+                    <li><a href="/docs/api-reference">API Reference</a></li>
+                    <li><a href="/docs/developer-guide">Developer Guide</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="docs-content">
+            <article>
+                <h1>Protocol Documentation</h1>
+                <p class="lead">LLM Verifier supports multiple protocols for AI coding assistant integration. This guide covers the three main protocols: ACP, MCP, and LSP.</p>
+
+                <section id="overview">
+                    <h2>Overview</h2>
+                    <p>Modern AI coding assistants communicate using standardized protocols. LLM Verifier tests and verifies that models correctly implement these protocols.</p>
+
+                    <div class="info-box">
+                        <h4><i class="fas fa-info-circle"></i> Why Protocol Verification Matters</h4>
+                        <p>Models that don't properly implement protocols may fail silently or provide incorrect responses in production environments. LLM Verifier ensures compatibility before deployment.</p>
+                    </div>
+
+                    <table class="protocols-table">
+                        <thead>
+                            <tr>
+                                <th>Protocol</th>
+                                <th>Purpose</th>
+                                <th>Use Case</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>ACP</strong></td>
+                                <td>AI Coding Protocol</td>
+                                <td>Tool calling, code assistance</td>
+                            </tr>
+                            <tr>
+                                <td><strong>MCP</strong></td>
+                                <td>Model Context Protocol</td>
+                                <td>Context management, multi-turn conversations</td>
+                            </tr>
+                            <tr>
+                                <td><strong>LSP</strong></td>
+                                <td>Language Server Protocol</td>
+                                <td>Code intelligence, IDE integration</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="acp">
+                    <h2>AI Coding Protocol (ACP)</h2>
+                    <p>ACP defines how AI coding assistants communicate with development environments using JSON-RPC.</p>
+
+                    <h3>Key Capabilities</h3>
+                    <ul>
+                        <li><strong>JSON-RPC Protocol Comprehension</strong> - Understanding structured requests</li>
+                        <li><strong>Tool Calling</strong> - Invoking development tools correctly</li>
+                        <li><strong>Context Management</strong> - Maintaining session state</li>
+                        <li><strong>Code Assistance</strong> - Providing completions and refactoring</li>
+                        <li><strong>Error Detection</strong> - Identifying and reporting issues</li>
+                    </ul>
+
+                    <h3>Verification Command</h3>
+                    <pre><code class="language-bash"># Verify ACP support for a model
+acp-cli verify --model gpt-4 --provider openai
+
+# Batch verify multiple models
+acp-cli batch --models gpt-4,claude-3-opus,deepseek-chat
+
+# Monitor ACP support over time
+acp-cli monitor --models gpt-4 --interval 300</code></pre>
+
+                    <h3>Scoring Criteria</h3>
+                    <p>ACP verification produces a score from 0.0 to 1.0:</p>
+                    <ul>
+                        <li><strong>0.9-1.0</strong>: Excellent - Full ACP support</li>
+                        <li><strong>0.8-0.9</strong>: Good - Minor issues</li>
+                        <li><strong>0.7-0.8</strong>: Acceptable - Some limitations</li>
+                        <li><strong>Below 0.7</strong>: Failed - Insufficient support</li>
+                    </ul>
+                </section>
+
+                <section id="mcp">
+                    <h2>Model Context Protocol (MCP)</h2>
+                    <p>MCP provides a standardized way to manage context across LLM interactions.</p>
+
+                    <h3>Key Capabilities</h3>
+                    <ul>
+                        <li><strong>Context Window Management</strong> - Efficient use of token limits</li>
+                        <li><strong>Multi-turn Conversation</strong> - Maintaining conversation history</li>
+                        <li><strong>Token Awareness</strong> - Tracking context consumption</li>
+                        <li><strong>Context Compression</strong> - Summarizing long conversations</li>
+                    </ul>
+
+                    <h3>Configuration Example</h3>
+                    <pre><code class="language-yaml">mcp:
+  enabled: true
+  context_window_check: true
+  max_context_tokens: 128000
+  compression:
+    enabled: true
+    threshold: 0.8  # Compress when 80% full</code></pre>
+                </section>
+
+                <section id="lsp">
+                    <h2>Language Server Protocol (LSP)</h2>
+                    <p>LSP integration enables code intelligence features in development environments.</p>
+
+                    <h3>Key Capabilities</h3>
+                    <ul>
+                        <li><strong>Code Completion</strong> - Intelligent suggestions</li>
+                        <li><strong>Diagnostics</strong> - Error and warning reporting</li>
+                        <li><strong>Go-to-Definition</strong> - Symbol navigation</li>
+                        <li><strong>Hover Information</strong> - Documentation on hover</li>
+                        <li><strong>Symbol Resolution</strong> - Finding references</li>
+                    </ul>
+
+                    <h3>Integration</h3>
+                    <pre><code class="language-yaml">lsp:
+  enabled: true
+  code_intelligence_check: true
+  supported_languages:
+    - go
+    - python
+    - javascript
+    - typescript</code></pre>
+                </section>
+
+                <div class="next-steps">
+                    <h3>Next Steps</h3>
+                    <ul>
+                        <li><a href="/docs/api-reference">API Reference</a> - Full API documentation</li>
+                        <li><a href="/docs/developer-guide">Developer Guide</a> - Integration guide</li>
+                        <li><a href="/docs/troubleshooting">Troubleshooting</a> - Common issues</li>
+                    </ul>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 LLM Verifier. Open source.</p>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>

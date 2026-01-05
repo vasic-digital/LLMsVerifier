@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Troubleshooting - LLM Verifier</title>
+    <meta name="description" content="Troubleshooting guide for LLM Verifier. Solutions for common issues including ProviderInitError, API errors, and configuration problems.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/docs.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="/"><i class="fas fa-brain"></i> <span>LLM Verifier</span></a>
+            </div>
+            <div class="nav-menu">
+                <a href="/docs/getting-started" class="nav-link">Getting Started</a>
+                <a href="/docs/user-manual" class="nav-link">User Manual</a>
+                <a href="/docs/troubleshooting" class="nav-link active">Troubleshooting</a>
+                <a href="/support" class="nav-link">Support</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <aside class="docs-sidebar">
+            <nav class="sidebar-nav">
+                <h3>Common Issues</h3>
+                <ul>
+                    <li><a href="#provider-init-error">ProviderInitError</a></li>
+                    <li><a href="#api-errors">API Errors</a></li>
+                    <li><a href="#auth-issues">Authentication Issues</a></li>
+                    <li><a href="#verification-failures">Verification Failures</a></li>
+                    <li><a href="#config-errors">Configuration Errors</a></li>
+                    <li><a href="#performance">Performance Issues</a></li>
+                </ul>
+                <h3>Getting Help</h3>
+                <ul>
+                    <li><a href="#debug-mode">Debug Mode</a></li>
+                    <li><a href="#logs">Log Analysis</a></li>
+                    <li><a href="#community">Community Support</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="docs-content">
+            <article>
+                <h1>Troubleshooting Guide</h1>
+                <p class="lead">Solutions for common issues when using LLM Verifier.</p>
+
+                <section id="provider-init-error">
+                    <h2>ProviderInitError</h2>
+                    <p>The most common error when using OpenCode with LLM Verifier configurations.</p>
+
+                    <div class="error-box">
+                        <h4><i class="fas fa-times-circle"></i> Error</h4>
+                        <pre><code>ProviderInitError: Failed to initialize provider 'openai': invalid configuration</code></pre>
+                    </div>
+
+                    <h3>Causes</h3>
+                    <ul>
+                        <li>Invalid JSON format in configuration file</li>
+                        <li>Missing required fields (api_key, base_url)</li>
+                        <li>Incorrect model names</li>
+                        <li>API key format issues</li>
+                    </ul>
+
+                    <h3>Solution</h3>
+                    <p>Use LLM Verifier to generate a valid configuration:</p>
+                    <pre><code class="language-bash"># Generate verified configuration
+llm-verifier export-config opencode \
+  --output opencode-config.json \
+  --verified-only
+
+# Validate the configuration
+llm-verifier validate-config opencode-config.json
+
+# Copy to OpenCode directory
+cp opencode-config.json ~/.opencode/providers.json</code></pre>
+
+                    <h3>Configuration Checklist</h3>
+                    <ul class="checklist">
+                        <li><i class="fas fa-check"></i> API key is valid and not expired</li>
+                        <li><i class="fas fa-check"></i> Base URL is correct for the provider</li>
+                        <li><i class="fas fa-check"></i> Model names match provider's API</li>
+                        <li><i class="fas fa-check"></i> JSON syntax is valid (no trailing commas)</li>
+                        <li><i class="fas fa-check"></i> Required fields are present</li>
+                    </ul>
+                </section>
+
+                <section id="api-errors">
+                    <h2>API Errors</h2>
+
+                    <h3>401 Unauthorized</h3>
+                    <div class="error-box">
+                        <pre><code>Error: API request failed: 401 Unauthorized</code></pre>
+                    </div>
+                    <p><strong>Solution:</strong> Check your API key:</p>
+                    <pre><code class="language-bash"># Verify API key is set
+echo $OPENAI_API_KEY
+
+# Test API key directly
+curl -H "Authorization: Bearer $OPENAI_API_KEY" \
+  https://api.openai.com/v1/models</code></pre>
+
+                    <h3>429 Rate Limited</h3>
+                    <div class="error-box">
+                        <pre><code>Error: Rate limit exceeded. Please retry after 60 seconds.</code></pre>
+                    </div>
+                    <p><strong>Solution:</strong> Reduce request rate or upgrade API plan:</p>
+                    <pre><code class="language-bash"># Use rate limiting options
+llm-verifier verify --provider openai \
+  --rate-limit 10 \
+  --retry-delay 5</code></pre>
+
+                    <h3>500 Server Error</h3>
+                    <div class="error-box">
+                        <pre><code>Error: Provider returned 500 Internal Server Error</code></pre>
+                    </div>
+                    <p><strong>Solution:</strong> Provider issue - retry later or check provider status:</p>
+                    <pre><code class="language-bash"># Check provider health
+llm-verifier health --provider openai
+
+# Use retry logic
+llm-verifier verify --provider openai \
+  --retry 3 \
+  --retry-delay 10</code></pre>
+                </section>
+
+                <section id="auth-issues">
+                    <h2>Authentication Issues</h2>
+
+                    <h3>API Key Not Found</h3>
+                    <div class="error-box">
+                        <pre><code>Error: API key not found for provider 'anthropic'</code></pre>
+                    </div>
+                    <p><strong>Solution:</strong> Set the environment variable:</p>
+                    <pre><code class="language-bash"># Set API key
+export ANTHROPIC_API_KEY="sk-ant-your-key"
+
+# Or use config file
+llm-verifier config set anthropic.api_key "sk-ant-your-key"</code></pre>
+
+                    <h3>Invalid API Key Format</h3>
+                    <div class="error-box">
+                        <pre><code>Error: Invalid API key format for provider 'openai'</code></pre>
+                    </div>
+                    <p><strong>Solution:</strong> Verify key format matches provider requirements:</p>
+                    <ul>
+                        <li><strong>OpenAI:</strong> Starts with <code>sk-</code></li>
+                        <li><strong>Anthropic:</strong> Starts with <code>sk-ant-</code></li>
+                        <li><strong>Google:</strong> Alphanumeric string</li>
+                    </ul>
+                </section>
+
+                <section id="verification-failures">
+                    <h2>Verification Failures</h2>
+
+                    <h3>Low Verification Score</h3>
+                    <div class="warning-box">
+                        <pre><code>Warning: Model gpt-3.5-turbo scored 0.65 (below threshold 0.7)</code></pre>
+                    </div>
+                    <p><strong>Causes:</strong></p>
+                    <ul>
+                        <li>Model limitations for code tasks</li>
+                        <li>API quota restrictions affecting response quality</li>
+                        <li>Temporary provider issues</li>
+                    </ul>
+                    <p><strong>Solution:</strong></p>
+                    <pre><code class="language-bash"># Get detailed score breakdown
+llm-verifier verify --provider openai \
+  --model gpt-3.5-turbo \
+  --verbose
+
+# Try with different model
+llm-verifier verify --provider openai \
+  --model gpt-4o</code></pre>
+
+                    <h3>Timeout Errors</h3>
+                    <div class="error-box">
+                        <pre><code>Error: Verification timed out after 30 seconds</code></pre>
+                    </div>
+                    <p><strong>Solution:</strong> Increase timeout:</p>
+                    <pre><code class="language-bash">llm-verifier verify --provider openai \
+  --model gpt-4o \
+  --timeout 60</code></pre>
+                </section>
+
+                <section id="config-errors">
+                    <h2>Configuration Errors</h2>
+
+                    <h3>Invalid JSON</h3>
+                    <div class="error-box">
+                        <pre><code>Error: Failed to parse config: unexpected end of JSON input</code></pre>
+                    </div>
+                    <p><strong>Solution:</strong> Validate JSON syntax:</p>
+                    <pre><code class="language-bash"># Validate config file
+llm-verifier validate-config config.json
+
+# Use jq to check JSON
+cat config.json | jq .</code></pre>
+
+                    <h3>Missing Required Fields</h3>
+                    <div class="error-box">
+                        <pre><code>Error: Configuration missing required field 'api_key'</code></pre>
+                    </div>
+                    <p><strong>Solution:</strong> Ensure all required fields are present:</p>
+                    <pre><code class="language-json">{
+  "providers": {
+    "openai": {
+      "api_key": "${OPENAI_API_KEY}",
+      "base_url": "https://api.openai.com/v1",
+      "models": ["gpt-4o", "gpt-4-turbo"]
+    }
+  }
+}</code></pre>
+                </section>
+
+                <section id="performance">
+                    <h2>Performance Issues</h2>
+
+                    <h3>Slow Verification</h3>
+                    <p>Verification taking too long:</p>
+                    <pre><code class="language-bash"># Use parallel processing
+llm-verifier batch \
+  --models gpt-4o,claude-3-opus \
+  --parallel 5
+
+# Skip slow tests
+llm-verifier verify --provider openai \
+  --skip-slow-tests</code></pre>
+
+                    <h3>High Memory Usage</h3>
+                    <p>Reduce memory consumption:</p>
+                    <pre><code class="language-bash"># Limit batch size
+llm-verifier batch \
+  --models-file models.txt \
+  --batch-size 10
+
+# Disable caching
+llm-verifier verify --no-cache</code></pre>
+                </section>
+
+                <section id="debug-mode">
+                    <h2>Debug Mode</h2>
+                    <p>Enable verbose logging for troubleshooting:</p>
+                    <pre><code class="language-bash"># Enable debug output
+llm-verifier verify --provider openai \
+  --model gpt-4o \
+  --debug \
+  --verbose
+
+# Save debug log to file
+llm-verifier verify --provider openai \
+  --model gpt-4o \
+  --debug 2>&1 | tee debug.log</code></pre>
+                </section>
+
+                <section id="logs">
+                    <h2>Log Analysis</h2>
+                    <p>Check logs for detailed error information:</p>
+                    <pre><code class="language-bash"># View application logs
+tail -f ~/.llm-verifier/logs/app.log
+
+# Search for errors
+grep -i error ~/.llm-verifier/logs/app.log
+
+# View last 100 lines
+tail -100 ~/.llm-verifier/logs/app.log</code></pre>
+                </section>
+
+                <section id="community">
+                    <h2>Getting More Help</h2>
+                    <p>If you can't resolve your issue:</p>
+                    <ul>
+                        <li><a href="https://github.com/llm-verifier/llm-verifier/issues">GitHub Issues</a> - Report bugs</li>
+                        <li><a href="https://github.com/llm-verifier/llm-verifier/discussions">GitHub Discussions</a> - Ask questions</li>
+                        <li><a href="https://discord.gg/llm-verifier">Discord Community</a> - Real-time help</li>
+                        <li><a href="/support">Support Page</a> - Contact options</li>
+                    </ul>
+
+                    <div class="info-box">
+                        <h4><i class="fas fa-info-circle"></i> When Reporting Issues</h4>
+                        <p>Include the following information:</p>
+                        <ul>
+                            <li>LLM Verifier version (<code>llm-verifier --version</code>)</li>
+                            <li>Operating system and version</li>
+                            <li>Full error message</li>
+                            <li>Steps to reproduce</li>
+                            <li>Debug log output (if available)</li>
+                        </ul>
+                    </div>
+                </section>
+            </article>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 LLM Verifier. Open source.</p>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>
