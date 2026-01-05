@@ -7,8 +7,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 // CohereAdapter provides Cohere-specific functionality
@@ -237,21 +239,120 @@ func (c *CohereAdapter) ChatCompletion(ctx context.Context, request OpenAIChatRe
 }
 
 // ListModels retrieves available models from Cohere
+// Cohere has a models endpoint at /v1/models - let's use it
 func (c *CohereAdapter) ListModels(ctx context.Context) (*OpenAIModelsResponse, error) {
-	// Cohere doesn't have a models endpoint, so we'll return known models
-	modelsResp := &OpenAIModelsResponse{
-		Object: "list",
-		Data: []struct {
-			ID      string `json:"id"`
-			Object  string `json:"object"`
-			Created int64  `json:"created"`
-			OwnedBy string `json:"owned_by"`
-		}{
-			{ID: "command", Object: "model", Created: 1640000000, OwnedBy: "cohere"},
-			{ID: "base", Object: "model", Created: 1640000000, OwnedBy: "cohere"},
-			{ID: "command-light", Object: "model", Created: 1640000000, OwnedBy: "cohere"},
-		},
+	// Try to fetch models from Cohere's API
+	models, err := c.fetchModelsFromAPI(ctx)
+	if err != nil {
+		// Fall back to known models if API call fails
+		log.Printf("Warning: Could not fetch Cohere models from API: %v. Using known models.", err)
+		models = c.getKnownModels()
 	}
 
-	return modelsResp, nil
+	return &OpenAIModelsResponse{
+		Object: "list",
+		Data:   models,
+	}, nil
+}
+
+// fetchModelsFromAPI attempts to fetch models from Cohere's API
+func (c *CohereAdapter) fetchModelsFromAPI(ctx context.Context) ([]struct {
+	ID      string `json:"id"`
+	Object  string `json:"object"`
+	Created int64  `json:"created"`
+	OwnedBy string `json:"owned_by"`
+}, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", c.endpoint+"/models", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API returned status %d", resp.StatusCode)
+	}
+
+	// Cohere API response structure
+	var cohereResp struct {
+		Models []struct {
+			Name            string   `json:"name"`
+			Endpoints       []string `json:"endpoints"`
+			ContextLength   int      `json:"context_length"`
+			TokenizerURL    string   `json:"tokenizer_url,omitempty"`
+			DefaultEndpoint string   `json:"default_endpoint,omitempty"`
+		} `json:"models"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&cohereResp); err != nil {
+		return nil, err
+	}
+
+	var models []struct {
+		ID      string `json:"id"`
+		Object  string `json:"object"`
+		Created int64  `json:"created"`
+		OwnedBy string `json:"owned_by"`
+	}
+
+	now := time.Now().Unix()
+	for _, m := range cohereResp.Models {
+		// Only include models that support chat
+		hasChat := false
+		for _, ep := range m.Endpoints {
+			if ep == "chat" || ep == "generate" {
+				hasChat = true
+				break
+			}
+		}
+		if hasChat {
+			models = append(models, struct {
+				ID      string `json:"id"`
+				Object  string `json:"object"`
+				Created int64  `json:"created"`
+				OwnedBy string `json:"owned_by"`
+			}{
+				ID:      m.Name,
+				Object:  "model",
+				Created: now,
+				OwnedBy: "cohere",
+			})
+		}
+	}
+
+	if len(models) == 0 {
+		return nil, fmt.Errorf("no chat models found")
+	}
+
+	return models, nil
+}
+
+// getKnownModels returns a curated list of known Cohere models
+// Updated based on Cohere's documentation - Last verified: 2025-01
+func (c *CohereAdapter) getKnownModels() []struct {
+	ID      string `json:"id"`
+	Object  string `json:"object"`
+	Created int64  `json:"created"`
+	OwnedBy string `json:"owned_by"`
+} {
+	return []struct {
+		ID      string `json:"id"`
+		Object  string `json:"object"`
+		Created int64  `json:"created"`
+		OwnedBy string `json:"owned_by"`
+	}{
+		{ID: "command-r-plus", Object: "model", Created: 1712102400, OwnedBy: "cohere"},      // Apr 2024
+		{ID: "command-r", Object: "model", Created: 1709510400, OwnedBy: "cohere"},           // Mar 2024
+		{ID: "command", Object: "model", Created: 1672531200, OwnedBy: "cohere"},             // Jan 2023
+		{ID: "command-light", Object: "model", Created: 1672531200, OwnedBy: "cohere"},       // Jan 2023
+		{ID: "command-nightly", Object: "model", Created: 1704067200, OwnedBy: "cohere"},     // Jan 2024
+		{ID: "command-light-nightly", Object: "model", Created: 1704067200, OwnedBy: "cohere"},
+	}
 }

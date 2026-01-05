@@ -45,6 +45,10 @@ type NotificationManager struct {
 	retryQueue     chan *Notification
 	maxRetries     int
 	retryDelay     time.Duration
+	// In-memory notification history for persistence
+	history        []*Notification
+	historyMux     sync.RWMutex
+	maxHistory     int
 }
 
 // Notification represents a notification to be sent
@@ -76,6 +80,8 @@ func NewNotificationManager(cfg *config.Config) *NotificationManager {
 		retryQueue:  make(chan *Notification, 100),
 		maxRetries:  3,
 		retryDelay:  5 * time.Second,
+		history:     make([]*Notification, 0, 1000),
+		maxHistory:  1000, // Keep last 1000 notifications in memory
 	}
 }
 
@@ -473,11 +479,79 @@ func (nm *NotificationManager) priorityToSeverity(priority string) events.Severi
 	}
 }
 
-// storeNotification stores notification in database (placeholder for future implementation)
+// storeNotification stores notification in the in-memory history
+// This provides notification persistence for status queries and auditing
 func (nm *NotificationManager) storeNotification(notification *Notification) {
-	// Database storage is optional - notifications are already sent
-	// This is a placeholder for future persistence requirements
-	_ = notification
+	nm.historyMux.Lock()
+	defer nm.historyMux.Unlock()
+
+	// Add to history
+	nm.history = append(nm.history, notification)
+
+	// Trim history if it exceeds max size (FIFO)
+	if len(nm.history) > nm.maxHistory {
+		nm.history = nm.history[len(nm.history)-nm.maxHistory:]
+	}
+}
+
+// GetNotificationHistory returns recent notification history
+func (nm *NotificationManager) GetNotificationHistory(limit int) []*Notification {
+	nm.historyMux.RLock()
+	defer nm.historyMux.RUnlock()
+
+	if limit <= 0 || limit > len(nm.history) {
+		limit = len(nm.history)
+	}
+
+	// Return most recent notifications
+	start := len(nm.history) - limit
+	if start < 0 {
+		start = 0
+	}
+
+	result := make([]*Notification, limit)
+	copy(result, nm.history[start:])
+	return result
+}
+
+// GetNotificationByID retrieves a specific notification by ID
+func (nm *NotificationManager) GetNotificationByID(id string) *Notification {
+	nm.historyMux.RLock()
+	defer nm.historyMux.RUnlock()
+
+	for i := len(nm.history) - 1; i >= 0; i-- {
+		if nm.history[i].ID == id {
+			return nm.history[i]
+		}
+	}
+	return nil
+}
+
+// GetNotificationStats returns statistics about notifications
+func (nm *NotificationManager) GetNotificationStats() map[string]interface{} {
+	nm.historyMux.RLock()
+	defer nm.historyMux.RUnlock()
+
+	sent := 0
+	failed := 0
+	byType := make(map[string]int)
+
+	for _, n := range nm.history {
+		if n.Sent {
+			sent++
+		} else if n.Error != "" {
+			failed++
+		}
+		byType[string(n.Type)]++
+	}
+
+	return map[string]interface{}{
+		"total":    len(nm.history),
+		"sent":     sent,
+		"failed":   failed,
+		"by_type":  byType,
+		"capacity": nm.maxHistory,
+	}
 }
 
 // GetActiveChannels returns the list of active notification channels

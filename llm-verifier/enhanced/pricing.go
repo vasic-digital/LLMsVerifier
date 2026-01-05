@@ -605,48 +605,171 @@ func (pd *PricingDetector) detectMistralPricing(modelID string) (*PricingInfo, e
 
 // detectGenericPricing attempts to detect pricing for unknown providers
 func (pd *PricingDetector) detectGenericPricing(providerName, modelID string) (*PricingInfo, error) {
-	// Try to extract pricing from provider's website or API documentation
-	// This is a placeholder for more sophisticated pricing detection
+	modelLower := strings.ToLower(modelID)
 
-	// Common patterns in model names that might indicate pricing tier
-	if strings.Contains(modelID, "large") || strings.Contains(modelID, "xl") {
+	// Try to fetch from external pricing APIs first
+	if pricing, err := pd.tryExternalPricingAPI(providerName, modelID); err == nil && pricing != nil {
+		return pricing, nil
+	}
+
+	// Use heuristic-based pricing detection based on model characteristics
+	// Prices are per 1M tokens based on industry patterns (as of 2025)
+
+	// High-end models (frontier/flagship)
+	if strings.Contains(modelLower, "opus") || strings.Contains(modelLower, "ultra") ||
+		strings.Contains(modelLower, "pro") && strings.Contains(modelLower, "max") {
 		return &PricingInfo{
-			InputTokenCost:  20.0, // Higher tier pricing
-			OutputTokenCost: 60.0,
+			InputTokenCost:  15.0,
+			OutputTokenCost: 75.0,
 			Currency:        "USD",
 			PricingModel:    "per_token",
-			EffectiveFrom:   "2024-01-01",
+			EffectiveFrom:   time.Now().Format("2006-01-02"),
 		}, nil
 	}
 
-	if strings.Contains(modelID, "small") || strings.Contains(modelID, "light") {
+	// Large models
+	if strings.Contains(modelLower, "large") || strings.Contains(modelLower, "xl") ||
+		strings.Contains(modelLower, "70b") || strings.Contains(modelLower, "72b") ||
+		strings.Contains(modelLower, "405b") {
 		return &PricingInfo{
-			InputTokenCost:  1.0, // Lower tier pricing
-			OutputTokenCost: 3.0,
+			InputTokenCost:  3.0,
+			OutputTokenCost: 15.0,
 			Currency:        "USD",
 			PricingModel:    "per_token",
-			EffectiveFrom:   "2024-01-01",
+			EffectiveFrom:   time.Now().Format("2006-01-02"),
 		}, nil
 	}
 
-	if strings.Contains(modelID, "embed") || strings.Contains(modelID, "embedding") {
+	// Medium models
+	if strings.Contains(modelLower, "medium") || strings.Contains(modelLower, "pro") ||
+		strings.Contains(modelLower, "sonnet") || strings.Contains(modelLower, "32b") ||
+		strings.Contains(modelLower, "27b") {
 		return &PricingInfo{
-			InputTokenCost:  0.1, // Embedding model pricing
-			OutputTokenCost: 0.1,
+			InputTokenCost:  1.0,
+			OutputTokenCost: 5.0,
 			Currency:        "USD",
 			PricingModel:    "per_token",
-			EffectiveFrom:   "2024-01-01",
+			EffectiveFrom:   time.Now().Format("2006-01-02"),
 		}, nil
 	}
 
-	// Default conservative pricing
+	// Small/efficient models
+	if strings.Contains(modelLower, "small") || strings.Contains(modelLower, "light") ||
+		strings.Contains(modelLower, "mini") || strings.Contains(modelLower, "haiku") ||
+		strings.Contains(modelLower, "flash") || strings.Contains(modelLower, "nano") ||
+		strings.Contains(modelLower, "7b") || strings.Contains(modelLower, "8b") {
+		return &PricingInfo{
+			InputTokenCost:  0.25,
+			OutputTokenCost: 1.25,
+			Currency:        "USD",
+			PricingModel:    "per_token",
+			EffectiveFrom:   time.Now().Format("2006-01-02"),
+		}, nil
+	}
+
+	// Embedding models
+	if strings.Contains(modelLower, "embed") || strings.Contains(modelLower, "embedding") {
+		return &PricingInfo{
+			InputTokenCost:  0.02,
+			OutputTokenCost: 0.0, // Embedding models don't have output tokens
+			Currency:        "USD",
+			PricingModel:    "per_token",
+			EffectiveFrom:   time.Now().Format("2006-01-02"),
+		}, nil
+	}
+
+	// Free/open source models (likely self-hosted)
+	if strings.Contains(modelLower, "llama") || strings.Contains(modelLower, "mistral") ||
+		strings.Contains(modelLower, "qwen") || strings.Contains(modelLower, "phi") {
+		return &PricingInfo{
+			InputTokenCost:  0.5, // Estimated hosting cost
+			OutputTokenCost: 1.5,
+			Currency:        "USD",
+			PricingModel:    "per_token",
+			EffectiveFrom:   time.Now().Format("2006-01-02"),
+		}, nil
+	}
+
+	// Default - unknown model, use conservative estimate
 	return &PricingInfo{
-		InputTokenCost:  10.0, // Medium tier pricing
-		OutputTokenCost: 30.0,
+		InputTokenCost:  1.0,
+		OutputTokenCost: 3.0,
 		Currency:        "USD",
 		PricingModel:    "per_token",
-		EffectiveFrom:   "2024-01-01",
+		EffectiveFrom:   time.Now().Format("2006-01-02"),
 	}, nil
+}
+
+// tryExternalPricingAPI attempts to fetch pricing from external APIs
+func (pd *PricingDetector) tryExternalPricingAPI(providerName, modelID string) (*PricingInfo, error) {
+	// Try OpenRouter API for pricing data
+	pricing, err := pd.fetchFromOpenRouter(providerName, modelID)
+	if err == nil && pricing != nil {
+		return pricing, nil
+	}
+
+	return nil, fmt.Errorf("no external pricing available")
+}
+
+// fetchFromOpenRouter fetches pricing from OpenRouter's models API
+func (pd *PricingDetector) fetchFromOpenRouter(providerName, modelID string) (*PricingInfo, error) {
+	// Build the model identifier for OpenRouter
+	modelKey := fmt.Sprintf("%s/%s", strings.ToLower(providerName), modelID)
+
+	req, err := http.NewRequest("GET", "https://openrouter.ai/api/v1/models", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := pd.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("OpenRouter API returned status %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var response struct {
+		Data []struct {
+			ID      string `json:"id"`
+			Pricing struct {
+				Prompt     string `json:"prompt"`
+				Completion string `json:"completion"`
+			} `json:"pricing"`
+		} `json:"data"`
+	}
+
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, err
+	}
+
+	// Find matching model
+	for _, model := range response.Data {
+		if strings.EqualFold(model.ID, modelKey) || strings.Contains(strings.ToLower(model.ID), strings.ToLower(modelID)) {
+			// Parse pricing strings (format is "$0.001" per token)
+			var inputCost, outputCost float64
+			fmt.Sscanf(strings.TrimPrefix(model.Pricing.Prompt, "$"), "%f", &inputCost)
+			fmt.Sscanf(strings.TrimPrefix(model.Pricing.Completion, "$"), "%f", &outputCost)
+
+			// OpenRouter prices are per token, convert to per 1M tokens
+			return &PricingInfo{
+				InputTokenCost:  inputCost * 1000000,
+				OutputTokenCost: outputCost * 1000000,
+				Currency:        "USD",
+				PricingModel:    "per_token",
+				EffectiveFrom:   time.Now().Format("2006-01-02"),
+			}, nil
+		}
+	}
+
+	return nil, fmt.Errorf("model not found in OpenRouter")
 }
 
 // SavePricing saves pricing information to the database

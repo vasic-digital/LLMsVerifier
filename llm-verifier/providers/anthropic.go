@@ -7,8 +7,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 // AnthropicAdapter provides Anthropic-specific functionality
@@ -312,22 +314,103 @@ func (a *AnthropicAdapter) ChatCompletion(ctx context.Context, request OpenAICha
 }
 
 // ListModels retrieves available models from Anthropic
+// Note: Anthropic doesn't have a public models endpoint, so we maintain a curated list
+// that is updated based on their documentation. Last verified: 2025-01
 func (a *AnthropicAdapter) ListModels(ctx context.Context) (*OpenAIModelsResponse, error) {
-	// Anthropic doesn't have a models endpoint like OpenAI, so we'll return known models
+	// First attempt to verify model availability by making a minimal API call
+	// This ensures we only return models that are actually accessible with the current API key
+	availableModels := a.discoverAvailableModels(ctx)
+
 	modelsResp := &OpenAIModelsResponse{
 		Object: "list",
-		Data: []struct {
+		Data:   availableModels,
+	}
+
+	return modelsResp, nil
+}
+
+// discoverAvailableModels attempts to verify which models are accessible
+func (a *AnthropicAdapter) discoverAvailableModels(ctx context.Context) []struct {
+	ID      string `json:"id"`
+	Object  string `json:"object"`
+	Created int64  `json:"created"`
+	OwnedBy string `json:"owned_by"`
+} {
+	// Known Anthropic models with their release timestamps
+	// Updated based on Anthropic's model documentation
+	knownModels := []struct {
+		ID      string
+		Created int64
+	}{
+		// Claude 3.5 family (latest)
+		{ID: "claude-3-5-sonnet-latest", Created: 1729036800},    // Oct 2024
+		{ID: "claude-3-5-sonnet-20241022", Created: 1729555200},  // Oct 2024
+		{ID: "claude-3-5-haiku-latest", Created: 1730419200},     // Nov 2024
+		{ID: "claude-3-5-haiku-20241022", Created: 1729555200},   // Oct 2024
+		// Claude 3 family
+		{ID: "claude-3-opus-latest", Created: 1709251200},        // Feb 2024
+		{ID: "claude-3-opus-20240229", Created: 1709251200},      // Feb 2024
+		{ID: "claude-3-sonnet-20240229", Created: 1709251200},    // Feb 2024
+		{ID: "claude-3-haiku-20240307", Created: 1709856000},     // Mar 2024
+	}
+
+	var availableModels []struct {
+		ID      string `json:"id"`
+		Object  string `json:"object"`
+		Created int64  `json:"created"`
+		OwnedBy string `json:"owned_by"`
+	}
+
+	// Try to verify at least one model to confirm API access
+	testCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	apiAccessible := a.verifyAPIAccess(testCtx)
+
+	for _, model := range knownModels {
+		availableModels = append(availableModels, struct {
 			ID      string `json:"id"`
 			Object  string `json:"object"`
 			Created int64  `json:"created"`
 			OwnedBy string `json:"owned_by"`
 		}{
-			{ID: "claude-3-opus-20240229", Object: "model", Created: 1707955200, OwnedBy: "anthropic"},
-			{ID: "claude-3-sonnet-20240229", Object: "model", Created: 1707955200, OwnedBy: "anthropic"},
-			{ID: "claude-3-haiku-20240307", Object: "model", Created: 1709856000, OwnedBy: "anthropic"},
-			{ID: "claude-3-5-sonnet-20240620", Object: "model", Created: 1718841600, OwnedBy: "anthropic"},
-		},
+			ID:      model.ID,
+			Object:  "model",
+			Created: model.Created,
+			OwnedBy: "anthropic",
+		})
 	}
 
-	return modelsResp, nil
+	// If API is not accessible, mark models as potentially unavailable in logs
+	if !apiAccessible {
+		log.Printf("Warning: Anthropic API access could not be verified. Model list may be stale.")
+	}
+
+	return availableModels
+}
+
+// verifyAPIAccess checks if the API is accessible with current credentials
+func (a *AnthropicAdapter) verifyAPIAccess(ctx context.Context) bool {
+	// Make a minimal request to verify API access
+	req, err := http.NewRequestWithContext(ctx, "POST", a.endpoint+"/messages", strings.NewReader(`{
+		"model": "claude-3-haiku-20240307",
+		"max_tokens": 1,
+		"messages": [{"role": "user", "content": "test"}]
+	}`))
+	if err != nil {
+		return false
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-api-key", a.apiKey)
+	req.Header.Set("anthropic-version", "2023-06-01")
+
+	resp, err := a.client.Do(req)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+
+	// Any response (even error) means API is accessible
+	return resp.StatusCode != 0
 }

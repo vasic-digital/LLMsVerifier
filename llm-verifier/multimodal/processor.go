@@ -1635,15 +1635,26 @@ Respond with a JSON object in this exact format:
 	}
 
 	if len(visionResp.Choices) == 0 {
-		return &SafetyResult{Score: 0.95, Safe: true}, nil
+		// No response from API - cannot determine safety, return unknown state
+		return &SafetyResult{
+			Score:  0.5, // Unknown/uncertain score
+			Safe:   false,
+			Issues: []SafetyIssue{{
+				Type:        "api_error",
+				Description: "No response from safety check API - content safety cannot be verified",
+				Severity:    "medium",
+				Confidence:  1.0,
+			}},
+		}, nil
 	}
 
 	// Parse the JSON response
 	responseText := visionResp.Choices[0].Message.Content
 
 	// Try to extract JSON from the response
+	// Default to uncertain state - score will be updated based on parsed response
 	result := &SafetyResult{
-		Score:  0.95,
+		Score:  0.7, // Conservative default until proven safe
 		Safe:   true,
 		Issues: []SafetyIssue{},
 	}
@@ -1688,8 +1699,9 @@ Respond with a JSON object in this exact format:
 
 // performBasicSafetyCheck performs basic safety checks without external API
 func (csc *ContentSafetyChecker) performBasicSafetyCheck(content *MultiModalContent) (*SafetyResult, error) {
+	// Start with a base score that gets adjusted based on checks
+	baseScore := 1.0
 	result := &SafetyResult{
-		Score:  0.95,
 		Safe:   true,
 		Issues: []SafetyIssue{},
 	}
@@ -1708,7 +1720,7 @@ func (csc *ContentSafetyChecker) performBasicSafetyCheck(content *MultiModalCont
 			Severity:    "medium",
 			Confidence:  1.0,
 		})
-		result.Score = 0.7
+		baseScore -= 0.25 // Deduct for size violation
 	}
 
 	// Check for suspicious MIME types
@@ -1716,7 +1728,7 @@ func (csc *ContentSafetyChecker) performBasicSafetyCheck(content *MultiModalCont
 	for _, suspicious := range suspiciousMimeTypes {
 		if content.MimeType == suspicious {
 			result.Safe = false
-			result.Score = 0.0
+			baseScore = 0.0 // Zero score for malicious files
 			result.Issues = append(result.Issues, SafetyIssue{
 				Type:        "suspicious_file",
 				Description: "File type is potentially malicious",
@@ -1726,6 +1738,31 @@ func (csc *ContentSafetyChecker) performBasicSafetyCheck(content *MultiModalCont
 			break
 		}
 	}
+
+	// Check for allowed/known safe MIME types
+	safeMimeTypes := map[string]bool{
+		"image/jpeg": true, "image/png": true, "image/gif": true, "image/webp": true,
+		"audio/mpeg": true, "audio/wav": true, "audio/ogg": true,
+		"video/mp4": true, "video/webm": true,
+		"text/plain": true, "application/json": true, "application/pdf": true,
+	}
+
+	if content.MimeType != "" && !safeMimeTypes[content.MimeType] && baseScore > 0 {
+		// Unknown MIME type - add a small penalty
+		baseScore -= 0.1
+		result.Issues = append(result.Issues, SafetyIssue{
+			Type:        "unknown_mime_type",
+			Description: fmt.Sprintf("Unknown MIME type: %s", content.MimeType),
+			Severity:    "low",
+			Confidence:  0.5,
+		})
+	}
+
+	// Ensure score stays in valid range
+	if baseScore < 0 {
+		baseScore = 0
+	}
+	result.Score = baseScore
 
 	return result, nil
 }

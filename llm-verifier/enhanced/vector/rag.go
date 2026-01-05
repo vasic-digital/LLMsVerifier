@@ -479,31 +479,203 @@ func (vrs *VectorRetrievalStrategy) Retrieve(ctx context.Context, query string, 
 }
 
 // KeywordRetrievalStrategy implements keyword-based retrieval
-type KeywordRetrievalStrategy struct{}
+type KeywordRetrievalStrategy struct {
+	vectorDB VectorDatabase
+}
 
 func NewKeywordRetrievalStrategy() *KeywordRetrievalStrategy {
 	return &KeywordRetrievalStrategy{}
 }
 
+// NewKeywordRetrievalStrategyWithDB creates a keyword strategy with database access
+func NewKeywordRetrievalStrategyWithDB(db VectorDatabase) *KeywordRetrievalStrategy {
+	return &KeywordRetrievalStrategy{vectorDB: db}
+}
+
 func (krs *KeywordRetrievalStrategy) Retrieve(ctx context.Context, query string, options RetrievalOptions) ([]SearchResult, error) {
-	// Simple keyword matching - in production, this would use a text search index
-	// For now, return empty results as this is a placeholder
-	return []SearchResult{}, nil
+	// If no database is configured, return empty results
+	if krs.vectorDB == nil {
+		return []SearchResult{}, nil
+	}
+
+	// Get all document IDs
+	ids, err := krs.vectorDB.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list documents: %w", err)
+	}
+
+	// Tokenize query into keywords
+	queryLower := strings.ToLower(query)
+	keywords := krs.tokenize(queryLower)
+	if len(keywords) == 0 {
+		return []SearchResult{}, nil
+	}
+
+	var results []SearchResult
+
+	// Score each document based on keyword matches
+	for _, id := range ids {
+		doc, err := krs.vectorDB.Get(ctx, id)
+		if err != nil {
+			continue
+		}
+
+		// Calculate keyword match score
+		score := krs.calculateKeywordScore(doc.Content, keywords)
+		if score > 0 {
+			results = append(results, SearchResult{
+				Document: *doc,
+				Score:    score,
+				Source:   "keyword_search",
+			})
+		}
+	}
+
+	// Sort by score (descending)
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].Score > results[j].Score
+	})
+
+	// Apply threshold filter
+	if options.SimilarityThreshold > 0 {
+		filtered := results[:0]
+		for _, r := range results {
+			if r.Score >= options.SimilarityThreshold {
+				filtered = append(filtered, r)
+			}
+		}
+		results = filtered
+	}
+
+	// Limit results
+	if options.MaxResults > 0 && len(results) > options.MaxResults {
+		results = results[:options.MaxResults]
+	}
+
+	// Assign ranks
+	for i := range results {
+		results[i].Rank = i + 1
+	}
+
+	return results, nil
+}
+
+// tokenize splits text into lowercase keywords, removing stopwords
+func (krs *KeywordRetrievalStrategy) tokenize(text string) []string {
+	// Common stopwords to ignore
+	stopwords := map[string]bool{
+		"a": true, "an": true, "the": true, "is": true, "are": true,
+		"was": true, "were": true, "be": true, "been": true, "being": true,
+		"have": true, "has": true, "had": true, "do": true, "does": true,
+		"did": true, "will": true, "would": true, "could": true, "should": true,
+		"may": true, "might": true, "must": true, "shall": true,
+		"and": true, "or": true, "but": true, "if": true, "then": true,
+		"of": true, "at": true, "by": true, "for": true, "with": true,
+		"to": true, "from": true, "in": true, "on": true, "as": true,
+		"it": true, "its": true, "this": true, "that": true, "what": true,
+	}
+
+	// Split on non-alphanumeric characters
+	words := strings.FieldsFunc(text, func(r rune) bool {
+		return !((r >= 'a' && r <= 'z') || (r >= '0' && r <= '9'))
+	})
+
+	// Filter stopwords and short words
+	var keywords []string
+	for _, word := range words {
+		if len(word) > 2 && !stopwords[word] {
+			keywords = append(keywords, word)
+		}
+	}
+
+	return keywords
+}
+
+// calculateKeywordScore calculates a TF-IDF-like score for keyword matches
+func (krs *KeywordRetrievalStrategy) calculateKeywordScore(content string, keywords []string) float64 {
+	contentLower := strings.ToLower(content)
+	contentWords := krs.tokenize(contentLower)
+
+	if len(contentWords) == 0 {
+		return 0
+	}
+
+	// Count keyword occurrences
+	matches := 0
+	for _, keyword := range keywords {
+		for _, word := range contentWords {
+			if word == keyword || strings.Contains(word, keyword) || strings.Contains(keyword, word) {
+				matches++
+				break // Count each keyword only once
+			}
+		}
+	}
+
+	if matches == 0 {
+		return 0
+	}
+
+	// Calculate normalized score
+	// Score = (matched keywords / total keywords) * (matched / sqrt(content length))
+	keywordCoverage := float64(matches) / float64(len(keywords))
+	lengthNormalization := float64(matches) / math.Sqrt(float64(len(contentWords)))
+
+	return keywordCoverage * 0.7 + lengthNormalization * 0.3
 }
 
 // SemanticRetrievalStrategy implements semantic search
 type SemanticRetrievalStrategy struct {
 	embeddings EmbeddingService
+	vectorDB   VectorDatabase
 }
 
 func NewSemanticRetrievalStrategy(embeddings EmbeddingService) *SemanticRetrievalStrategy {
 	return &SemanticRetrievalStrategy{embeddings: embeddings}
 }
 
+// NewSemanticRetrievalStrategyWithDB creates a semantic strategy with database access
+func NewSemanticRetrievalStrategyWithDB(embeddings EmbeddingService, db VectorDatabase) *SemanticRetrievalStrategy {
+	return &SemanticRetrievalStrategy{
+		embeddings: embeddings,
+		vectorDB:   db,
+	}
+}
+
 func (srs *SemanticRetrievalStrategy) Retrieve(ctx context.Context, query string, options RetrievalOptions) ([]SearchResult, error) {
-	// This could implement more advanced semantic search
-	// For now, delegate to vector search
-	return []SearchResult{}, nil
+	// Require both embeddings service and vector database
+	if srs.embeddings == nil || srs.vectorDB == nil {
+		return []SearchResult{}, nil
+	}
+
+	// Generate embedding for the query
+	queryVector, err := srs.embeddings.GenerateEmbedding(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate query embedding: %w", err)
+	}
+
+	// Perform vector search
+	threshold := options.SimilarityThreshold
+	if threshold == 0 {
+		threshold = 0.5 // Default threshold for semantic search
+	}
+
+	maxResults := options.MaxResults
+	if maxResults == 0 {
+		maxResults = 10
+	}
+
+	results, err := srs.vectorDB.Search(ctx, queryVector, maxResults, threshold)
+	if err != nil {
+		return nil, fmt.Errorf("semantic search failed: %w", err)
+	}
+
+	// Add source and rank information
+	for i := range results {
+		results[i].Source = "semantic_search"
+		results[i].Rank = i + 1
+	}
+
+	return results, nil
 }
 
 // BasicQueryExpander implements simple query expansion

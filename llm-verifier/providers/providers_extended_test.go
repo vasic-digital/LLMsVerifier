@@ -41,7 +41,7 @@ func TestCohereAdapter_ListModels(t *testing.T) {
 		modelIDs[i] = m.ID
 	}
 	assert.Contains(t, modelIDs, "command")
-	assert.Contains(t, modelIDs, "base")
+	assert.Contains(t, modelIDs, "command-r-plus")
 	assert.Contains(t, modelIDs, "command-light")
 }
 

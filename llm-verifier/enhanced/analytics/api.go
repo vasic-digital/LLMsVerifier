@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -283,9 +284,12 @@ type WebSocketHandler struct {
 }
 
 type httpConn struct {
-	// Placeholder for WebSocket connection
-	// In practice, this would be *websocket.Conn from gorilla/websocket
-	id string
+	// Connection metadata for WebSocket clients
+	// In production, this would wrap *websocket.Conn from gorilla/websocket
+	id       string
+	send     chan []byte // Channel for sending messages to this client
+	closed   bool
+	closeMux sync.Mutex
 }
 
 // NewWebSocketHandler creates a new WebSocket handler
@@ -318,20 +322,75 @@ func (wsh *WebSocketHandler) HandleWebSocket(w http.ResponseWriter, r *http.Requ
 func (wsh *WebSocketHandler) StartBroadcasting() {
 	for {
 		select {
-		case <-wsh.broadcast:
+		case metric := <-wsh.broadcast:
+			// Serialize the metric to JSON
+			data, err := json.Marshal(metric)
+			if err != nil {
+				log.Printf("WebSocket: failed to marshal metric: %v", err)
+				continue
+			}
+
 			// Broadcast metric to all connected clients
 			for client := range wsh.clients {
-				// Send metric to client
-				_ = client // placeholder for actual WebSocket send
+				wsh.sendToClient(client, data)
 			}
 		case client := <-wsh.register:
 			wsh.clients[client] = true
+			log.Printf("WebSocket: client %s registered, total clients: %d", client.id, len(wsh.clients))
 		case client := <-wsh.unregister:
 			if _, ok := wsh.clients[client]; ok {
 				delete(wsh.clients, client)
+				wsh.closeClient(client)
+				log.Printf("WebSocket: client %s unregistered, total clients: %d", client.id, len(wsh.clients))
 			}
 		}
 	}
+}
+
+// sendToClient sends data to a specific client, handling errors gracefully
+func (wsh *WebSocketHandler) sendToClient(client *httpConn, data []byte) {
+	client.closeMux.Lock()
+	defer client.closeMux.Unlock()
+
+	if client.closed {
+		return
+	}
+
+	select {
+	case client.send <- data:
+		// Successfully queued for sending
+	default:
+		// Client's send buffer is full - mark for removal
+		log.Printf("WebSocket: client %s send buffer full, closing connection", client.id)
+		client.closed = true
+		go func() { wsh.unregister <- client }()
+	}
+}
+
+// closeClient cleans up a client's resources
+func (wsh *WebSocketHandler) closeClient(client *httpConn) {
+	client.closeMux.Lock()
+	defer client.closeMux.Unlock()
+
+	if !client.closed {
+		client.closed = true
+		close(client.send)
+	}
+}
+
+// BroadcastMetric queues a metric for broadcast to all connected clients
+func (wsh *WebSocketHandler) BroadcastMetric(metric AnalyticsMetric) {
+	select {
+	case wsh.broadcast <- metric:
+		// Successfully queued
+	default:
+		log.Printf("WebSocket: broadcast channel full, dropping metric %s", metric.Name)
+	}
+}
+
+// GetClientCount returns the number of connected WebSocket clients
+func (wsh *WebSocketHandler) GetClientCount() int {
+	return len(wsh.clients)
 }
 
 // PrometheusExporter exports metrics in Prometheus format
