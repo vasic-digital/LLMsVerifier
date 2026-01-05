@@ -3,7 +3,9 @@ package auth
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/go-ldap/ldap/v3"
@@ -322,26 +324,42 @@ func (lm *LDAPManager) buildTLSConfig() *tls.Config {
 		tlsConfig.ServerName = lm.config.Host
 	}
 
-	// Only skip verification if explicitly configured (for testing only)
-	// Default is secure (verify certificates)
-	if lm.config.InsecureSkipVerify {
-		tlsConfig.InsecureSkipVerify = true
-		// Log a warning that this is insecure
-		fmt.Println("WARNING: LDAP TLS certificate verification is disabled. This is insecure and should only be used for testing.")
+	// Load CA certificate if provided for proper certificate verification
+	if lm.config.CACertPath != "" {
+		if caCertPool, err := lm.loadCACertificate(); err != nil {
+			fmt.Printf("WARNING: Failed to load CA certificate from %s: %v\n", lm.config.CACertPath, err)
+		} else {
+			tlsConfig.RootCAs = caCertPool
+			fmt.Printf("Loaded CA certificate from %s for LDAP TLS verification\n", lm.config.CACertPath)
+		}
 	}
 
-	// Load CA certificate if provided
-	if lm.config.CACertPath != "" {
-		// In production, you would load the CA cert here:
-		// caCert, err := os.ReadFile(lm.config.CACertPath)
-		// if err == nil {
-		//     caCertPool := x509.NewCertPool()
-		//     caCertPool.AppendCertsFromPEM(caCert)
-		//     tlsConfig.RootCAs = caCertPool
-		// }
+	// Only skip verification if explicitly configured (for testing only)
+	// Default is secure (verify certificates)
+	// SECURITY: This should NEVER be enabled in production environments
+	if lm.config.InsecureSkipVerify {
+		tlsConfig.InsecureSkipVerify = true
+		fmt.Println("SECURITY WARNING: LDAP TLS certificate verification is disabled!")
+		fmt.Println("This setting is insecure and should ONLY be used for testing.")
+		fmt.Println("In production, configure a proper CA certificate using ca_cert_path.")
 	}
 
 	return tlsConfig
+}
+
+// loadCACertificate loads the CA certificate for TLS verification
+func (lm *LDAPManager) loadCACertificate() (*x509.CertPool, error) {
+	caCert, err := os.ReadFile(lm.config.CACertPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read CA certificate: %w", err)
+	}
+
+	caCertPool := x509.NewCertPool()
+	if !caCertPool.AppendCertsFromPEM(caCert) {
+		return nil, fmt.Errorf("failed to parse CA certificate PEM data")
+	}
+
+	return caCertPool, nil
 }
 
 // getUserPermissions determines permissions based on LDAP groups
