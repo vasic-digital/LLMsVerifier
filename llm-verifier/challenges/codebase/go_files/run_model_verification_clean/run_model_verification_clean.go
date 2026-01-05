@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -124,12 +125,72 @@ func verifyModel(ctx context.Context, baseURL, apiKey, model string) *ModelResul
 		return result
 	}
 
-	// Model is verified if we got a valid response
-	result.Verified = true
-	result.Score = 100.0
+	// Calculate verification score based on response quality
+	result.Score = calculateVerificationScore(chatResp, result.LatencyMs)
+	result.Verified = result.Score >= 50.0 // Minimum threshold for verification
 
 	return result
 }
+
+// calculateVerificationScore computes a verification score based on response quality
+func calculateVerificationScore(resp ChatResponse, latencyMs int64) float64 {
+	var score float64 = 0.0
+
+	if len(resp.Choices) == 0 {
+		return 0.0
+	}
+
+	responseContent := strings.ToLower(resp.Choices[0].Message.Content)
+
+	// 1. Affirmative response check (50 points max)
+	// Check if model confirmed it can read the message
+	if strings.Contains(responseContent, "verified") {
+		score += 50.0
+	} else if strings.Contains(responseContent, "yes") ||
+	          strings.Contains(responseContent, "can read") ||
+	          strings.Contains(responseContent, "i can") {
+		score += 35.0 // Partial credit for affirmative response
+	} else if len(responseContent) > 0 {
+		score += 15.0 // Some response is better than none
+	}
+
+	// 2. Response quality (20 points max)
+	contentLen := len(responseContent)
+	if contentLen >= 10 && contentLen <= 200 {
+		score += 20.0 // Good concise response
+	} else if contentLen > 0 && contentLen < 10 {
+		score += 10.0 // Too short
+	} else if contentLen > 200 {
+		score += 15.0 // Verbose but valid
+	}
+
+	// 3. Latency score (30 points max)
+	// Faster responses get higher scores
+	if latencyMs < 500 {
+		score += 30.0 // Excellent response time
+	} else if latencyMs < 1000 {
+		score += 25.0 // Good response time
+	} else if latencyMs < 2000 {
+		score += 20.0 // Acceptable response time
+	} else if latencyMs < 5000 {
+		score += 15.0 // Slow but acceptable
+	} else if latencyMs < 10000 {
+		score += 10.0 // Very slow
+	} else {
+		score += 5.0 // Extremely slow but responded
+	}
+
+	// Ensure score is within bounds
+	if score > 100.0 {
+		score = 100.0
+	}
+	if score < 0.0 {
+		score = 0.0
+	}
+
+	return score
+}
+
 
 func main() {
 	resultsDir := flag.String("results-dir", "", "Directory to store results")
