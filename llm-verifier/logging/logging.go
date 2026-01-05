@@ -223,10 +223,14 @@ func (l *Logger) GetLogStats() map[string]any {
 		}
 	}
 
+	// Estimate storage size in bytes (rough estimate based on entry count)
+	// ~256 bytes per log entry on average
+	estimatedStorageSize := len(l.history) * 256
+
 	stats := map[string]any{
 		"total_entries":    len(l.history),
 		"entries_by_level": byLevel,
-		"storage_size":     l.maxHistory,
+		"storage_size":     estimatedStorageSize,
 		"oldest_entry":     nil,
 		"newest_entry":     nil,
 	}

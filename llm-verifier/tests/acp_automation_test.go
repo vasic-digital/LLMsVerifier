@@ -1059,7 +1059,14 @@ func (s *ACPReportScheduler) GetNextRunTime() (time.Time, error) {
 	if s.Schedule == "0 9 * * MON" {
 		// Next Monday at 9 AM
 		now := time.Now()
-		nextMonday := now.AddDate(0, 0, int(time.Monday-now.Weekday()+7)%7)
+		daysUntilMonday := int(time.Monday - now.Weekday())
+		if daysUntilMonday <= 0 {
+			// If today is Monday or past Monday, go to next week
+			daysUntilMonday += 7
+		}
+		// If today is Monday but before 9 AM, we could use today, but for simplicity
+		// always use the next occurrence to ensure it's in the future
+		nextMonday := now.AddDate(0, 0, daysUntilMonday)
 		return time.Date(nextMonday.Year(), nextMonday.Month(), nextMonday.Day(), 9, 0, 0, 0, nextMonday.Location()), nil
 	}
 
