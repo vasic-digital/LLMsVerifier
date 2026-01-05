@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supported Providers - LLM Verifier</title>
+    <meta name="description" content="Complete list of 20+ AI providers supported by LLM Verifier including OpenAI, Anthropic, Google, Groq, and more.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/docs.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="/"><i class="fas fa-brain"></i> <span>LLM Verifier</span></a>
+            </div>
+            <div class="nav-menu">
+                <a href="/docs/getting-started" class="nav-link">Getting Started</a>
+                <a href="/docs/user-manual" class="nav-link">User Manual</a>
+                <a href="/docs/api-reference" class="nav-link">API Reference</a>
+                <a href="/docs/providers" class="nav-link active">Providers</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <aside class="docs-sidebar">
+            <nav class="sidebar-nav">
+                <h3>Provider Categories</h3>
+                <ul>
+                    <li><a href="#major-providers">Major Providers</a></li>
+                    <li><a href="#cloud-providers">Cloud AI Services</a></li>
+                    <li><a href="#open-source">Open Source Models</a></li>
+                    <li><a href="#specialized">Specialized Providers</a></li>
+                    <li><a href="#self-hosted">Self-Hosted Options</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="docs-content">
+            <article>
+                <h1>Supported AI Providers</h1>
+                <p class="lead">LLM Verifier supports 20+ AI model providers for comprehensive verification and benchmarking.</p>
+
+                <section id="major-providers">
+                    <h2>Major AI Providers</h2>
+
+                    <div class="provider-detail">
+                        <h3><i class="fas fa-robot"></i> OpenAI</h3>
+                        <table class="provider-table">
+                            <tr><th>API Endpoint</th><td><code>https://api.openai.com/v1</code></td></tr>
+                            <tr><th>Environment Variable</th><td><code>OPENAI_API_KEY</code></td></tr>
+                            <tr><th>Models</th><td>gpt-4o, gpt-4-turbo, gpt-4, gpt-3.5-turbo, o1-preview, o1-mini</td></tr>
+                            <tr><th>Features</th><td>Chat, Embeddings, Images, Audio, Code, Function Calling</td></tr>
+                        </table>
+                        <pre><code class="language-bash">llm-verifier verify --provider openai --model gpt-4o</code></pre>
+                    </div>
+
+                    <div class="provider-detail">
+                        <h3><i class="fas fa-user-circle"></i> Anthropic</h3>
+                        <table class="provider-table">
+                            <tr><th>API Endpoint</th><td><code>https://api.anthropic.com</code></td></tr>
+                            <tr><th>Environment Variable</th><td><code>ANTHROPIC_API_KEY</code></td></tr>
+                            <tr><th>Models</th><td>claude-3.5-sonnet, claude-3-opus, claude-3-sonnet, claude-3-haiku</td></tr>
+                            <tr><th>Features</th><td>Chat, Long Context (200K), Code, Vision, Tool Use</td></tr>
+                        </table>
+                        <pre><code class="language-bash">llm-verifier verify --provider anthropic --model claude-3.5-sonnet</code></pre>
+                    </div>
+
+                    <div class="provider-detail">
+                        <h3><i class="fab fa-google"></i> Google (Gemini)</h3>
+                        <table class="provider-table">
+                            <tr><th>API Endpoint</th><td><code>https://generativelanguage.googleapis.com</code></td></tr>
+                            <tr><th>Environment Variable</th><td><code>GEMINI_API_KEY</code></td></tr>
+                            <tr><th>Models</th><td>gemini-2.0-flash, gemini-1.5-pro, gemini-1.5-flash</td></tr>
+                            <tr><th>Features</th><td>Chat, Multimodal, Code, Long Context (1M tokens)</td></tr>
+                        </table>
+                        <pre><code class="language-bash">llm-verifier verify --provider google --model gemini-1.5-pro</code></pre>
+                    </div>
+
+                    <div class="provider-detail">
+                        <h3><i class="fas fa-bolt"></i> Groq</h3>
+                        <table class="provider-table">
+                            <tr><th>API Endpoint</th><td><code>https://api.groq.com/openai/v1</code></td></tr>
+                            <tr><th>Environment Variable</th><td><code>GROQ_API_KEY</code></td></tr>
+                            <tr><th>Models</th><td>llama-3.1-70b, llama-3.1-8b, mixtral-8x7b, gemma2-9b</td></tr>
+                            <tr><th>Features</th><td>Ultra-fast inference, OpenAI-compatible API</td></tr>
+                        </table>
+                        <pre><code class="language-bash">llm-verifier verify --provider groq --model llama-3.1-70b</code></pre>
+                    </div>
+                </section>
+
+                <section id="cloud-providers">
+                    <h2>Cloud AI Services</h2>
+
+                    <div class="provider-detail">
+                        <h3><i class="fab fa-microsoft"></i> Azure OpenAI</h3>
+                        <table class="provider-table">
+                            <tr><th>API Endpoint</th><td><code>https://{your-resource}.openai.azure.com</code></td></tr>
+                            <tr><th>Environment Variables</th><td><code>AZURE_OPENAI_API_KEY</code>, <code>AZURE_OPENAI_ENDPOINT</code></td></tr>
+                            <tr><th>Models</th><td>gpt-4, gpt-4-turbo, gpt-35-turbo (Azure deployments)</td></tr>
+                            <tr><th>Features</th><td>Enterprise compliance, Private endpoints, Azure AD auth</td></tr>
+                        </table>
+                    </div>
+
+                    <div class="provider-detail">
+                        <h3><i class="fab fa-aws"></i> AWS Bedrock</h3>
+                        <table class="provider-table">
+                            <tr><th>API Endpoint</th><td><code>https://bedrock-runtime.{region}.amazonaws.com</code></td></tr>
+                            <tr><th>Environment Variables</th><td><code>AWS_ACCESS_KEY_ID</code>, <code>AWS_SECRET_ACCESS_KEY</code></td></tr>
+                            <tr><th>Models</th><td>Claude, Titan, Llama, Mistral (via Bedrock)</td></tr>
+                            <tr><th>Features</th><td>AWS integration, VPC endpoints, IAM auth</td></tr>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="open-source">
+                    <h2>Open Source Model Providers</h2>
+
+                    <div class="provider-detail">
+                        <h3><i class="fas fa-server"></i> Together AI</h3>
+                        <table class="provider-table">
+                            <tr><th>API Endpoint</th><td><code>https://api.together.xyz/v1</code></td></tr>
+                            <tr><th>Environment Variable</th><td><code>TOGETHER_API_KEY</code></td></tr>
+                            <tr><th>Models</th><td>Llama 3.1, Mixtral, Qwen, CodeLlama, WizardCoder</td></tr>
+                            <tr><th>Features</th><td>OpenAI-compatible, Wide model selection</td></tr>
+                        </table>
+                    </div>
+
+                    <div class="provider-detail">
+                        <h3><i class="fas fa-fire"></i> Fireworks AI</h3>
+                        <table class="provider-table">
+                            <tr><th>API Endpoint</th><td><code>https://api.fireworks.ai/inference/v1</code></td></tr>
+                            <tr><th>Environment Variable</th><td><code>FIREWORKS_API_KEY</code></td></tr>
+                            <tr><th>Models</th><td>Llama 3.1, Mixtral, function-calling models</td></tr>
+                            <tr><th>Features</th><td>Fast inference, Function calling, Embeddings</td></tr>
+                        </table>
+                    </div>
+
+                    <div class="provider-detail">
+                        <h3><i class="fas fa-wind"></i> Mistral AI</h3>
+                        <table class="provider-table">
+                            <tr><th>API Endpoint</th><td><code>https://api.mistral.ai/v1</code></td></tr>
+                            <tr><th>Environment Variable</th><td><code>MISTRAL_API_KEY</code></td></tr>
+                            <tr><th>Models</th><td>mistral-large, mistral-medium, mistral-small, codestral</td></tr>
+                            <tr><th>Features</th><td>Chat, Code, Function calling, JSON mode</td></tr>
+                        </table>
+                    </div>
+
+                    <div class="provider-detail">
+                        <h3><i class="fas fa-water"></i> DeepSeek</h3>
+                        <table class="provider-table">
+                            <tr><th>API Endpoint</th><td><code>https://api.deepseek.com/v1</code></td></tr>
+                            <tr><th>Environment Variable</th><td><code>DEEPSEEK_API_KEY</code></td></tr>
+                            <tr><th>Models</th><td>deepseek-chat, deepseek-coder, deepseek-reasoner</td></tr>
+                            <tr><th>Features</th><td>Chat, Code, Reasoning, Cost-effective</td></tr>
+                        </table>
+                    </div>
+
+                    <div class="provider-detail">
+                        <h3><i class="fas fa-gem"></i> Cohere</h3>
+                        <table class="provider-table">
+                            <tr><th>API Endpoint</th><td><code>https://api.cohere.ai/v1</code></td></tr>
+                            <tr><th>Environment Variable</th><td><code>COHERE_API_KEY</code></td></tr>
+                            <tr><th>Models</th><td>command-r-plus, command-r, command</td></tr>
+                            <tr><th>Features</th><td>Chat, RAG, Embeddings, Rerank</td></tr>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="specialized">
+                    <h2>Specialized Providers</h2>
+
+                    <div class="provider-detail">
+                        <h3><i class="fas fa-search"></i> Perplexity</h3>
+                        <table class="provider-table">
+                            <tr><th>API Endpoint</th><td><code>https://api.perplexity.ai</code></td></tr>
+                            <tr><th>Environment Variable</th><td><code>PERPLEXITY_API_KEY</code></td></tr>
+                            <tr><th>Models</th><td>pplx-7b-online, pplx-70b-online, sonar-small, sonar-medium</td></tr>
+                            <tr><th>Features</th><td>Real-time web search, Citations, Online models</td></tr>
+                        </table>
+                    </div>
+
+                    <div class="provider-detail">
+                        <h3><i class="fas fa-x"></i> xAI (Grok)</h3>
+                        <table class="provider-table">
+                            <tr><th>API Endpoint</th><td><code>https://api.x.ai/v1</code></td></tr>
+                            <tr><th>Environment Variable</th><td><code>XAI_API_KEY</code></td></tr>
+                            <tr><th>Models</th><td>grok-beta, grok-2</td></tr>
+                            <tr><th>Features</th><td>Chat, Real-time information</td></tr>
+                        </table>
+                    </div>
+
+                    <div class="provider-detail">
+                        <h3><i class="fas fa-brain"></i> Cerebras</h3>
+                        <table class="provider-table">
+                            <tr><th>API Endpoint</th><td><code>https://api.cerebras.ai/v1</code></td></tr>
+                            <tr><th>Environment Variable</th><td><code>CEREBRAS_API_KEY</code></td></tr>
+                            <tr><th>Models</th><td>llama3.1-8b, llama3.1-70b</td></tr>
+                            <tr><th>Features</th><td>Ultra-fast inference on custom hardware</td></tr>
+                        </table>
+                    </div>
+
+                    <div class="provider-detail">
+                        <h3><i class="fas fa-copy"></i> Replicate</h3>
+                        <table class="provider-table">
+                            <tr><th>API Endpoint</th><td><code>https://api.replicate.com/v1</code></td></tr>
+                            <tr><th>Environment Variable</th><td><code>REPLICATE_API_TOKEN</code></td></tr>
+                            <tr><th>Models</th><td>Llama, Stable Diffusion, Custom models</td></tr>
+                            <tr><th>Features</th><td>Wide model library, Custom model hosting</td></tr>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="self-hosted">
+                    <h2>Self-Hosted Options</h2>
+
+                    <div class="provider-detail">
+                        <h3><i class="fas fa-home"></i> Ollama</h3>
+                        <table class="provider-table">
+                            <tr><th>API Endpoint</th><td><code>http://localhost:11434/api</code></td></tr>
+                            <tr><th>Configuration</th><td>Set <code>OLLAMA_HOST</code> for remote instances</td></tr>
+                            <tr><th>Models</th><td>Llama, Mistral, Qwen, Gemma, CodeLlama, and more</td></tr>
+                            <tr><th>Features</th><td>Local inference, No API costs, Privacy</td></tr>
+                        </table>
+                        <pre><code class="language-bash">llm-verifier verify --provider ollama --model llama3:latest</code></pre>
+                    </div>
+
+                    <div class="provider-detail">
+                        <h3><i class="fas fa-network-wired"></i> OpenRouter</h3>
+                        <table class="provider-table">
+                            <tr><th>API Endpoint</th><td><code>https://openrouter.ai/api/v1</code></td></tr>
+                            <tr><th>Environment Variable</th><td><code>OPENROUTER_API_KEY</code></td></tr>
+                            <tr><th>Models</th><td>Access to 100+ models via unified API</td></tr>
+                            <tr><th>Features</th><td>Multi-provider routing, Fallbacks, Cost optimization</td></tr>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="verification-matrix">
+                    <h2>Provider Verification Matrix</h2>
+                    <table class="verification-matrix">
+                        <thead>
+                            <tr>
+                                <th>Provider</th>
+                                <th>Chat</th>
+                                <th>Code</th>
+                                <th>Vision</th>
+                                <th>Streaming</th>
+                                <th>Tool Use</th>
+                                <th>Verified</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>OpenAI</td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><span class="badge verified">Verified</span></td>
+                            </tr>
+                            <tr>
+                                <td>Anthropic</td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><span class="badge verified">Verified</span></td>
+                            </tr>
+                            <tr>
+                                <td>Google</td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><span class="badge verified">Verified</span></td>
+                            </tr>
+                            <tr>
+                                <td>Groq</td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-times text-muted"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><span class="badge verified">Verified</span></td>
+                            </tr>
+                            <tr>
+                                <td>DeepSeek</td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-times text-muted"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><span class="badge verified">Verified</span></td>
+                            </tr>
+                            <tr>
+                                <td>Mistral</td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-times text-muted"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><span class="badge verified">Verified</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+            </article>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 LLM Verifier. Open source under MIT License.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+</body>
+</html>

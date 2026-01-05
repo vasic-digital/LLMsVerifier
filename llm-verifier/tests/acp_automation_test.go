@@ -973,6 +973,10 @@ func (r *ACPRecovery) RetryWithBackoff(model string, testFunc func() error) bool
 
 func (r *ACPRecovery) RecordFailure(model string) {
 	r.FailedModels[model]++
+	// Open circuit breaker if threshold is reached
+	if r.FailedModels[model] >= r.Config.CircuitBreakerThreshold {
+		r.CircuitBreaker[model] = time.Now()
+	}
 }
 
 func (r *ACPRecovery) IsCircuitBreakerOpen(model string) bool {

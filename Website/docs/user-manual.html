@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Manual - LLM Verifier</title>
+    <meta name="description" content="Complete user manual for LLM Verifier. Learn all features, commands, and configuration options.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/docs.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="/"><i class="fas fa-brain"></i> <span>LLM Verifier</span></a>
+            </div>
+            <div class="nav-menu">
+                <a href="/docs/getting-started" class="nav-link">Getting Started</a>
+                <a href="/docs/user-manual" class="nav-link active">User Manual</a>
+                <a href="/docs/api-reference" class="nav-link">API Reference</a>
+                <a href="/docs/providers" class="nav-link">Providers</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <aside class="docs-sidebar">
+            <nav class="sidebar-nav">
+                <h3>User Manual</h3>
+                <ul>
+                    <li><a href="#overview">Overview</a></li>
+                    <li><a href="#cli-commands">CLI Commands</a></li>
+                    <li><a href="#verification">Verification</a></li>
+                    <li><a href="#scoring">Scoring System</a></li>
+                    <li><a href="#configuration">Configuration</a></li>
+                    <li><a href="#export">Export Formats</a></li>
+                    <li><a href="#database">Database</a></li>
+                    <li><a href="#monitoring">Monitoring</a></li>
+                </ul>
+                <h3>Advanced</h3>
+                <ul>
+                    <li><a href="#automation">Automation</a></li>
+                    <li><a href="#integration">Integrations</a></li>
+                    <li><a href="#security">Security</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="docs-content">
+            <article>
+                <h1>User Manual</h1>
+                <p class="lead">Complete documentation for all LLM Verifier features, commands, and configuration options.</p>
+
+                <section id="overview">
+                    <h2>Overview</h2>
+                    <p>LLM Verifier is an enterprise-grade platform for verifying, monitoring, and optimizing Large Language Model (LLM) performance across multiple providers. It helps you:</p>
+                    <ul>
+                        <li>Verify model availability and capabilities</li>
+                        <li>Generate configuration files for AI coding tools</li>
+                        <li>Calculate comprehensive model scores</li>
+                        <li>Monitor provider health and performance</li>
+                        <li>Export verified configurations to multiple formats</li>
+                    </ul>
+
+                    <div class="note">
+                        <strong>Note:</strong> All verified models include the <code>(llmsvd)</code> suffix to indicate successful verification.
+                    </div>
+                </section>
+
+                <section id="cli-commands">
+                    <h2>CLI Commands</h2>
+
+                    <h3>Global Flags</h3>
+                    <pre><code class="language-bash">llm-verifier [command] [flags]
+
+Global Flags:
+  --config string    Config file path (default "config.yaml")
+  --verbose          Enable verbose output
+  --json             Output in JSON format
+  --quiet            Suppress non-essential output
+  --help             Show help for any command</code></pre>
+
+                    <h3>Core Commands</h3>
+
+                    <h4>verify</h4>
+                    <p>Verify one or more models from a provider:</p>
+                    <pre><code class="language-bash"># Verify a single model
+llm-verifier verify --provider openai --model gpt-4o
+
+# Verify multiple models
+llm-verifier verify --provider openai --model gpt-4o,gpt-4,gpt-3.5-turbo
+
+# Verify all models from a provider
+llm-verifier verify --provider openai --all
+
+# Parallel verification
+llm-verifier verify --provider openai --model gpt-4o,gpt-4 --parallel 2
+
+# With timeout
+llm-verifier verify --provider anthropic --model claude-3-opus --timeout 60s</code></pre>
+
+                    <h4>discover</h4>
+                    <p>Discover available models from a provider:</p>
+                    <pre><code class="language-bash"># List all available models
+llm-verifier discover --provider openai
+
+# Discover and verify
+llm-verifier discover --provider anthropic --verify
+
+# Filter by capability
+llm-verifier discover --provider openai --capability code-generation</code></pre>
+
+                    <h4>export-config</h4>
+                    <p>Export verified configurations:</p>
+                    <pre><code class="language-bash"># Export to OpenCode format
+llm-verifier export-config opencode --output config.json
+
+# Export specific providers
+llm-verifier export-config opencode --providers openai,anthropic
+
+# Include API keys (secure environments only)
+llm-verifier export-config opencode --include-api-keys
+
+# Export to other formats
+llm-verifier export-config crush --output crush.json
+llm-verifier export-config claude-code --output claude.json</code></pre>
+
+                    <h4>config</h4>
+                    <p>Manage configuration:</p>
+                    <pre><code class="language-bash"># Validate configuration
+llm-verifier config validate
+
+# Show current configuration
+llm-verifier config show
+
+# Initialize new configuration
+llm-verifier config init
+
+# Merge configurations
+llm-verifier config merge source.json target.json</code></pre>
+
+                    <h4>providers</h4>
+                    <p>Manage providers:</p>
+                    <pre><code class="language-bash"># List all providers
+llm-verifier providers list
+
+# Add custom provider
+llm-verifier providers add \
+  --name my-provider \
+  --endpoint https://api.example.com/v1 \
+  --api-key $MY_API_KEY
+
+# Remove provider
+llm-verifier providers remove my-provider
+
+# Test provider connection
+llm-verifier providers test openai</code></pre>
+
+                    <h4>server</h4>
+                    <p>Run the API server:</p>
+                    <pre><code class="language-bash"># Start server with default settings
+llm-verifier server
+
+# Custom port
+llm-verifier server --port 9090
+
+# With authentication enabled
+llm-verifier server --auth-enabled
+
+# Development mode
+llm-verifier server --dev</code></pre>
+                </section>
+
+                <section id="verification">
+                    <h2>Verification Process</h2>
+
+                    <h3>What Gets Verified</h3>
+                    <p>LLM Verifier performs comprehensive checks on each model:</p>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Check</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Availability</td>
+                                <td>Model responds to API requests</td>
+                            </tr>
+                            <tr>
+                                <td>Authentication</td>
+                                <td>API key is valid and has proper permissions</td>
+                            </tr>
+                            <tr>
+                                <td>Response Quality</td>
+                                <td>Model produces coherent, valid responses</td>
+                            </tr>
+                            <tr>
+                                <td>Capabilities</td>
+                                <td>Code generation, streaming, multimodal support</td>
+                            </tr>
+                            <tr>
+                                <td>Latency</td>
+                                <td>Response time within acceptable thresholds</td>
+                            </tr>
+                            <tr>
+                                <td>Token Limits</td>
+                                <td>Context window and output limits</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>"Do You See My Code?" Test</h3>
+                    <p>A key verification test where the model is presented with code snippets and asked to identify or analyze them. This verifies:</p>
+                    <ul>
+                        <li>Code understanding capability</li>
+                        <li>Context retention</li>
+                        <li>Accurate response generation</li>
+                    </ul>
+
+                    <h3>Verification Results</h3>
+                    <pre><code>Verification Results for gpt-4o
+================================
+Status: VERIFIED
+Provider: OpenAI
+Endpoint: https://api.openai.com/v1
+
+Checks:
+  [PASS] API Authentication
+  [PASS] Model Availability
+  [PASS] Response Generation
+  [PASS] Code Understanding
+  [PASS] Streaming Support
+  [PASS] Context Window (128K tokens)
+
+Score: 8.5/10 (SC:8.5)
+Verification ID: ver_abc123
+Timestamp: 2026-01-05T10:30:00Z</code></pre>
+                </section>
+
+                <section id="scoring">
+                    <h2>Scoring System</h2>
+
+                    <p>Each model receives a composite score (0-10) based on five weighted components:</p>
+
+                    <h3>Score Components</h3>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Component</th>
+                                <th>Weight</th>
+                                <th>Factors</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Speed</td>
+                                <td>20%</td>
+                                <td>First token latency, tokens per second, total response time</td>
+                            </tr>
+                            <tr>
+                                <td>Efficiency</td>
+                                <td>20%</td>
+                                <td>Context utilization, token economy, output quality per token</td>
+                            </tr>
+                            <tr>
+                                <td>Cost</td>
+                                <td>15%</td>
+                                <td>Price per 1K tokens (input/output), value for performance</td>
+                            </tr>
+                            <tr>
+                                <td>Capability</td>
+                                <td>30%</td>
+                                <td>Code generation, reasoning, multimodal, streaming, function calling</td>
+                            </tr>
+                            <tr>
+                                <td>Recency</td>
+                                <td>15%</td>
+                                <td>Knowledge cutoff date, model release date, update frequency</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Score Interpretation</h3>
+                    <ul>
+                        <li><strong>9.0 - 10.0:</strong> Exceptional - Top-tier model for all use cases</li>
+                        <li><strong>8.0 - 8.9:</strong> Excellent - Highly capable, recommended for production</li>
+                        <li><strong>7.0 - 7.9:</strong> Good - Solid performer with some limitations</li>
+                        <li><strong>6.0 - 6.9:</strong> Adequate - Suitable for specific use cases</li>
+                        <li><strong>Below 6.0:</strong> Limited - Consider alternatives</li>
+                    </ul>
+
+                    <h3>The (SC:X.X) Suffix</h3>
+                    <p>Verified models display their score in the format <code>model-name (SC:X.X)</code>. For example:</p>
+                    <pre><code>gpt-4o (SC:8.5)
+claude-3-opus (SC:9.0)
+gemini-pro (SC:7.8)</code></pre>
+                </section>
+
+                <section id="configuration">
+                    <h2>Configuration</h2>
+
+                    <h3>Configuration File</h3>
+                    <p>Create a <code>config.yaml</code> file:</p>
+                    <pre><code class="language-yaml">global:
+  base_url: "https://api.openai.com/v1"
+  timeout: 30s
+  max_retries: 3
+  retry_delay: 1s
+
+llms:
+  - name: openai
+    endpoint: "https://api.openai.com/v1"
+    api_key: "${OPENAI_API_KEY}"
+    models:
+      - gpt-4o
+      - gpt-4
+      - gpt-3.5-turbo
+
+  - name: anthropic
+    endpoint: "https://api.anthropic.com"
+    api_key: "${ANTHROPIC_API_KEY}"
+    models:
+      - claude-3-opus
+      - claude-3-sonnet
+
+database:
+  path: "./llm-verifier.db"
+  encryption_key: "${DB_ENCRYPTION_KEY}"
+
+api:
+  port: "8080"
+  jwt_secret: "${JWT_SECRET}"
+  rate_limit: 100  # requests per minute
+
+verification:
+  parallel_workers: 4
+  timeout: 60s
+  retry_on_failure: true
+
+scoring:
+  weights:
+    speed: 0.20
+    efficiency: 0.20
+    cost: 0.15
+    capability: 0.30
+    recency: 0.15</code></pre>
+
+                    <h3>Environment Variables</h3>
+                    <p>All configuration values support environment variable substitution using <code>${VAR_NAME}</code> syntax. Required variables:</p>
+                    <pre><code class="language-bash"># Provider API Keys
+export OPENAI_API_KEY="sk-..."
+export ANTHROPIC_API_KEY="sk-ant-..."
+export GEMINI_API_KEY="..."
+export GROQ_API_KEY="gsk_..."
+export DEEPSEEK_API_KEY="..."
+
+# Database
+export DB_ENCRYPTION_KEY="your-32-byte-key"
+
+# API Server
+export JWT_SECRET="your-jwt-secret"</code></pre>
+                </section>
+
+                <section id="export">
+                    <h2>Export Formats</h2>
+
+                    <h3>OpenCode Format</h3>
+                    <p>Configuration for OpenCode AI coding assistant:</p>
+                    <pre><code class="language-json">{
+  "llms": {
+    "openai": {
+      "endpoint": "https://api.openai.com/v1",
+      "models": ["gpt-4o (SC:8.5)", "gpt-4 (SC:8.2)"]
+    }
+  }
+}</code></pre>
+
+                    <h3>Crush Format</h3>
+                    <p>Configuration for Crush code completion:</p>
+                    <pre><code class="language-json">{
+  "providers": [
+    {
+      "name": "openai",
+      "url": "https://api.openai.com/v1",
+      "verified_models": ["gpt-4o", "gpt-4"]
+    }
+  ]
+}</code></pre>
+
+                    <h3>Claude Code Format</h3>
+                    <p>Configuration for Claude Code CLI:</p>
+                    <pre><code class="language-json">{
+  "model_configs": {
+    "claude-3-opus (SC:9.0)": {
+      "provider": "anthropic",
+      "verified": true
+    }
+  }
+}</code></pre>
+
+                    <h3>Generic JSON</h3>
+                    <p>Raw verification data in JSON format for custom integrations.</p>
+                </section>
+
+                <section id="database">
+                    <h2>Database</h2>
+
+                    <p>LLM Verifier uses SQLite with SQL Cipher encryption for storing verification results, configuration, and metrics.</p>
+
+                    <h3>Database Commands</h3>
+                    <pre><code class="language-bash"># Initialize database
+llm-verifier db init
+
+# Migrate to latest schema
+llm-verifier db migrate
+
+# Backup database
+llm-verifier db backup --output backup.db
+
+# Query verification history
+llm-verifier db query "SELECT * FROM verifications LIMIT 10"</code></pre>
+
+                    <h3>Data Retention</h3>
+                    <p>Configure retention policies in your configuration:</p>
+                    <pre><code class="language-yaml">database:
+  retention:
+    verifications: 90d    # Keep verification records for 90 days
+    metrics: 365d         # Keep metrics for 1 year
+    logs: 30d             # Keep logs for 30 days</code></pre>
+                </section>
+
+                <section id="monitoring">
+                    <h2>Monitoring</h2>
+
+                    <h3>Prometheus Metrics</h3>
+                    <p>LLM Verifier exposes metrics at <code>/metrics</code>:</p>
+                    <ul>
+                        <li><code>llm_verifier_verifications_total</code> - Total verification count</li>
+                        <li><code>llm_verifier_verification_duration_seconds</code> - Verification duration histogram</li>
+                        <li><code>llm_verifier_provider_health</code> - Provider health status (0/1)</li>
+                        <li><code>llm_verifier_api_requests_total</code> - API request count</li>
+                        <li><code>llm_verifier_score_distribution</code> - Score distribution by provider</li>
+                    </ul>
+
+                    <h3>Health Endpoints</h3>
+                    <pre><code class="language-bash"># Health check
+curl http://localhost:8080/health
+
+# Ready check
+curl http://localhost:8080/ready
+
+# Detailed status
+curl http://localhost:8080/status</code></pre>
+                </section>
+
+                <section id="automation">
+                    <h2>Automation</h2>
+
+                    <h3>CI/CD Integration</h3>
+                    <pre><code class="language-yaml"># GitHub Actions example
+- name: Verify AI Models
+  run: |
+    llm-verifier verify --provider openai --all --json > results.json
+    llm-verifier export-config opencode --output config.json
+  env:
+    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+- name: Upload Configuration
+  uses: actions/upload-artifact@v3
+  with:
+    name: llm-config
+    path: config.json</code></pre>
+
+                    <h3>Scheduled Verification</h3>
+                    <pre><code class="language-bash"># Cron job for daily verification
+0 6 * * * /usr/local/bin/llm-verifier verify --all --json >> /var/log/llm-verifier.log</code></pre>
+                </section>
+
+                <section id="integration">
+                    <h2>Integrations</h2>
+
+                    <h3>Webhooks</h3>
+                    <p>Configure webhooks for verification events:</p>
+                    <pre><code class="language-yaml">webhooks:
+  - url: "https://your-server.com/webhook"
+    events:
+      - verification.completed
+      - verification.failed
+      - provider.down
+    secret: "${WEBHOOK_SECRET}"</code></pre>
+
+                    <h3>Slack Notifications</h3>
+                    <pre><code class="language-yaml">notifications:
+  slack:
+    webhook_url: "${SLACK_WEBHOOK_URL}"
+    channel: "#ai-ops"
+    events:
+      - verification.failed
+      - provider.down</code></pre>
+                </section>
+
+                <section id="security">
+                    <h2>Security</h2>
+
+                    <h3>API Key Management</h3>
+                    <ul>
+                        <li>API keys are never logged or stored in plain text</li>
+                        <li>Use environment variables for all sensitive values</li>
+                        <li>Rotate keys regularly through your provider's dashboard</li>
+                    </ul>
+
+                    <h3>Database Encryption</h3>
+                    <p>LLM Verifier uses SQL Cipher for at-rest encryption. Generate a strong encryption key:</p>
+                    <pre><code class="language-bash">openssl rand -hex 32</code></pre>
+
+                    <h3>JWT Authentication</h3>
+                    <p>API endpoints require JWT authentication when <code>--auth-enabled</code>:</p>
+                    <pre><code class="language-bash"># Generate token
+curl -X POST http://localhost:8080/auth/login \
+  -d '{"username":"admin","password":"password"}' \
+  -H "Content-Type: application/json"
+
+# Use token
+curl http://localhost:8080/api/v1/models \
+  -H "Authorization: Bearer &lt;token&gt;"</code></pre>
+                </section>
+
+                <div class="next-steps">
+                    <h2>Related Documentation</h2>
+                    <div class="next-steps-grid">
+                        <a href="/docs/api-reference" class="next-step-card">
+                            <i class="fas fa-code"></i>
+                            <h3>API Reference</h3>
+                            <p>Complete REST API documentation</p>
+                        </a>
+                        <a href="/docs/providers" class="next-step-card">
+                            <i class="fas fa-server"></i>
+                            <h3>Provider List</h3>
+                            <p>All 20+ supported AI providers</p>
+                        </a>
+                        <a href="/docs/developer-guide" class="next-step-card">
+                            <i class="fas fa-tools"></i>
+                            <h3>Developer Guide</h3>
+                            <p>Extend and customize LLM Verifier</p>
+                        </a>
+                    </div>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 LLM Verifier. Open source under MIT License.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+</body>
+</html>

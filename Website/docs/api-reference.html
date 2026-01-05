@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Reference - LLM Verifier</title>
+    <meta name="description" content="Complete REST API documentation for LLM Verifier. Endpoints for verification, models, providers, and configuration.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/docs.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="/"><i class="fas fa-brain"></i> <span>LLM Verifier</span></a>
+            </div>
+            <div class="nav-menu">
+                <a href="/docs/getting-started" class="nav-link">Getting Started</a>
+                <a href="/docs/user-manual" class="nav-link">User Manual</a>
+                <a href="/docs/api-reference" class="nav-link active">API Reference</a>
+                <a href="/docs/providers" class="nav-link">Providers</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <aside class="docs-sidebar">
+            <nav class="sidebar-nav">
+                <h3>API Reference</h3>
+                <ul>
+                    <li><a href="#authentication">Authentication</a></li>
+                    <li><a href="#models">Models</a></li>
+                    <li><a href="#verification">Verification</a></li>
+                    <li><a href="#providers">Providers</a></li>
+                    <li><a href="#scoring">Scoring</a></li>
+                    <li><a href="#config">Configuration</a></li>
+                    <li><a href="#health">Health</a></li>
+                </ul>
+                <h3>Reference</h3>
+                <ul>
+                    <li><a href="#errors">Error Codes</a></li>
+                    <li><a href="#pagination">Pagination</a></li>
+                    <li><a href="#rate-limiting">Rate Limiting</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="docs-content">
+            <article>
+                <h1>API Reference</h1>
+                <p class="lead">Complete REST API documentation for LLM Verifier. Base URL: <code>http://localhost:8080/api/v1</code></p>
+
+                <section id="authentication">
+                    <h2>Authentication</h2>
+                    <p>LLM Verifier uses JWT (JSON Web Tokens) for API authentication. Include the token in the Authorization header:</p>
+                    <pre><code>Authorization: Bearer &lt;your-jwt-token&gt;</code></pre>
+
+                    <div class="api-endpoint">
+                        <div class="api-endpoint-header">
+                            <span class="api-method post">POST</span>
+                            <span class="api-path">/auth/login</span>
+                        </div>
+                        <div class="api-endpoint-body">
+                            <p>Authenticate and receive a JWT token.</p>
+
+                            <h4>Request Body</h4>
+                            <pre><code class="language-json">{
+  "username": "admin",
+  "password": "your-password"
+}</code></pre>
+
+                            <h4>Response</h4>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIs...",
+    "expires_at": "2026-01-06T10:30:00Z",
+    "user": {
+      "id": "usr_123",
+      "username": "admin",
+      "role": "admin"
+    }
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <div class="api-endpoint-header">
+                            <span class="api-method post">POST</span>
+                            <span class="api-path">/auth/refresh</span>
+                        </div>
+                        <div class="api-endpoint-body">
+                            <p>Refresh an existing JWT token.</p>
+                            <p><strong>Headers:</strong> <code>Authorization: Bearer &lt;token&gt;</code></p>
+
+                            <h4>Response</h4>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIs...",
+    "expires_at": "2026-01-06T12:30:00Z"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <div class="api-endpoint-header">
+                            <span class="api-method get">GET</span>
+                            <span class="api-path">/auth/me</span>
+                        </div>
+                        <div class="api-endpoint-body">
+                            <p>Get the current authenticated user.</p>
+
+                            <h4>Response</h4>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "id": "usr_123",
+    "username": "admin",
+    "email": "admin@example.com",
+    "role": "admin",
+    "created_at": "2026-01-01T00:00:00Z"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="models">
+                    <h2>Models</h2>
+
+                    <div class="api-endpoint">
+                        <div class="api-endpoint-header">
+                            <span class="api-method get">GET</span>
+                            <span class="api-path">/models</span>
+                        </div>
+                        <div class="api-endpoint-body">
+                            <p>List all verified models.</p>
+
+                            <h4>Query Parameters</h4>
+                            <div class="api-params">
+                                <div class="api-param">
+                                    <span class="api-param-name">provider</span>
+                                    <span class="api-param-type">string</span>
+                                    <span class="api-param-desc">Filter by provider name</span>
+                                </div>
+                                <div class="api-param">
+                                    <span class="api-param-name">capability</span>
+                                    <span class="api-param-type">string</span>
+                                    <span class="api-param-desc">Filter by capability (code-generation, streaming, etc.)</span>
+                                </div>
+                                <div class="api-param">
+                                    <span class="api-param-name">min_score</span>
+                                    <span class="api-param-type">number</span>
+                                    <span class="api-param-desc">Minimum score threshold (0-10)</span>
+                                </div>
+                                <div class="api-param">
+                                    <span class="api-param-name">limit</span>
+                                    <span class="api-param-type">integer</span>
+                                    <span class="api-param-desc">Number of results (default: 50, max: 100)</span>
+                                </div>
+                                <div class="api-param">
+                                    <span class="api-param-name">offset</span>
+                                    <span class="api-param-type">integer</span>
+                                    <span class="api-param-desc">Offset for pagination</span>
+                                </div>
+                            </div>
+
+                            <h4>Response</h4>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": [
+    {
+      "id": "mdl_gpt4o",
+      "name": "gpt-4o",
+      "display_name": "gpt-4o (SC:8.5)",
+      "provider": "openai",
+      "score": 8.5,
+      "verified": true,
+      "verified_at": "2026-01-05T10:30:00Z",
+      "capabilities": ["code-generation", "streaming", "multimodal"],
+      "context_window": 128000,
+      "max_output": 4096
+    }
+  ],
+  "pagination": {
+    "total": 45,
+    "limit": 50,
+    "offset": 0
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <div class="api-endpoint-header">
+                            <span class="api-method get">GET</span>
+                            <span class="api-path">/models/{model_id}</span>
+                        </div>
+                        <div class="api-endpoint-body">
+                            <p>Get detailed information about a specific model.</p>
+
+                            <h4>Path Parameters</h4>
+                            <div class="api-params">
+                                <div class="api-param">
+                                    <span class="api-param-name">model_id</span>
+                                    <span class="api-param-type">string</span>
+                                    <span class="api-param-desc">The model ID or name</span>
+                                </div>
+                            </div>
+
+                            <h4>Response</h4>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "id": "mdl_gpt4o",
+    "name": "gpt-4o",
+    "display_name": "gpt-4o (SC:8.5)",
+    "provider": "openai",
+    "endpoint": "https://api.openai.com/v1",
+    "score": 8.5,
+    "score_components": {
+      "speed": 7.8,
+      "efficiency": 8.2,
+      "cost": 7.5,
+      "capability": 9.5,
+      "recency": 9.0
+    },
+    "verified": true,
+    "verified_at": "2026-01-05T10:30:00Z",
+    "capabilities": ["code-generation", "code-completion", "streaming", "multimodal", "function-calling"],
+    "context_window": 128000,
+    "max_output": 4096,
+    "pricing": {
+      "input_per_1k": 0.0025,
+      "output_per_1k": 0.01
+    }
+  }
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="verification">
+                    <h2>Verification</h2>
+
+                    <div class="api-endpoint">
+                        <div class="api-endpoint-header">
+                            <span class="api-method post">POST</span>
+                            <span class="api-path">/models/{model_id}/verify</span>
+                        </div>
+                        <div class="api-endpoint-body">
+                            <p>Start a verification job for a model. Returns immediately with a verification ID.</p>
+
+                            <h4>Path Parameters</h4>
+                            <div class="api-params">
+                                <div class="api-param">
+                                    <span class="api-param-name">model_id</span>
+                                    <span class="api-param-type">string</span>
+                                    <span class="api-param-desc">The model ID or name to verify</span>
+                                </div>
+                            </div>
+
+                            <h4>Request Body (Optional)</h4>
+                            <pre><code class="language-json">{
+  "timeout": "60s",
+  "checks": ["availability", "code-understanding", "streaming"],
+  "webhook_url": "https://your-server.com/webhook"
+}</code></pre>
+
+                            <h4>Response</h4>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "verification_id": "ver_abc123",
+    "model_id": "mdl_gpt4o",
+    "status": "running",
+    "started_at": "2026-01-05T10:30:00Z"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <div class="api-endpoint-header">
+                            <span class="api-method get">GET</span>
+                            <span class="api-path">/verifications/{verification_id}</span>
+                        </div>
+                        <div class="api-endpoint-body">
+                            <p>Get the status and results of a verification job.</p>
+
+                            <h4>Response (Running)</h4>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "verification_id": "ver_abc123",
+    "model_id": "mdl_gpt4o",
+    "status": "running",
+    "progress": 60,
+    "current_check": "code-understanding",
+    "started_at": "2026-01-05T10:30:00Z"
+  }
+}</code></pre>
+
+                            <h4>Response (Completed)</h4>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "verification_id": "ver_abc123",
+    "model_id": "mdl_gpt4o",
+    "status": "completed",
+    "result": "verified",
+    "score": 8.5,
+    "checks": [
+      {"name": "availability", "passed": true, "latency_ms": 150},
+      {"name": "authentication", "passed": true},
+      {"name": "code-understanding", "passed": true, "accuracy": 0.95},
+      {"name": "streaming", "passed": true}
+    ],
+    "started_at": "2026-01-05T10:30:00Z",
+    "completed_at": "2026-01-05T10:30:45Z"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <div class="api-endpoint-header">
+                            <span class="api-method get">GET</span>
+                            <span class="api-path">/models/{model_id}/verifications</span>
+                        </div>
+                        <div class="api-endpoint-body">
+                            <p>Get verification history for a model.</p>
+
+                            <h4>Response</h4>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": [
+    {
+      "verification_id": "ver_abc123",
+      "status": "completed",
+      "result": "verified",
+      "score": 8.5,
+      "completed_at": "2026-01-05T10:30:45Z"
+    },
+    {
+      "verification_id": "ver_xyz789",
+      "status": "completed",
+      "result": "verified",
+      "score": 8.4,
+      "completed_at": "2026-01-04T10:30:45Z"
+    }
+  ]
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="providers">
+                    <h2>Providers</h2>
+
+                    <div class="api-endpoint">
+                        <div class="api-endpoint-header">
+                            <span class="api-method get">GET</span>
+                            <span class="api-path">/providers</span>
+                        </div>
+                        <div class="api-endpoint-body">
+                            <p>List all configured providers.</p>
+
+                            <h4>Response</h4>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": [
+    {
+      "id": "prv_openai",
+      "name": "openai",
+      "display_name": "OpenAI",
+      "endpoint": "https://api.openai.com/v1",
+      "status": "healthy",
+      "model_count": 12,
+      "verified_model_count": 10
+    },
+    {
+      "id": "prv_anthropic",
+      "name": "anthropic",
+      "display_name": "Anthropic",
+      "endpoint": "https://api.anthropic.com",
+      "status": "healthy",
+      "model_count": 6,
+      "verified_model_count": 6
+    }
+  ]
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <div class="api-endpoint-header">
+                            <span class="api-method post">POST</span>
+                            <span class="api-path">/providers/{provider_id}/discover</span>
+                        </div>
+                        <div class="api-endpoint-body">
+                            <p>Discover available models from a provider.</p>
+
+                            <h4>Response</h4>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "provider": "openai",
+    "discovered_models": [
+      {"name": "gpt-4o", "verified": true},
+      {"name": "gpt-4-turbo", "verified": true},
+      {"name": "gpt-4", "verified": true},
+      {"name": "gpt-3.5-turbo", "verified": true},
+      {"name": "gpt-3.5-turbo-16k", "verified": false}
+    ],
+    "discovered_at": "2026-01-05T10:30:00Z"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="scoring">
+                    <h2>Scoring</h2>
+
+                    <div class="api-endpoint">
+                        <div class="api-endpoint-header">
+                            <span class="api-method get">GET</span>
+                            <span class="api-path">/models/{model_id}/score</span>
+                        </div>
+                        <div class="api-endpoint-body">
+                            <p>Get detailed scoring breakdown for a model.</p>
+
+                            <h4>Response</h4>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "model_id": "mdl_gpt4o",
+    "overall_score": 8.5,
+    "components": {
+      "speed": {
+        "score": 7.8,
+        "weight": 0.20,
+        "weighted_score": 1.56,
+        "metrics": {
+          "first_token_latency_ms": 250,
+          "tokens_per_second": 45,
+          "total_response_time_ms": 1500
+        }
+      },
+      "efficiency": {
+        "score": 8.2,
+        "weight": 0.20,
+        "weighted_score": 1.64,
+        "metrics": {
+          "context_utilization": 0.85,
+          "output_quality": 0.92
+        }
+      },
+      "cost": {
+        "score": 7.5,
+        "weight": 0.15,
+        "weighted_score": 1.125,
+        "metrics": {
+          "input_cost_per_1k": 0.0025,
+          "output_cost_per_1k": 0.01,
+          "value_ratio": 0.82
+        }
+      },
+      "capability": {
+        "score": 9.5,
+        "weight": 0.30,
+        "weighted_score": 2.85,
+        "metrics": {
+          "code_generation": true,
+          "reasoning": true,
+          "multimodal": true,
+          "streaming": true,
+          "function_calling": true
+        }
+      },
+      "recency": {
+        "score": 9.0,
+        "weight": 0.15,
+        "weighted_score": 1.35,
+        "metrics": {
+          "knowledge_cutoff": "2024-04",
+          "release_date": "2024-05-13"
+        }
+      }
+    },
+    "calculated_at": "2026-01-05T10:30:00Z"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="config">
+                    <h2>Configuration</h2>
+
+                    <div class="api-endpoint">
+                        <div class="api-endpoint-header">
+                            <span class="api-method get">GET</span>
+                            <span class="api-path">/config/export/{format}</span>
+                        </div>
+                        <div class="api-endpoint-body">
+                            <p>Export verified configuration in specified format.</p>
+
+                            <h4>Path Parameters</h4>
+                            <div class="api-params">
+                                <div class="api-param">
+                                    <span class="api-param-name">format</span>
+                                    <span class="api-param-type">string</span>
+                                    <span class="api-param-desc">Export format: opencode, crush, claude-code, json</span>
+                                </div>
+                            </div>
+
+                            <h4>Query Parameters</h4>
+                            <div class="api-params">
+                                <div class="api-param">
+                                    <span class="api-param-name">providers</span>
+                                    <span class="api-param-type">string</span>
+                                    <span class="api-param-desc">Comma-separated provider names</span>
+                                </div>
+                                <div class="api-param">
+                                    <span class="api-param-name">include_api_keys</span>
+                                    <span class="api-param-type">boolean</span>
+                                    <span class="api-param-desc">Include API keys in export (default: false)</span>
+                                </div>
+                            </div>
+
+                            <h4>Response (OpenCode format)</h4>
+                            <pre><code class="language-json">{
+  "llms": {
+    "openai": {
+      "endpoint": "https://api.openai.com/v1",
+      "models": ["gpt-4o (SC:8.5)", "gpt-4 (SC:8.2)", "gpt-3.5-turbo (SC:7.5)"]
+    },
+    "anthropic": {
+      "endpoint": "https://api.anthropic.com",
+      "models": ["claude-3-opus (SC:9.0)", "claude-3-sonnet (SC:8.5)"]
+    }
+  }
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="health">
+                    <h2>Health</h2>
+
+                    <div class="api-endpoint">
+                        <div class="api-endpoint-header">
+                            <span class="api-method get">GET</span>
+                            <span class="api-path">/health</span>
+                        </div>
+                        <div class="api-endpoint-body">
+                            <p>Basic health check endpoint. No authentication required.</p>
+
+                            <h4>Response</h4>
+                            <pre><code class="language-json">{
+  "status": "healthy",
+  "version": "1.0.0"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <div class="api-endpoint-header">
+                            <span class="api-method get">GET</span>
+                            <span class="api-path">/status</span>
+                        </div>
+                        <div class="api-endpoint-body">
+                            <p>Detailed system status including provider health.</p>
+
+                            <h4>Response</h4>
+                            <pre><code class="language-json">{
+  "status": "healthy",
+  "version": "1.0.0",
+  "uptime": "72h15m30s",
+  "database": "connected",
+  "providers": {
+    "openai": {"status": "healthy", "latency_ms": 150},
+    "anthropic": {"status": "healthy", "latency_ms": 200},
+    "groq": {"status": "degraded", "latency_ms": 500}
+  },
+  "metrics": {
+    "verifications_today": 150,
+    "verified_models": 45,
+    "api_requests_today": 1250
+  }
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="errors">
+                    <h2>Error Codes</h2>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Status</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>AUTH_REQUIRED</code></td>
+                                <td>401</td>
+                                <td>Authentication token is missing</td>
+                            </tr>
+                            <tr>
+                                <td><code>AUTH_INVALID</code></td>
+                                <td>401</td>
+                                <td>Authentication token is invalid or expired</td>
+                            </tr>
+                            <tr>
+                                <td><code>FORBIDDEN</code></td>
+                                <td>403</td>
+                                <td>User does not have permission for this action</td>
+                            </tr>
+                            <tr>
+                                <td><code>NOT_FOUND</code></td>
+                                <td>404</td>
+                                <td>Requested resource does not exist</td>
+                            </tr>
+                            <tr>
+                                <td><code>RATE_LIMITED</code></td>
+                                <td>429</td>
+                                <td>Too many requests, retry after rate limit resets</td>
+                            </tr>
+                            <tr>
+                                <td><code>VALIDATION_ERROR</code></td>
+                                <td>400</td>
+                                <td>Request validation failed</td>
+                            </tr>
+                            <tr>
+                                <td><code>PROVIDER_ERROR</code></td>
+                                <td>502</td>
+                                <td>Upstream provider returned an error</td>
+                            </tr>
+                            <tr>
+                                <td><code>INTERNAL_ERROR</code></td>
+                                <td>500</td>
+                                <td>Internal server error</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h4>Error Response Format</h4>
+                    <pre><code class="language-json">{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid model ID format",
+    "details": {
+      "field": "model_id",
+      "reason": "must be alphanumeric with underscores"
+    }
+  }
+}</code></pre>
+                </section>
+
+                <section id="pagination">
+                    <h2>Pagination</h2>
+                    <p>List endpoints support pagination with <code>limit</code> and <code>offset</code> parameters:</p>
+
+                    <pre><code>GET /api/v1/models?limit=20&offset=40</code></pre>
+
+                    <p>Responses include pagination metadata:</p>
+                    <pre><code class="language-json">{
+  "data": [...],
+  "pagination": {
+    "total": 95,
+    "limit": 20,
+    "offset": 40,
+    "has_more": true
+  }
+}</code></pre>
+                </section>
+
+                <section id="rate-limiting">
+                    <h2>Rate Limiting</h2>
+                    <p>API requests are rate-limited based on your plan:</p>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Plan</th>
+                                <th>Requests/Minute</th>
+                                <th>Verifications/Hour</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Free</td>
+                                <td>60</td>
+                                <td>10</td>
+                            </tr>
+                            <tr>
+                                <td>Pro</td>
+                                <td>300</td>
+                                <td>100</td>
+                            </tr>
+                            <tr>
+                                <td>Enterprise</td>
+                                <td>Unlimited</td>
+                                <td>Unlimited</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <p>Rate limit headers are included in all responses:</p>
+                    <pre><code>X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 45
+X-RateLimit-Reset: 1704456000</code></pre>
+                </section>
+
+                <div class="next-steps">
+                    <h2>Related Documentation</h2>
+                    <div class="next-steps-grid">
+                        <a href="/docs/getting-started" class="next-step-card">
+                            <i class="fas fa-rocket"></i>
+                            <h3>Getting Started</h3>
+                            <p>Quick start guide for first-time users</p>
+                        </a>
+                        <a href="/docs/user-manual" class="next-step-card">
+                            <i class="fas fa-book"></i>
+                            <h3>User Manual</h3>
+                            <p>Complete feature documentation</p>
+                        </a>
+                        <a href="/docs/developer-guide" class="next-step-card">
+                            <i class="fas fa-tools"></i>
+                            <h3>Developer Guide</h3>
+                            <p>Extend and customize LLM Verifier</p>
+                        </a>
+                    </div>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 LLM Verifier. Open source under MIT License.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+</body>
+</html>

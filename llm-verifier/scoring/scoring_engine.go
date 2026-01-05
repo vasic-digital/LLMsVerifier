@@ -26,6 +26,14 @@ func NewScoringEngine(db *database.Database, modelsDevClient ModelsDevClientInte
 	}
 }
 
+// Engine is an alias for ScoringEngine for backward compatibility
+type Engine = ScoringEngine
+
+// NewEngine creates a new scoring engine (alias for NewScoringEngine)
+func NewEngine(db *database.Database, modelsDevClient ModelsDevClientInterface, logger interface{}) *Engine {
+	return NewScoringEngine(db, modelsDevClient, logger)
+}
+
 // CalculateComprehensiveScore calculates a comprehensive score for a model
 func (se *ScoringEngine) CalculateComprehensiveScore(ctx context.Context, modelID string, config ScoringConfig) (*ComprehensiveScore, error) {
 	weights := &config.Weights

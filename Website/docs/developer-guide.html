@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Developer Guide - LLM Verifier</title>
+    <meta name="description" content="Developer guide for extending LLM Verifier. Add custom providers, write plugins, and contribute to the project.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/docs.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="/"><i class="fas fa-brain"></i> <span>LLM Verifier</span></a>
+            </div>
+            <div class="nav-menu">
+                <a href="/docs/getting-started" class="nav-link">Getting Started</a>
+                <a href="/docs/user-manual" class="nav-link">User Manual</a>
+                <a href="/docs/api-reference" class="nav-link">API Reference</a>
+                <a href="/docs/providers" class="nav-link">Providers</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <aside class="docs-sidebar">
+            <nav class="sidebar-nav">
+                <h3>Developer Guide</h3>
+                <ul>
+                    <li><a href="#architecture">Architecture</a></li>
+                    <li><a href="#setup">Development Setup</a></li>
+                    <li><a href="#providers">Adding Providers</a></li>
+                    <li><a href="#verification">Verification System</a></li>
+                    <li><a href="#scoring">Scoring Engine</a></li>
+                    <li><a href="#testing">Testing</a></li>
+                </ul>
+                <h3>Contributing</h3>
+                <ul>
+                    <li><a href="#guidelines">Guidelines</a></li>
+                    <li><a href="#pr-process">Pull Requests</a></li>
+                    <li><a href="#code-style">Code Style</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="docs-content">
+            <article>
+                <h1>Developer Guide</h1>
+                <p class="lead">Learn how to extend LLM Verifier with custom providers, modify the scoring engine, and contribute to the project.</p>
+
+                <section id="architecture">
+                    <h2>Architecture Overview</h2>
+
+                    <h3>Directory Structure</h3>
+                    <pre><code>LLMsVerifier/
+├── llm-verifier/           # Core Go application
+│   ├── cmd/                # CLI entry points
+│   ├── api/                # REST API handlers
+│   ├── providers/          # LLM provider adapters
+│   ├── verification/       # Model verification engine
+│   ├── database/           # Data access layer
+│   ├── auth/               # Authentication (JWT/RBAC)
+│   ├── config/             # Configuration management
+│   ├── analytics/          # Analytics engine
+│   ├── scheduler/          # Task scheduling
+│   ├── monitoring/         # Prometheus metrics
+│   ├── challenges/         # Verification challenges
+│   └── tests/              # Test suite
+├── sdk/                    # Multi-language SDKs
+│   ├── go/                 # Go SDK
+│   ├── python/             # Python SDK
+│   ├── javascript/         # JavaScript/TypeScript SDK
+│   ├── java/               # Java SDK
+│   └── dotnet/             # .NET SDK
+├── mobile/                 # Mobile applications
+│   ├── flutter/            # Flutter app
+│   └── react-native/       # React Native app
+├── tests/                  # Integration/E2E tests
+├── docs/                   # Documentation
+└── Website/                # Documentation website</code></pre>
+
+                    <h3>Key Components</h3>
+
+                    <h4>Provider Adapter Pattern</h4>
+                    <p>Each LLM provider implements a common interface defined in <code>providers/base.go</code>:</p>
+                    <pre><code class="language-go">type Provider interface {
+    // Name returns the provider identifier
+    Name() string
+
+    // Discover returns available models
+    Discover(ctx context.Context) ([]Model, error)
+
+    // Verify tests a model's capabilities
+    Verify(ctx context.Context, model string) (*VerificationResult, error)
+
+    // Complete sends a completion request
+    Complete(ctx context.Context, req *CompletionRequest) (*CompletionResponse, error)
+
+    // Stream sends a streaming completion request
+    Stream(ctx context.Context, req *CompletionRequest) (<-chan *StreamChunk, error)
+
+    // Health checks provider availability
+    Health(ctx context.Context) error
+}</code></pre>
+
+                    <h4>Verification Engine</h4>
+                    <p>The verification engine in <code>verification/</code> runs multiple checks against models:</p>
+                    <ul>
+                        <li><strong>AvailabilityCheck</strong> - API connectivity</li>
+                        <li><strong>AuthenticationCheck</strong> - API key validity</li>
+                        <li><strong>ResponseCheck</strong> - Quality and coherence</li>
+                        <li><strong>CodeUnderstandingCheck</strong> - "Do you see my code?" test</li>
+                        <li><strong>StreamingCheck</strong> - Streaming support</li>
+                        <li><strong>CapabilityCheck</strong> - Feature detection</li>
+                    </ul>
+
+                    <h4>Scoring System</h4>
+                    <p>The scoring engine calculates weighted scores based on:</p>
+                    <ul>
+                        <li>Speed (20%): Latency and throughput metrics</li>
+                        <li>Efficiency (20%): Context utilization</li>
+                        <li>Cost (15%): Price-to-performance ratio</li>
+                        <li>Capability (30%): Feature set and quality</li>
+                        <li>Recency (15%): Knowledge freshness</li>
+                    </ul>
+                </section>
+
+                <section id="setup">
+                    <h2>Development Setup</h2>
+
+                    <h3>Prerequisites</h3>
+                    <ul>
+                        <li>Go 1.24 or later</li>
+                        <li>Docker or Podman</li>
+                        <li>Make</li>
+                        <li>Git</li>
+                    </ul>
+
+                    <h3>Clone and Build</h3>
+                    <pre><code class="language-bash"># Clone the repository
+git clone https://github.com/llm-verifier/llm-verifier.git
+cd llm-verifier
+
+# Install development tools
+make setup
+
+# Build the binary
+make build
+
+# Verify installation
+./bin/llm-verifier --version</code></pre>
+
+                    <h3>Configuration</h3>
+                    <pre><code class="language-bash"># Copy example config
+cp llm-verifier/config.yaml.example config.yaml
+
+# Set required environment variables
+export OPENAI_API_KEY="sk-..."
+export ANTHROPIC_API_KEY="sk-ant-..."
+export DB_ENCRYPTION_KEY=$(openssl rand -hex 32)
+export JWT_SECRET=$(openssl rand -hex 32)</code></pre>
+
+                    <h3>Run Development Server</h3>
+                    <pre><code class="language-bash"># Start with hot reload (requires air)
+make dev
+
+# Or run directly
+go run ./llm-verifier/cmd server --dev</code></pre>
+                </section>
+
+                <section id="providers">
+                    <h2>Adding a Custom Provider</h2>
+
+                    <h3>Step 1: Create Provider File</h3>
+                    <p>Create a new file at <code>llm-verifier/providers/myprovider.go</code>:</p>
+                    <pre><code class="language-go">package providers
+
+import (
+    "context"
+    "fmt"
+    "net/http"
+)
+
+// MyProvider implements the Provider interface
+type MyProvider struct {
+    baseURL   string
+    apiKey    string
+    client    *http.Client
+}
+
+// NewMyProvider creates a new MyProvider instance
+func NewMyProvider(apiKey string, opts ...Option) *MyProvider {
+    p := &MyProvider{
+        baseURL: "https://api.myprovider.com/v1",
+        apiKey:  apiKey,
+        client:  &http.Client{Timeout: 30 * time.Second},
+    }
+    for _, opt := range opts {
+        opt(p)
+    }
+    return p
+}
+
+func (p *MyProvider) Name() string {
+    return "myprovider"
+}
+
+func (p *MyProvider) Discover(ctx context.Context) ([]Model, error) {
+    // Implement model discovery
+    return []Model{
+        {Name: "my-model-1", Provider: p.Name()},
+        {Name: "my-model-2", Provider: p.Name()},
+    }, nil
+}
+
+func (p *MyProvider) Verify(ctx context.Context, model string) (*VerificationResult, error) {
+    // Run verification checks
+    result := &VerificationResult{
+        Model:    model,
+        Provider: p.Name(),
+        Checks:   make([]Check, 0),
+    }
+
+    // Check availability
+    if err := p.Health(ctx); err != nil {
+        result.Checks = append(result.Checks, Check{
+            Name:   "availability",
+            Passed: false,
+            Error:  err.Error(),
+        })
+        return result, nil
+    }
+    result.Checks = append(result.Checks, Check{Name: "availability", Passed: true})
+
+    // Additional checks...
+    return result, nil
+}
+
+func (p *MyProvider) Complete(ctx context.Context, req *CompletionRequest) (*CompletionResponse, error) {
+    // Implement completion API call
+    // ...
+}
+
+func (p *MyProvider) Stream(ctx context.Context, req *CompletionRequest) (<-chan *StreamChunk, error) {
+    // Implement streaming API call
+    // ...
+}
+
+func (p *MyProvider) Health(ctx context.Context) error {
+    req, err := http.NewRequestWithContext(ctx, "GET", p.baseURL+"/models", nil)
+    if err != nil {
+        return err
+    }
+    req.Header.Set("Authorization", "Bearer "+p.apiKey)
+
+    resp, err := p.client.Do(req)
+    if err != nil {
+        return err
+    }
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK {
+        return fmt.Errorf("health check failed: %d", resp.StatusCode)
+    }
+    return nil
+}</code></pre>
+
+                    <h3>Step 2: Register the Provider</h3>
+                    <p>Add registration in <code>llm-verifier/providers/registry.go</code>:</p>
+                    <pre><code class="language-go">func init() {
+    Register("myprovider", func(cfg *Config) (Provider, error) {
+        return NewMyProvider(cfg.APIKey), nil
+    })
+}</code></pre>
+
+                    <h3>Step 3: Add Configuration</h3>
+                    <p>Update <code>config.yaml</code>:</p>
+                    <pre><code class="language-yaml">llms:
+  - name: myprovider
+    endpoint: "https://api.myprovider.com/v1"
+    api_key: "${MY_PROVIDER_API_KEY}"</code></pre>
+
+                    <h3>Step 4: Write Tests</h3>
+                    <pre><code class="language-go">// llm-verifier/providers/myprovider_test.go
+package providers
+
+import (
+    "context"
+    "testing"
+    "github.com/stretchr/testify/assert"
+    "github.com/stretchr/testify/require"
+)
+
+func TestMyProvider_Name(t *testing.T) {
+    p := NewMyProvider("test-key")
+    assert.Equal(t, "myprovider", p.Name())
+}
+
+func TestMyProvider_Discover(t *testing.T) {
+    p := NewMyProvider("test-key")
+    models, err := p.Discover(context.Background())
+    require.NoError(t, err)
+    assert.NotEmpty(t, models)
+}
+
+func TestMyProvider_Health(t *testing.T) {
+    // Skip in CI without API key
+    if os.Getenv("MY_PROVIDER_API_KEY") == "" {
+        t.Skip("MY_PROVIDER_API_KEY not set")
+    }
+
+    p := NewMyProvider(os.Getenv("MY_PROVIDER_API_KEY"))
+    err := p.Health(context.Background())
+    assert.NoError(t, err)
+}</code></pre>
+                </section>
+
+                <section id="verification">
+                    <h2>Verification System</h2>
+
+                    <h3>Adding a Custom Check</h3>
+                    <p>Create a new check in <code>llm-verifier/verification/checks/</code>:</p>
+                    <pre><code class="language-go">// llm-verifier/verification/checks/custom_check.go
+package checks
+
+import (
+    "context"
+)
+
+type CustomCheck struct {
+    name string
+}
+
+func NewCustomCheck() *CustomCheck {
+    return &CustomCheck{name: "custom-check"}
+}
+
+func (c *CustomCheck) Name() string {
+    return c.name
+}
+
+func (c *CustomCheck) Run(ctx context.Context, provider Provider, model string) (*CheckResult, error) {
+    result := &CheckResult{
+        Name:   c.name,
+        Passed: true,
+    }
+
+    // Implement your check logic
+    resp, err := provider.Complete(ctx, &CompletionRequest{
+        Model: model,
+        Messages: []Message{
+            {Role: "user", Content: "Test prompt for custom check"},
+        },
+    })
+    if err != nil {
+        result.Passed = false
+        result.Error = err.Error()
+        return result, nil
+    }
+
+    // Validate response
+    if len(resp.Content) < 10 {
+        result.Passed = false
+        result.Error = "Response too short"
+    }
+
+    return result, nil
+}</code></pre>
+
+                    <h3>Register the Check</h3>
+                    <pre><code class="language-go">// In verification/verifier.go
+func NewVerifier(opts ...Option) *Verifier {
+    v := &Verifier{
+        checks: []Check{
+            checks.NewAvailabilityCheck(),
+            checks.NewAuthenticationCheck(),
+            checks.NewCodeUnderstandingCheck(),
+            checks.NewCustomCheck(), // Add your check
+        },
+    }
+    // ...
+}</code></pre>
+                </section>
+
+                <section id="scoring">
+                    <h2>Scoring Engine</h2>
+
+                    <h3>Modifying Score Weights</h3>
+                    <p>Adjust weights in configuration:</p>
+                    <pre><code class="language-yaml">scoring:
+  weights:
+    speed: 0.15       # Reduce speed weight
+    efficiency: 0.20
+    cost: 0.20        # Increase cost weight
+    capability: 0.30
+    recency: 0.15</code></pre>
+
+                    <h3>Adding a Score Component</h3>
+                    <pre><code class="language-go">// llm-verifier/verification/scoring/reliability.go
+package scoring
+
+type ReliabilityScorer struct{}
+
+func NewReliabilityScorer() *ReliabilityScorer {
+    return &ReliabilityScorer{}
+}
+
+func (s *ReliabilityScorer) Name() string {
+    return "reliability"
+}
+
+func (s *ReliabilityScorer) Calculate(metrics *Metrics) float64 {
+    // Calculate reliability score based on uptime, error rates, etc.
+    score := 10.0
+
+    // Penalize for errors
+    if metrics.ErrorRate > 0 {
+        score -= metrics.ErrorRate * 20
+    }
+
+    // Penalize for timeouts
+    if metrics.TimeoutRate > 0 {
+        score -= metrics.TimeoutRate * 30
+    }
+
+    if score < 0 {
+        score = 0
+    }
+    return score
+}</code></pre>
+                </section>
+
+                <section id="testing">
+                    <h2>Testing</h2>
+
+                    <h3>Running Tests</h3>
+                    <pre><code class="language-bash"># All tests
+make test
+
+# Unit tests only
+make test-unit
+
+# Integration tests (requires infrastructure)
+make test-integration
+
+# E2E tests
+make test-e2e
+
+# With coverage
+make test-coverage
+
+# Single test
+go test -v -run TestMyFunction ./llm-verifier/providers/...</code></pre>
+
+                    <h3>Test Infrastructure</h3>
+                    <pre><code class="language-bash"># Start test infrastructure (Docker/Podman)
+make test-infra-start
+
+# Run tests with infrastructure
+make test-with-infra
+
+# Stop infrastructure
+make test-infra-stop</code></pre>
+
+                    <h3>Writing Tests</h3>
+                    <pre><code class="language-go">func TestProviderVerification(t *testing.T) {
+    // Use testify for assertions
+    require := require.New(t)
+    assert := assert.New(t)
+
+    // Create mock provider
+    provider := NewMockProvider()
+
+    // Run verification
+    result, err := provider.Verify(context.Background(), "test-model")
+    require.NoError(err)
+
+    // Assert results
+    assert.True(result.Verified)
+    assert.Greater(result.Score, 7.0)
+    assert.NotEmpty(result.Checks)
+}</code></pre>
+                </section>
+
+                <section id="guidelines">
+                    <h2>Contribution Guidelines</h2>
+
+                    <h3>Before Contributing</h3>
+                    <ol>
+                        <li>Check existing issues and PRs for similar work</li>
+                        <li>Open an issue to discuss major changes</li>
+                        <li>Fork the repository</li>
+                        <li>Create a feature branch from <code>main</code></li>
+                    </ol>
+
+                    <h3>Requirements</h3>
+                    <ul>
+                        <li>All tests must pass: <code>make test</code></li>
+                        <li>Code must be formatted: <code>make fmt</code></li>
+                        <li>Linting must pass: <code>make lint</code></li>
+                        <li>Security scan must pass: <code>make security</code></li>
+                        <li>New features require tests</li>
+                        <li>Documentation for public APIs</li>
+                    </ul>
+                </section>
+
+                <section id="pr-process">
+                    <h2>Pull Request Process</h2>
+
+                    <ol>
+                        <li>Create a branch: <code>git checkout -b feature/my-feature</code></li>
+                        <li>Make changes and commit with descriptive messages</li>
+                        <li>Push to your fork: <code>git push origin feature/my-feature</code></li>
+                        <li>Open a PR against <code>main</code></li>
+                        <li>Address review feedback</li>
+                        <li>Squash commits if requested</li>
+                    </ol>
+
+                    <h3>PR Template</h3>
+                    <pre><code>## Description
+Brief description of changes
+
+## Type of Change
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Documentation update
+
+## Testing
+- [ ] Unit tests added/updated
+- [ ] Integration tests added/updated
+- [ ] Manual testing performed
+
+## Checklist
+- [ ] Code follows project style guidelines
+- [ ] Self-review completed
+- [ ] Documentation updated
+- [ ] No breaking changes (or documented)</code></pre>
+                </section>
+
+                <section id="code-style">
+                    <h2>Code Style</h2>
+
+                    <h3>Go Style Guide</h3>
+                    <ul>
+                        <li>Follow <a href="https://go.dev/doc/effective_go" target="_blank">Effective Go</a></li>
+                        <li>Use <code>gofmt</code> for formatting</li>
+                        <li>Export only necessary identifiers</li>
+                        <li>Document all exported functions</li>
+                        <li>Handle all errors explicitly</li>
+                        <li>Use context for cancellation</li>
+                    </ul>
+
+                    <h3>Naming Conventions</h3>
+                    <pre><code class="language-go">// Good
+type ProviderConfig struct {}
+func NewProvider(cfg *ProviderConfig) *Provider
+func (p *Provider) Verify(ctx context.Context) error
+
+// Avoid
+type providerconfig struct {}  // Not exported
+func createProvider(cfg *Config) *Provider  // Use New prefix
+func (p *Provider) DoVerify() error  // Avoid Do prefix</code></pre>
+
+                    <h3>Error Handling</h3>
+                    <pre><code class="language-go">// Always wrap errors with context
+if err := p.Health(ctx); err != nil {
+    return nil, fmt.Errorf("health check failed for %s: %w", p.Name(), err)
+}
+
+// Use custom error types for specific cases
+type ProviderError struct {
+    Provider string
+    Code     string
+    Message  string
+}
+
+func (e *ProviderError) Error() string {
+    return fmt.Sprintf("[%s] %s: %s", e.Provider, e.Code, e.Message)
+}</code></pre>
+                </section>
+
+                <div class="next-steps">
+                    <h2>Related Resources</h2>
+                    <div class="next-steps-grid">
+                        <a href="/docs/api-reference" class="next-step-card">
+                            <i class="fas fa-code"></i>
+                            <h3>API Reference</h3>
+                            <p>REST API documentation</p>
+                        </a>
+                        <a href="https://github.com/llm-verifier/llm-verifier" class="next-step-card" target="_blank">
+                            <i class="fab fa-github"></i>
+                            <h3>GitHub Repository</h3>
+                            <p>Source code and issues</p>
+                        </a>
+                        <a href="/docs/providers" class="next-step-card">
+                            <i class="fas fa-server"></i>
+                            <h3>Provider Examples</h3>
+                            <p>Existing provider implementations</p>
+                        </a>
+                    </div>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 LLM Verifier. Open source under MIT License.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-go.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+</body>
+</html>

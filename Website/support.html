@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support - LLM Verifier</title>
+    <meta name="description" content="Get help with LLM Verifier. Find answers to common questions, report bugs, or request features.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="/"><i class="fas fa-brain"></i> <span>LLM Verifier</span></a>
+            </div>
+            <div class="nav-menu">
+                <a href="/docs/getting-started" class="nav-link">Getting Started</a>
+                <a href="/docs/user-manual" class="nav-link">Documentation</a>
+                <a href="/support" class="nav-link active">Support</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="support-page">
+        <div class="container">
+            <h1>Support Center</h1>
+            <p class="lead">Get help with LLM Verifier. Find documentation, report issues, or connect with the community.</p>
+
+            <section class="support-grid">
+                <div class="support-card">
+                    <div class="support-icon">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <h2>Documentation</h2>
+                    <p>Comprehensive guides and API reference for all LLM Verifier features.</p>
+                    <a href="/docs/getting-started" class="btn btn-primary">View Docs</a>
+                </div>
+
+                <div class="support-card">
+                    <div class="support-icon">
+                        <i class="fab fa-github"></i>
+                    </div>
+                    <h2>GitHub Issues</h2>
+                    <p>Report bugs, request features, or browse existing issues.</p>
+                    <a href="https://github.com/llm-verifier/llm-verifier/issues" class="btn btn-primary" target="_blank">Open Issue</a>
+                </div>
+
+                <div class="support-card">
+                    <div class="support-icon">
+                        <i class="fab fa-discord"></i>
+                    </div>
+                    <h2>Discord Community</h2>
+                    <p>Join our Discord server for real-time help and discussions.</p>
+                    <a href="https://discord.gg/llm-verifier" class="btn btn-primary" target="_blank">Join Discord</a>
+                </div>
+
+                <div class="support-card">
+                    <div class="support-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <h2>Email Support</h2>
+                    <p>For enterprise customers with priority support plans.</p>
+                    <a href="mailto:support@llm-verifier.dev" class="btn btn-primary">Contact Us</a>
+                </div>
+            </section>
+
+            <section class="faq">
+                <h2>Frequently Asked Questions</h2>
+
+                <div class="faq-item">
+                    <h3>How do I resolve ProviderInitError in OpenCode?</h3>
+                    <p>Use LLM Verifier to generate a correctly formatted configuration:</p>
+                    <pre><code>llm-verifier verify --provider openai --model gpt-4o
+llm-verifier export-config opencode --output config.json</code></pre>
+                    <p>Then copy the generated config.json to your OpenCode configuration directory.</p>
+                </div>
+
+                <div class="faq-item">
+                    <h3>Which providers are supported?</h3>
+                    <p>LLM Verifier supports 20+ providers including OpenAI, Anthropic, Google (Gemini), Groq, DeepSeek, Mistral, Together AI, Fireworks AI, Perplexity, Azure OpenAI, AWS Bedrock, Cohere, xAI, Cerebras, Replicate, Cloudflare AI, SiliconFlow, Ollama, and OpenRouter.</p>
+                    <a href="/docs/providers">View full provider list</a>
+                </div>
+
+                <div class="faq-item">
+                    <h3>How do I add a custom provider?</h3>
+                    <p>Custom providers can be added by implementing the provider interface in Go:</p>
+                    <pre><code>llm-verifier providers add \
+  --name my-provider \
+  --endpoint https://api.myprovider.com/v1 \
+  --api-key $MY_PROVIDER_API_KEY</code></pre>
+                    <p>See the <a href="/docs/developer-guide">Developer Guide</a> for detailed instructions.</p>
+                </div>
+
+                <div class="faq-item">
+                    <h3>How do I run verification in CI/CD?</h3>
+                    <p>LLM Verifier integrates easily with CI/CD pipelines:</p>
+                    <pre><code>- name: Verify AI Models
+  run: |
+    llm-verifier verify --provider openai --model gpt-4o --json > results.json
+    llm-verifier export-config opencode --output config.json
+  env:
+    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}</code></pre>
+                </div>
+
+                <div class="faq-item">
+                    <h3>Is LLM Verifier open source?</h3>
+                    <p>Yes! LLM Verifier is fully open source under the MIT License. You can use it for any purpose, including commercial projects. Contributions are welcome!</p>
+                    <a href="https://github.com/llm-verifier/llm-verifier" target="_blank">View on GitHub</a>
+                </div>
+
+                <div class="faq-item">
+                    <h3>What does the (SC:X.X) suffix mean?</h3>
+                    <p>The <code>(SC:X.X)</code> suffix indicates the LLMsVerifier-calculated score for a model. This score (0-10) reflects overall model quality based on speed, efficiency, cost, capability, and recency metrics. Higher scores indicate better-performing models.</p>
+                </div>
+            </section>
+
+            <section class="troubleshooting">
+                <h2>Common Issues</h2>
+
+                <div class="issue-card">
+                    <h3><i class="fas fa-exclamation-triangle"></i> API Key Invalid</h3>
+                    <p><strong>Symptom:</strong> "Invalid API key" or "Authentication failed" errors</p>
+                    <p><strong>Solution:</strong></p>
+                    <ul>
+                        <li>Verify the API key is correctly set: <code>echo $OPENAI_API_KEY</code></li>
+                        <li>Check if the key has expired or been revoked</li>
+                        <li>Ensure no extra whitespace in the key</li>
+                    </ul>
+                </div>
+
+                <div class="issue-card">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Rate Limiting</h3>
+                    <p><strong>Symptom:</strong> "Rate limit exceeded" or 429 status codes</p>
+                    <p><strong>Solution:</strong></p>
+                    <ul>
+                        <li>Reduce parallel verification: <code>--parallel 1</code></li>
+                        <li>Add delay between requests: <code>--request-delay 5s</code></li>
+                        <li>Upgrade your API plan for higher limits</li>
+                    </ul>
+                </div>
+
+                <div class="issue-card">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Timeout Errors</h3>
+                    <p><strong>Symptom:</strong> "Request timeout" or connection errors</p>
+                    <p><strong>Solution:</strong></p>
+                    <ul>
+                        <li>Increase timeout: <code>--timeout 60s</code></li>
+                        <li>Check your network connection</li>
+                        <li>Verify the provider API is accessible</li>
+                    </ul>
+                </div>
+
+                <div class="issue-card">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Configuration Export Fails</h3>
+                    <p><strong>Symptom:</strong> Invalid JSON or schema errors in exported config</p>
+                    <p><strong>Solution:</strong></p>
+                    <ul>
+                        <li>Validate config: <code>llm-verifier config validate</code></li>
+                        <li>Check OpenCode version compatibility</li>
+                        <li>Use <code>--format opencode-v2</code> for newer versions</li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 LLM Verifier. Open source under MIT License.</p>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Getting Started - LLM Verifier</title>
+    <meta name="description" content="Quick start guide for LLM Verifier. Learn to verify AI models, export configurations, and resolve ProviderInitError.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/docs.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="/"><i class="fas fa-brain"></i> <span>LLM Verifier</span></a>
+            </div>
+            <div class="nav-menu">
+                <a href="/docs/getting-started" class="nav-link active">Getting Started</a>
+                <a href="/docs/user-manual" class="nav-link">User Manual</a>
+                <a href="/docs/api-reference" class="nav-link">API Reference</a>
+                <a href="/docs/providers" class="nav-link">Providers</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <aside class="docs-sidebar">
+            <nav class="sidebar-nav">
+                <h3>Getting Started</h3>
+                <ul>
+                    <li><a href="#installation">Installation</a></li>
+                    <li><a href="#configuration">Configuration</a></li>
+                    <li><a href="#first-verification">First Verification</a></li>
+                    <li><a href="#export-config">Export Configuration</a></li>
+                    <li><a href="#troubleshooting">Troubleshooting</a></li>
+                </ul>
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="/docs/user-manual">User Manual</a></li>
+                    <li><a href="/docs/api-reference">API Reference</a></li>
+                    <li><a href="/docs/providers">Provider List</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="docs-content">
+            <article>
+                <h1>Getting Started with LLM Verifier</h1>
+                <p class="lead">This guide will help you install LLM Verifier, configure your API keys, and run your first model verification in under 5 minutes.</p>
+
+                <section id="installation">
+                    <h2>Installation</h2>
+
+                    <h3>Using Go Install</h3>
+                    <p>The easiest way to install LLM Verifier is using Go:</p>
+                    <pre><code class="language-bash">go install github.com/llm-verifier/llm-verifier@latest</code></pre>
+
+                    <h3>Download Binary</h3>
+                    <p>Pre-built binaries are available for all major platforms:</p>
+                    <div class="download-options">
+                        <a href="/releases/latest/llm-verifier-linux-amd64" class="btn btn-secondary">
+                            <i class="fab fa-linux"></i> Linux (x64)
+                        </a>
+                        <a href="/releases/latest/llm-verifier-darwin-amd64" class="btn btn-secondary">
+                            <i class="fab fa-apple"></i> macOS (Intel)
+                        </a>
+                        <a href="/releases/latest/llm-verifier-darwin-arm64" class="btn btn-secondary">
+                            <i class="fab fa-apple"></i> macOS (Apple Silicon)
+                        </a>
+                        <a href="/releases/latest/llm-verifier-windows-amd64.exe" class="btn btn-secondary">
+                            <i class="fab fa-windows"></i> Windows (x64)
+                        </a>
+                    </div>
+
+                    <h3>Docker</h3>
+                    <pre><code class="language-bash">docker pull llmverifier/llm-verifier:latest
+docker run -it llmverifier/llm-verifier verify --help</code></pre>
+
+                    <h3>Build from Source</h3>
+                    <pre><code class="language-bash">git clone https://github.com/llm-verifier/llm-verifier.git
+cd llm-verifier
+make build
+./bin/llm-verifier --version</code></pre>
+                </section>
+
+                <section id="configuration">
+                    <h2>Configuration</h2>
+
+                    <h3>API Keys Setup</h3>
+                    <p>LLM Verifier requires API keys for the providers you want to test. Set them as environment variables:</p>
+                    <pre><code class="language-bash"># OpenAI
+export OPENAI_API_KEY="sk-your-openai-key"
+
+# Anthropic
+export ANTHROPIC_API_KEY="sk-ant-your-anthropic-key"
+
+# Google Gemini
+export GEMINI_API_KEY="your-gemini-key"
+
+# Groq
+export GROQ_API_KEY="gsk_your-groq-key"
+
+# Additional providers...
+export DEEPSEEK_API_KEY="your-deepseek-key"
+export MISTRAL_API_KEY="your-mistral-key"</code></pre>
+
+                    <h3>Configuration File</h3>
+                    <p>Alternatively, create a <code>config.yaml</code> file:</p>
+                    <pre><code class="language-yaml">global:
+  base_url: "https://api.openai.com/v1"
+  timeout: 30s
+  max_retries: 3
+
+llms:
+  - name: openai
+    endpoint: "https://api.openai.com/v1"
+    api_key: "${OPENAI_API_KEY}"
+
+  - name: anthropic
+    endpoint: "https://api.anthropic.com"
+    api_key: "${ANTHROPIC_API_KEY}"
+
+database:
+  path: "./llm-verifier.db"
+  encryption_key: "${DB_ENCRYPTION_KEY}"
+
+api:
+  port: "8080"
+  jwt_secret: "${JWT_SECRET}"</code></pre>
+
+                    <h3>Verify Configuration</h3>
+                    <pre><code class="language-bash">llm-verifier config validate
+llm-verifier config show</code></pre>
+                </section>
+
+                <section id="first-verification">
+                    <h2>Run Your First Verification</h2>
+
+                    <h3>Single Model Verification</h3>
+                    <pre><code class="language-bash"># Verify a specific model
+llm-verifier verify --provider openai --model gpt-4o
+
+# Verify with detailed output
+llm-verifier verify --provider openai --model gpt-4o --verbose
+
+# Verify multiple models in parallel
+llm-verifier verify --provider openai --model gpt-4o,gpt-4,gpt-3.5-turbo --parallel 3</code></pre>
+
+                    <h3>Provider Discovery</h3>
+                    <pre><code class="language-bash"># Discover all available models from a provider
+llm-verifier discover --provider openai
+
+# Discover and verify all models
+llm-verifier discover --provider anthropic --verify</code></pre>
+
+                    <h3>Understanding Verification Results</h3>
+                    <p>Each verification produces a score based on:</p>
+                    <ul>
+                        <li><strong>Response Speed</strong> - Latency and throughput metrics</li>
+                        <li><strong>Model Efficiency</strong> - Context handling and token efficiency</li>
+                        <li><strong>Cost Effectiveness</strong> - Price-to-performance ratio</li>
+                        <li><strong>Capability</strong> - Code generation, reasoning, and features</li>
+                        <li><strong>Recency</strong> - Model freshness and knowledge cutoff</li>
+                    </ul>
+
+                    <div class="score-example">
+                        <h4>Example Score Output</h4>
+                        <pre><code>Model: gpt-4o (SC:8.5)
+Provider: OpenAI
+Overall Score: 8.5/10
+
+Components:
+  Speed Score: 7.8
+  Efficiency Score: 8.2
+  Cost Score: 7.5
+  Capability Score: 9.5
+  Recency Score: 9.0
+
+Capabilities:
+  ✓ Code Generation
+  ✓ Code Completion
+  ✓ Reasoning
+  ✓ Multimodal
+  ✓ Streaming</code></pre>
+                    </div>
+                </section>
+
+                <section id="export-config">
+                    <h2>Export Configuration</h2>
+
+                    <h3>OpenCode Format</h3>
+                    <p>Generate OpenCode-compatible configuration to resolve ProviderInitError:</p>
+                    <pre><code class="language-bash"># Export verified models to OpenCode format
+llm-verifier export-config opencode --output opencode-config.json
+
+# Include API keys in export (secure environments only)
+llm-verifier export-config opencode --output opencode-config.json --include-api-keys
+
+# Export specific providers
+llm-verifier export-config opencode --providers openai,anthropic --output config.json</code></pre>
+
+                    <h3>Other Export Formats</h3>
+                    <pre><code class="language-bash"># Crush format
+llm-verifier export-config crush --output crush-config.json
+
+# Claude Code format
+llm-verifier export-config claude-code --output claude-config.json
+
+# Generic JSON
+llm-verifier export-config json --output models.json</code></pre>
+
+                    <h3>Using Exported Configuration</h3>
+                    <p>Copy the generated configuration to your OpenCode installation:</p>
+                    <pre><code class="language-bash"># Copy to OpenCode config directory
+cp opencode-config.json ~/.config/opencode/config.json
+
+# Or merge with existing config
+llm-verifier config merge opencode-config.json ~/.config/opencode/config.json</code></pre>
+                </section>
+
+                <section id="troubleshooting">
+                    <h2>Troubleshooting</h2>
+
+                    <h3>ProviderInitError</h3>
+                    <p>If you encounter ProviderInitError in OpenCode, follow these steps:</p>
+                    <ol>
+                        <li>Verify your API keys are valid: <code>llm-verifier verify --provider openai</code></li>
+                        <li>Check the configuration format: <code>llm-verifier config validate</code></li>
+                        <li>Export fresh configuration: <code>llm-verifier export-config opencode</code></li>
+                        <li>Verify the exported file matches OpenCode schema</li>
+                    </ol>
+
+                    <h3>Common Issues</h3>
+                    <dl>
+                        <dt>API Key Invalid</dt>
+                        <dd>Ensure your API key is correctly set and has not expired. Test with: <code>llm-verifier verify --provider &lt;name&gt;</code></dd>
+
+                        <dt>Rate Limiting</dt>
+                        <dd>Use <code>--parallel 1</code> flag to avoid rate limits during verification.</dd>
+
+                        <dt>Timeout Errors</dt>
+                        <dd>Increase timeout with <code>--timeout 60s</code> for slower models or connections.</dd>
+
+                        <dt>Database Lock</dt>
+                        <dd>Ensure only one instance of LLM Verifier is running, or use <code>--db-path</code> to specify a different database file.</dd>
+                    </dl>
+
+                    <h3>Get Help</h3>
+                    <ul>
+                        <li><a href="https://github.com/llm-verifier/llm-verifier/issues">GitHub Issues</a></li>
+                        <li><a href="https://discord.gg/llm-verifier">Discord Community</a></li>
+                        <li><a href="/support">Support Page</a></li>
+                    </ul>
+                </section>
+
+                <div class="next-steps">
+                    <h2>Next Steps</h2>
+                    <div class="next-steps-grid">
+                        <a href="/docs/user-manual" class="next-step-card">
+                            <i class="fas fa-book"></i>
+                            <h3>User Manual</h3>
+                            <p>Complete documentation for all features</p>
+                        </a>
+                        <a href="/docs/api-reference" class="next-step-card">
+                            <i class="fas fa-code"></i>
+                            <h3>API Reference</h3>
+                            <p>REST API documentation for integrations</p>
+                        </a>
+                        <a href="/docs/providers" class="next-step-card">
+                            <i class="fas fa-server"></i>
+                            <h3>Provider List</h3>
+                            <p>All 20+ supported AI providers</p>
+                        </a>
+                    </div>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 LLM Verifier. Open source under MIT License.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+</body>
+</html>
