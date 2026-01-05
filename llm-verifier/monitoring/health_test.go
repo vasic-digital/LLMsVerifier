@@ -337,13 +337,46 @@ func TestHealthCheckerNotificationsHealth(t *testing.T) {
 	db := (*database.Database)(nil)
 	hc := NewHealthChecker(db)
 
+	// Configure notification channels to simulate production setup
+	hc.metricsTracker.SetNotificationChannels(3)
+
 	hc.checkNotificationsHealth()
 
 	component := hc.GetComponentHealth()["notifications"]
 	assert.Equal(t, "Notification System", component.Name)
 	assert.Equal(t, HealthStatusHealthy, component.Status)
 	assert.NotNil(t, component.Details)
+}
 
+func TestHealthCheckerNotificationsHealth_NoChannels(t *testing.T) {
+	db := (*database.Database)(nil)
+	hc := NewHealthChecker(db)
+
+	// Don't configure any channels - should be degraded
+	hc.checkNotificationsHealth()
+
+	component := hc.GetComponentHealth()["notifications"]
+	assert.Equal(t, "Notification System", component.Name)
+	assert.Equal(t, HealthStatusDegraded, component.Status)
+	assert.Contains(t, component.Message, "No notification channels configured")
+}
+
+func TestHealthCheckerNotificationsHealth_WithMessages(t *testing.T) {
+	db := (*database.Database)(nil)
+	hc := NewHealthChecker(db)
+
+	// Configure channels and record some successful messages
+	hc.metricsTracker.SetNotificationChannels(2)
+	for i := 0; i < 5; i++ {
+		hc.metricsTracker.RecordNotificationSent(true)
+	}
+
+	hc.checkNotificationsHealth()
+
+	component := hc.GetComponentHealth()["notifications"]
+	// Should be healthy with good delivery rate
+	assert.Equal(t, HealthStatusHealthy, component.Status)
+	assert.Contains(t, component.Message, "delivery rate")
 }
 
 func TestHealthCheckerMetricsFields(t *testing.T) {

@@ -1,0 +1,448 @@
+# LLMsVerifier Comprehensive Remediation Plan
+
+**Generated:** 2026-01-05
+**Status:** Active
+**Progress Tracking:** This document tracks all identified issues and their resolution status.
+
+---
+
+## Executive Summary
+
+This comprehensive audit identified **67 critical issues** across 8 categories requiring remediation:
+
+| Category | Critical | High | Medium | Low | Total |
+|----------|----------|------|--------|-----|-------|
+| Production Mocks/Stubs | 12 | - | - | - | 12 |
+| Test Coverage Gaps | 5 | 15 | 10 | - | 30 |
+| Documentation Gaps | 1 | 5 | 3 | - | 9 |
+| Website Issues | 5 | 3 | 2 | - | 10 |
+| Broken/Skipped Tests | - | 18 | 2 | - | 20 |
+| TODO/FIXME Items | 3 | 4 | 1 | - | 8 |
+| Go Dependencies | 1 | 3 | 5 | - | 9 |
+| JS Dependencies | 1 | 4 | 5 | - | 10 |
+| **TOTAL** | **28** | **52** | **28** | **0** | **108** |
+
+---
+
+## Priority Definitions
+
+- **CRITICAL (P0)**: Production data integrity issues, security vulnerabilities, blocking features
+- **HIGH (P1)**: Significant functionality gaps, test failures, outdated security deps
+- **MEDIUM (P2)**: Quality improvements, test coverage, documentation
+- **LOW (P3)**: Nice-to-have improvements, cleanup
+
+---
+
+## Section 1: Production Mocks/Stubs (CRITICAL - 12 Issues)
+
+These issues return fake/hardcoded data to end users in production.
+
+### 1.1 ACP CLI Hardcoded Results
+- **File:** `cmd/acp-cli/main.go`
+- **Lines:** 180, 207-229
+- **Issue:** Returns hardcoded `Score: 0.85` and `Supported: true`
+- **Status:** [x] COMPLETED (2026-01-05)
+- **Fix Applied:** Implemented actual verification API calls with `calculateVerificationScore()` and `detectProvider()`
+- **Test Added:** `cmd/acp-cli/main_test.go` with comprehensive unit tests
+
+### 1.2 Model Verification Always Returns 100.0
+- **File:** `challenges/codebase/go_files/run_model_verification_clean/run_model_verification_clean.go`
+- **Line:** 129
+- **Issue:** `result.Score = 100.0` hardcoded
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Calculate actual verification score based on response
+- **Test Required:** Unit test for score calculation logic
+
+### 1.3 Anthropic Provider Hardcoded Models
+- **File:** `providers/anthropic.go`
+- **Lines:** 316-332
+- **Issue:** Hardcoded model list instead of API discovery
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Implement actual Anthropic API model discovery
+- **Test Required:** Integration test with mock API
+
+### 1.4 Cohere Provider Hardcoded Models
+- **File:** `providers/cohere.go`
+- **Lines:** 241-256
+- **Issue:** Hardcoded model list instead of API discovery
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Implement actual Cohere API model discovery
+- **Test Required:** Integration test with mock API
+
+### 1.5 Fallback Models Hardcoded for 12+ Providers
+- **File:** `providers/fallback_models.go`
+- **Lines:** 6-60
+- **Issue:** Hardcoded fallback models for all providers
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Cache discovered models, fetch on startup
+- **Test Required:** Test fallback behavior when API unavailable
+
+### 1.6 Multimodal Safety Score Hardcoded
+- **File:** `multimodal/processor.go`
+- **Line:** 1638
+- **Issue:** `SafetyScore: 0.95` hardcoded
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Implement actual safety evaluation
+- **Test Required:** Unit test for safety scoring
+
+### 1.7 WebSocket Analytics Placeholder
+- **File:** `enhanced/analytics/api.go`
+- **Lines:** 304-325
+- **Issue:** `_ = client // placeholder for actual WebSocket send`
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Implement WebSocket message sending
+- **Test Required:** Integration test for WebSocket communication
+
+### 1.8 Database Logging Storage Placeholder
+- **File:** `logging/logging.go`
+- **Lines:** 298-299, 360
+- **Issue:** Database storage not implemented
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Implement log persistence to database
+- **Test Required:** Test log storage and retrieval
+
+### 1.9 Notification Storage Placeholder
+- **File:** `notifications/notifications.go`
+- **Lines:** 476-480
+- **Issue:** `storeNotification()` is a no-op
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Implement notification persistence
+- **Test Required:** Test notification storage
+
+### 1.10 Health Check Hardcoded Status
+- **File:** `monitoring/health.go`
+- **Line:** 427
+- **Issue:** `checkNotificationsHealth()` always returns healthy
+- **Status:** [x] COMPLETED (2026-01-05)
+- **Fix Applied:** Implemented actual health evaluation based on channelsConfigured, messagesSent, deliveryRate metrics
+- **Test Required:** Existing tests in `health_test.go` cover this function
+
+### 1.11 RAG Retrieval Empty Results
+- **File:** `enhanced/vector/rag.go`
+- **Lines:** 490-491
+- **Issue:** Returns empty results as placeholder
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Implement keyword retrieval strategy
+- **Test Required:** Test retrieval with various queries
+
+### 1.12 Pricing Detection Placeholder
+- **File:** `enhanced/pricing.go`
+- **Line:** 609
+- **Issue:** Uses hardcoded model name patterns for pricing
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Integrate with actual pricing APIs
+- **Test Required:** Test pricing calculation accuracy
+
+---
+
+## Section 2: Test Coverage Gaps (30 Issues)
+
+### 2.1 CRITICAL - Optimization Streaming Package (6 untested files)
+- **Path:** `internal/optimization/streaming/`
+- **Files:** buffer.go, progress.go, aggregator.go, rate_limiter.go, sse.go, enhanced_streamer.go
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Create comprehensive unit tests for each file
+- **Estimated LOC:** ~1,500 lines untested
+
+### 2.2 CRITICAL - Optimization GPTCache Package (4 untested files)
+- **Path:** `internal/optimization/gptcache/`
+- **Files:** similarity.go, eviction.go, config.go, semantic_cache.go (partial)
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Create unit tests for cache operations
+- **Estimated LOC:** ~1,000 lines untested
+
+### 2.3 CRITICAL - Optimization Outlines Package (3 untested files)
+- **Path:** `internal/optimization/outlines/`
+- **Files:** schema.go, validator.go, generator.go
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Create unit tests for structured output
+- **Estimated LOC:** ~800 lines untested
+
+### 2.4 CRITICAL - LLM Core Components (5 untested files)
+- **Path:** `internal/llm/`
+- **Files:** circuit_breaker.go, ensemble.go, health_monitor.go, provider.go, retry.go
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Create tests for fault tolerance and orchestration
+- **Estimated LOC:** ~1,200 lines untested
+
+### 2.5 HIGH - Database Layer (2 untested files)
+- **Path:** `internal/database/`
+- **Files:** cognee_memory_repository.go (437 LOC), db.go (460 LOC)
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Create repository tests with mock database
+
+### 2.6 HIGH - Verifier Package (3 untested files)
+- **Path:** `internal/verifier/`
+- **Files:** config.go, metrics.go, health.go
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Create unit tests for configuration and monitoring
+
+### 2.7 HIGH - Config Package (1 untested file)
+- **Path:** `internal/config/`
+- **Files:** multi_provider.go
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Test multi-provider configuration loading
+
+### 2.8-2.30 MEDIUM - Additional Coverage Items
+[See detailed test coverage report for complete list]
+
+---
+
+## Section 3: Broken/Disabled Tests (20 Issues)
+
+### 3.1 HIGH - Model Verification Tests (10 tests)
+- **File:** `tests/unit/model_verification_test.go`
+- **Lines:** 14-51
+- **Issue:** All tests skip with "requires verification.NewModelVerifier"
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Implement verification.NewModelVerifier interface
+- **Tests Affected:**
+  - [ ] TestModelVerification_ValidModel
+  - [ ] TestModelVerification_InvalidModel
+  - [ ] TestModelVerification_Timeout
+  - [ ] TestModelVerification_EdgeCases
+  - [ ] TestScoringSystem_CalculateScore
+  - [ ] TestScoringSystem_GetScoreExplanation
+  - [ ] TestHTTPClient_ProviderRequests
+  - [ ] TestConfiguration_Validation
+  - [ ] TestErrorHandling_Recovery
+  - [ ] TestConcurrentVerification
+
+### 3.2 HIGH - Provider Integration Tests (9 tests)
+- **File:** `tests/integration/provider_integration_test.go`
+- **Lines:** 27-420
+- **Issue:** All tests skip with "pending integration with OpenCode config"
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Complete OpenCode config integration
+- **Tests Affected:**
+  - [ ] TestProviderIntegration_CompleteWorkflow
+  - [ ] TestProviderIntegration_MultipleProviders
+  - [ ] TestProviderIntegration_Failover
+  - [ ] TestProviderIntegration_Authentication
+  - [ ] TestProviderIntegration_RateLimiting
+  - [ ] TestProviderIntegration_Timeout
+  - [ ] TestProviderIntegration_Caching
+  - [ ] TestProviderIntegration_ErrorRecovery
+  - [ ] TestProviderIntegration_ConcurrentOperations
+
+### 3.3 MEDIUM - ACP Benchmark Test (1 test)
+- **File:** `tests/acp_e2e_test.go`
+- **Line:** 179
+- **Issue:** "Benchmark test temporarily disabled - needs interface refactoring"
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Refactor ACP interface for benchmark compatibility
+
+---
+
+## Section 4: TODO/FIXME Items (8 Issues)
+
+### 4.1 CRITICAL - Flutter Token Management
+- **File:** `mobile/flutter/lib/core/services/api_service.dart`
+- **Line:** 30
+- **Issue:** `// TODO: Implement token management`
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Implement secure token storage using flutter_secure_storage
+
+### 4.2 CRITICAL - Flutter Secure Token Storage
+- **File:** `mobile/flutter/lib/core/services/api_service.dart`
+- **Line:** 54
+- **Issue:** `getToken()` returns null - auth completely broken
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Implement token persistence with encryption
+
+### 4.3 CRITICAL - Challenge Logic Implementation
+- **File:** `challenges/codebase/go_files/run_model_verification_clean/run_model_verification_clean.go`
+- **Line:** 21
+- **Issue:** `// TODO: Fix syntax errors and implement challenge logic`
+- **Status:** [ ] NOT STARTED (Note: Recent commit may have addressed this)
+- **Fix Required:** Verify implementation is complete
+
+### 4.4-4.8 MEDIUM - Flutter Settings Features
+- **File:** `mobile/flutter_app/lib/screens/settings_screen.dart`
+- **Issues:**
+  - [ ] Line 32: Implement theme switching
+  - [ ] Line 40: Implement language selection
+  - [ ] Line 49: Implement notification settings
+  - [ ] Line 57: Implement backup settings
+
+---
+
+## Section 5: Documentation Gaps (9 Issues)
+
+### 5.1 HIGH - Broken Link in docs/README.md
+- **File:** `docs/README.md`
+- **Issue:** References `deployment/DEPLOYMENT_GUIDE.md` which doesn't exist
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Update link to `deployment/general-deployment-guide.md`
+
+### 5.2-5.6 HIGH - Missing Documentation Directories
+- **Issues:**
+  - [ ] `protocols/` - needs implementation guides
+  - [ ] `monitoring/` - needs Prometheus/Grafana setup docs
+  - [ ] `integration/` vs `integrations/` - clarify or consolidate
+
+---
+
+## Section 6: Website Issues (10 Issues)
+
+### 6.1-6.5 CRITICAL - Missing Documentation Pages
+- **File:** Website links in footer and navigation
+- **Missing Pages:**
+  - [ ] /docs/protocols
+  - [ ] /docs/tutorial
+  - [ ] /docs/architecture
+  - [ ] /docs/troubleshooting
+  - [ ] /docs/support
+
+### 6.6 HIGH - Analytics Not Configured
+- **File:** `Website/public/scripts/main.js`
+- **Issue:** GA_MEASUREMENT_ID and CLARITY_PROJECT_ID not set
+- **Status:** [ ] NOT STARTED
+
+### 6.7 HIGH - Service Worker Missing
+- **File:** Referenced `/sw.js` doesn't exist
+- **Status:** [ ] NOT STARTED
+
+### 6.8 MEDIUM - Pricing Section Missing
+- **Issue:** Navigation links to #pricing but no section exists
+- **Status:** [ ] NOT STARTED
+
+---
+
+## Section 7: Go Dependency Issues (9 Issues)
+
+### 7.1 CRITICAL - Remove AWS SDK v1
+- **File:** `go.mod`
+- **Issue:** Both AWS SDK v1 (v1.55.8) and v2 (v1.41.0) are imported
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Remove all v1 SDK imports, use v2 exclusively
+
+### 7.2 HIGH - Cloud Provider Stubs (9 methods)
+- **Files:** S3, GCS, Azure providers
+- **Issue:** List/Delete/Exists methods are stubs across all 3 providers
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Implement all 9 stub methods
+- **Test Required:** Integration tests for each provider
+
+### 7.3 HIGH - Unused WebSocket Import
+- **Issue:** gorilla/websocket imported but never used
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Either implement or remove
+
+### 7.4 MEDIUM - SHA-1 in SQL Cipher
+- **File:** `database/database.go`
+- **Issue:** Uses HMAC_SHA1 for database encryption
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Upgrade to SHA-256 if SQL Cipher supports it
+
+---
+
+## Section 8: JavaScript/TypeScript Dependency Issues (10 Issues)
+
+### 8.1 CRITICAL - Remove Deprecated Protractor
+- **File:** `web/package.json`
+- **Issue:** Protractor ~7.0.0 deprecated since 2021
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Remove Protractor, use Playwright exclusively
+
+### 8.2 HIGH - Update Outdated Axios
+- **Files:** `mobile/react-native/package.json`, `desktop/electron/package.json`
+- **Current:** 1.6.0, 1.6.2
+- **Target:** ^1.7.0 minimum
+- **Status:** [ ] NOT STARTED
+
+### 8.3 HIGH - TypeScript Version Alignment
+- **Issue:** React Native uses TS 4.8.4, others use 5.x
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Upgrade RN to TypeScript ^5.3.0
+
+### 8.4 HIGH - React Native Version Update
+- **Current:** 0.72.6 (mid-2023)
+- **Issue:** 1+ year old, missing security patches
+- **Status:** [ ] NOT STARTED
+- **Fix Required:** Update to 0.73.x or 0.74.x
+
+### 8.5-8.10 MEDIUM - Additional JS Issues
+- [ ] Add authentication library
+- [ ] Add input validation library (zod recommended)
+- [ ] Add E2E testing to Electron
+- [ ] Add testing to Tauri
+- [ ] Remove exact version pinning in React Native
+- [ ] Standardize testing stack
+
+---
+
+## Implementation Schedule
+
+### Sprint 1: Critical Production Fixes (Week 1-2)
+- [ ] 1.1-1.12: Fix all production mocks/stubs
+- [ ] 4.1-4.3: Fix Flutter token management and challenge logic
+
+### Sprint 2: Security & Dependencies (Week 3)
+- [ ] 7.1: Remove AWS SDK v1
+- [ ] 8.1-8.4: Update JS dependencies
+- [ ] 7.4: Upgrade SHA-1 to SHA-256
+
+### Sprint 3: Test Coverage - Critical (Week 4-5)
+- [ ] 2.1-2.4: Add tests for optimization and LLM packages
+- [ ] 3.1-3.2: Enable disabled tests
+
+### Sprint 4: Documentation & Website (Week 6)
+- [ ] 5.1-5.6: Fix documentation gaps
+- [ ] 6.1-6.8: Fix website issues
+
+### Sprint 5: Remaining Coverage & Polish (Week 7-8)
+- [ ] 2.5-2.30: Remaining test coverage
+- [ ] 7.2-7.3: Cloud provider implementations
+- [ ] 4.4-4.8: Flutter settings features
+
+---
+
+## Progress Tracking
+
+### Completion Status
+- [~] Section 1: 2/12 complete (17%) - ACP CLI and Health Check fixed
+- [ ] Section 2: 0/30 complete (0%)
+- [ ] Section 3: 0/20 complete (0%)
+- [ ] Section 4: 0/8 complete (0%)
+- [ ] Section 5: 0/9 complete (0%)
+- [ ] Section 6: 0/10 complete (0%)
+- [ ] Section 7: 0/9 complete (0%)
+- [ ] Section 8: 0/10 complete (0%)
+
+**Overall Progress: 2/108 (2%)**
+
+### Recent Fixes (2026-01-05)
+1. **ACP CLI** - Implemented actual verification with `calculateVerificationScore()`, `detectProvider()`, and `discoverProviderModels()`
+2. **Health Check** - `checkNotificationsHealth()` now evaluates actual metrics
+
+---
+
+## Verification Requirements
+
+Each fix MUST include:
+1. Unit tests covering the change
+2. Integration tests where applicable
+3. Documentation updates if API changes
+4. Manual verification of fix effectiveness
+5. Code review approval
+
+---
+
+## Quality Gates
+
+Before marking any section complete:
+1. All tests pass (`make test`)
+2. Coverage meets target (85%+ for affected files)
+3. No new linting errors (`make lint`)
+4. Security scan passes (`make security-scan`)
+5. Documentation is updated
+
+---
+
+## Document History
+
+| Date | Version | Author | Changes |
+|------|---------|--------|---------|
+| 2026-01-05 | 1.0 | Claude Audit | Initial comprehensive plan |
+

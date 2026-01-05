@@ -158,7 +158,26 @@ func runVerify(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	acpSupported := verifier.TestACPs(client, modelName, ctx)
 
-	// Create result
+	// Calculate actual verification score
+	verificationScore := calculateVerificationScore(acpSupported, client, modelName, ctx)
+
+	// Measure actual latency with a test request
+	latencyStart := time.Now()
+	testReq := llmverifier.ChatCompletionRequest{
+		Model: modelName,
+		Messages: []llmverifier.Message{
+			{Role: "user", Content: "Test."},
+		},
+		MaxTokens:   5,
+		Temperature: 0.0,
+	}
+	_, latencyErr := client.ChatCompletion(ctx, testReq)
+	actualLatency := time.Since(latencyStart)
+
+	// Determine availability based on actual test
+	responsive := latencyErr == nil
+
+	// Create result with actual measured values
 	result := llmverifier.VerificationResult{
 		ModelInfo: llmverifier.ModelInfo{
 			ID:      modelName,
@@ -171,13 +190,13 @@ func runVerify(cmd *cobra.Command, args []string) error {
 		},
 		Availability: llmverifier.AvailabilityResult{
 			Exists:      true,
-			Responsive:  true,
-			Overloaded:  false,
-			Latency:     100 * time.Millisecond,
+			Responsive:  responsive,
+			Overloaded:  actualLatency > 10*time.Second,
+			Latency:     actualLatency,
 			LastChecked: time.Now(),
 		},
 		PerformanceScores: llmverifier.PerformanceScore{
-			OverallScore: 0.85,
+			OverallScore: verificationScore / 100.0, // Convert to 0-1 scale
 		},
 		Timestamp: time.Now(),
 	}
@@ -187,7 +206,7 @@ func runVerify(cmd *cobra.Command, args []string) error {
 }
 
 func runBatch(cmd *cobra.Command, args []string) error {
-	_, err := loadConfig()
+	cfg, err := loadConfig()
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
@@ -197,58 +216,267 @@ func runBatch(cmd *cobra.Command, args []string) error {
 		models = strings.Split(modelsList, ",")
 	}
 
+	if len(models) == 0 {
+		return fmt.Errorf("no models specified. Use --models flag with comma-separated model names")
+	}
+
 	results := []BatchResult{}
+	verifier := llmverifier.NewVerifier()
+	ctx := context.Background()
 
 	for _, model := range models {
+		modelName := strings.TrimSpace(model)
 		if verbose {
-			fmt.Printf("Testing model: %s\n", model)
+			fmt.Printf("Testing model: %s\n", modelName)
 		}
 
-		// Create a mock result for demonstration
+		start := time.Now()
+
+		// Detect provider from model name
+		provider := detectProvider(modelName)
+
+		// Create client for the provider
+		client, err := createProviderClient(provider, cfg)
+		if err != nil {
+			// Record failure but continue with other models
+			results = append(results, BatchResult{
+				Model:     modelName,
+				Provider:  provider,
+				Supported: false,
+				Score:     0.0,
+				Duration:  time.Since(start),
+			})
+			if verbose {
+				fmt.Printf("  Error creating client for %s: %v\n", provider, err)
+			}
+			continue
+		}
+
+		// Test ACP support with actual verification
+		acpSupported := verifier.TestACPs(client, modelName, ctx)
+
+		// Calculate actual score based on verification results
+		score := calculateVerificationScore(acpSupported, client, modelName, ctx)
+
 		result := BatchResult{
-			Model:     strings.TrimSpace(model),
-			Provider:  "mock-provider",
-			Supported: true,
-			Score:     0.85,
-			Duration:  2 * time.Second,
+			Model:     modelName,
+			Provider:  provider,
+			Supported: acpSupported,
+			Score:     score,
+			Duration:  time.Since(start),
 		}
 		results = append(results, result)
+
+		if verbose {
+			fmt.Printf("  Completed: supported=%t, score=%.2f, duration=%s\n",
+				acpSupported, score, result.Duration)
+		}
 	}
 
 	return outputBatchResults(results, outputFormat)
 }
 
+// detectProvider determines the provider based on model name
+func detectProvider(modelName string) string {
+	modelLower := strings.ToLower(modelName)
+	switch {
+	case strings.Contains(modelLower, "claude"):
+		return "anthropic"
+	case strings.Contains(modelLower, "deepseek"):
+		return "deepseek"
+	case strings.Contains(modelLower, "gemini"):
+		return "google"
+	case strings.Contains(modelLower, "gpt") || strings.Contains(modelLower, "o1") || strings.Contains(modelLower, "davinci"):
+		return "openai"
+	case strings.Contains(modelLower, "llama") || strings.Contains(modelLower, "mistral"):
+		return "openai" // Often served via OpenAI-compatible APIs
+	default:
+		return "openai"
+	}
+}
+
+// calculateVerificationScore calculates actual score based on verification results
+func calculateVerificationScore(acpSupported bool, client *llmverifier.LLMClient, modelName string, ctx context.Context) float64 {
+	if !acpSupported {
+		return 0.0
+	}
+
+	// Base score for ACP support
+	score := 50.0
+
+	// Test response quality
+	testReq := llmverifier.ChatCompletionRequest{
+		Model: modelName,
+		Messages: []llmverifier.Message{
+			{Role: "user", Content: "Reply with just the word 'verified' if you can read this."},
+		},
+		MaxTokens:   10,
+		Temperature: 0.0,
+	}
+
+	start := time.Now()
+	resp, err := client.ChatCompletion(ctx, testReq)
+	latency := time.Since(start)
+
+	if err != nil {
+		return score // Return base score on error
+	}
+
+	// Add points for successful response
+	if len(resp.Choices) > 0 && resp.Choices[0].Message.Content != "" {
+		score += 25.0
+
+		// Check if response contains expected content
+		if strings.Contains(strings.ToLower(resp.Choices[0].Message.Content), "verif") {
+			score += 15.0
+		}
+	}
+
+	// Add points for fast response (under 2 seconds)
+	if latency < 2*time.Second {
+		score += 10.0
+	} else if latency < 5*time.Second {
+		score += 5.0
+	}
+
+	return score
+}
+
+// ProviderModels represents models discovered from a provider
+type ProviderModels struct {
+	Provider string   `json:"provider"`
+	Models   []string `json:"models"`
+	Error    string   `json:"error,omitempty"`
+}
+
 func runList(cmd *cobra.Command, args []string) error {
-	// Create a simple list of available models
-	models := []string{
-		"gpt-4",
-		"gpt-3.5-turbo",
-		"claude-3-opus",
-		"claude-3-sonnet",
-		"gemini-pro",
-		"deepseek-chat",
+	cfg, err := loadConfig()
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// Discover models from available providers
+	providers := []string{"openai", "anthropic", "deepseek"}
+	allProviderModels := []ProviderModels{}
+	allModels := []string{}
+
+	for _, provider := range providers {
+		client, err := createProviderClient(provider, cfg)
+		if err != nil {
+			if verbose {
+				fmt.Printf("Skipping %s: %v\n", provider, err)
+			}
+			allProviderModels = append(allProviderModels, ProviderModels{
+				Provider: provider,
+				Models:   []string{},
+				Error:    err.Error(),
+			})
+			continue
+		}
+
+		// Try to list models from the provider
+		models, discoverErr := discoverProviderModels(client, provider)
+		if discoverErr != nil {
+			if verbose {
+				fmt.Printf("Failed to discover models from %s: %v\n", provider, discoverErr)
+			}
+			allProviderModels = append(allProviderModels, ProviderModels{
+				Provider: provider,
+				Models:   []string{},
+				Error:    discoverErr.Error(),
+			})
+			continue
+		}
+
+		allProviderModels = append(allProviderModels, ProviderModels{
+			Provider: provider,
+			Models:   models,
+		})
+		allModels = append(allModels, models...)
+	}
+
+	// If no models discovered, provide fallback with clear indication
+	if len(allModels) == 0 {
+		fmt.Println("No models discovered from any provider.")
+		fmt.Println("Ensure API keys are set: OPENAI_API_KEY, ANTHROPIC_API_KEY, DEEPSEEK_API_KEY")
+		return nil
 	}
 
 	switch outputFormat {
 	case "json":
-		data, err := json.MarshalIndent(models, "", "  ")
+		data, err := json.MarshalIndent(allProviderModels, "", "  ")
 		if err != nil {
 			return err
 		}
 		fmt.Println(string(data))
 	case "yaml":
-		fmt.Println("models:")
-		for _, model := range models {
-			fmt.Printf("  - %s\n", model)
+		fmt.Println("providers:")
+		for _, pm := range allProviderModels {
+			fmt.Printf("  - provider: %s\n", pm.Provider)
+			if pm.Error != "" {
+				fmt.Printf("    error: %s\n", pm.Error)
+			} else {
+				fmt.Println("    models:")
+				for _, model := range pm.Models {
+					fmt.Printf("      - %s\n", model)
+				}
+			}
 		}
 	default:
-		fmt.Println("Available models:")
-		for _, model := range models {
-			fmt.Printf("  - %s\n", model)
+		fmt.Println("Available Models by Provider:")
+		fmt.Println("=============================")
+		for _, pm := range allProviderModels {
+			fmt.Printf("\n%s:\n", pm.Provider)
+			if pm.Error != "" {
+				fmt.Printf("  Error: %s\n", pm.Error)
+			} else if len(pm.Models) == 0 {
+				fmt.Println("  No models found")
+			} else {
+				for _, model := range pm.Models {
+					fmt.Printf("  - %s\n", model)
+				}
+			}
 		}
 	}
 
 	return nil
+}
+
+// discoverProviderModels attempts to discover available models from a provider
+func discoverProviderModels(client *llmverifier.LLMClient, provider string) ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	models, err := client.ListModels(ctx)
+	if err != nil {
+		// If ListModels fails, return known models for the provider
+		return getKnownModelsForProvider(provider), nil
+	}
+
+	return models, nil
+}
+
+// getKnownModelsForProvider returns commonly known models when discovery fails
+// These are used as fallback only when API discovery is not possible
+func getKnownModelsForProvider(provider string) []string {
+	switch provider {
+	case "openai":
+		return []string{
+			"gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4",
+			"gpt-3.5-turbo", "o1-preview", "o1-mini",
+		}
+	case "anthropic":
+		return []string{
+			"claude-3-5-sonnet-latest", "claude-3-5-haiku-latest",
+			"claude-3-opus-latest", "claude-3-sonnet-20240229",
+		}
+	case "deepseek":
+		return []string{
+			"deepseek-chat", "deepseek-coder", "deepseek-reasoner",
+		}
+	default:
+		return []string{}
+	}
 }
 
 func loadConfig() (*config.Config, error) {

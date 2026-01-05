@@ -424,18 +424,53 @@ func (hc *HealthChecker) checkSchedulerHealth() {
 	}
 }
 
-// checkNotificationsHealth checks notification system health (placeholder)
+// checkNotificationsHealth checks notification system health based on actual metrics
 func (hc *HealthChecker) checkNotificationsHealth() {
 	hc.mu.Lock()
 	defer hc.mu.Unlock()
 
+	start := time.Now()
 	component := hc.components["notifications"]
-	component.LastChecked = time.Now()
-	component.Status = HealthStatusHealthy
-	component.Message = "Notification system is operational"
-	component.ResponseTime = time.Millisecond * 8
+	component.LastChecked = start
 
-	component.Details = hc.metricsTracker.GetNotificationStats()
+	// Get notification statistics
+	stats := hc.metricsTracker.GetNotificationStats()
+	component.Details = stats
+
+	// Extract metrics for health evaluation
+	channelsConfigured, _ := stats["channels_configured"].(int)
+	messagesSent, _ := stats["messages_sent"].(int)
+	deliveryRate, _ := stats["delivery_rate"].(float64)
+
+	component.ResponseTime = time.Since(start)
+
+	// Evaluate health based on actual metrics
+	switch {
+	case channelsConfigured == 0:
+		// No channels configured - degraded state
+		component.Status = HealthStatusDegraded
+		component.Message = "No notification channels configured"
+
+	case deliveryRate < 0.5 && messagesSent > 10:
+		// Low delivery rate with significant message volume - unhealthy
+		component.Status = HealthStatusUnhealthy
+		component.Message = fmt.Sprintf("Low notification delivery rate: %.1f%%", deliveryRate*100)
+
+	case deliveryRate < 0.8 && messagesSent > 5:
+		// Moderate delivery rate - degraded
+		component.Status = HealthStatusDegraded
+		component.Message = fmt.Sprintf("Notification delivery rate below optimal: %.1f%%", deliveryRate*100)
+
+	case messagesSent == 0:
+		// No messages sent yet - healthy but with note
+		component.Status = HealthStatusHealthy
+		component.Message = "Notification system ready, no messages sent yet"
+
+	default:
+		// Normal operation
+		component.Status = HealthStatusHealthy
+		component.Message = fmt.Sprintf("Notification system operational (delivery rate: %.1f%%)", deliveryRate*100)
+	}
 }
 
 // updateSystemMetrics collects current system metrics
