@@ -456,7 +456,7 @@ top -p $(pgrep model-verification)
 - [Configuration Migration Guide](CONFIGURATION_MIGRATION_GUIDE.md)
 - [API Documentation](API_DOCUMENTATION.md)
 - [Test Suite Documentation](../COMPREHENSIVE_TEST_SUITE_DOCUMENTATION.md)
-- [Deployment Guide](DEPLOYMENT_GUIDE.md)
+- [Deployment Guide](../DEPLOYMENT.md)
 
 ## 📞 Support
 

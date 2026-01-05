@@ -240,22 +240,22 @@ These issues return fake/hardcoded data to end users in production.
 - **File:** `mobile/flutter/lib/core/services/api_service.dart`
 - **Line:** 30
 - **Issue:** `// TODO: Implement token management`
-- **Status:** [ ] NOT STARTED
-- **Fix Required:** Implement secure token storage using flutter_secure_storage
+- **Status:** [x] COMPLETED (Already implemented)
+- **Fix Applied:** Token management already implemented with FlutterSecureStorage, includes getToken(), setToken(), clearToken(), hasValidToken() with JWT expiration checking
 
 ### 4.2 CRITICAL - Flutter Secure Token Storage
 - **File:** `mobile/flutter/lib/core/services/api_service.dart`
 - **Line:** 54
 - **Issue:** `getToken()` returns null - auth completely broken
-- **Status:** [ ] NOT STARTED
-- **Fix Required:** Implement token persistence with encryption
+- **Status:** [x] COMPLETED (Already implemented)
+- **Fix Applied:** getToken() properly reads from FlutterSecureStorage with caching, setToken() persists with encryption
 
 ### 4.3 CRITICAL - Challenge Logic Implementation
 - **File:** `challenges/codebase/go_files/run_model_verification_clean/run_model_verification_clean.go`
 - **Line:** 21
 - **Issue:** `// TODO: Fix syntax errors and implement challenge logic`
-- **Status:** [ ] NOT STARTED (Note: Recent commit may have addressed this)
-- **Fix Required:** Verify implementation is complete
+- **Status:** [x] COMPLETED (2026-01-05)
+- **Fix Applied:** Challenge logic fully implemented with calculateVerificationScore() scoring system
 
 ### 4.4-4.8 MEDIUM - Flutter Settings Features
 - **File:** `mobile/flutter_app/lib/screens/settings_screen.dart`
@@ -270,10 +270,10 @@ These issues return fake/hardcoded data to end users in production.
 ## Section 5: Documentation Gaps (9 Issues)
 
 ### 5.1 HIGH - Broken Link in docs/README.md
-- **File:** `docs/README.md`
-- **Issue:** References `deployment/DEPLOYMENT_GUIDE.md` which doesn't exist
-- **Status:** [ ] NOT STARTED
-- **Fix Required:** Update link to `deployment/general-deployment-guide.md`
+- **File:** `docs/MODEL_VERIFICATION_GUIDE.md`, `docs/releases/RELEASE_NOTES_v2.0.md`
+- **Issue:** References `DEPLOYMENT_GUIDE.md` which doesn't exist
+- **Status:** [x] COMPLETED (2026-01-05)
+- **Fix Applied:** Updated links to point to existing `../DEPLOYMENT.md` file
 
 ### 5.2-5.6 HIGH - Missing Documentation Directories
 - **Issues:**

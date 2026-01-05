@@ -289,7 +289,7 @@ go get github.com/vasic-digital/LLMsVerifier@latest
 - **[Main README](../README.md)**: Updated with v2 features
 - **[API Documentation](docs/API_DOCUMENTATION.md)**: Updated with new endpoints
 - **[User Manual](docs/USER_MANUAL.md)**: Updated for v2 features
-- **[Deployment Guide](docs/DEPLOYMENT_GUIDE.md)**: Updated deployment procedures
+- **[Deployment Guide](../../DEPLOYMENT.md)**: Updated deployment procedures
 
 ## 🐛 Bug Fixes
 
