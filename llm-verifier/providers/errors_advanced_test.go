@@ -325,7 +325,8 @@ func TestGetFallbackModels_Anthropic(t *testing.T) {
 
 	foundClaude := false
 	for _, model := range models {
-		if model.ID == "claude-3-5-sonnet" || model.ID == "claude-3-haiku" {
+		// Updated model IDs for 2025-01 fallback models
+		if model.ID == "claude-3-5-sonnet-latest" || model.ID == "claude-3-5-haiku-latest" || model.ID == "claude-3-opus-latest" {
 			foundClaude = true
 		}
 	}

@@ -54,6 +54,10 @@ type Logger struct {
 	bufferSize   int
 	flushTicker  *time.Ticker
 	stopCh       chan struct{}
+	// In-memory log history for queryable persistence
+	history      []*LogEntry
+	historyMux   sync.RWMutex
+	maxHistory   int
 }
 
 // NewLogger creates a new structured logger
@@ -63,6 +67,8 @@ func NewLogger(db *database.Database, config map[string]any) (*Logger, error) {
 		bufferSize: 100,
 		buffer:     make([]*LogEntry, 0, 100),
 		stopCh:     make(chan struct{}),
+		history:    make([]*LogEntry, 0, 10000),
+		maxHistory: 10000, // Keep last 10k log entries in memory
 	}
 
 	// Parse configuration
@@ -189,21 +195,50 @@ func (l *Logger) QueryLogs(filters map[string]any, limit int, offset int) ([]*Lo
 	return []*LogEntry{}, nil
 }
 
-// GetLogStats returns logging statistics
+// GetLogStats returns logging statistics from the in-memory history
 func (l *Logger) GetLogStats() map[string]any {
-	return map[string]any{
-		"total_entries": 0,
-		"entries_by_level": map[string]int{
-			"debug":   0,
-			"info":    0,
-			"warning": 0,
-			"error":   0,
-			"fatal":   0,
-		},
-		"storage_size": 0,
-		"oldest_entry": nil,
-		"newest_entry": nil,
+	l.historyMux.RLock()
+	defer l.historyMux.RUnlock()
+
+	byLevel := map[string]int{
+		"debug":   0,
+		"info":    0,
+		"warning": 0,
+		"error":   0,
+		"fatal":   0,
 	}
+	byComponent := make(map[string]int)
+
+	var oldestEntry, newestEntry *LogEntry
+	for _, entry := range l.history {
+		byLevel[string(entry.Level)]++
+		if entry.Component != "" {
+			byComponent[entry.Component]++
+		}
+		if oldestEntry == nil || entry.Timestamp.Before(oldestEntry.Timestamp) {
+			oldestEntry = entry
+		}
+		if newestEntry == nil || entry.Timestamp.After(newestEntry.Timestamp) {
+			newestEntry = entry
+		}
+	}
+
+	stats := map[string]any{
+		"total_entries":    len(l.history),
+		"entries_by_level": byLevel,
+		"storage_size":     l.maxHistory,
+		"oldest_entry":     nil,
+		"newest_entry":     nil,
+	}
+
+	if oldestEntry != nil {
+		stats["oldest_entry"] = oldestEntry.Timestamp
+	}
+	if newestEntry != nil {
+		stats["newest_entry"] = newestEntry.Timestamp
+	}
+
+	return stats
 }
 
 // RotateLogFile rotates the current log file
@@ -357,9 +392,67 @@ func (l *Logger) writeToFile(entry *LogEntry) {
 }
 
 func (l *Logger) storeInDatabase(entry *LogEntry) {
-	// Store in database (placeholder)
-	// In real implementation, this would insert into logs table
+	l.historyMux.Lock()
+	defer l.historyMux.Unlock()
+
+	// Store in memory history
+	l.history = append(l.history, entry)
+
+	// Trim history if it exceeds max size (FIFO)
+	if len(l.history) > l.maxHistory {
+		l.history = l.history[len(l.history)-l.maxHistory:]
+	}
 }
+
+// GetLogHistory returns recent log entries from memory
+func (l *Logger) GetLogHistory(limit int) []*LogEntry {
+	l.historyMux.RLock()
+	defer l.historyMux.RUnlock()
+
+	if limit <= 0 || limit > len(l.history) {
+		limit = len(l.history)
+	}
+
+	// Return most recent entries
+	start := len(l.history) - limit
+	if start < 0 {
+		start = 0
+	}
+
+	result := make([]*LogEntry, limit)
+	copy(result, l.history[start:])
+	return result
+}
+
+// GetLogsByLevel returns log entries filtered by level
+func (l *Logger) GetLogsByLevel(level LogLevel, limit int) []*LogEntry {
+	l.historyMux.RLock()
+	defer l.historyMux.RUnlock()
+
+	var result []*LogEntry
+	// Iterate from most recent
+	for i := len(l.history) - 1; i >= 0 && (limit <= 0 || len(result) < limit); i-- {
+		if l.history[i].Level == level {
+			result = append(result, l.history[i])
+		}
+	}
+	return result
+}
+
+// GetLogsByCorrelationID returns log entries for a specific correlation ID
+func (l *Logger) GetLogsByCorrelationID(correlationID string) []*LogEntry {
+	l.historyMux.RLock()
+	defer l.historyMux.RUnlock()
+
+	var result []*LogEntry
+	for _, entry := range l.history {
+		if entry.CorrelationID == correlationID {
+			result = append(result, entry)
+		}
+	}
+	return result
+}
+
 
 func getLevelPriority(level LogLevel) int {
 	switch level {

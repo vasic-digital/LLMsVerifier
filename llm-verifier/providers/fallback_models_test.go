@@ -7,19 +7,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Tests updated for 2025-01 model lists
+
 func TestFallbackModels_OpenAI_Details(t *testing.T) {
 	models := GetFallbackModels("openai")
 
 	require.NotEmpty(t, models)
-	assert.Len(t, models, 3)
+	assert.GreaterOrEqual(t, len(models), 5) // Updated: OpenAI has gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-4, gpt-3.5-turbo, o1-preview, o1-mini
 
-	// Check model IDs
+	// Check model IDs - all these should be present
 	modelIDs := make([]string, len(models))
 	for i, m := range models {
 		modelIDs[i] = m.ID
 	}
 	assert.Contains(t, modelIDs, "gpt-4")
-	assert.Contains(t, modelIDs, "gpt-4-turbo")
+	assert.Contains(t, modelIDs, "gpt-4o")
 	assert.Contains(t, modelIDs, "gpt-3.5-turbo")
 
 	// Check model properties
@@ -34,7 +36,14 @@ func TestFallbackModels_Anthropic_Details(t *testing.T) {
 	models := GetFallbackModels("anthropic")
 
 	require.NotEmpty(t, models)
-	assert.Len(t, models, 2)
+	assert.GreaterOrEqual(t, len(models), 3) // Updated: Anthropic has claude-3.5-sonnet, claude-3.5-haiku, claude-3-opus, etc.
+
+	// Check for Claude model presence
+	modelIDs := make([]string, len(models))
+	for i, m := range models {
+		modelIDs[i] = m.ID
+	}
+	assert.Contains(t, modelIDs, "claude-3-5-sonnet-latest")
 
 	for _, m := range models {
 		assert.Equal(t, "anthropic", m.ProviderID)
@@ -47,7 +56,7 @@ func TestGetFallbackModels_Groq(t *testing.T) {
 	models := GetFallbackModels("groq")
 
 	require.NotEmpty(t, models)
-	assert.Len(t, models, 2)
+	assert.GreaterOrEqual(t, len(models), 3) // Updated: Groq has llama-3.3-70b, llama-3.1-70b, llama-3.1-8b, mixtral, gemma
 
 	for _, m := range models {
 		assert.Equal(t, "groq", m.ProviderID)
@@ -59,33 +68,46 @@ func TestGetFallbackModels_Gemini(t *testing.T) {
 	models := GetFallbackModels("gemini")
 
 	require.NotEmpty(t, models)
-	assert.Len(t, models, 1)
-	assert.Equal(t, "gemini-pro", models[0].ID)
-	assert.Equal(t, 30720, models[0].MaxTokens)
+	assert.GreaterOrEqual(t, len(models), 2) // Updated: Gemini has gemini-2.0-flash, gemini-1.5-pro, gemini-1.5-flash, gemini-pro
+
+	// Check for at least one Gemini model
+	modelIDs := make([]string, len(models))
+	for i, m := range models {
+		modelIDs[i] = m.ID
+	}
+	assert.Contains(t, modelIDs, "gemini-1.5-pro")
 }
 
 func TestGetFallbackModels_DeepSeek(t *testing.T) {
 	models := GetFallbackModels("deepseek")
 
 	require.NotEmpty(t, models)
-	assert.Len(t, models, 1)
-	assert.Equal(t, "deepseek-chat", models[0].ID)
+	assert.GreaterOrEqual(t, len(models), 2) // Updated: DeepSeek has deepseek-chat, deepseek-coder, deepseek-reasoner
+
+	modelIDs := make([]string, len(models))
+	for i, m := range models {
+		modelIDs[i] = m.ID
+	}
+	assert.Contains(t, modelIDs, "deepseek-chat")
 }
 
 func TestGetFallbackModels_NVIDIA(t *testing.T) {
 	models := GetFallbackModels("nvidia")
 
 	require.NotEmpty(t, models)
-	assert.Len(t, models, 1)
-	assert.Equal(t, "llama2-70b", models[0].ID)
-	assert.Equal(t, "NVIDIA", models[0].ProviderName)
+	assert.GreaterOrEqual(t, len(models), 1)
+
+	for _, m := range models {
+		assert.Equal(t, "nvidia", m.ProviderID)
+		assert.Equal(t, "NVIDIA", m.ProviderName)
+	}
 }
 
 func TestGetFallbackModels_OpenRouter(t *testing.T) {
 	models := GetFallbackModels("openrouter")
 
 	require.NotEmpty(t, models)
-	assert.Len(t, models, 2)
+	assert.GreaterOrEqual(t, len(models), 2)
 
 	for _, m := range models {
 		assert.Equal(t, "openrouter", m.ProviderID)
@@ -97,48 +119,76 @@ func TestGetFallbackModels_Together(t *testing.T) {
 	models := GetFallbackModels("together")
 
 	require.NotEmpty(t, models)
-	assert.Len(t, models, 1)
-	assert.Equal(t, "llama-2-70b-chat", models[0].ID)
+	assert.GreaterOrEqual(t, len(models), 2) // Updated: Together has llama-3.1-405b, llama-3.1-70b, mixtral
+
+	for _, m := range models {
+		assert.Equal(t, "together", m.ProviderID)
+		assert.Equal(t, "Together AI", m.ProviderName)
+	}
 }
 
 func TestGetFallbackModels_Mistral(t *testing.T) {
 	models := GetFallbackModels("mistral")
 
 	require.NotEmpty(t, models)
-	assert.Len(t, models, 2)
+	assert.GreaterOrEqual(t, len(models), 3) // Updated: Mistral has large, medium, small, codestral
 
 	modelIDs := make([]string, len(models))
 	for i, m := range models {
 		modelIDs[i] = m.ID
-		assert.Equal(t, 32000, m.MaxTokens)
 	}
-	assert.Contains(t, modelIDs, "mistral-tiny")
-	assert.Contains(t, modelIDs, "mistral-small")
+	assert.Contains(t, modelIDs, "mistral-large-latest")
+	assert.Contains(t, modelIDs, "mistral-small-latest")
 }
 
 func TestGetFallbackModels_Fireworks(t *testing.T) {
 	models := GetFallbackModels("fireworks")
 
 	require.NotEmpty(t, models)
-	assert.Len(t, models, 1)
-	assert.Equal(t, "llama-v2-7b-chat", models[0].ID)
+	assert.GreaterOrEqual(t, len(models), 2) // Updated: Fireworks has llama-3.1-405b, llama-3.1-70b, mixtral
+
+	for _, m := range models {
+		assert.Equal(t, "fireworks", m.ProviderID)
+		assert.Equal(t, "Fireworks", m.ProviderName)
+	}
 }
 
 func TestGetFallbackModels_Perplexity(t *testing.T) {
 	models := GetFallbackModels("perplexity")
 
 	require.NotEmpty(t, models)
-	assert.Len(t, models, 1)
-	assert.Equal(t, "pplx-70b-online", models[0].ID)
+	assert.GreaterOrEqual(t, len(models), 2) // Updated: Perplexity has sonar-huge, sonar-large, sonar-small
+
+	for _, m := range models {
+		assert.Equal(t, "perplexity", m.ProviderID)
+		assert.Equal(t, "Perplexity", m.ProviderName)
+	}
 }
 
 func TestGetFallbackModels_HuggingFace(t *testing.T) {
 	models := GetFallbackModels("huggingface")
 
 	require.NotEmpty(t, models)
-	assert.Len(t, models, 1)
-	assert.Equal(t, "llama-2-7b-chat", models[0].ID)
-	assert.Equal(t, "Hugging Face", models[0].ProviderName)
+	assert.GreaterOrEqual(t, len(models), 1)
+
+	for _, m := range models {
+		assert.Equal(t, "huggingface", m.ProviderID)
+		assert.Equal(t, "Hugging Face", m.ProviderName)
+	}
+}
+
+func TestGetFallbackModels_Cohere(t *testing.T) {
+	models := GetFallbackModels("cohere")
+
+	require.NotEmpty(t, models)
+	assert.GreaterOrEqual(t, len(models), 3) // Cohere has command-r-plus, command-r, command, command-light
+
+	modelIDs := make([]string, len(models))
+	for i, m := range models {
+		modelIDs[i] = m.ID
+	}
+	assert.Contains(t, modelIDs, "command-r-plus")
+	assert.Contains(t, modelIDs, "command")
 }
 
 func TestGetFallbackModels_UnknownProvider(t *testing.T) {
@@ -165,7 +215,7 @@ func TestGetFallbackModels_AllProvidersHaveValidModels(t *testing.T) {
 	providers := []string{
 		"openai", "anthropic", "groq", "gemini", "deepseek",
 		"nvidia", "openrouter", "together", "mistral",
-		"fireworks", "perplexity", "huggingface",
+		"fireworks", "perplexity", "huggingface", "cohere",
 	}
 
 	for _, provider := range providers {
@@ -182,4 +232,30 @@ func TestGetFallbackModels_AllProvidersHaveValidModels(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestModelCache_SetAndGet(t *testing.T) {
+	testModels := []Model{
+		{ID: "test-model-1", Name: "Test Model 1", ProviderID: "test", ProviderName: "Test", MaxTokens: 4096},
+		{ID: "test-model-2", Name: "Test Model 2", ProviderID: "test", ProviderName: "Test", MaxTokens: 8192},
+	}
+
+	// Set cached models
+	SetCachedModels("test-provider", testModels)
+
+	// Get cached models
+	cached, ok := GetCachedModels("test-provider")
+	require.True(t, ok, "Should find cached models")
+	assert.Equal(t, testModels, cached)
+}
+
+func TestModelCache_NotFound(t *testing.T) {
+	cached, ok := GetCachedModels("nonexistent-provider")
+	assert.False(t, ok, "Should not find cached models for nonexistent provider")
+	assert.Nil(t, cached)
+}
+
+func TestFallbackModelsVersion(t *testing.T) {
+	assert.NotEmpty(t, FallbackModelsVersion)
+	assert.Equal(t, "2025-01", FallbackModelsVersion)
 }

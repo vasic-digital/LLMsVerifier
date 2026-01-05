@@ -68,9 +68,9 @@ func (mvs *ModelVerificationService) VerifyModel(ctx context.Context, model Mode
 			ModelID:            model.ID,
 			ProviderID:         model.ProviderID,
 			VerificationStatus: "skipped",
-			CanSeeCode:         true, // Assume true when verification is disabled
-			AffirmativeResponse: true,
-			VerificationScore:  1.0,
+			CanSeeCode:         false, // Don't assume capabilities for unverified models
+			AffirmativeResponse: false,
+			VerificationScore:  0.0, // Zero score for unverified models - must be verified to get actual score
 			LastVerifiedAt:     time.Now(),
 		}, nil
 	}
