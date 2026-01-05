@@ -176,7 +176,83 @@ func TestACPsAutomationWorkflow(t *testing.T) {
 
 // TestACPsPerformanceBenchmark benchmarks ACP detection performance
 func TestACPsPerformanceBenchmark(t *testing.T) {
-	t.Skip("Benchmark test temporarily disabled - needs interface refactoring")
+	if testing.Short() {
+		t.Skip("Skipping benchmark test in short mode")
+	}
+
+	// Setup benchmark environment
+	cfg := setupTestEnvironment(t)
+	verifier := llmverifier.New(cfg)
+
+	// Define benchmark scenarios
+	benchmarkScenarios := []struct {
+		name          string
+		modelType     string
+		responseDelay time.Duration
+		iterations    int
+	}{
+		{
+			name:          "Fast model response",
+			modelType:     "gpt-3.5-turbo",
+			responseDelay: 50 * time.Millisecond,
+			iterations:    10,
+		},
+		{
+			name:          "Standard model response",
+			modelType:     "gpt-4",
+			responseDelay: 200 * time.Millisecond,
+			iterations:    5,
+		},
+		{
+			name:          "Slow model response",
+			modelType:     "deepseek-coder",
+			responseDelay: 500 * time.Millisecond,
+			iterations:    3,
+		},
+	}
+
+	for _, scenario := range benchmarkScenarios {
+		t.Run(scenario.name, func(t *testing.T) {
+			// Create benchmark client with simulated delay
+			client := &BenchmarkClient{
+				LLMClient:     llmverifier.NewLLMClient("https://api.benchmark.test", "test-key", nil),
+				ModelType:     scenario.modelType,
+				ResponseDelay: scenario.responseDelay,
+			}
+
+			var totalDuration time.Duration
+			successCount := 0
+
+			for i := 0; i < scenario.iterations; i++ {
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+				start := time.Now()
+				result := verifier.TestACPs(client.LLMClient, scenario.modelType, ctx)
+				elapsed := time.Since(start)
+				totalDuration += elapsed
+
+				if result {
+					successCount++
+				}
+
+				cancel()
+			}
+
+			avgDuration := totalDuration / time.Duration(scenario.iterations)
+			successRate := float64(successCount) / float64(scenario.iterations) * 100
+
+			t.Logf("Benchmark results for %s:", scenario.name)
+			t.Logf("  Average duration: %v", avgDuration)
+			t.Logf("  Total iterations: %d", scenario.iterations)
+			t.Logf("  Success rate: %.1f%%", successRate)
+
+			// Performance assertions
+			maxExpectedDuration := scenario.responseDelay * 3 // Allow 3x response delay for processing
+			if avgDuration > maxExpectedDuration {
+				t.Errorf("Average duration %v exceeds expected maximum %v", avgDuration, maxExpectedDuration)
+			}
+		})
+	}
 }
 
 // TestACPsSecurityValidation tests ACP security aspects

@@ -21,8 +21,8 @@ func configureSQLCipher(db *sql.DB) error {
 	pragmas := []string{
 		"PRAGMA cipher_page_size = 4096",
 		"PRAGMA kdf_iter = 64000",
-		"PRAGMA cipher_hmac_algorithm = HMAC_SHA1",
-		"PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA1",
+		"PRAGMA cipher_hmac_algorithm = HMAC_SHA256",
+		"PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA256",
 		"PRAGMA cipher_use_hmac = 1",
 		"PRAGMA foreign_keys = ON",
 		"PRAGMA journal_mode = WAL",
