@@ -450,6 +450,200 @@ top -p $(pgrep model-verification)
 4. **Provider Health**: Track provider-specific verification rates
 5. **Regular Reports**: Generate verification status reports
 
+## 🎯 Coding Capability Verification (Extended)
+
+### Overview
+
+Beyond basic code visibility verification, the **Coding Capability Verification** system tests whether an LLM can actually perform practical coding tasks. This extended verification ensures models are truly ready for coding assistance.
+
+### What It Tests
+
+The Coding Capability Verification runs four comprehensive tests:
+
+#### 1. Codebase Detection
+- **Purpose**: Tests if the model can identify and understand project structures
+- **Method**: Provides a directory structure and asks about project type
+- **Expected**: Model identifies the technology stack, project purpose, and structure
+- **Keywords Checked**: go, server, api, service, backend, web, application, project
+
+#### 2. Language Detection
+- **Purpose**: Tests if the model can identify programming languages
+- **Method**: Provides code sample and asks for language identification
+- **Expected**: Model correctly identifies the programming language
+- **Keywords Checked**: go, golang
+
+#### 3. Code Generation
+- **Purpose**: Tests if the model can generate working code
+- **Method**: Asks for implementation of a specific function (e.g., prime checker)
+- **Expected**: Model generates syntactically correct, functional code
+- **Keywords Checked**: func, isPrime, int, bool, return, true, false, for, %
+
+#### 4. Code Analysis
+- **Purpose**: Tests if the model can understand and explain complex code
+- **Method**: Provides concurrent code and asks for explanation
+- **Expected**: Model identifies patterns, explains behavior, discusses trade-offs
+- **Keywords Checked**: concurrent, parallel, goroutine, channel, semaphore, worker, pool
+
+### Capability Scores
+
+Each test generates a capability score (0.0 to 1.0):
+
+| Score Range | Rating | Meaning |
+|-------------|--------|---------|
+| 0.8 - 1.0 | Excellent | Full understanding and capability |
+| 0.6 - 0.8 | Good | Strong capability with minor gaps |
+| 0.4 - 0.6 | Acceptable | Basic capability, usable with limitations |
+| 0.0 - 0.4 | Failed | Insufficient capability for coding tasks |
+
+### Readiness Score Calculation
+
+The **Readiness Score** determines if a model is "ready for coding":
+
+| Capability | Weight | Rationale |
+|------------|--------|-----------|
+| Codebase Detection | 30% | Essential for understanding project context |
+| Language Detection | 25% | Important for correct syntax and conventions |
+| Code Generation | 25% | Critical for producing useful code |
+| Code Analysis | 20% | Valuable for debugging and review |
+
+**Threshold**: Models with readiness score ≥ 0.6 (60%) are marked as "Ready for Coding"
+
+### Usage Example
+
+```go
+package main
+
+import (
+    "context"
+    "net/http"
+    "time"
+
+    "llm-verifier/verification"
+)
+
+func main() {
+    // Create the verification service
+    service := verification.NewCodingCapabilityVerificationService(nil, nil)
+
+    // Create provider client
+    client := &verification.SimpleProviderClient{
+        BaseURL:    "https://api.openai.com/v1",
+        APIKey:     "your-api-key",
+        HTTPClient: &http.Client{Timeout: 30 * time.Second},
+    }
+
+    // Run comprehensive coding capability verification
+    result, err := service.VerifyModelCodingCapabilities(
+        context.Background(),
+        "gpt-4",
+        "openai",
+        client,
+    )
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Check results
+    fmt.Printf("Model: %s\n", result.ModelID)
+    fmt.Printf("Status: %s\n", result.Status)
+    fmt.Printf("Overall Score: %.2f\n", result.OverallCapabilityScore)
+    fmt.Printf("Ready for Coding: %v\n", result.ReadyForCoding)
+
+    // Individual capabilities
+    fmt.Printf("\nCapabilities:\n")
+    fmt.Printf("  Codebase Detection: %v (%.2f)\n", result.CanDetectCodebase, result.CodebaseDetection.CapabilityScore)
+    fmt.Printf("  Language Detection: %v (%.2f)\n", result.CanIdentifyLanguage, result.LanguageDetection.CapabilityScore)
+    fmt.Printf("  Code Generation: %v (%.2f)\n", result.CanGenerateCode, result.CodeGeneration.CapabilityScore)
+    fmt.Printf("  Code Analysis: %v (%.2f)\n", result.CanAnalyzeCode, result.CodeAnalysis.CapabilityScore)
+}
+```
+
+### Configuration
+
+Add coding capability verification to your `config.yaml`:
+
+```yaml
+coding_capability_verification:
+  enabled: true
+  run_with_code_verification: true  # Run after basic code visibility
+  min_readiness_score: 0.6          # Minimum to pass
+
+  tests:
+    codebase_detection:
+      enabled: true
+      min_score: 0.4
+    language_detection:
+      enabled: true
+      min_score: 0.5
+    code_generation:
+      enabled: true
+      min_score: 0.5
+    code_analysis:
+      enabled: true
+      min_score: 0.3
+```
+
+### Result Structure
+
+```json
+{
+  "verification_id": "coding_cap_openai_gpt-4_1735933200",
+  "model_id": "gpt-4",
+  "provider_id": "openai",
+  "status": "verified",
+  "overall_capability_score": 0.85,
+  "readiness_score": 0.9,
+  "ready_for_coding": true,
+  "can_detect_codebase": true,
+  "can_identify_language": true,
+  "can_generate_code": true,
+  "can_analyze_code": true,
+  "codebase_detection": {
+    "test_type": "codebase_detection",
+    "passed": true,
+    "capability_score": 0.78,
+    "matched_keywords": ["go", "server", "api", "project", "backend"],
+    "response_time_ms": 1250
+  },
+  "language_detection": {
+    "test_type": "language_detection",
+    "passed": true,
+    "capability_score": 1.0,
+    "matched_keywords": ["go", "golang"],
+    "response_time_ms": 890
+  },
+  "code_generation": {
+    "test_type": "code_generation",
+    "passed": true,
+    "capability_score": 0.89,
+    "matched_keywords": ["func", "isPrime", "int", "bool", "return", "for", "%"],
+    "response_time_ms": 2100
+  },
+  "code_analysis": {
+    "test_type": "code_analysis",
+    "passed": true,
+    "capability_score": 0.72,
+    "matched_keywords": ["goroutine", "channel", "concurrent", "semaphore"],
+    "response_time_ms": 1800
+  }
+}
+```
+
+### Integration with OpenCode Challenge
+
+The Coding Capability Verification is used in the OpenCode challenge to ensure that SuperAgent's virtual LLM model can actually perform coding tasks:
+
+```bash
+# Run the OpenCode challenge which includes coding capability tests
+./challenges/scripts/opencode_challenge.sh "Do you see my codebase? If yes, tell me what programming language is dominant in this project."
+```
+
+The challenge verifies:
+1. Basic API connectivity
+2. Code visibility (can the model see code?)
+3. Coding capabilities (can the model work with code?)
+4. Practical coding readiness (is the model ready for real coding tasks?)
+
 ## 🔗 Related Documentation
 
 - [LLMSVD Suffix Guide](LLMSVD_SUFFIX_GUIDE.md)
