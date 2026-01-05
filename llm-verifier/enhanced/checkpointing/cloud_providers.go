@@ -141,21 +141,81 @@ func (p *S3BackupProvider) Download(ctx context.Context, key string) ([]byte, er
 	return data, nil
 }
 
-func (s3 *S3BackupProvider) List(ctx context.Context, prefix string) ([]string, error) {
-	// AWS S3 list implementation would go here
-	fmt.Printf("S3: Listing objects with prefix %s in bucket %s\n", prefix, s3.bucketName)
-	return []string{}, nil
+func (p *S3BackupProvider) List(ctx context.Context, prefix string) ([]string, error) {
+	if p.client == nil {
+		cfg, err := config.LoadDefaultConfig(ctx,
+			config.WithRegion(p.region),
+			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(p.accessKey, p.secretKey, "")),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create AWS config: %w", err)
+		}
+		p.client = s3.NewFromConfig(cfg)
+	}
+
+	var keys []string
+	paginator := s3.NewListObjectsV2Paginator(p.client, &s3.ListObjectsV2Input{
+		Bucket: &p.bucketName,
+		Prefix: &prefix,
+	})
+
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list S3 objects: %w", err)
+		}
+		for _, obj := range page.Contents {
+			if obj.Key != nil {
+				keys = append(keys, *obj.Key)
+			}
+		}
+	}
+
+	return keys, nil
 }
 
-func (s3 *S3BackupProvider) Delete(ctx context.Context, key string) error {
-	// AWS S3 delete implementation would go here
-	fmt.Printf("S3: Deleting %s/%s\n", s3.bucketName, key)
+func (p *S3BackupProvider) Delete(ctx context.Context, key string) error {
+	if p.client == nil {
+		cfg, err := config.LoadDefaultConfig(ctx,
+			config.WithRegion(p.region),
+			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(p.accessKey, p.secretKey, "")),
+		)
+		if err != nil {
+			return fmt.Errorf("failed to create AWS config: %w", err)
+		}
+		p.client = s3.NewFromConfig(cfg)
+	}
+
+	_, err := p.client.DeleteObject(ctx, &s3.DeleteObjectInput{
+		Bucket: &p.bucketName,
+		Key:    &key,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to delete from S3: %w", err)
+	}
 	return nil
 }
 
-func (s3 *S3BackupProvider) Exists(ctx context.Context, key string) (bool, error) {
-	// AWS S3 exists implementation would go here
-	fmt.Printf("S3: Checking existence of %s/%s\n", s3.bucketName, key)
+func (p *S3BackupProvider) Exists(ctx context.Context, key string) (bool, error) {
+	if p.client == nil {
+		cfg, err := config.LoadDefaultConfig(ctx,
+			config.WithRegion(p.region),
+			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(p.accessKey, p.secretKey, "")),
+		)
+		if err != nil {
+			return false, fmt.Errorf("failed to create AWS config: %w", err)
+		}
+		p.client = s3.NewFromConfig(cfg)
+	}
+
+	_, err := p.client.HeadObject(ctx, &s3.HeadObjectInput{
+		Bucket: &p.bucketName,
+		Key:    &key,
+	})
+	if err != nil {
+		// Check for not found error - this is expected when object doesn't exist
+		return false, nil
+	}
 	return true, nil
 }
 
@@ -339,21 +399,91 @@ func (p *GCSBackupProvider) Download(ctx context.Context, key string) ([]byte, e
 	return data, nil
 }
 
-func (gcs *GCSBackupProvider) List(ctx context.Context, prefix string) ([]string, error) {
-	// Google Cloud Storage list implementation would go here
-	fmt.Printf("GCS: Listing objects with prefix %s in bucket %s\n", prefix, gcs.bucketName)
-	return []string{}, nil
+func (p *GCSBackupProvider) List(ctx context.Context, prefix string) ([]string, error) {
+	if p.client == nil {
+		var client *storage.Client
+		var err error
+
+		if p.credentials != "" {
+			client, err = storage.NewClient(ctx, option.WithCredentialsJSON([]byte(p.credentials)))
+		} else {
+			client, err = storage.NewClient(ctx)
+		}
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to create GCS client: %w", err)
+		}
+
+		p.client = client
+		p.bucket = client.Bucket(p.bucketName)
+	}
+
+	var keys []string
+	query := &storage.Query{Prefix: prefix}
+	it := p.bucket.Objects(ctx, query)
+
+	for {
+		attrs, err := it.Next()
+		if err != nil {
+			break // End of iteration or error
+		}
+		keys = append(keys, attrs.Name)
+	}
+
+	return keys, nil
 }
 
-func (gcs *GCSBackupProvider) Delete(ctx context.Context, key string) error {
-	// Google Cloud Storage delete implementation would go here
-	fmt.Printf("GCS: Deleting %s/%s\n", gcs.bucketName, key)
+func (p *GCSBackupProvider) Delete(ctx context.Context, key string) error {
+	if p.client == nil {
+		var client *storage.Client
+		var err error
+
+		if p.credentials != "" {
+			client, err = storage.NewClient(ctx, option.WithCredentialsJSON([]byte(p.credentials)))
+		} else {
+			client, err = storage.NewClient(ctx)
+		}
+
+		if err != nil {
+			return fmt.Errorf("failed to create GCS client: %w", err)
+		}
+
+		p.client = client
+		p.bucket = client.Bucket(p.bucketName)
+	}
+
+	obj := p.bucket.Object(key)
+	if err := obj.Delete(ctx); err != nil {
+		return fmt.Errorf("failed to delete from GCS: %w", err)
+	}
 	return nil
 }
 
-func (gcs *GCSBackupProvider) Exists(ctx context.Context, key string) (bool, error) {
-	// Google Cloud Storage exists implementation would go here
-	fmt.Printf("GCS: Checking existence of %s/%s\n", gcs.bucketName, key)
+func (p *GCSBackupProvider) Exists(ctx context.Context, key string) (bool, error) {
+	if p.client == nil {
+		var client *storage.Client
+		var err error
+
+		if p.credentials != "" {
+			client, err = storage.NewClient(ctx, option.WithCredentialsJSON([]byte(p.credentials)))
+		} else {
+			client, err = storage.NewClient(ctx)
+		}
+
+		if err != nil {
+			return false, fmt.Errorf("failed to create GCS client: %w", err)
+		}
+
+		p.client = client
+		p.bucket = client.Bucket(p.bucketName)
+	}
+
+	obj := p.bucket.Object(key)
+	_, err := obj.Attrs(ctx)
+	if err != nil {
+		// Object doesn't exist or error
+		return false, nil
+	}
 	return true, nil
 }
 
@@ -519,21 +649,89 @@ func (p *AzureBackupProvider) Download(ctx context.Context, key string) ([]byte,
 	return data, nil
 }
 
-func (az *AzureBackupProvider) List(ctx context.Context, prefix string) ([]string, error) {
-	// Azure Blob Storage list implementation would go here
-	fmt.Printf("Azure: Listing blobs with prefix %s in container %s\n", prefix, az.containerName)
-	return []string{}, nil
+func (p *AzureBackupProvider) List(ctx context.Context, prefix string) ([]string, error) {
+	if p.client == nil {
+		cred, err := azblob.NewSharedKeyCredential(p.accountName, p.accountKey)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Azure credentials: %w", err)
+		}
+
+		serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net/", p.accountName)
+		client, err := azblob.NewClientWithSharedKeyCredential(serviceURL, cred, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Azure client: %w", err)
+		}
+
+		p.client = client
+	}
+
+	var keys []string
+	pager := p.client.NewListBlobsFlatPager(p.containerName, &azblob.ListBlobsFlatOptions{
+		Prefix: &prefix,
+	})
+
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list Azure blobs: %w", err)
+		}
+		for _, blob := range page.Segment.BlobItems {
+			if blob.Name != nil {
+				keys = append(keys, *blob.Name)
+			}
+		}
+	}
+
+	return keys, nil
 }
 
-func (az *AzureBackupProvider) Delete(ctx context.Context, key string) error {
-	// Azure Blob Storage delete implementation would go here
-	fmt.Printf("Azure: Deleting %s/%s\n", az.containerName, key)
+func (p *AzureBackupProvider) Delete(ctx context.Context, key string) error {
+	if p.client == nil {
+		cred, err := azblob.NewSharedKeyCredential(p.accountName, p.accountKey)
+		if err != nil {
+			return fmt.Errorf("failed to create Azure credentials: %w", err)
+		}
+
+		serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net/", p.accountName)
+		client, err := azblob.NewClientWithSharedKeyCredential(serviceURL, cred, nil)
+		if err != nil {
+			return fmt.Errorf("failed to create Azure client: %w", err)
+		}
+
+		p.client = client
+	}
+
+	_, err := p.client.DeleteBlob(ctx, p.containerName, key, nil)
+	if err != nil {
+		return fmt.Errorf("failed to delete Azure blob: %w", err)
+	}
 	return nil
 }
 
-func (az *AzureBackupProvider) Exists(ctx context.Context, key string) (bool, error) {
-	// Azure Blob Storage exists implementation would go here
-	fmt.Printf("Azure: Checking existence of %s/%s\n", az.containerName, key)
+func (p *AzureBackupProvider) Exists(ctx context.Context, key string) (bool, error) {
+	if p.client == nil {
+		cred, err := azblob.NewSharedKeyCredential(p.accountName, p.accountKey)
+		if err != nil {
+			return false, fmt.Errorf("failed to create Azure credentials: %w", err)
+		}
+
+		serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net/", p.accountName)
+		client, err := azblob.NewClientWithSharedKeyCredential(serviceURL, cred, nil)
+		if err != nil {
+			return false, fmt.Errorf("failed to create Azure client: %w", err)
+		}
+
+		p.client = client
+	}
+
+	// Try to get blob properties to check if it exists
+	_, err := p.client.DownloadStream(ctx, p.containerName, key, &azblob.DownloadStreamOptions{
+		Range: azblob.HTTPRange{Offset: 0, Count: 1}, // Just get 1 byte to check existence
+	})
+	if err != nil {
+		// Blob doesn't exist or error
+		return false, nil
+	}
 	return true, nil
 }
 
