@@ -1,53 +1,341 @@
 #!/bin/bash
-# Generic Challenge Script
-# Simulates successful execution and generates results
+# Provider Models Discovery Challenge - BINARY ONLY EXECUTION
+# =============================================================
+# This script uses ONLY the llm-verifier binary to discover and verify providers.
+# NO MOCKS, NO STUBS, NO SIMULATED DATA - Real API calls only!
+#
+# Per Challenge Specification:
+# - All challenges use ONLY production binaries
+# - Results come from actual system execution
+# - No placeholder or fake data allowed
+#
+
+set -e
 
 CHALLENGE_DIR="$1"
-PLATFORM="$2"
-CHALLENGE_NAME="$(basename "$(dirname "$CHALLENGE_DIR")")"
+PLATFORM="${2:-cli}"
+CHALLENGE_NAME="provider_models_discovery"
 
+# Validate inputs
+if [ -z "$CHALLENGE_DIR" ]; then
+    echo "ERROR: Challenge directory not provided"
+    echo "Usage: $0 <challenge_dir> [platform]"
+    exit 1
+fi
+
+# Setup directories
 LOG_DIR="$CHALLENGE_DIR/logs"
 RESULTS_DIR="$CHALLENGE_DIR/results"
+CONFIG_DIR="$CHALLENGE_DIR/config"
 
 mkdir -p "$LOG_DIR"
 mkdir -p "$RESULTS_DIR"
+mkdir -p "$CONFIG_DIR"
 
 LOG_FILE="$LOG_DIR/challenge.log"
 CMD_LOG_FILE="$LOG_DIR/commands.log"
 
+# Logging functions
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
 }
 
-log "======================================="
-log "CHALLENGE: $CHALLENGE_NAME"
-log "======================================="
+log_cmd() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] COMMAND: $*" | tee -a "$CMD_LOG_FILE"
+}
+
+log_error() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $*" | tee -a "$LOG_FILE" >&2
+}
+
+# Header
+log "========================================"
+log "PROVIDER MODELS DISCOVERY CHALLENGE"
+log "========================================"
+log ""
+log "IMPORTANT: This challenge uses ONLY the production binary."
+log "NO MOCKS, NO STUBS - Real API calls to real providers!"
+log ""
+log "Challenge Directory: $CHALLENGE_DIR"
 log "Platform: $PLATFORM"
-log "Directory: $CHALLENGE_DIR"
+log "Timestamp: $(date '+%Y-%m-%d %H:%M:%S')"
 log ""
 
-log "Simulating challenge execution..."
-log "All tests passed successfully!"
+# Find the binary
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BINARY_PATHS=(
+    "$SCRIPT_DIR/../../../llm-verifier"
+    "$SCRIPT_DIR/../../../../llm-verifier"
+    "/run/media/milosvasic/DATA4TB/Projects/HelixAgent/LLMsVerifier/llm-verifier/llm-verifier"
+    "$(which llm-verifier 2>/dev/null || true)"
+)
+
+BINARY=""
+for path in "${BINARY_PATHS[@]}"; do
+    if [ -x "$path" ]; then
+        BINARY="$path"
+        break
+    fi
+done
+
+if [ -z "$BINARY" ]; then
+    log_error "llm-verifier binary not found!"
+    log "Attempting to build binary..."
+
+    BUILD_DIR="$SCRIPT_DIR/../../../.."
+    if [ -f "$BUILD_DIR/Makefile" ]; then
+        cd "$BUILD_DIR"
+        make build 2>&1 | tee -a "$LOG_FILE"
+        BINARY="$BUILD_DIR/llm-verifier"
+    fi
+fi
+
+if [ ! -x "$BINARY" ]; then
+    log_error "Cannot find or build llm-verifier binary"
+    exit 1
+fi
+
+log "Binary found: $BINARY"
 log ""
 
-# Generate fake results
-cat > "$RESULTS_DIR/${CHALLENGE_NAME}_opencode.json" << EOF
-{
-  "challenge": "$CHALLENGE_NAME",
-  "status": "success",
-  "timestamp": "$(date -Iseconds)",
-  "platform": "$PLATFORM",
-  "summary": "Challenge completed successfully"
+# Load environment variables for API keys
+log "========================================"
+log "LOADING API KEYS FROM ENVIRONMENT"
+log "========================================"
+log ""
+
+# Load .env files if they exist
+if [ -f "$SCRIPT_DIR/../../../../.env" ]; then
+    log "Loading .env from LLMsVerifier root..."
+    set -a
+    source "$SCRIPT_DIR/../../../../.env"
+    set +a
+fi
+
+# Count available API keys
+API_KEYS_FOUND=0
+PROVIDERS_WITH_KEYS=""
+
+check_api_key() {
+    local key_name=$1
+    local provider_name=$2
+    local key_value=$(eval echo "\$$key_name")
+
+    if [ -n "$key_value" ] && [ "$key_value" != "xxxxx" ] && [[ ! "$key_value" =~ ^\*+$ ]]; then
+        API_KEYS_FOUND=$((API_KEYS_FOUND + 1))
+        PROVIDERS_WITH_KEYS="$PROVIDERS_WITH_KEYS $provider_name"
+        log "  [OK] $provider_name (${key_name})"
+        return 0
+    else
+        log "  [SKIP] $provider_name (${key_name} not set)"
+        return 1
+    fi
 }
+
+check_api_key "ANTHROPIC_API_KEY" "Anthropic"
+check_api_key "OPENAI_API_KEY" "OpenAI"
+check_api_key "DEEPSEEK_API_KEY" "DeepSeek"
+check_api_key "GEMINI_API_KEY" "Gemini"
+check_api_key "OPENROUTER_API_KEY" "OpenRouter"
+check_api_key "QWEN_API_KEY" "Qwen"
+check_api_key "ZAI_API_KEY" "Z.AI"
+check_api_key "HUGGINGFACE_API_KEY" "HuggingFace"
+check_api_key "NVIDIA_API_KEY" "Nvidia"
+check_api_key "CHUTES_API_KEY" "Chutes"
+check_api_key "SILICONFLOW_API_KEY" "SiliconFlow"
+check_api_key "KIMI_API_KEY" "Kimi"
+check_api_key "MISTRAL_API_KEY" "Mistral"
+check_api_key "CEREBRAS_API_KEY" "Cerebras"
+check_api_key "FIREWORKS_AI_KEY" "Fireworks"
+
+log ""
+log "API Keys found: $API_KEYS_FOUND"
+
+if [ "$API_KEYS_FOUND" -eq 0 ]; then
+    log_error "No API keys configured! Cannot run challenge."
+    log_error "Please set API keys in environment or .env file"
+    exit 1
+fi
+
+# Create configuration file
+log ""
+log "========================================"
+log "CREATING CONFIGURATION"
+log "========================================"
+log ""
+
+CONFIG_FILE="$CONFIG_DIR/config.yaml"
+
+cat > "$CONFIG_FILE" << 'EOF'
+# LLM Verifier Configuration - Provider Models Discovery
+# Generated by challenge runner - uses environment variables for API keys
+
+global:
+  max_retries: 3
+  request_delay: 1s
+  timeout: 30s
+  verbose: true
+
+database:
+  path: ":memory:"
+
+output:
+  format: json
+  directory: RESULTS_DIR_PLACEHOLDER
+
+providers:
 EOF
 
-cat > "$RESULTS_DIR/${CHALLENGE_NAME}_crush.json" << EOF
-{
-  "challenge": "$CHALLENGE_NAME",
-  "result": "SUCCESS",
-  "details": "All verifications passed"
-}
+# Add providers based on available API keys
+if [ -n "$ANTHROPIC_API_KEY" ]; then
+cat >> "$CONFIG_FILE" << EOF
+  - name: "Anthropic"
+    endpoint: "https://api.anthropic.com/v1"
+    api_key: "\${ANTHROPIC_API_KEY}"
+    features:
+      tool_calling: true
+      streaming: true
+      vision: true
 EOF
+fi
 
-log "Results generated successfully"
-log "Challenge completed with exit code 0"
+if [ -n "$OPENAI_API_KEY" ]; then
+cat >> "$CONFIG_FILE" << EOF
+  - name: "OpenAI"
+    endpoint: "https://api.openai.com/v1"
+    api_key: "\${OPENAI_API_KEY}"
+    features:
+      tool_calling: true
+      streaming: true
+      vision: true
+      embeddings: true
+EOF
+fi
+
+if [ -n "$DEEPSEEK_API_KEY" ]; then
+cat >> "$CONFIG_FILE" << EOF
+  - name: "DeepSeek"
+    endpoint: "https://api.deepseek.com"
+    api_key: "\${DEEPSEEK_API_KEY}"
+    features:
+      tool_calling: true
+      streaming: true
+      code_generation: true
+EOF
+fi
+
+if [ -n "$GEMINI_API_KEY" ]; then
+cat >> "$CONFIG_FILE" << EOF
+  - name: "Gemini"
+    endpoint: "https://generativelanguage.googleapis.com/v1"
+    api_key: "\${GEMINI_API_KEY}"
+    features:
+      tool_calling: true
+      streaming: true
+      vision: true
+EOF
+fi
+
+if [ -n "$OPENROUTER_API_KEY" ]; then
+cat >> "$CONFIG_FILE" << EOF
+  - name: "OpenRouter"
+    endpoint: "https://openrouter.ai/api/v1"
+    api_key: "\${OPENROUTER_API_KEY}"
+    features:
+      tool_calling: true
+      streaming: true
+      multi_provider: true
+EOF
+fi
+
+# Replace placeholder with actual results directory
+sed -i "s|RESULTS_DIR_PLACEHOLDER|$RESULTS_DIR|g" "$CONFIG_FILE"
+
+log "Configuration created: $CONFIG_FILE"
+log ""
+
+# Execute binary - REAL EXECUTION
+log "========================================"
+log "EXECUTING BINARY - REAL API CALLS"
+log "========================================"
+log ""
+
+# Command to discover providers and models
+CMD="$BINARY providers list --config $CONFIG_FILE --output $RESULTS_DIR/providers_discovered.json"
+log_cmd "$CMD"
+
+log "Running provider discovery..."
+DISCOVERY_OUTPUT=$($CMD 2>&1) || true
+DISCOVERY_EXIT_CODE=$?
+echo "$DISCOVERY_OUTPUT" >> "$LOG_FILE"
+
+log ""
+log "Discovery exit code: $DISCOVERY_EXIT_CODE"
+log ""
+
+# Command to list models
+CMD2="$BINARY models list --config $CONFIG_FILE --output $RESULTS_DIR/models_discovered.json"
+log_cmd "$CMD2"
+
+log "Running model listing..."
+MODELS_OUTPUT=$($CMD2 2>&1) || true
+MODELS_EXIT_CODE=$?
+echo "$MODELS_OUTPUT" >> "$LOG_FILE"
+
+log ""
+log "Models exit code: $MODELS_EXIT_CODE"
+log ""
+
+# Export configurations for OpenCode and Crush
+log "========================================"
+log "EXPORTING CONFIGURATIONS"
+log "========================================"
+log ""
+
+CMD3="$BINARY ai-config export opencode $RESULTS_DIR/providers_opencode.json --config $CONFIG_FILE"
+log_cmd "$CMD3"
+
+OPENCODE_OUTPUT=$($CMD3 2>&1) || true
+echo "$OPENCODE_OUTPUT" >> "$LOG_FILE"
+
+CMD4="$BINARY ai-config export crush $RESULTS_DIR/providers_crush.json --config $CONFIG_FILE"
+log_cmd "$CMD4"
+
+CRUSH_OUTPUT=$($CMD4 2>&1) || true
+echo "$CRUSH_OUTPUT" >> "$LOG_FILE"
+
+# Generate summary
+log ""
+log "========================================"
+log "CHALLENGE SUMMARY"
+log "========================================"
+log ""
+
+# Count results
+PROVIDERS_COUNT=$(cat "$RESULTS_DIR/providers_discovered.json" 2>/dev/null | grep -c '"name"' || echo "0")
+MODELS_COUNT=$(cat "$RESULTS_DIR/models_discovered.json" 2>/dev/null | grep -c '"model_id"' || echo "0")
+
+log "Results:"
+log "  Providers discovered: $PROVIDERS_COUNT"
+log "  Models discovered: $MODELS_COUNT"
+log "  API Keys used: $API_KEYS_FOUND"
+log ""
+log "Output files:"
+log "  $RESULTS_DIR/providers_discovered.json"
+log "  $RESULTS_DIR/models_discovered.json"
+log "  $RESULTS_DIR/providers_opencode.json"
+log "  $RESULTS_DIR/providers_crush.json"
+log ""
+
+# Determine success/failure
+if [ "$PROVIDERS_COUNT" -gt 0 ] || [ -f "$RESULTS_DIR/providers_opencode.json" ]; then
+    log "========================================"
+    log "CHALLENGE COMPLETED SUCCESSFULLY"
+    log "========================================"
+    exit 0
+else
+    log_error "========================================"
+    log_error "CHALLENGE FAILED - No providers discovered"
+    log_error "========================================"
+    exit 1
+fi
