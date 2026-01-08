@@ -283,6 +283,47 @@ func (pr *ProviderRegistry) registerDefaultProviders() {
 			},
 		},
 	}
+	// Qwen/Alibaba Cloud DashScope configuration
+	pr.providers["qwen"] = &ProviderConfig{
+		Name:            "qwen",
+		Endpoint:        "https://dashscope.aliyuncs.com/api/v1",
+		AuthType:        "bearer", // Supports both API key and OAuth
+		StreamingFormat: "sse",
+		DefaultModel:    "qwen-turbo",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 60,
+			RequestsPerHour:   1000,
+			BurstLimit:        10,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 60 * time.Second,
+			StreamTimeout:  300 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming":    true,
+			"supports_functions":    true,
+			"supports_vision":       false,
+			"supports_acp":          true,
+			"supports_oauth":        true, // OAuth via Qwen Code CLI
+			"max_context_length":    32768,
+			"supported_models": []string{
+				"qwen-turbo",
+				"qwen-plus",
+				"qwen-max",
+				"qwen-max-longcontext",
+				"qwen-coder-turbo",
+			},
+		},
+	}
+
 	// Generic configuration for unknown providers
 	pr.providers["generic"] = &ProviderConfig{
 		Name:            "generic",

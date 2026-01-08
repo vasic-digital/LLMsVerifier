@@ -11,11 +11,23 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"llm-verifier/auth"
+)
+
+// AuthType represents the type of authentication used
+type AuthType string
+
+const (
+	AuthTypeAPIKey AuthType = "api_key"
+	AuthTypeOAuth  AuthType = "oauth"
 )
 
 // AnthropicAdapter provides Anthropic-specific functionality
 type AnthropicAdapter struct {
 	BaseAdapter
+	authType        AuthType
+	oauthCredReader *auth.OAuthCredentialReader
 }
 
 // NewAnthropicAdapter creates a new Anthropic adapter
@@ -31,7 +43,76 @@ func NewAnthropicAdapter(client *http.Client, endpoint, apiKey string) *Anthropi
 				"x-api-key":         apiKey,
 			},
 		},
+		authType: AuthTypeAPIKey,
 	}
+}
+
+// NewAnthropicAdapterWithOAuth creates a new Anthropic adapter using OAuth credentials from Claude Code CLI
+func NewAnthropicAdapterWithOAuth(client *http.Client, endpoint string) (*AnthropicAdapter, error) {
+	credReader := auth.GetGlobalOAuthReader()
+
+	// Verify credentials are available
+	if !credReader.HasValidClaudeCredentials() {
+		return nil, fmt.Errorf("no valid Claude OAuth credentials available: ensure you are logged in via Claude Code CLI")
+	}
+
+	token, err := credReader.GetClaudeAccessToken()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Claude OAuth token: %w", err)
+	}
+
+	return &AnthropicAdapter{
+		BaseAdapter: BaseAdapter{
+			client:   client,
+			endpoint: strings.TrimSuffix(endpoint, "/"),
+			apiKey:   "", // Will use OAuth token instead
+			headers: map[string]string{
+				"Content-Type":      "application/json",
+				"anthropic-version": "2023-06-01",
+				"Authorization":     "Bearer " + token,
+			},
+		},
+		authType:        AuthTypeOAuth,
+		oauthCredReader: credReader,
+	}, nil
+}
+
+// NewAnthropicAdapterAuto creates an Anthropic adapter, automatically choosing OAuth if enabled and available
+func NewAnthropicAdapterAuto(client *http.Client, endpoint, apiKey string) (*AnthropicAdapter, error) {
+	// Check if OAuth is enabled and credentials are available
+	if auth.IsClaudeOAuthEnabled() {
+		credReader := auth.GetGlobalOAuthReader()
+		if credReader.HasValidClaudeCredentials() {
+			return NewAnthropicAdapterWithOAuth(client, endpoint)
+		}
+	}
+
+	// Fall back to API key authentication
+	if apiKey == "" {
+		return nil, fmt.Errorf("no API key provided and OAuth credentials not available")
+	}
+	return NewAnthropicAdapter(client, endpoint, apiKey), nil
+}
+
+// GetAuthType returns the authentication type being used
+func (a *AnthropicAdapter) GetAuthType() AuthType {
+	return a.authType
+}
+
+// refreshAuthHeaders refreshes the authentication headers if using OAuth
+func (a *AnthropicAdapter) refreshAuthHeaders() error {
+	if a.authType != AuthTypeOAuth || a.oauthCredReader == nil {
+		return nil
+	}
+
+	token, err := a.oauthCredReader.GetClaudeAccessToken()
+	if err != nil {
+		return fmt.Errorf("failed to refresh OAuth token: %w", err)
+	}
+
+	a.headers["Authorization"] = "Bearer " + token
+	delete(a.headers, "x-api-key") // Ensure we're not mixing auth methods
+	return nil
 }
 
 // AnthropicChatRequest represents a chat completion request for Anthropic
@@ -179,6 +260,16 @@ func (a *AnthropicAdapter) StreamChatCompletion(ctx context.Context, request Ope
 	responseChan := make(chan OpenAIStreamResponse, 10)
 	errorChan := make(chan error, 1)
 
+	// Refresh OAuth headers if needed (do this synchronously before starting goroutine)
+	if err := a.refreshAuthHeaders(); err != nil {
+		go func() {
+			defer close(responseChan)
+			defer close(errorChan)
+			errorChan <- fmt.Errorf("failed to refresh auth: %w", err)
+		}()
+		return responseChan, errorChan
+	}
+
 	go func() {
 		defer close(responseChan)
 		defer close(errorChan)
@@ -271,6 +362,11 @@ func (a *AnthropicAdapter) StreamChatCompletion(ctx context.Context, request Ope
 
 // ChatCompletion performs a non-streaming chat completion
 func (a *AnthropicAdapter) ChatCompletion(ctx context.Context, request OpenAIChatRequest) (*OpenAIChatResponse, error) {
+	// Refresh OAuth headers if needed
+	if err := a.refreshAuthHeaders(); err != nil {
+		return nil, fmt.Errorf("failed to refresh auth: %w", err)
+	}
+
 	anthropicReq := a.convertToAnthropicRequest(request)
 
 	// Prepare request body
