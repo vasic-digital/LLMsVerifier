@@ -631,7 +631,7 @@ coding_capability_verification:
 
 ### Integration with OpenCode Challenge
 
-The Coding Capability Verification is used in the OpenCode challenge to ensure that SuperAgent's virtual LLM model can actually perform coding tasks:
+The Coding Capability Verification is used in the OpenCode challenge to ensure that HelixAgent's virtual LLM model can actually perform coding tasks:
 
 ```bash
 # Run the OpenCode challenge which includes coding capability tests
