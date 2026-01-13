@@ -116,6 +116,7 @@ LLMsVerifier/
 │   ├── providers/          # LLM provider adapters (OpenAI, Anthropic, Cohere, Groq, etc.)
 │   ├── database/           # Data access layer with SQL Cipher encryption
 │   ├── verification/       # Model verification engine
+│   ├── pkg/cliagents/      # CLI Agent configuration generation (16+ agents)
 │   ├── auth/               # Authentication (JWT) and RBAC
 │   ├── config/             # Configuration management (Viper)
 │   ├── analytics/          # Analytics engine
@@ -154,8 +155,81 @@ cd llm-verifier && go get <package>
 - **Verification Engine** (`verification/`): Runs 20+ capability tests including "Do you see my code?" verification
 - **Provider Service** (`providers/model_provider_service.go`): Manages 17+ LLM provider integrations with dynamic model discovery
 - **Model Verification Service** (`providers/model_verification_service.go`): Validates model capabilities
+- **CLI Agents Package** (`pkg/cliagents/`): Unified configuration generation and validation for 16+ CLI agents
 - **API Server** (`api/`): Gin-based REST API with JWT auth, rate limiting, Swagger docs at `/swagger/index.html`
 - **Database Layer** (`database/`): SQLite with SQL Cipher encryption, connection pooling
+
+### CLI Agents Package (`pkg/cliagents/`)
+
+LLMsVerifier provides a unified interface for generating and validating CLI agent configurations. This is the central authority for all CLI agent configuration generation in HelixAgent.
+
+**Supported CLI Agents (16 total):**
+
+| Agent | Config File | Description |
+|-------|-------------|-------------|
+| OpenCode | `opencode.json` | OpenCode.ai CLI - AI-powered coding assistant |
+| Crush | `crush.json` | Charm Land Crush CLI |
+| KiloCode | `kilocode-settings.json` | KiloCode VS Code extension |
+| HelixCode | `helixcode.json` | HelixCode CLI - Native for HelixAgent |
+| Aider | `.aider.conf.yml` | Aider CLI - AI pair programming |
+| Continue | `config.json` | Continue.dev extension |
+| Cursor | `settings.json` | Cursor AI-first editor |
+| Cline | `cline.json` | Cline CLI |
+| Windsurf | `windsurf.json` | Windsurf editor |
+| Zed | `settings.json` | Zed editor with AI |
+| Neovim AI | `ai.lua` | Neovim AI plugins |
+| VS Code AI | `settings.json` | VS Code AI extensions |
+| IntelliJ AI | `ai-settings.xml` | IntelliJ AI plugins |
+| Claude Code | `settings.json` | Claude Code CLI |
+| Qwen Code | `qwen-code.json` | Qwen Code CLI |
+| GitHub Copilot | `hosts.json` | GitHub Copilot |
+
+**Usage:**
+
+```go
+import "llm-verifier/pkg/cliagents"
+
+// Create generator with custom config
+config := &cliagents.GeneratorConfig{
+    HelixAgentHost: "localhost",
+    HelixAgentPort: 7061,
+    OutputDir:      "~/Downloads",
+    MCPServers:     cliagents.DefaultMCPServers(),
+}
+generator := cliagents.NewUnifiedGenerator(config)
+
+// Generate all configurations
+results, _ := generator.GenerateAll(context.Background())
+
+// Generate specific agent
+result, _ := generator.Generate(ctx, cliagents.AgentOpenCode)
+
+// Validate configuration
+validationResult, _ := generator.Validate(cliagents.AgentOpenCode, config)
+
+// Get schema for an agent
+schema, _ := generator.GetSchema(cliagents.AgentOpenCode)
+```
+
+**CLI Tool:**
+
+```bash
+# Build and run the unified CLI generator
+cd challenges/codebase/go_files/unified_cli_generator
+go build -o unified_cli_generator .
+
+# List supported agents
+./unified_cli_generator -list
+
+# Generate all configurations
+./unified_cli_generator -agent all -output-dir ~/Downloads/configs
+
+# Generate specific agent
+./unified_cli_generator -agent opencode
+
+# Validate existing config
+./unified_cli_generator -validate ~/Downloads/config.json
+```
 
 ### (llmsvd) Suffix System
 
