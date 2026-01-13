@@ -362,6 +362,174 @@ func (da *DeepSeekAdapter) GetRateLimitInfo(headers http.Header) RateLimitInfo {
 	return info
 }
 
+// ZenAdapter provides OpenCode Zen-specific optimizations (FREE tier models)
+type ZenAdapter struct{}
+
+// NewZenAdapter creates a new Zen adapter
+func NewZenAdapter() *ZenAdapter {
+	return &ZenAdapter{}
+}
+
+// GetProviderName returns the provider name
+func (za *ZenAdapter) GetProviderName() string {
+	return "zen"
+}
+
+// OptimizeRequest optimizes requests for Zen
+func (za *ZenAdapter) OptimizeRequest(req *LLMRequest) *LLMRequest {
+	optimized := *req // Copy the request
+
+	// Zen free models work well with moderate temperature
+	if optimized.Temperature == nil {
+		temp := 0.7
+		optimized.Temperature = &temp
+	}
+
+	// Set reasonable max_tokens for free tier
+	if optimized.MaxTokens == nil || *optimized.MaxTokens > 4096 {
+		maxTokens := 4096
+		optimized.MaxTokens = &maxTokens
+	}
+
+	// Add system message for code-focused models
+	if len(optimized.Messages) > 0 && optimized.Messages[0].Role != "system" {
+		systemMessage := Message{
+			Role:    "system",
+			Content: "You are a helpful AI assistant powered by OpenCode Zen. Provide accurate and well-structured responses.",
+		}
+		optimized.Messages = append([]Message{systemMessage}, optimized.Messages...)
+	}
+
+	return &optimized
+}
+
+// ParseStreamingResponse parses Zen streaming responses (OpenAI-compatible SSE format)
+func (za *ZenAdapter) ParseStreamingResponse(reader io.Reader) <-chan StreamingChunk {
+	ch := make(chan StreamingChunk, 10)
+
+	go func() {
+		defer close(ch)
+
+		scanner := bufio.NewScanner(reader)
+		for scanner.Scan() {
+			line := scanner.Text()
+
+			// Skip empty lines and comments
+			line = strings.TrimSpace(line)
+			if line == "" || strings.HasPrefix(line, ":") {
+				continue
+			}
+
+			// Zen uses OpenAI-compatible SSE format: "data: {...}"
+			if strings.HasPrefix(line, "data: ") {
+				data := strings.TrimPrefix(line, "data: ")
+
+				if data == "[DONE]" {
+					ch <- StreamingChunk{Finish: true}
+					return
+				}
+
+				var event map[string]interface{}
+				if err := json.Unmarshal([]byte(data), &event); err != nil {
+					ch <- StreamingChunk{Error: fmt.Sprintf("Failed to parse event: %v", err)}
+					continue
+				}
+
+				// Extract content from choices
+				if choices, ok := event["choices"].([]interface{}); ok && len(choices) > 0 {
+					if choice, ok := choices[0].(map[string]interface{}); ok {
+						if delta, ok := choice["delta"].(map[string]interface{}); ok {
+							if content, ok := delta["content"].(string); ok && content != "" {
+								ch <- StreamingChunk{
+									Content: content,
+									Finish:  false,
+								}
+							}
+						}
+
+						// Check if this is the final message
+						if finishReason, ok := choice["finish_reason"].(string); ok && finishReason != "" {
+							ch <- StreamingChunk{Finish: true}
+							return
+						}
+					}
+				}
+			}
+		}
+
+		if err := scanner.Err(); err != nil {
+			ch <- StreamingChunk{Error: fmt.Sprintf("Scanner error: %v", err)}
+		}
+
+		// Send finish signal
+		ch <- StreamingChunk{Finish: true}
+	}()
+
+	return ch
+}
+
+// HandleError handles Zen-specific errors
+func (za *ZenAdapter) HandleError(resp *http.Response, body []byte) error {
+	if resp.StatusCode < 400 {
+		return nil
+	}
+
+	// Zen uses OpenAI-compatible error format
+	var errorResp struct {
+		Error struct {
+			Message string `json:"message"`
+			Type    string `json:"type"`
+			Code    string `json:"code"`
+		} `json:"error"`
+	}
+
+	if err := json.Unmarshal(body, &errorResp); err != nil {
+		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+	}
+
+	switch resp.StatusCode {
+	case 401:
+		return fmt.Errorf("Zen authentication failed: %s", errorResp.Error.Message)
+	case 429:
+		return fmt.Errorf("Zen rate limit exceeded: %s", errorResp.Error.Message)
+	case 500, 502, 503, 504:
+		return fmt.Errorf("Zen server error: %s", errorResp.Error.Message)
+	default:
+		return fmt.Errorf("Zen API error (%s): %s", errorResp.Error.Type, errorResp.Error.Message)
+	}
+}
+
+// GetOptimalBatchSize returns optimal batch size for Zen
+func (za *ZenAdapter) GetOptimalBatchSize() int {
+	return 10 // Conservative for free tier
+}
+
+// GetRateLimitInfo extracts rate limit info from Zen headers
+func (za *ZenAdapter) GetRateLimitInfo(headers http.Header) RateLimitInfo {
+	info := RateLimitInfo{}
+
+	if rpm := headers.Get("x-ratelimit-limit-requests"); rpm != "" {
+		if val, err := strconv.Atoi(rpm); err == nil {
+			info.RequestsPerMinute = &val
+		}
+	}
+
+	if tpm := headers.Get("x-ratelimit-limit-tokens"); tpm != "" {
+		if val, err := strconv.Atoi(tpm); err == nil {
+			info.TokensPerMinute = &val
+		}
+	}
+
+	if reset := headers.Get("x-ratelimit-reset-requests"); reset != "" {
+		if timestamp, err := strconv.ParseInt(reset, 10, 64); err == nil {
+			resetTime := time.Unix(timestamp, 0)
+			info.ResetTime = &resetTime
+		}
+	}
+
+	return info
+}
+
 // AdapterRegistry manages provider adapters
 type AdapterRegistry struct {
 	adapters map[string]ProviderAdapter
@@ -377,6 +545,7 @@ func NewAdapterRegistry() *AdapterRegistry {
 	// Register built-in adapters
 	registry.RegisterAdapter(NewOpenAIAdapter())
 	registry.RegisterAdapter(NewDeepSeekAdapter())
+	registry.RegisterAdapter(NewZenAdapter())
 
 	return registry
 }

@@ -324,6 +324,46 @@ func (pr *ProviderRegistry) registerDefaultProviders() {
 		},
 	}
 
+	// OpenCode Zen configuration (FREE: Big Pickle, Grok Code Fast, GLM 4.7, GPT 5 Nano)
+	pr.providers["zen"] = &ProviderConfig{
+		Name:            "zen",
+		Endpoint:        "https://opencode.ai/zen/v1/chat/completions",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "opencode/grok-code",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 60,
+			RequestsPerHour:   1000,
+			BurstLimit:        10,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 60 * time.Second,
+			StreamTimeout:  300 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming":    true,
+			"supports_functions":    true,
+			"supports_vision":       false,
+			"supports_acp":          true,
+			"free_tier":             true,
+			"max_context_length":    128000,
+			"supported_models": []string{
+				"opencode/big-pickle",     // Big Pickle (stealth model)
+				"opencode/grok-code",      // Grok Code Fast (xAI code model)
+				"opencode/glm-4.7-free",   // GLM 4.7 Free
+				"opencode/gpt-5-nano",     // GPT 5 Nano free tier
+			},
+		},
+	}
+
 	// Generic configuration for unknown providers
 	pr.providers["generic"] = &ProviderConfig{
 		Name:            "generic",
