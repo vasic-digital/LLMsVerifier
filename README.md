@@ -75,6 +75,14 @@
 - [API Changelog](llm-verifier/docs/CHANGELOG.md)
 - [Test Suite Documentation](docs/COMPREHENSIVE_TEST_SUITE_DOCUMENTATION.md)
 
+### Capability Detection (NEW)
+- [Capability Detection Guide](docs/CAPABILITY_DETECTION.md) - Dynamic capability detection for 18+ CLI agents and 10+ LLM providers
+  - Full streaming type support (SSE, WebSocket, AsyncGenerator, JSONL, EventStream)
+  - HTTP/3 availability tracking (none currently supported)
+  - Compression support (gzip, brotli, semantic, chat)
+  - Caching detection (Anthropic, DashScope, prompt caching)
+  - Optimized CLI agent configuration generation
+
 ## 🚀 Quick Start
 
 ### Prerequisites
