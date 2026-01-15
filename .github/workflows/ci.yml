@@ -1,10 +1,19 @@
 name: CI
 
+# Manual trigger only - no automatic runs on push/PR
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      run_security:
+        description: 'Run security checks'
+        required: false
+        default: 'true'
+        type: boolean
+      run_lint:
+        description: 'Run linting'
+        required: false
+        default: 'true'
+        type: boolean
 
 jobs:
   test:

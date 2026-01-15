@@ -1,12 +1,28 @@
 name: CI/CD Pipeline
 
+# Manual trigger only - no automatic runs on push/PR
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
-  release:
-    types: [ published ]
+  workflow_dispatch:
+    inputs:
+      run_security:
+        description: 'Run security scans'
+        required: false
+        default: 'true'
+        type: boolean
+      run_performance:
+        description: 'Run performance tests'
+        required: false
+        default: 'false'
+        type: boolean
+      deploy_target:
+        description: 'Deploy target (none/staging/production)'
+        required: false
+        default: 'none'
+        type: choice
+        options:
+          - none
+          - staging
+          - production
 
 env:
   GO_VERSION: '1.21'

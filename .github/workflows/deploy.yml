@@ -1,16 +1,24 @@
 name: CI/CD Pipeline for LLM Verifier
 
+# Manual trigger only - no automatic runs on push/PR
 on:
-  workflow_dispatch: # Manual trigger
-  push:
-    branches:
-      - main
-      - develop
-      - release/*
-  pull_request:
-    branches:
-      - main
-      - develop
+  workflow_dispatch:
+    inputs:
+      run_tests:
+        description: 'Run test suite'
+        required: false
+        default: 'true'
+        type: boolean
+      deploy_staging:
+        description: 'Deploy to staging'
+        required: false
+        default: 'false'
+        type: boolean
+      deploy_production:
+        description: 'Deploy to production'
+        required: false
+        default: 'false'
+        type: boolean
 
 env:
   GO_VERSION: 1.21
