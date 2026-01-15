@@ -1,0 +1,185 @@
+# LLMsVerifier Messaging Configuration
+# This file configures RabbitMQ (task queue) and Kafka (event stream) brokers
+
+messaging:
+  # Enable/disable messaging features
+  enabled: true
+
+  # Fallback to in-memory broker when external brokers unavailable
+  fallback_enabled: true
+  fallback_timeout: 5s
+
+# RabbitMQ Configuration (Task Queue Broker)
+rabbitmq:
+  # Connection settings
+  host: ${RABBITMQ_HOST:-localhost}
+  port: ${RABBITMQ_PORT:-5672}
+  username: ${RABBITMQ_USER:-llmsverifier}
+  password: ${RABBITMQ_PASSWORD:-llmsverifier123}
+  vhost: ${RABBITMQ_VHOST:-llmsverifier}
+
+  # TLS settings
+  use_tls: false
+  # tls_cert_file: /path/to/cert.pem
+  # tls_key_file: /path/to/key.pem
+  # tls_ca_file: /path/to/ca.pem
+
+  # Connection behavior
+  connection_timeout: 30s
+  heartbeat_interval: 10s
+  reconnect_interval: 1s
+  max_reconnect_interval: 30s
+  max_reconnect_attempts: 0  # 0 = infinite
+
+  # Channel settings
+  channel_max: 0  # 0 = no limit
+  frame_size: 0   # 0 = server default
+
+  # Consumer settings
+  prefetch_count: 10
+  prefetch_size: 0
+
+  # Publisher settings
+  publisher_confirms: true
+  confirm_timeout: 5s
+
+  # Queue declarations (auto-created on startup)
+  queues:
+    - name: llmsverifier.tasks.verification
+      durable: true
+      auto_delete: false
+      dead_letter_exchange: llmsverifier.dlx
+      dead_letter_routing_key: dlq
+      message_ttl: 3600000  # 1 hour in ms
+
+    - name: llmsverifier.tasks.provider
+      durable: true
+      auto_delete: false
+      dead_letter_exchange: llmsverifier.dlx
+      dead_letter_routing_key: dlq
+
+    - name: llmsverifier.tasks.model
+      durable: true
+      auto_delete: false
+      dead_letter_exchange: llmsverifier.dlx
+      dead_letter_routing_key: dlq
+
+    - name: llmsverifier.dlq
+      durable: true
+      auto_delete: false
+
+  # Exchange declarations
+  exchanges:
+    - name: llmsverifier.tasks
+      type: direct
+      durable: true
+      auto_delete: false
+
+    - name: llmsverifier.events
+      type: topic
+      durable: true
+      auto_delete: false
+
+    - name: llmsverifier.dlx
+      type: direct
+      durable: true
+      auto_delete: false
+
+# Kafka Configuration (Event Stream Broker)
+kafka:
+  # Broker addresses
+  brokers:
+    - ${KAFKA_BROKER:-localhost:9092}
+
+  # Client identification
+  client_id: ${KAFKA_CLIENT_ID:-llmsverifier}
+  group_id: ${KAFKA_GROUP_ID:-llmsverifier-consumer}
+
+  # TLS settings
+  use_tls: false
+  # tls_cert_file: /path/to/cert.pem
+  # tls_key_file: /path/to/key.pem
+  # tls_ca_file: /path/to/ca.pem
+
+  # SASL Authentication
+  sasl_enabled: false
+  sasl_mechanism: PLAIN  # PLAIN, SCRAM-SHA-256, SCRAM-SHA-512
+  sasl_username: ${KAFKA_SASL_USER:-}
+  sasl_password: ${KAFKA_SASL_PASSWORD:-}
+
+  # Producer settings
+  required_acks: -1  # -1 = all replicas, 0 = none, 1 = leader only
+  idempotent: true
+  batch_size: 16384
+  batch_timeout: 10ms
+  compression_type: lz4  # none, gzip, snappy, lz4, zstd
+
+  # Consumer settings
+  fetch_min_bytes: 1
+  fetch_max_bytes: 10485760  # 10MB
+  max_wait_time: 1s
+  auto_offset_reset: latest  # earliest, latest
+  auto_commit: false
+  auto_commit_interval: 5s
+
+  # Connection timeouts
+  dial_timeout: 30s
+  read_timeout: 30s
+  write_timeout: 30s
+  metadata_max_retries: 3
+
+  # Retry settings
+  retry_backoff: 100ms
+  retry_max_backoff: 10s
+  max_retries: 5
+
+  # Topic definitions (auto-created on startup if auto_create_topics enabled)
+  topics:
+    - name: llmsverifier.events.verification
+      partitions: 3
+      replication_factor: 1
+      retention_hours: 168  # 7 days
+
+    - name: llmsverifier.events.provider
+      partitions: 3
+      replication_factor: 1
+      retention_hours: 168
+
+    - name: llmsverifier.events.model
+      partitions: 3
+      replication_factor: 1
+      retention_hours: 168
+
+    - name: llmsverifier.events.audit
+      partitions: 3
+      replication_factor: 1
+      retention_hours: 720  # 30 days
+
+    - name: llmsverifier.events.metrics
+      partitions: 3
+      replication_factor: 1
+      retention_hours: 72  # 3 days
+
+    - name: llmsverifier.dlq
+      partitions: 1
+      replication_factor: 1
+      retention_hours: 720  # 30 days
+
+# Circuit Breaker Configuration
+circuit_breaker:
+  enabled: true
+  failure_threshold: 5
+  success_threshold: 2
+  timeout: 30s
+
+# Retry Configuration
+retry:
+  max_retries: 3
+  initial_backoff: 100ms
+  max_backoff: 10s
+  backoff_factor: 2.0
+
+# Health Check Configuration
+health_check:
+  interval: 30s
+  timeout: 5s
