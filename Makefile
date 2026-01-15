@@ -4,7 +4,9 @@
 .PHONY: help build test clean docker deps lint format security check all \
         container-detect container-build container-start container-stop \
         container-logs container-status container-run \
-        podman-build podman-run podman-compose-up podman-compose-down
+        podman-build podman-run podman-compose-up podman-compose-down \
+        messaging-start messaging-stop messaging-logs messaging-status \
+        messaging-health messaging-clean messaging-topics messaging-queues test-messaging
 
 # Default target
 help: ## Show this help message
@@ -134,6 +136,54 @@ podman-compose-up: ## Start with podman-compose
 
 podman-compose-down: ## Stop with podman-compose
 	podman-compose down
+
+# Messaging Infrastructure (RabbitMQ + Kafka)
+messaging-start: ## Start messaging infrastructure (RabbitMQ + Kafka)
+	@echo "Starting messaging infrastructure..."
+	docker-compose -f docker-compose.messaging.yml up -d
+	@echo "Waiting for services to be healthy..."
+	@sleep 10
+	@echo "Messaging infrastructure started"
+	@echo "RabbitMQ UI: http://localhost:15672 (llmsverifier/llmsverifier123)"
+	@echo "Kafka UI: http://localhost:8082"
+
+messaging-stop: ## Stop messaging infrastructure
+	@echo "Stopping messaging infrastructure..."
+	docker-compose -f docker-compose.messaging.yml down
+
+messaging-logs: ## View messaging infrastructure logs
+	docker-compose -f docker-compose.messaging.yml logs -f
+
+messaging-status: ## Check messaging infrastructure status
+	@echo "=== RabbitMQ Status ==="
+	@docker exec llmsverifier-rabbitmq rabbitmqctl status 2>/dev/null || echo "RabbitMQ not running"
+	@echo ""
+	@echo "=== Kafka Status ==="
+	@docker exec llmsverifier-kafka kafka-topics --bootstrap-server localhost:9092 --list 2>/dev/null || echo "Kafka not running"
+
+messaging-health: ## Check messaging infrastructure health
+	@echo "Checking RabbitMQ..."
+	@curl -s -u llmsverifier:llmsverifier123 http://localhost:15672/api/health/checks/alarms 2>/dev/null || echo "RabbitMQ health check failed"
+	@echo ""
+	@echo "Checking Kafka..."
+	@docker exec llmsverifier-kafka kafka-broker-api-versions --bootstrap-server localhost:9092 2>/dev/null | head -5 || echo "Kafka health check failed"
+
+messaging-clean: ## Clean messaging infrastructure (removes volumes)
+	@echo "WARNING: This will delete all messaging data!"
+	@read -p "Are you sure? (y/N): " confirm; \
+	if [ "$$confirm" = "y" ] || [ "$$confirm" = "Y" ]; then \
+		docker-compose -f docker-compose.messaging.yml down -v; \
+		echo "Messaging infrastructure cleaned"; \
+	fi
+
+messaging-topics: ## List Kafka topics
+	docker exec llmsverifier-kafka kafka-topics --bootstrap-server localhost:9092 --list
+
+messaging-queues: ## List RabbitMQ queues
+	docker exec llmsverifier-rabbitmq rabbitmqctl list_queues
+
+test-messaging: ## Run messaging layer tests
+	go test -v -cover ./internal/messaging/...
 
 # Development
 run: ## Run the application locally
