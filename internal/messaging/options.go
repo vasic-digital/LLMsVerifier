@@ -24,6 +24,12 @@ type PublishOptions struct {
 	// ConfirmTimeout is the timeout for waiting for confirmation.
 	ConfirmTimeout time.Duration
 
+	// Exchange specifies the exchange to publish to (RabbitMQ).
+	Exchange string
+
+	// RoutingKey specifies the routing key for exchange routing (RabbitMQ).
+	RoutingKey string
+
 	// Partition specifies the target partition (Kafka).
 	Partition *int32
 
@@ -122,6 +128,27 @@ func WithPublishHeaders(headers map[string]string) PublishOption {
 func WithDeduplicationID(id string) PublishOption {
 	return func(o *PublishOptions) {
 		o.DeduplicationID = id
+	}
+}
+
+// WithExchange sets the exchange to publish to (RabbitMQ).
+func WithExchange(exchange string) PublishOption {
+	return func(o *PublishOptions) {
+		o.Exchange = exchange
+	}
+}
+
+// WithRoutingKey sets the routing key (RabbitMQ).
+func WithRoutingKey(key string) PublishOption {
+	return func(o *PublishOptions) {
+		o.RoutingKey = key
+	}
+}
+
+// WithPersistence sets the persistence flag (alias for WithPersistent).
+func WithPersistence(persistent bool) PublishOption {
+	return func(o *PublishOptions) {
+		o.Persistent = persistent
 	}
 }
 
