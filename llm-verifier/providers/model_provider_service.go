@@ -26,6 +26,7 @@ type ModelProviderService struct {
 	// Priority 2: Provider API clients
 	httpClient      *http.Client
 	providerClients map[string]*ProviderClient
+	clientsMutex    sync.RWMutex // Protects providerClients map for concurrent access
 
 	// Priority 3: models.dev fallback
 	modelsDevClient *verification.EnhancedModelsDevClient
@@ -151,7 +152,9 @@ func (mps *ModelProviderService) RegisterProvider(providerID, baseURL, apiKey st
 		logger:     mps.logger,
 	}
 
+	mps.clientsMutex.Lock()
 	mps.providerClients[providerID] = client
+	mps.clientsMutex.Unlock()
 	mps.logInfo(fmt.Sprintf("Registered provider: %s", providerID))
 }
 
@@ -304,7 +307,15 @@ func (mps *ModelProviderService) GetAllModels() (map[string][]Model, error) {
 
 	mps.logInfo("Fetching models for all providers")
 
+	// Get a snapshot of provider IDs under read lock
+	mps.clientsMutex.RLock()
+	providerIDs := make([]string, 0, len(mps.providerClients))
 	for providerID := range mps.providerClients {
+		providerIDs = append(providerIDs, providerID)
+	}
+	mps.clientsMutex.RUnlock()
+
+	for _, providerID := range providerIDs {
 		wg.Add(1)
 
 		go func(pid string) {
@@ -367,7 +378,9 @@ func (mps *ModelProviderService) loadFromConfig(providerID string) []Model {
 
 // fetchFromProviderAPI fetches models directly from provider API
 func (mps *ModelProviderService) fetchFromProviderAPI(providerID string) ([]Model, error) {
+	mps.clientsMutex.RLock()
 	client, exists := mps.providerClients[providerID]
+	mps.clientsMutex.RUnlock()
 	if !exists {
 		return nil, fmt.Errorf("provider %s not registered", providerID)
 	}
@@ -648,13 +661,24 @@ func (mps *ModelProviderService) RefreshCache() error {
 }
 
 // GetAllProviders returns all registered providers
+// Note: Returns a copy of the map to prevent concurrent modification issues
 func (mps *ModelProviderService) GetAllProviders() map[string]*ProviderClient {
-	return mps.providerClients
+	mps.clientsMutex.RLock()
+	defer mps.clientsMutex.RUnlock()
+
+	// Return a copy to prevent concurrent modification
+	result := make(map[string]*ProviderClient, len(mps.providerClients))
+	for k, v := range mps.providerClients {
+		result[k] = v
+	}
+	return result
 }
 
 // Enhanced fetchFromProviderAPI that uses provider-specific adapters
 func (mps *ModelProviderService) fetchFromProviderAPIEnhanced(providerID string) ([]Model, error) {
+	mps.clientsMutex.RLock()
 	client, exists := mps.providerClients[providerID]
+	mps.clientsMutex.RUnlock()
 	if !exists {
 		return nil, fmt.Errorf("provider %s not registered", providerID)
 	}
@@ -759,7 +783,9 @@ func (mps *ModelProviderService) fetchModelsFromAdapter(adapter interface{}, pro
 
 // fetchFromProviderAPIGeneric uses the original generic approach for providers without specific adapters
 func (mps *ModelProviderService) fetchFromProviderAPIGeneric(providerID string) ([]Model, error) {
+	mps.clientsMutex.RLock()
 	client, exists := mps.providerClients[providerID]
+	mps.clientsMutex.RUnlock()
 	if !exists {
 		return nil, fmt.Errorf("provider %s not registered", providerID)
 	}
