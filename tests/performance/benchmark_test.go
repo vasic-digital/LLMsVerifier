@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -193,65 +194,63 @@ func TestPerformanceUnderLoad(t *testing.T) {
 		t.Skip("Skipping performance test in short mode")
 	}
 
-	// Setup test server
-	requestCount := 0
-	var mu sync.Mutex
-	
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mu.Lock()
-		requestCount++
-		mu.Unlock()
-		
-		// Simulate processing time
-		time.Sleep(10 * time.Millisecond)
-		
-		response := map[string]interface{}{
-			"status": "ok",
-			"count":  requestCount,
-		}
-		json.NewEncoder(w).Encode(response)
-	}))
-	defer server.Close()
-
 	// Test with increasing load
 	concurrencyLevels := []int{1, 10, 50, 100}
-	
+
 	for _, concurrency := range concurrencyLevels {
 		t.Run(fmt.Sprintf("Concurrency_%d", concurrency), func(t *testing.T) {
+			// Setup test server with atomic counter per subtest
+			var requestCount atomic.Int64
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				count := requestCount.Add(1)
+
+				// Simulate processing time
+				time.Sleep(10 * time.Millisecond)
+
+				response := map[string]interface{}{
+					"status": "ok",
+					"count":  count,
+				}
+				json.NewEncoder(w).Encode(response)
+			}))
+			defer server.Close()
+
 			start := time.Now()
-			requestCount = 0
-			
+
 			var wg sync.WaitGroup
-			errors := 0
-			
+			var errorCount atomic.Int64
+
 			for i := 0; i < concurrency; i++ {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					
+
 					client := &http.Client{Timeout: 5 * time.Second}
 					resp, err := client.Get(fmt.Sprintf("%s/test", server.URL))
 					if err != nil {
-						errors++
+						errorCount.Add(1)
 						return
 					}
 					defer resp.Body.Close()
-					
+
 					if resp.StatusCode != http.StatusOK {
-						errors++
+						errorCount.Add(1)
 					}
 				}()
 			}
-			
+
 			wg.Wait()
 			duration := time.Since(start)
-			
-			assert.Equal(t, 0, errors, "Should have no errors at concurrency level %d", concurrency)
-			assert.Equal(t, concurrency, requestCount)
-			assert.Less(t, duration, time.Duration(concurrency)*50*time.Millisecond, 
+			finalCount := requestCount.Load()
+			errors := errorCount.Load()
+
+			assert.Equal(t, int64(0), errors, "Should have no errors at concurrency level %d", concurrency)
+			assert.Equal(t, int64(concurrency), finalCount)
+			assert.Less(t, duration, time.Duration(concurrency)*50*time.Millisecond,
 				"Performance degraded at concurrency level %d", concurrency)
-			
-			t.Logf("Concurrency %d: Completed %d requests in %v", concurrency, requestCount, duration)
+
+			t.Logf("Concurrency %d: Completed %d requests in %v", concurrency, finalCount, duration)
 		})
 	}
 }
