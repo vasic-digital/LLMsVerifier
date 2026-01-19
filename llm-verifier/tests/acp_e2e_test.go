@@ -500,6 +500,4 @@ type AutomationResult struct {
 	ACPSupported bool
 }
 
-func setupE2EAutomationEnvironment(t *testing.T) *config.Config {
-	return &config.Config{}
-}
+// setupAutomationEnvironment is defined in acp_automation_test.go
