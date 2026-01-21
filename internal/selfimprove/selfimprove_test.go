@@ -24,7 +24,8 @@ func NewMockLLMProvider() *MockLLMProvider {
 }
 
 func (m *MockLLMProvider) Complete(ctx context.Context, prompt string, systemPrompt string) (string, error) {
-	if containsAny(prompt, "compare", "Compare") {
+	// Check both prompt and systemPrompt for compare-related content
+	if containsAny(prompt, "Response A", "Response B") || containsAny(systemPrompt, "Compare", "compare") {
 		return m.responses["compare"], nil
 	}
 	return m.responses["score"], nil
@@ -287,5 +288,5 @@ func TestPreferencePair(t *testing.T) {
 	}
 
 	assert.Greater(t, pair.ChosenScore, pair.RejectedScore)
-	assert.Equal(t, pair.Margin, pair.ChosenScore-pair.RejectedScore)
+	assert.InDelta(t, pair.Margin, pair.ChosenScore-pair.RejectedScore, 0.0001)
 }

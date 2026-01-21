@@ -189,6 +189,8 @@ func TestInMemoryExperimentManager_RecordMetric(t *testing.T) {
 			{Name: "Control", IsControl: true},
 			{Name: "Treatment"},
 		},
+		Metrics:      []string{"quality"},
+		TargetMetric: "quality",
 	}
 
 	require.NoError(t, manager.Create(context.Background(), exp))
