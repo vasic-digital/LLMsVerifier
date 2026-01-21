@@ -437,8 +437,8 @@ const (
 	TopicMetricsEvents       = "helixagent.events.metrics"
 	TopicErrors              = "helixagent.events.errors"
 
-	// Streaming topics (high-throughput)
-	TopicTokenStream        = "helixagent.stream.tokens"
+	// Streaming topics (high-throughput) - topic names, not credentials
+	TopicTokenStream = "helixagent.stream.tokens" // #nosec G101 - Kafka topic name, not credentials
 	TopicSSEEvents          = "helixagent.stream.sse"
 	TopicWebSocketMessages  = "helixagent.stream.websocket"
 
