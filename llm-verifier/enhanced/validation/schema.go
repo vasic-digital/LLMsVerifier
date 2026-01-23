@@ -462,14 +462,85 @@ func (cpv *CrossProviderValidator) ValidateConsistency() *ValidationResult {
 	return result
 }
 
-// extractScore extracts a score from a provider result (simplified)
+// extractScore extracts a score from a provider result
 func (cpv *CrossProviderValidator) extractScore(result interface{}) float64 {
-	// This is a placeholder - actual implementation would depend on result structure
+	// Handle direct numeric values
+	switch v := result.(type) {
+	case float64:
+		return v
+	case float32:
+		return float64(v)
+	case int:
+		return float64(v)
+	case int64:
+		return float64(v)
+	}
+
+	// Handle map-based results
 	if res, ok := result.(map[string]interface{}); ok {
-		if score, ok := res["overall_score"].(float64); ok {
-			return score
+		// Try multiple common score keys
+		scoreKeys := []string{
+			"overall_score",
+			"score",
+			"total_score",
+			"confidence",
+			"accuracy",
+			"quality_score",
+			"final_score",
+		}
+
+		for _, key := range scoreKeys {
+			if val, exists := res[key]; exists {
+				switch v := val.(type) {
+				case float64:
+					return v
+				case float32:
+					return float64(v)
+				case int:
+					return float64(v)
+				case int64:
+					return float64(v)
+				}
+			}
+		}
+
+		// Try nested result structures
+		if nested, ok := res["result"].(map[string]interface{}); ok {
+			for _, key := range scoreKeys {
+				if val, exists := nested[key]; exists {
+					switch v := val.(type) {
+					case float64:
+						return v
+					case float32:
+						return float64(v)
+					case int:
+						return float64(v)
+					case int64:
+						return float64(v)
+					}
+				}
+			}
+		}
+
+		// Try data.score pattern
+		if data, ok := res["data"].(map[string]interface{}); ok {
+			for _, key := range scoreKeys {
+				if val, exists := data[key]; exists {
+					switch v := val.(type) {
+					case float64:
+						return v
+					case float32:
+						return float64(v)
+					case int:
+						return float64(v)
+					case int64:
+						return float64(v)
+					}
+				}
+			}
 		}
 	}
+
 	return -1
 }
 
