@@ -2,9 +2,12 @@ package scoring
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/smtp"
+	"strings"
 	"sync"
 	"time"
 
@@ -156,11 +159,17 @@ func (am *AlertManagerFixed) SendDatabasePerformanceAlert(alert DatabasePerforma
 // Email alert methods
 
 func (am *AlertManagerFixed) sendEmailAlert(alert interface{}) error {
-	// This is a placeholder for email sending functionality
-	// In a real implementation, you would integrate with an email service
-	
+	if len(am.config.AlertRecipients) == 0 {
+		am.logger.Debug("No alert recipients configured, skipping email", nil)
+		return nil
+	}
+
+	if am.config.SMTPHost == "" {
+		return fmt.Errorf("SMTP host not configured")
+	}
+
 	var subject, body string
-	
+
 	switch a := alert.(type) {
 	case ScoreChangeAlert:
 		subject = fmt.Sprintf("LLM Score Change Alert: %s", a.ModelID)
@@ -175,20 +184,162 @@ func (am *AlertManagerFixed) sendEmailAlert(alert interface{}) error {
 		return fmt.Errorf("unknown alert type: %T", alert)
 	}
 
-	am.logger.Info("Email alert prepared", map[string]interface{}{
-		"subject": subject,
+	am.logger.Info("Sending email alert", map[string]interface{}{
+		"subject":    subject,
 		"recipients": len(am.config.AlertRecipients),
+		"smtp_host":  am.config.SMTPHost,
 	})
 
-	// Log the email content for debugging
-	am.logger.Debug("Email alert content", map[string]interface{}{
-		"subject": subject,
-		"body": body,
+	// Build email message
+	message := am.buildEmailMessage(subject, body)
+
+	// Send via SMTP
+	if err := am.sendSMTPEmail(message); err != nil {
+		return fmt.Errorf("failed to send SMTP email: %w", err)
+	}
+
+	am.logger.Info("Email alert sent successfully", map[string]interface{}{
+		"subject":    subject,
+		"recipients": am.config.AlertRecipients,
 	})
 
-	// In a real implementation, you would send the email here
-	// For now, we'll just log it
 	return nil
+}
+
+func (am *AlertManagerFixed) buildEmailMessage(subject, body string) []byte {
+	var msg strings.Builder
+
+	msg.WriteString(fmt.Sprintf("From: %s\r\n", am.config.SMTPFrom))
+	msg.WriteString(fmt.Sprintf("To: %s\r\n", strings.Join(am.config.AlertRecipients, ", ")))
+	msg.WriteString(fmt.Sprintf("Subject: %s\r\n", subject))
+	msg.WriteString("MIME-Version: 1.0\r\n")
+	msg.WriteString("Content-Type: text/plain; charset=\"UTF-8\"\r\n")
+	msg.WriteString("\r\n")
+	msg.WriteString(body)
+
+	return []byte(msg.String())
+}
+
+func (am *AlertManagerFixed) sendSMTPEmail(message []byte) error {
+	addr := fmt.Sprintf("%s:%d", am.config.SMTPHost, am.config.SMTPPort)
+
+	// Create authentication if credentials provided
+	var auth smtp.Auth
+	if am.config.SMTPUsername != "" && am.config.SMTPPassword != "" {
+		auth = smtp.PlainAuth("", am.config.SMTPUsername, am.config.SMTPPassword, am.config.SMTPHost)
+	}
+
+	if am.config.SMTPUseTLS {
+		return am.sendEmailWithTLS(addr, auth, message)
+	}
+
+	return smtp.SendMail(addr, auth, am.config.SMTPFrom, am.config.AlertRecipients, message)
+}
+
+func (am *AlertManagerFixed) sendEmailWithTLS(addr string, auth smtp.Auth, message []byte) error {
+	// Connect to the SMTP server
+	conn, err := tls.Dial("tcp", addr, &tls.Config{
+		ServerName: am.config.SMTPHost,
+		MinVersion: tls.VersionTLS12,
+	})
+	if err != nil {
+		// Fallback to STARTTLS
+		return am.sendEmailWithSTARTTLS(addr, auth, message)
+	}
+	defer conn.Close()
+
+	client, err := smtp.NewClient(conn, am.config.SMTPHost)
+	if err != nil {
+		return fmt.Errorf("failed to create SMTP client: %w", err)
+	}
+	defer client.Close()
+
+	// Authenticate if credentials provided
+	if auth != nil {
+		if err := client.Auth(auth); err != nil {
+			return fmt.Errorf("SMTP authentication failed: %w", err)
+		}
+	}
+
+	// Set sender and recipients
+	if err := client.Mail(am.config.SMTPFrom); err != nil {
+		return fmt.Errorf("failed to set sender: %w", err)
+	}
+
+	for _, recipient := range am.config.AlertRecipients {
+		if err := client.Rcpt(recipient); err != nil {
+			return fmt.Errorf("failed to set recipient %s: %w", recipient, err)
+		}
+	}
+
+	// Send the message
+	w, err := client.Data()
+	if err != nil {
+		return fmt.Errorf("failed to start data transfer: %w", err)
+	}
+
+	if _, err := w.Write(message); err != nil {
+		return fmt.Errorf("failed to write message: %w", err)
+	}
+
+	if err := w.Close(); err != nil {
+		return fmt.Errorf("failed to close data writer: %w", err)
+	}
+
+	return client.Quit()
+}
+
+func (am *AlertManagerFixed) sendEmailWithSTARTTLS(addr string, auth smtp.Auth, message []byte) error {
+	client, err := smtp.Dial(addr)
+	if err != nil {
+		return fmt.Errorf("failed to connect to SMTP server: %w", err)
+	}
+	defer client.Close()
+
+	// Try STARTTLS
+	if ok, _ := client.Extension("STARTTLS"); ok {
+		config := &tls.Config{
+			ServerName: am.config.SMTPHost,
+			MinVersion: tls.VersionTLS12,
+		}
+		if err := client.StartTLS(config); err != nil {
+			am.logger.Warning("STARTTLS failed, continuing without TLS", map[string]interface{}{"error": err.Error()})
+		}
+	}
+
+	// Authenticate if credentials provided
+	if auth != nil {
+		if err := client.Auth(auth); err != nil {
+			return fmt.Errorf("SMTP authentication failed: %w", err)
+		}
+	}
+
+	// Set sender and recipients
+	if err := client.Mail(am.config.SMTPFrom); err != nil {
+		return fmt.Errorf("failed to set sender: %w", err)
+	}
+
+	for _, recipient := range am.config.AlertRecipients {
+		if err := client.Rcpt(recipient); err != nil {
+			return fmt.Errorf("failed to set recipient %s: %w", recipient, err)
+		}
+	}
+
+	// Send the message
+	w, err := client.Data()
+	if err != nil {
+		return fmt.Errorf("failed to start data transfer: %w", err)
+	}
+
+	if _, err := w.Write(message); err != nil {
+		return fmt.Errorf("failed to write message: %w", err)
+	}
+
+	if err := w.Close(); err != nil {
+		return fmt.Errorf("failed to close data writer: %w", err)
+	}
+
+	return client.Quit()
 }
 
 func (am *AlertManagerFixed) formatScoreChangeEmail(alert ScoreChangeAlert) string {

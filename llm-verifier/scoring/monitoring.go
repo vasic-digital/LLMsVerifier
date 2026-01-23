@@ -32,6 +32,13 @@ type MonitoringConfig struct {
 	EnableWebhookAlerts        bool
 	WebhookURL                 string
 	AlertRecipients            []string
+	// SMTP configuration for email alerts
+	SMTPHost     string
+	SMTPPort     int
+	SMTPUsername string
+	SMTPPassword string
+	SMTPFrom     string
+	SMTPUseTLS   bool
 }
 
 // DefaultMonitoringConfig returns default monitoring configuration
@@ -47,6 +54,12 @@ func DefaultMonitoringConfig() MonitoringConfig {
 		EnableEmailAlerts:        false,
 		EnableWebhookAlerts:      false,
 		AlertRecipients:          []string{},
+		SMTPHost:                 "localhost",
+		SMTPPort:                 587,
+		SMTPUsername:             "",
+		SMTPPassword:             "",
+		SMTPFrom:                 "llm-verifier@localhost",
+		SMTPUseTLS:               true,
 	}
 }
 

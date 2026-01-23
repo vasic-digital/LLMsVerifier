@@ -190,9 +190,141 @@ func (l *Logger) WithFields(fields map[string]any) *ContextLogger {
 
 // QueryLogs queries logs with filters
 func (l *Logger) QueryLogs(filters map[string]any, limit int, offset int) ([]*LogEntry, error) {
-	// This would query the database in a real implementation
-	// For now, return empty slice
-	return []*LogEntry{}, nil
+	// If database is available, query from database
+	if l.db != nil {
+		dbFilters := make(map[string]interface{})
+
+		// Convert filter keys
+		if level, ok := filters["level"].(string); ok {
+			dbFilters["level"] = strings.ToUpper(level)
+		}
+		if component, ok := filters["component"].(string); ok {
+			dbFilters["logger"] = component
+		}
+		if correlationID, ok := filters["correlation_id"].(string); ok {
+			dbFilters["request_id"] = correlationID
+		}
+		if search, ok := filters["search"].(string); ok {
+			dbFilters["search"] = search
+		}
+		if fromDate, ok := filters["from_date"]; ok {
+			dbFilters["from_date"] = fromDate
+		}
+		if toDate, ok := filters["to_date"]; ok {
+			dbFilters["to_date"] = toDate
+		}
+
+		dbFilters["limit"] = limit
+
+		dbLogs, err := l.db.ListLogs(dbFilters)
+		if err != nil {
+			return nil, fmt.Errorf("failed to query logs from database: %w", err)
+		}
+
+		// Convert database entries to logging entries
+		result := make([]*LogEntry, 0, len(dbLogs))
+		for _, dbLog := range dbLogs {
+			entry := l.convertFromDBLogEntry(dbLog)
+			result = append(result, entry)
+		}
+
+		// Apply offset
+		if offset > 0 && offset < len(result) {
+			result = result[offset:]
+		} else if offset >= len(result) {
+			return []*LogEntry{}, nil
+		}
+
+		return result, nil
+	}
+
+	// Fall back to in-memory query
+	return l.queryInMemory(filters, limit, offset), nil
+}
+
+// convertFromDBLogEntry converts a database LogEntry to a logging LogEntry
+func (l *Logger) convertFromDBLogEntry(dbEntry *database.LogEntry) *LogEntry {
+	entry := &LogEntry{
+		ID:        fmt.Sprintf("log_%d", dbEntry.ID),
+		Level:     LogLevel(strings.ToLower(dbEntry.Level)),
+		Message:   dbEntry.Message,
+		Timestamp: dbEntry.Timestamp,
+		Component: dbEntry.Logger,
+		Source:    dbEntry.Logger,
+	}
+
+	if dbEntry.RequestID != nil {
+		entry.CorrelationID = *dbEntry.RequestID
+	}
+
+	// Parse details JSON into fields
+	if dbEntry.Details != nil && *dbEntry.Details != "" {
+		var fields map[string]any
+		if err := json.Unmarshal([]byte(*dbEntry.Details), &fields); err == nil {
+			entry.Fields = fields
+		}
+	}
+
+	return entry
+}
+
+// queryInMemory queries logs from in-memory history
+func (l *Logger) queryInMemory(filters map[string]any, limit int, offset int) []*LogEntry {
+	l.historyMux.RLock()
+	defer l.historyMux.RUnlock()
+
+	var result []*LogEntry
+
+	for _, entry := range l.history {
+		// Apply filters
+		if level, ok := filters["level"].(string); ok {
+			if string(entry.Level) != strings.ToLower(level) {
+				continue
+			}
+		}
+		if component, ok := filters["component"].(string); ok {
+			if entry.Component != component && entry.Source != component {
+				continue
+			}
+		}
+		if correlationID, ok := filters["correlation_id"].(string); ok {
+			if entry.CorrelationID != correlationID {
+				continue
+			}
+		}
+		if search, ok := filters["search"].(string); ok {
+			searchLower := strings.ToLower(search)
+			if !strings.Contains(strings.ToLower(entry.Message), searchLower) &&
+				!strings.Contains(strings.ToLower(entry.Component), searchLower) {
+				continue
+			}
+		}
+		if fromDate, ok := filters["from_date"].(time.Time); ok {
+			if entry.Timestamp.Before(fromDate) {
+				continue
+			}
+		}
+		if toDate, ok := filters["to_date"].(time.Time); ok {
+			if entry.Timestamp.After(toDate) {
+				continue
+			}
+		}
+
+		result = append(result, entry)
+	}
+
+	// Apply offset and limit
+	if offset > 0 && offset < len(result) {
+		result = result[offset:]
+	} else if offset >= len(result) {
+		return []*LogEntry{}
+	}
+
+	if limit > 0 && limit < len(result) {
+		result = result[:limit]
+	}
+
+	return result
 }
 
 // GetLogStats returns logging statistics from the in-memory history
@@ -396,16 +528,52 @@ func (l *Logger) writeToFile(entry *LogEntry) {
 }
 
 func (l *Logger) storeInDatabase(entry *LogEntry) {
-	l.historyMux.Lock()
-	defer l.historyMux.Unlock()
-
 	// Store in memory history
+	l.historyMux.Lock()
 	l.history = append(l.history, entry)
-
-	// Trim history if it exceeds max size (FIFO)
 	if len(l.history) > l.maxHistory {
 		l.history = l.history[len(l.history)-l.maxHistory:]
 	}
+	l.historyMux.Unlock()
+
+	// Store in database if available
+	if l.db != nil {
+		dbEntry := l.convertToDBLogEntry(entry)
+		if err := l.db.CreateLog(dbEntry); err != nil {
+			// Don't use logger here to avoid infinite recursion
+			log.Printf("Failed to store log in database: %v", err)
+		}
+	}
+}
+
+// convertToDBLogEntry converts a logging LogEntry to a database LogEntry
+func (l *Logger) convertToDBLogEntry(entry *LogEntry) *database.LogEntry {
+	dbEntry := &database.LogEntry{
+		Timestamp: entry.Timestamp,
+		Level:     string(entry.Level),
+		Logger:    entry.Component,
+		Message:   entry.Message,
+	}
+
+	// Set source as logger if component is empty
+	if dbEntry.Logger == "" {
+		dbEntry.Logger = entry.Source
+	}
+
+	// Set correlation ID as request ID
+	if entry.CorrelationID != "" {
+		dbEntry.RequestID = &entry.CorrelationID
+	}
+
+	// Convert fields to details JSON
+	if len(entry.Fields) > 0 {
+		if details, err := json.Marshal(entry.Fields); err == nil {
+			detailsStr := string(details)
+			dbEntry.Details = &detailsStr
+		}
+	}
+
+	return dbEntry
 }
 
 // GetLogHistory returns recent log entries from memory

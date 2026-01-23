@@ -848,7 +848,7 @@ func importCmd() *cobra.Command {
 		Long:  `Import providers data from a JSON file.`,
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			_, err := getClient()
+			c, err := getClient()
 			if err != nil {
 				log.Fatalf("Failed to create client: %v", err)
 			}
@@ -863,8 +863,17 @@ func importCmd() *cobra.Command {
 				log.Fatalf("Failed to parse providers: %v", err)
 			}
 
-			// Note: Provider import not implemented yet - requires API endpoint
-			fmt.Printf("Provider import not yet available. Found %d providers in file.\n", len(providers))
+			imported := 0
+			for _, provider := range providers {
+				_, err := c.CreateProvider(provider)
+				if err != nil {
+					fmt.Printf("Failed to import provider %v: %v\n", provider["name"], err)
+					continue
+				}
+				imported++
+			}
+
+			fmt.Printf("Imported %d/%d providers successfully\n", imported, len(providers))
 		},
 	}
 

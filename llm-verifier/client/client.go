@@ -193,6 +193,53 @@ func (c *Client) GetProvider(id string) (map[string]any, error) {
 	return provider, nil
 }
 
+// CreateProvider creates a new provider
+func (c *Client) CreateProvider(provider map[string]any) (map[string]any, error) {
+	resp, err := c.doRequest("POST", "/api/v1/providers", provider)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode create provider response: %w", err)
+	}
+
+	return result, nil
+}
+
+// UpdateProvider updates an existing provider
+func (c *Client) UpdateProvider(id string, provider map[string]any) (map[string]any, error) {
+	resp, err := c.doRequest("PUT", "/api/v1/providers/"+id, provider)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode update provider response: %w", err)
+	}
+
+	return result, nil
+}
+
+// DeleteProvider deletes a provider by ID
+func (c *Client) DeleteProvider(id string) error {
+	resp, err := c.doRequest("DELETE", "/api/v1/providers/"+id, nil)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 && resp.StatusCode != 204 {
+		return fmt.Errorf("failed to delete provider: status %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
 // GetVerificationResults retrieves verification results
 func (c *Client) GetVerificationResults() ([]map[string]any, error) {
 	resp, err := c.doRequest("GET", "/api/v1/verification-results", nil)
