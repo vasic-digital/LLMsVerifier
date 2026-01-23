@@ -12,46 +12,114 @@ import (
 	"time"
 )
 
-// SupportedAgents lists all CLI agents supported by LLMsVerifier
+// SupportedAgents lists all 48 CLI agents supported by LLMsVerifier
 var SupportedAgents = []string{
-	"opencode",    // OpenCode.ai CLI
-	"crush",       // Charm Land Crush CLI
-	"kilocode",    // KiloCode VS Code extension
-	"helixcode",   // HelixCode CLI
-	"aider",       // Aider CLI
-	"continue",    // Continue.dev extension
-	"cursor",      // Cursor editor
-	"cline",       // Cline CLI
-	"windsurf",    // Windsurf editor
-	"zed",         // Zed editor
-	"neovim-ai",   // Neovim AI plugins
-	"vscode-ai",   // VS Code AI extensions
-	"intellij-ai", // IntelliJ AI plugins
-	"claude-code", // Claude Code CLI
-	"qwen-code",   // Qwen Code CLI
-	"github-copilot", // GitHub Copilot
+	// Original 18 agents
+	"opencode",       // OpenCode.ai CLI
+	"crush",          // Charm Land Crush CLI
+	"helixcode",      // HelixCode CLI
+	"kiro",           // Kiro AI assistant
+	"aider",          // Aider CLI
+	"claude-code",    // Claude Code CLI
+	"cline",          // Cline CLI
+	"codename-goose", // Codename Goose
+	"deepseek-cli",   // DeepSeek CLI
+	"forge",          // Forge CLI
+	"gemini-cli",     // Gemini CLI
+	"gpt-engineer",   // GPT Engineer
+	"kilocode",       // KiloCode VS Code extension
+	"mistral-code",   // Mistral Code
+	"ollama-code",    // Ollama Code
+	"plandex",        // Plandex CLI
+	"qwen-code",      // Qwen Code CLI
+	"amazon-q",       // Amazon Q
+	// New 30 agents
+	"agent-deck",          // Agent-Deck multi-agent orchestration
+	"bridle",              // Bridle CLI
+	"cheshire-cat",        // Cheshire Cat AI
+	"claude-plugins",      // Claude Code Plugins
+	"claude-squad",        // Claude Squad
+	"codai",               // Codai CLI
+	"codex",               // Codex CLI
+	"codex-skills",        // Codex Skills
+	"conduit",             // Conduit CLI
+	"continue",            // Continue.dev extension
+	"emdash",              // Emdash CLI
+	"fauxpilot",           // FauxPilot
+	"get-shit-done",       // Get Shit Done CLI
+	"github-copilot-cli",  // GitHub Copilot CLI
+	"github-spec-kit",     // GitHub Spec Kit
+	"git-mcp",             // GitMCP
+	"gptme",               // GPTME CLI
+	"mobile-agent",        // Mobile Agent
+	"multiagent-coding",   // Multiagent Coding System
+	"nanocoder",           // Nanocoder
+	"noi",                 // Noi CLI
+	"octogen",             // Octogen
+	"openhands",           // OpenHands
+	"postgres-mcp",        // PostgresMCP
+	"shai",                // Shai CLI
+	"snow-cli",            // SnowCLI
+	"task-weaver",         // TaskWeaver
+	"ui-ux-pro-max",       // UI/UX Pro Max
+	"vtcode",              // VTCode
+	"warp",                // Warp terminal
 }
 
 // AgentType represents the type of CLI agent
 type AgentType string
 
 const (
-	AgentOpenCode    AgentType = "opencode"
-	AgentCrush       AgentType = "crush"
-	AgentKiloCode    AgentType = "kilocode"
-	AgentHelixCode   AgentType = "helixcode"
-	AgentAider       AgentType = "aider"
-	AgentContinue    AgentType = "continue"
-	AgentCursor      AgentType = "cursor"
-	AgentCline       AgentType = "cline"
-	AgentWindsurf    AgentType = "windsurf"
-	AgentZed         AgentType = "zed"
-	AgentNeovimAI    AgentType = "neovim-ai"
-	AgentVSCodeAI    AgentType = "vscode-ai"
-	AgentIntelliJAI  AgentType = "intellij-ai"
-	AgentClaudeCode  AgentType = "claude-code"
-	AgentQwenCode    AgentType = "qwen-code"
-	AgentCopilot     AgentType = "github-copilot"
+	// Original 18 agents
+	AgentOpenCode      AgentType = "opencode"
+	AgentCrush         AgentType = "crush"
+	AgentHelixCode     AgentType = "helixcode"
+	AgentKiro          AgentType = "kiro"
+	AgentAider         AgentType = "aider"
+	AgentClaudeCode    AgentType = "claude-code"
+	AgentCline         AgentType = "cline"
+	AgentCodenameGoose AgentType = "codename-goose"
+	AgentDeepSeekCLI   AgentType = "deepseek-cli"
+	AgentForge         AgentType = "forge"
+	AgentGeminiCLI     AgentType = "gemini-cli"
+	AgentGPTEngineer   AgentType = "gpt-engineer"
+	AgentKiloCode      AgentType = "kilocode"
+	AgentMistralCode   AgentType = "mistral-code"
+	AgentOllamaCode    AgentType = "ollama-code"
+	AgentPlandex       AgentType = "plandex"
+	AgentQwenCode      AgentType = "qwen-code"
+	AgentAmazonQ       AgentType = "amazon-q"
+	// New 30 agents
+	AgentAgentDeck        AgentType = "agent-deck"
+	AgentBridle           AgentType = "bridle"
+	AgentCheshireCat      AgentType = "cheshire-cat"
+	AgentClaudePlugins    AgentType = "claude-plugins"
+	AgentClaudeSquad      AgentType = "claude-squad"
+	AgentCodai            AgentType = "codai"
+	AgentCodex            AgentType = "codex"
+	AgentCodexSkills      AgentType = "codex-skills"
+	AgentConduit          AgentType = "conduit"
+	AgentContinue         AgentType = "continue"
+	AgentEmdash           AgentType = "emdash"
+	AgentFauxPilot        AgentType = "fauxpilot"
+	AgentGetShitDone      AgentType = "get-shit-done"
+	AgentGitHubCopilotCLI AgentType = "github-copilot-cli"
+	AgentGitHubSpecKit    AgentType = "github-spec-kit"
+	AgentGitMCP           AgentType = "git-mcp"
+	AgentGPTME            AgentType = "gptme"
+	AgentMobileAgent      AgentType = "mobile-agent"
+	AgentMultiagentCoding AgentType = "multiagent-coding"
+	AgentNanocoder        AgentType = "nanocoder"
+	AgentNoi              AgentType = "noi"
+	AgentOctogen          AgentType = "octogen"
+	AgentOpenHands        AgentType = "openhands"
+	AgentPostgresMCP      AgentType = "postgres-mcp"
+	AgentShai             AgentType = "shai"
+	AgentSnowCLI          AgentType = "snow-cli"
+	AgentTaskWeaver       AgentType = "task-weaver"
+	AgentUIUXProMax       AgentType = "ui-ux-pro-max"
+	AgentVTCode           AgentType = "vtcode"
+	AgentWarp             AgentType = "warp"
 )
 
 // GeneratorConfig contains configuration for CLI agent config generation
@@ -222,7 +290,7 @@ func DefaultMCPServers() []MCPServerConfig {
 	}
 }
 
-// registerGenerators registers all agent-specific generators
+// registerGenerators registers all 48 agent-specific generators
 func (ug *UnifiedGenerator) registerGenerators() {
 	// Register generators for primary CLI agents (custom implementations)
 	ug.generators[AgentOpenCode] = NewOpenCodeGenerator()
@@ -230,19 +298,53 @@ func (ug *UnifiedGenerator) registerGenerators() {
 	ug.generators[AgentKiloCode] = NewKiloCodeGenerator()
 	ug.generators[AgentHelixCode] = NewHelixCodeGenerator()
 
-	// Register generators for additional CLI agents (generic implementations)
+	// Register generators for Original 18 agents (remaining)
+	ug.generators[AgentKiro] = NewKiroGenerator()
 	ug.generators[AgentAider] = NewAiderGenerator()
-	ug.generators[AgentContinue] = NewContinueGenerator()
-	ug.generators[AgentCursor] = NewCursorGenerator()
-	ug.generators[AgentCline] = NewClineGenerator()
-	ug.generators[AgentWindsurf] = NewWindsurfGenerator()
-	ug.generators[AgentZed] = NewZedGenerator()
-	ug.generators[AgentNeovimAI] = NewNeovimAIGenerator()
-	ug.generators[AgentVSCodeAI] = NewVSCodeAIGenerator()
-	ug.generators[AgentIntelliJAI] = NewIntelliJAIGenerator()
 	ug.generators[AgentClaudeCode] = NewClaudeCodeGenerator()
+	ug.generators[AgentCline] = NewClineGenerator()
+	ug.generators[AgentCodenameGoose] = NewCodenameGooseGenerator()
+	ug.generators[AgentDeepSeekCLI] = NewDeepSeekCLIGenerator()
+	ug.generators[AgentForge] = NewForgeGenerator()
+	ug.generators[AgentGeminiCLI] = NewGeminiCLIGenerator()
+	ug.generators[AgentGPTEngineer] = NewGPTEngineerGenerator()
+	ug.generators[AgentMistralCode] = NewMistralCodeGenerator()
+	ug.generators[AgentOllamaCode] = NewOllamaCodeGenerator()
+	ug.generators[AgentPlandex] = NewPlandexGenerator()
 	ug.generators[AgentQwenCode] = NewQwenCodeGenerator()
-	ug.generators[AgentCopilot] = NewCopilotGenerator()
+	ug.generators[AgentAmazonQ] = NewAmazonQGenerator()
+
+	// Register generators for New 30 agents
+	ug.generators[AgentAgentDeck] = NewAgentDeckGenerator()
+	ug.generators[AgentBridle] = NewBridleGenerator()
+	ug.generators[AgentCheshireCat] = NewCheshireCatGenerator()
+	ug.generators[AgentClaudePlugins] = NewClaudePluginsGenerator()
+	ug.generators[AgentClaudeSquad] = NewClaudeSquadGenerator()
+	ug.generators[AgentCodai] = NewCodaiGenerator()
+	ug.generators[AgentCodex] = NewCodexGenerator()
+	ug.generators[AgentCodexSkills] = NewCodexSkillsGenerator()
+	ug.generators[AgentConduit] = NewConduitGenerator()
+	ug.generators[AgentContinue] = NewContinueGenerator()
+	ug.generators[AgentEmdash] = NewEmdashGenerator()
+	ug.generators[AgentFauxPilot] = NewFauxPilotGenerator()
+	ug.generators[AgentGetShitDone] = NewGetShitDoneGenerator()
+	ug.generators[AgentGitHubCopilotCLI] = NewGitHubCopilotCLIGenerator()
+	ug.generators[AgentGitHubSpecKit] = NewGitHubSpecKitGenerator()
+	ug.generators[AgentGitMCP] = NewGitMCPGenerator()
+	ug.generators[AgentGPTME] = NewGPTMEGenerator()
+	ug.generators[AgentMobileAgent] = NewMobileAgentGenerator()
+	ug.generators[AgentMultiagentCoding] = NewMultiagentCodingGenerator()
+	ug.generators[AgentNanocoder] = NewNanocoderGenerator()
+	ug.generators[AgentNoi] = NewNoiGenerator()
+	ug.generators[AgentOctogen] = NewOctogenGenerator()
+	ug.generators[AgentOpenHands] = NewOpenHandsGenerator()
+	ug.generators[AgentPostgresMCP] = NewPostgresMCPGenerator()
+	ug.generators[AgentShai] = NewShaiGenerator()
+	ug.generators[AgentSnowCLI] = NewSnowCLIGenerator()
+	ug.generators[AgentTaskWeaver] = NewTaskWeaverGenerator()
+	ug.generators[AgentUIUXProMax] = NewUIUXProMaxGenerator()
+	ug.generators[AgentVTCode] = NewVTCodeGenerator()
+	ug.generators[AgentWarp] = NewWarpGenerator()
 }
 
 // Generate generates configuration for a specific agent

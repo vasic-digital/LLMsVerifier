@@ -116,7 +116,7 @@ LLMsVerifier/
 │   ├── providers/          # LLM provider adapters (OpenAI, Anthropic, Cohere, Groq, etc.)
 │   ├── database/           # Data access layer with SQL Cipher encryption
 │   ├── verification/       # Model verification engine
-│   ├── pkg/cliagents/      # CLI Agent configuration generation (16+ agents)
+│   ├── pkg/cliagents/      # CLI Agent configuration generation (48 agents)
 │   ├── auth/               # Authentication (JWT) and RBAC
 │   ├── config/             # Configuration management (Viper)
 │   ├── analytics/          # Analytics engine
@@ -163,26 +163,63 @@ cd llm-verifier && go get <package>
 
 LLMsVerifier provides a unified interface for generating and validating CLI agent configurations. This is the central authority for all CLI agent configuration generation in HelixAgent.
 
-**Supported CLI Agents (16 total):**
+**Supported CLI Agents (48 total):**
 
+**Original 18 Agents:**
 | Agent | Config File | Description |
 |-------|-------------|-------------|
 | OpenCode | `opencode.json` | OpenCode.ai CLI - AI-powered coding assistant |
 | Crush | `crush.json` | Charm Land Crush CLI |
-| KiloCode | `kilocode-settings.json` | KiloCode VS Code extension |
 | HelixCode | `helixcode.json` | HelixCode CLI - Native for HelixAgent |
+| Kiro | `kiro.json` | Kiro AI coding assistant |
 | Aider | `.aider.conf.yml` | Aider CLI - AI pair programming |
-| Continue | `config.json` | Continue.dev extension |
-| Cursor | `settings.json` | Cursor AI-first editor |
-| Cline | `cline.json` | Cline CLI |
-| Windsurf | `windsurf.json` | Windsurf editor |
-| Zed | `settings.json` | Zed editor with AI |
-| Neovim AI | `ai.lua` | Neovim AI plugins |
-| VS Code AI | `settings.json` | VS Code AI extensions |
-| IntelliJ AI | `ai-settings.xml` | IntelliJ AI plugins |
 | Claude Code | `settings.json` | Claude Code CLI |
+| Cline | `cline.json` | Cline CLI |
+| Codename Goose | `goose.yaml` | Block's AI coding agent |
+| DeepSeek CLI | `deepseek.json` | DeepSeek AI coding assistant |
+| Forge | `forge.yaml` | AI-powered project scaffolding |
+| Gemini CLI | `gemini.json` | Google's AI coding assistant |
+| GPT Engineer | `gpt-engineer.toml` | AI code generation from prompts |
+| KiloCode | `kilocode-settings.json` | KiloCode VS Code extension |
+| Mistral Code | `mistral.json` | Mistral AI coding assistant |
+| Ollama Code | `ollama.json` | Local LLM coding assistant (DEPRECATED) |
+| Plandex | `plandex.json` | AI-powered development planning |
 | Qwen Code | `qwen-code.json` | Qwen Code CLI |
-| GitHub Copilot | `hosts.json` | GitHub Copilot |
+| Amazon Q | `amazon-q.json` | AWS AI coding assistant |
+
+**New 30 Agents:**
+| Agent | Config File | Description |
+|-------|-------------|-------------|
+| Agent-Deck | `agent-deck.json` | Multi-agent orchestration platform |
+| Bridle | `bridle.yaml` | Constrained AI agent framework |
+| Cheshire Cat | `cheshire-cat.json` | Customizable AI assistant framework |
+| Claude Plugins | `plugins.json` | Extensions for Claude Code |
+| Claude Squad | `claude-squad.yaml` | Multi-agent Claude orchestration |
+| Codai | `codai.json` | AI code assistant CLI |
+| Codex | `codex.json` | OpenAI Codex-powered CLI |
+| Codex Skills | `codex-skills.json` | Custom skill definitions for Codex |
+| Conduit | `conduit.json` | AI data pipeline assistant |
+| Continue | `config.json` | Continue.dev - Open-source AI code assistant |
+| Emdash | `emdash.json` | AI-powered text editing CLI |
+| FauxPilot | `fauxpilot.yaml` | Self-hosted Copilot alternative |
+| Get Shit Done | `gsd.json` | Task-focused AI assistant |
+| GitHub Copilot CLI | `copilot-cli.json` | Terminal command suggestions |
+| GitHub Spec Kit | `spec-kit.json` | AI specification generator |
+| GitMCP | `gitmcp.json` | Git-based MCP server management |
+| GPTME | `gptme.toml` | Personal AI assistant in terminal |
+| Mobile Agent | `mobile-agent.json` | AI mobile device automation |
+| Multiagent Coding | `multiagent.yaml` | Coordinated multi-agent development |
+| Nanocoder | `nanocoder.json` | Lightweight AI code generator |
+| Noi | `noi.json` | Cross-platform AI chat interface |
+| Octogen | `octogen.yaml` | AI code interpreter and executor |
+| OpenHands | `openhands.toml` | Open-source AI software engineer |
+| PostgresMCP | `postgres-mcp.json` | MCP server for PostgreSQL |
+| Shai | `shai.json` | Shell AI assistant |
+| SnowCLI | `snowcli.yaml` | Snowflake AI-assisted CLI |
+| TaskWeaver | `taskweaver.yaml` | Microsoft's code-first AI agent |
+| UI/UX Pro Max | `uiux-pro-max.json` | AI UI/UX design assistant |
+| VTCode | `vtcode.json` | Visual Terminal Code AI assistant |
+| Warp | `warp.yaml` | AI-powered terminal |
 
 **Usage:**
 

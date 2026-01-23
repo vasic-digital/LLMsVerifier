@@ -76,15 +76,16 @@ func TestListSupportedAgents(t *testing.T) {
 	gen := NewUnifiedGenerator(nil)
 	agents := gen.ListSupportedAgents()
 
-	// Should have 16 agents registered
-	if len(agents) != 16 {
-		t.Errorf("Expected 16 supported agents, got %d", len(agents))
+	// Should have 48 agents registered
+	if len(agents) != 48 {
+		t.Errorf("Expected 48 supported agents, got %d", len(agents))
 	}
 
 	// Check that key agents are registered
 	expectedAgents := []AgentType{
 		AgentOpenCode, AgentCrush, AgentKiloCode, AgentHelixCode,
-		AgentAider, AgentContinue, AgentCursor, AgentCline,
+		AgentAider, AgentContinue, AgentClaudeCode, AgentCline,
+		AgentKiro, AgentCodenameGoose, AgentCodex, AgentOpenHands,
 	}
 	agentMap := make(map[AgentType]bool)
 	for _, a := range agents {
@@ -230,8 +231,8 @@ func TestGenerateAll(t *testing.T) {
 		t.Fatalf("GenerateAll failed: %v", err)
 	}
 
-	if len(results) != 16 {
-		t.Errorf("Expected 16 results, got %d", len(results))
+	if len(results) != 48 {
+		t.Errorf("Expected 48 results, got %d", len(results))
 	}
 
 	// Check all succeeded
@@ -241,8 +242,8 @@ func TestGenerateAll(t *testing.T) {
 			successCount++
 		}
 	}
-	if successCount != 16 {
-		t.Errorf("Expected all 16 to succeed, got %d", successCount)
+	if successCount != 48 {
+		t.Errorf("Expected all 48 to succeed, got %d", successCount)
 	}
 }
 
@@ -282,8 +283,8 @@ func TestGetAllSchemas(t *testing.T) {
 	gen := NewUnifiedGenerator(nil)
 	schemas := gen.GetAllSchemas()
 
-	if len(schemas) != 16 {
-		t.Errorf("Expected 16 schemas, got %d", len(schemas))
+	if len(schemas) != 48 {
+		t.Errorf("Expected 48 schemas, got %d", len(schemas))
 	}
 
 	// Check that each schema has required fields
@@ -427,9 +428,18 @@ func TestConfigJSONSerialization(t *testing.T) {
 func TestGenericAgentGenerator(t *testing.T) {
 	// Test all generic agents generate successfully
 	genericAgents := []AgentType{
-		AgentAider, AgentContinue, AgentCursor, AgentCline,
-		AgentWindsurf, AgentZed, AgentNeovimAI, AgentVSCodeAI,
-		AgentIntelliJAI, AgentClaudeCode, AgentQwenCode, AgentCopilot,
+		// Original 18 (excluding 4 custom: OpenCode, Crush, KiloCode, HelixCode)
+		AgentKiro, AgentAider, AgentClaudeCode, AgentCline, AgentCodenameGoose,
+		AgentDeepSeekCLI, AgentForge, AgentGeminiCLI, AgentGPTEngineer,
+		AgentMistralCode, AgentOllamaCode, AgentPlandex, AgentQwenCode, AgentAmazonQ,
+		// New 30
+		AgentAgentDeck, AgentBridle, AgentCheshireCat, AgentClaudePlugins,
+		AgentClaudeSquad, AgentCodai, AgentCodex, AgentCodexSkills, AgentConduit,
+		AgentContinue, AgentEmdash, AgentFauxPilot, AgentGetShitDone,
+		AgentGitHubCopilotCLI, AgentGitHubSpecKit, AgentGitMCP, AgentGPTME,
+		AgentMobileAgent, AgentMultiagentCoding, AgentNanocoder, AgentNoi,
+		AgentOctogen, AgentOpenHands, AgentPostgresMCP, AgentShai, AgentSnowCLI,
+		AgentTaskWeaver, AgentUIUXProMax, AgentVTCode, AgentWarp,
 	}
 
 	gen := NewUnifiedGenerator(nil)
@@ -481,14 +491,21 @@ func TestAgentSpecificSettings(t *testing.T) {
 
 func TestSupportedAgentsList(t *testing.T) {
 	expected := []string{
-		"opencode", "crush", "kilocode", "helixcode",
-		"aider", "continue", "cursor", "cline",
-		"windsurf", "zed", "neovim-ai", "vscode-ai",
-		"intellij-ai", "claude-code", "qwen-code", "github-copilot",
+		// Original 18
+		"opencode", "crush", "helixcode", "kiro", "aider", "claude-code", "cline",
+		"codename-goose", "deepseek-cli", "forge", "gemini-cli", "gpt-engineer",
+		"kilocode", "mistral-code", "ollama-code", "plandex", "qwen-code", "amazon-q",
+		// New 30
+		"agent-deck", "bridle", "cheshire-cat", "claude-plugins", "claude-squad",
+		"codai", "codex", "codex-skills", "conduit", "continue", "emdash",
+		"fauxpilot", "get-shit-done", "github-copilot-cli", "github-spec-kit",
+		"git-mcp", "gptme", "mobile-agent", "multiagent-coding", "nanocoder",
+		"noi", "octogen", "openhands", "postgres-mcp", "shai", "snow-cli",
+		"task-weaver", "ui-ux-pro-max", "vtcode", "warp",
 	}
 
-	if len(SupportedAgents) != len(expected) {
-		t.Errorf("Expected %d supported agents, got %d", len(expected), len(SupportedAgents))
+	if len(SupportedAgents) != 48 {
+		t.Errorf("Expected 48 supported agents, got %d", len(SupportedAgents))
 	}
 
 	for _, exp := range expected {
