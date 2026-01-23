@@ -77,10 +77,14 @@ func (v *Verifier) GenerateJSONReport(results []VerificationResult, outputDir st
 
 // generateSummary creates a summary of the verification results
 func (v *Verifier) generateSummary(results []VerificationResult) Summary {
+	startTime := v.GetStartTime()
+	endTime := v.GetEndTime()
+
 	summary := Summary{
 		TotalModels:     len(results),
-		StartTime:       time.Now(), // This is just a placeholder; in real usage, you'd track actual start/end times
-		EndTime:         time.Now(),
+		StartTime:       startTime,
+		EndTime:         endTime,
+		Duration:        endTime.Sub(startTime),
 		AvailableModels: 0,
 		FailedModels:    0,
 	}

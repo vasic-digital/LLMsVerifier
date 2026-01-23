@@ -16,7 +16,9 @@ import (
 
 // Verifier is responsible for verifying LLMs
 type Verifier struct {
-	cfg *config.Config
+	cfg       *config.Config
+	startTime time.Time
+	endTime   time.Time
 }
 
 // New creates a new Verifier instance
@@ -24,6 +26,32 @@ func New(cfg *config.Config) *Verifier {
 	return &Verifier{
 		cfg: cfg,
 	}
+}
+
+// StartTiming records the start time for verification
+func (v *Verifier) StartTiming() {
+	v.startTime = time.Now()
+}
+
+// EndTiming records the end time for verification
+func (v *Verifier) EndTiming() {
+	v.endTime = time.Now()
+}
+
+// GetStartTime returns the verification start time
+func (v *Verifier) GetStartTime() time.Time {
+	if v.startTime.IsZero() {
+		return time.Now()
+	}
+	return v.startTime
+}
+
+// GetEndTime returns the verification end time
+func (v *Verifier) GetEndTime() time.Time {
+	if v.endTime.IsZero() {
+		return time.Now()
+	}
+	return v.endTime
 }
 
 // GetGlobalClient returns an LLM client configured with global settings
