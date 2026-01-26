@@ -275,8 +275,9 @@ func DefaultGeneratorConfig() *GeneratorConfig {
 func DefaultMCPServers() []MCPServerConfig {
 	return []MCPServerConfig{
 		// ============================================
-		// HelixAgent Protocol Endpoints (6)
+		// HelixAgent Protocol Endpoints (7)
 		// ============================================
+		{Name: "helixagent", Type: "local", Command: []string{"node", "${HELIXAGENT_HOME}/plugins/mcp-server/dist/index.js", "--endpoint", "http://localhost:7061"}},
 		{Name: "helixagent-mcp", Type: "remote", URL: "http://localhost:7061/v1/mcp"},
 		{Name: "helixagent-acp", Type: "remote", URL: "http://localhost:7061/v1/acp"},
 		{Name: "helixagent-lsp", Type: "remote", URL: "http://localhost:7061/v1/lsp"},
