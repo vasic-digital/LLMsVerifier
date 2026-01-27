@@ -289,6 +289,151 @@ func DefaultMCPServers() []MCPServerConfig {
 	}
 }
 
+// ContainerizedMCPServers returns MCP servers running as Docker containers
+// ZERO npm/npx dependencies - all MCPs run as Docker containers
+// Use with: docker-compose -f docker/mcp/docker-compose.mcp-full.yml up -d
+func ContainerizedMCPServers(host string) []MCPServerConfig {
+	if host == "" {
+		host = "localhost"
+	}
+
+	return []MCPServerConfig{
+		// ============================================
+		// HelixAgent Remote Endpoints (6)
+		// ============================================
+		{Name: "helixagent-mcp", Type: "remote", URL: "http://localhost:7061/v1/mcp"},
+		{Name: "helixagent-acp", Type: "remote", URL: "http://localhost:7061/v1/acp"},
+		{Name: "helixagent-lsp", Type: "remote", URL: "http://localhost:7061/v1/lsp"},
+		{Name: "helixagent-embeddings", Type: "remote", URL: "http://localhost:7061/v1/embeddings"},
+		{Name: "helixagent-vision", Type: "remote", URL: "http://localhost:7061/v1/vision"},
+		{Name: "helixagent-cognee", Type: "remote", URL: "http://localhost:7061/v1/cognee"},
+
+		// ============================================
+		// Core MCP Servers (10) - Ports 9101-9110
+		// ============================================
+		{Name: "fetch", Type: "remote", URL: "http://" + host + ":9101/sse"},
+		{Name: "git", Type: "remote", URL: "http://" + host + ":9102/sse"},
+		{Name: "time", Type: "remote", URL: "http://" + host + ":9103/sse"},
+		{Name: "filesystem", Type: "remote", URL: "http://" + host + ":9104/sse"},
+		{Name: "memory", Type: "remote", URL: "http://" + host + ":9105/sse"},
+		{Name: "everything", Type: "remote", URL: "http://" + host + ":9106/sse"},
+		{Name: "sequential-thinking", Type: "remote", URL: "http://" + host + ":9107/sse"},
+		{Name: "sqlite", Type: "remote", URL: "http://" + host + ":9108/sse"},
+		{Name: "puppeteer", Type: "remote", URL: "http://" + host + ":9109/sse"},
+		{Name: "postgres", Type: "remote", URL: "http://" + host + ":9110/sse"},
+
+		// ============================================
+		// Database MCP Servers (5) - Ports 9201-9205
+		// ============================================
+		{Name: "mongodb", Type: "remote", URL: "http://" + host + ":9201/sse"},
+		{Name: "redis", Type: "remote", URL: "http://" + host + ":9202/sse"},
+		{Name: "mysql", Type: "remote", URL: "http://" + host + ":9203/sse"},
+		{Name: "elasticsearch", Type: "remote", URL: "http://" + host + ":9204/sse"},
+		{Name: "supabase", Type: "remote", URL: "http://" + host + ":9205/sse"},
+
+		// ============================================
+		// Vector DB MCP Servers (4) - Ports 9301-9304
+		// ============================================
+		{Name: "qdrant", Type: "remote", URL: "http://" + host + ":9301/sse"},
+		{Name: "chroma", Type: "remote", URL: "http://" + host + ":9302/sse"},
+		{Name: "pinecone", Type: "remote", URL: "http://" + host + ":9303/sse"},
+		{Name: "weaviate", Type: "remote", URL: "http://" + host + ":9304/sse"},
+
+		// ============================================
+		// DevOps MCP Servers (14) - Ports 9401-9414
+		// ============================================
+		{Name: "github", Type: "remote", URL: "http://" + host + ":9401/sse"},
+		{Name: "gitlab", Type: "remote", URL: "http://" + host + ":9402/sse"},
+		{Name: "sentry", Type: "remote", URL: "http://" + host + ":9403/sse"},
+		{Name: "kubernetes", Type: "remote", URL: "http://" + host + ":9404/sse"},
+		{Name: "docker", Type: "remote", URL: "http://" + host + ":9405/sse"},
+		{Name: "ansible", Type: "remote", URL: "http://" + host + ":9406/sse"},
+		{Name: "aws", Type: "remote", URL: "http://" + host + ":9407/sse"},
+		{Name: "gcp", Type: "remote", URL: "http://" + host + ":9408/sse"},
+		{Name: "heroku", Type: "remote", URL: "http://" + host + ":9409/sse"},
+		{Name: "cloudflare", Type: "remote", URL: "http://" + host + ":9410/sse"},
+		{Name: "vercel", Type: "remote", URL: "http://" + host + ":9411/sse"},
+		{Name: "workers", Type: "remote", URL: "http://" + host + ":9412/sse"},
+		{Name: "jetbrains", Type: "remote", URL: "http://" + host + ":9413/sse"},
+
+		// ============================================
+		// Browser MCP Servers (4) - Ports 9501-9504
+		// ============================================
+		{Name: "playwright", Type: "remote", URL: "http://" + host + ":9501/sse"},
+		{Name: "browserbase", Type: "remote", URL: "http://" + host + ":9502/sse"},
+		{Name: "firecrawl", Type: "remote", URL: "http://" + host + ":9503/sse"},
+		{Name: "crawl4ai", Type: "remote", URL: "http://" + host + ":9504/sse"},
+
+		// ============================================
+		// Communication MCP Servers (3) - Ports 9601-9603
+		// ============================================
+		{Name: "slack", Type: "remote", URL: "http://" + host + ":9601/sse"},
+		{Name: "discord", Type: "remote", URL: "http://" + host + ":9602/sse"},
+		{Name: "telegram", Type: "remote", URL: "http://" + host + ":9603/sse"},
+
+		// ============================================
+		// Productivity MCP Servers (10) - Ports 9701-9710
+		// ============================================
+		{Name: "notion", Type: "remote", URL: "http://" + host + ":9701/sse"},
+		{Name: "linear", Type: "remote", URL: "http://" + host + ":9702/sse"},
+		{Name: "jira", Type: "remote", URL: "http://" + host + ":9703/sse"},
+		{Name: "asana", Type: "remote", URL: "http://" + host + ":9704/sse"},
+		{Name: "trello", Type: "remote", URL: "http://" + host + ":9705/sse"},
+		{Name: "todoist", Type: "remote", URL: "http://" + host + ":9706/sse"},
+		{Name: "monday", Type: "remote", URL: "http://" + host + ":9707/sse"},
+		{Name: "airtable", Type: "remote", URL: "http://" + host + ":9708/sse"},
+		{Name: "obsidian", Type: "remote", URL: "http://" + host + ":9709/sse"},
+		{Name: "atlassian", Type: "remote", URL: "http://" + host + ":9710/sse"},
+
+		// ============================================
+		// Search/AI MCP Servers (10) - Ports 9801-9810
+		// ============================================
+		{Name: "brave-search", Type: "remote", URL: "http://" + host + ":9801/sse"},
+		{Name: "exa", Type: "remote", URL: "http://" + host + ":9802/sse"},
+		{Name: "tavily", Type: "remote", URL: "http://" + host + ":9803/sse"},
+		{Name: "perplexity", Type: "remote", URL: "http://" + host + ":9804/sse"},
+		{Name: "kagi", Type: "remote", URL: "http://" + host + ":9805/sse"},
+		{Name: "omnisearch", Type: "remote", URL: "http://" + host + ":9806/sse"},
+		{Name: "context7", Type: "remote", URL: "http://" + host + ":9807/sse"},
+		{Name: "llamaindex", Type: "remote", URL: "http://" + host + ":9808/sse"},
+		{Name: "langchain", Type: "remote", URL: "http://" + host + ":9809/sse"},
+		{Name: "openai", Type: "remote", URL: "http://" + host + ":9810/sse"},
+
+		// ============================================
+		// Google MCP Servers (5) - Ports 9901-9905
+		// ============================================
+		{Name: "google-drive", Type: "remote", URL: "http://" + host + ":9901/sse"},
+		{Name: "google-calendar", Type: "remote", URL: "http://" + host + ":9902/sse"},
+		{Name: "google-maps", Type: "remote", URL: "http://" + host + ":9903/sse"},
+		{Name: "youtube", Type: "remote", URL: "http://" + host + ":9904/sse"},
+		{Name: "gmail", Type: "remote", URL: "http://" + host + ":9905/sse"},
+
+		// ============================================
+		// Monitoring MCP Servers (3) - Ports 9921-9923
+		// ============================================
+		{Name: "datadog", Type: "remote", URL: "http://" + host + ":9921/sse"},
+		{Name: "grafana", Type: "remote", URL: "http://" + host + ":9922/sse"},
+		{Name: "prometheus", Type: "remote", URL: "http://" + host + ":9923/sse"},
+
+		// ============================================
+		// Finance MCP Servers (3) - Ports 9941-9943
+		// ============================================
+		{Name: "stripe", Type: "remote", URL: "http://" + host + ":9941/sse"},
+		{Name: "hubspot", Type: "remote", URL: "http://" + host + ":9942/sse"},
+		{Name: "zendesk", Type: "remote", URL: "http://" + host + ":9943/sse"},
+
+		// ============================================
+		// Design MCP Servers (1) - Port 9961
+		// ============================================
+		{Name: "figma", Type: "remote", URL: "http://" + host + ":9961/sse"},
+	}
+}
+
+// ContainerizedMCPServersCount returns the total number of containerized MCPs
+func ContainerizedMCPServersCount() int {
+	return 78 // 6 HelixAgent + 72 container MCPs
+}
+
 // registerGenerators registers all 48 agent-specific generators
 func (ug *UnifiedGenerator) registerGenerators() {
 	// Register generators for primary CLI agents (custom implementations)
