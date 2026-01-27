@@ -11,13 +11,13 @@ import (
 
 // OpenCodeConfig represents the configuration for OpenCode CLI
 type OpenCodeConfig struct {
-	Schema      string                    `json:"$schema,omitempty"`
-	Provider    OpenCodeProviderConfig    `json:"provider"`
-	MCP         map[string]OpenCodeMCP    `json:"mcp,omitempty"`
-	Agent       map[string]OpenCodeAgent  `json:"agent,omitempty"`
-	Tools       map[string]bool           `json:"tools,omitempty"`
-	Permissions OpenCodePermissions       `json:"permission,omitempty"`
-	Settings    OpenCodeSettings          `json:"settings,omitempty"`
+	Schema      string                       `json:"$schema,omitempty"`
+	Provider    OpenCodeProviderConfig       `json:"provider"`
+	MCPServers  map[string]OpenCodeMCPServer `json:"mcpServers,omitempty"`
+	Agent       map[string]OpenCodeAgent     `json:"agent,omitempty"`
+	Tools       map[string]bool              `json:"tools,omitempty"`
+	Permissions OpenCodePermissions          `json:"permission,omitempty"`
+	Settings    OpenCodeSettings             `json:"settings,omitempty"`
 }
 
 // OpenCodeProviderConfig represents the provider section
@@ -64,12 +64,21 @@ type OpenCodeCapabilities struct {
 	LSP           bool `json:"lsp,omitempty"`
 }
 
-// OpenCodeMCP represents an MCP server configuration
-type OpenCodeMCP struct {
-	Type        string            `json:"type"` // local, remote
-	Command     []string          `json:"command,omitempty"`
-	URL         string            `json:"url,omitempty"`
-	Environment map[string]string `json:"environment,omitempty"`
+// OpenCodeMCPServer represents an MCP server configuration for OpenCode
+// OpenCode uses two formats:
+// - Local (stdio): {"command": "npx", "args": ["-y", "package"]}
+// - Remote (SSE): {"type": "sse", "url": "http://..."}
+type OpenCodeMCPServer struct {
+	// For local/stdio MCP servers
+	Command string   `json:"command,omitempty"`
+	Args    []string `json:"args,omitempty"`
+
+	// For remote/SSE MCP servers
+	Type string `json:"type,omitempty"` // "sse" for remote servers
+	URL  string `json:"url,omitempty"`
+
+	// Environment variables
+	Env map[string]string `json:"env,omitempty"`
 }
 
 // OpenCodeAgent represents an agent configuration
@@ -109,8 +118,8 @@ func NewOpenCodeGenerator() *OpenCodeGenerator {
 			ConfigDirEnvVar:  "OPENCODE_CONFIG_DIR",
 			DefaultConfigDir: filepath.Join(homeDir, ".config", "opencode"),
 			SupportedFields: []string{
-				"$schema", "provider", "mcp", "agent", "tools",
-				"permission", "settings", "keybinds", "command",
+				"$schema", "provider", "mcpServers", "agent", "tools",
+				"permission", "settings", "keybinds", "command", "tui",
 			},
 			RequiredFields: []string{"provider"},
 			Description:    "OpenCode.ai CLI - AI-powered coding assistant",
@@ -162,19 +171,30 @@ func (g *OpenCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 		},
 	}
 
-	// Configure MCP servers
-	openCodeConfig.MCP = make(map[string]OpenCodeMCP)
+	// Configure MCP servers in OpenCode format
+	// OpenCode uses two formats:
+	// - Local (stdio): {"command": "npx", "args": ["-y", "package"]}
+	// - Remote (SSE): {"type": "sse", "url": "http://..."}
+	openCodeConfig.MCPServers = make(map[string]OpenCodeMCPServer)
 	for _, mcpServer := range config.MCPServers {
-		mcp := OpenCodeMCP{
-			Type: mcpServer.Type,
-		}
+		mcp := OpenCodeMCPServer{}
 		if mcpServer.Type == "remote" {
+			// Remote servers use SSE type
+			mcp.Type = "sse"
 			mcp.URL = mcpServer.URL
 		} else {
-			mcp.Command = mcpServer.Command
-			mcp.Environment = mcpServer.Environment
+			// Local servers use command + args format
+			if len(mcpServer.Command) > 0 {
+				mcp.Command = mcpServer.Command[0]
+				if len(mcpServer.Command) > 1 {
+					mcp.Args = mcpServer.Command[1:]
+				}
+			}
+			if len(mcpServer.Environment) > 0 {
+				mcp.Env = mcpServer.Environment
+			}
 		}
-		openCodeConfig.MCP[mcpServer.Name] = mcp
+		openCodeConfig.MCPServers[mcpServer.Name] = mcp
 	}
 
 	// Configure agents
@@ -245,18 +265,19 @@ func (g *OpenCodeGenerator) Validate(config any) (*ValidationResult, error) {
 	}
 
 	// Validate MCP servers
-	for name, mcp := range openCodeConfig.MCP {
-		if mcp.Type == "" {
-			result.Valid = false
-			result.Errors = append(result.Errors, fmt.Sprintf("mcp.%s: type is required", name))
-		}
-		if mcp.Type == "remote" && mcp.URL == "" {
-			result.Valid = false
-			result.Errors = append(result.Errors, fmt.Sprintf("mcp.%s: url is required for remote type", name))
-		}
-		if mcp.Type == "local" && len(mcp.Command) == 0 {
-			result.Valid = false
-			result.Errors = append(result.Errors, fmt.Sprintf("mcp.%s: command is required for local type", name))
+	for name, mcp := range openCodeConfig.MCPServers {
+		// Remote servers must have type "sse" and URL
+		if mcp.Type == "sse" {
+			if mcp.URL == "" {
+				result.Valid = false
+				result.Errors = append(result.Errors, fmt.Sprintf("mcpServers.%s: url is required for sse type", name))
+			}
+		} else {
+			// Local servers must have a command
+			if mcp.Command == "" {
+				result.Valid = false
+				result.Errors = append(result.Errors, fmt.Sprintf("mcpServers.%s: command is required for local type", name))
+			}
 		}
 	}
 
@@ -277,9 +298,10 @@ func (g *OpenCodeGenerator) validateMap(config map[string]interface{}) (*Validat
 	// Check for valid top-level keys
 	validKeys := map[string]bool{
 		"$schema": true, "plugin": true, "enterprise": true, "instructions": true,
-		"provider": true, "mcp": true, "tools": true, "agent": true,
+		"provider": true, "mcpServers": true, "tools": true, "agent": true,
 		"command": true, "keybinds": true, "username": true, "share": true,
 		"permission": true, "compaction": true, "sse": true, "mode": true, "autoshare": true,
+		"tui": true,
 	}
 
 	for key := range config {
@@ -310,37 +332,33 @@ func (g *OpenCodeGenerator) validateMap(config map[string]interface{}) (*Validat
 	}
 
 	// Validate MCP servers if present
-	if mcp, hasMCP := config["mcp"]; hasMCP {
-		mcpMap, ok := mcp.(map[string]interface{})
+	if mcpServers, hasMCP := config["mcpServers"]; hasMCP {
+		mcpMap, ok := mcpServers.(map[string]interface{})
 		if !ok {
 			result.Valid = false
-			result.Errors = append(result.Errors, "mcp must be an object")
+			result.Errors = append(result.Errors, "mcpServers must be an object")
 		} else {
 			for name, server := range mcpMap {
 				serverMap, ok := server.(map[string]interface{})
 				if !ok {
 					result.Valid = false
-					result.Errors = append(result.Errors, fmt.Sprintf("mcp.%s must be an object", name))
+					result.Errors = append(result.Errors, fmt.Sprintf("mcpServers.%s must be an object", name))
 					continue
 				}
 
+				// Check for SSE type (remote) vs local (command-based)
 				serverType, hasType := serverMap["type"].(string)
-				if !hasType {
-					result.Valid = false
-					result.Errors = append(result.Errors, fmt.Sprintf("mcp.%s: type is required", name))
-					continue
-				}
-
-				if serverType == "remote" {
+				if hasType && serverType == "sse" {
+					// Remote SSE server requires URL
 					if _, hasURL := serverMap["url"]; !hasURL {
 						result.Valid = false
-						result.Errors = append(result.Errors, fmt.Sprintf("mcp.%s: url is required for remote type", name))
+						result.Errors = append(result.Errors, fmt.Sprintf("mcpServers.%s: url is required for sse type", name))
 					}
-				}
-				if serverType == "local" {
+				} else {
+					// Local server requires command
 					if _, hasCommand := serverMap["command"]; !hasCommand {
 						result.Valid = false
-						result.Errors = append(result.Errors, fmt.Sprintf("mcp.%s: command is required for local type", name))
+						result.Errors = append(result.Errors, fmt.Sprintf("mcpServers.%s: command is required for local type", name))
 					}
 				}
 			}
