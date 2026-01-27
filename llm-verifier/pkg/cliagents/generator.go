@@ -270,14 +270,17 @@ func DefaultGeneratorConfig() *GeneratorConfig {
 	}
 }
 
-// DefaultMCPServers returns default MCP server configurations (51+ MCPs)
-// This comprehensive list ensures all CLI agents have access to ALL available MCPs
+// DefaultMCPServers returns default MCP server configurations
+// ONLY includes MCPs that:
+// 1. Work WITHOUT API keys or external service dependencies
+// 2. Have VERIFIED npm packages on registry.npmjs.org
+// All MCPs listed here are tested and work out-of-the-box
 func DefaultMCPServers() []MCPServerConfig {
 	return []MCPServerConfig{
 		// ============================================
-		// HelixAgent Protocol Endpoints (7)
+		// HelixAgent Remote Endpoints (6)
+		// Connect to running HelixAgent server at localhost:7061
 		// ============================================
-		{Name: "helixagent", Type: "local", Command: []string{"node", "${HELIXAGENT_HOME}/plugins/mcp-server/dist/index.js", "--endpoint", "http://localhost:7061"}},
 		{Name: "helixagent-mcp", Type: "remote", URL: "http://localhost:7061/v1/mcp"},
 		{Name: "helixagent-acp", Type: "remote", URL: "http://localhost:7061/v1/acp"},
 		{Name: "helixagent-lsp", Type: "remote", URL: "http://localhost:7061/v1/lsp"},
@@ -286,108 +289,13 @@ func DefaultMCPServers() []MCPServerConfig {
 		{Name: "helixagent-cognee", Type: "remote", URL: "http://localhost:7061/v1/cognee"},
 
 		// ============================================
-		// Official MCP Servers (Anthropic) (12)
+		// Local MCPs - VERIFIED on npm, No API Keys (5)
 		// ============================================
 		{Name: "filesystem", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem"}},
-		{Name: "github", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-github"}},
 		{Name: "memory", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-memory"}},
 		{Name: "fetch", Type: "local", Command: []string{"npx", "-y", "mcp-fetch"}},
-		{Name: "puppeteer", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-puppeteer"}},
-		{Name: "sqlite", Type: "local", Command: []string{"npx", "-y", "mcp-server-sqlite"}},
-		{Name: "postgres", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-postgres"}},
-		{Name: "brave-search", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-brave-search"}},
-		{Name: "google-maps", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-google-maps"}},
-		{Name: "slack", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-slack"}},
 		{Name: "sequential-thinking", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-sequential-thinking"}},
-		{Name: "everart", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-everart"}},
-
-		// ============================================
-		// Database MCPs (6)
-		// ============================================
-		{Name: "mongodb", Type: "local", Command: []string{"npx", "-y", "mcp-server-mongodb"}},
-		{Name: "redis", Type: "local", Command: []string{"npx", "-y", "mcp-server-redis"}},
-		{Name: "neon", Type: "local", Command: []string{"npx", "-y", "mcp-server-neon"}},
-		{Name: "supabase", Type: "local", Command: []string{"npx", "-y", "mcp-server-supabase"}},
-		{Name: "qdrant", Type: "local", Command: []string{"npx", "-y", "mcp-server-qdrant"}},
-		{Name: "chroma", Type: "local", Command: []string{"npx", "-y", "mcp-server-chroma"}},
-
-		// ============================================
-		// Version Control MCPs (3)
-		// ============================================
-		{Name: "gitlab", Type: "local", Command: []string{"npx", "-y", "mcp-server-gitlab"}},
-		{Name: "git", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-git"}},
-		{Name: "bitbucket", Type: "local", Command: []string{"npx", "-y", "mcp-server-bitbucket"}},
-
-		// ============================================
-		// Productivity MCPs (8)
-		// ============================================
-		{Name: "notion", Type: "local", Command: []string{"npx", "-y", "mcp-server-notion"}},
-		{Name: "linear", Type: "local", Command: []string{"npx", "-y", "mcp-server-linear"}},
-		{Name: "asana", Type: "local", Command: []string{"npx", "-y", "mcp-server-asana"}},
-		{Name: "jira", Type: "local", Command: []string{"npx", "-y", "mcp-server-jira"}},
-		{Name: "todoist", Type: "local", Command: []string{"npx", "-y", "mcp-server-todoist"}},
-		{Name: "obsidian", Type: "local", Command: []string{"npx", "-y", "mcp-server-obsidian"}},
-		{Name: "stripe", Type: "local", Command: []string{"npx", "-y", "mcp-server-stripe"}},
-		{Name: "shopify", Type: "local", Command: []string{"npx", "-y", "mcp-server-shopify"}},
-
-		// ============================================
-		// Communication MCPs (3)
-		// ============================================
-		{Name: "discord", Type: "local", Command: []string{"npx", "-y", "mcp-server-discord"}},
-		{Name: "email", Type: "local", Command: []string{"npx", "-y", "mcp-server-email"}},
-		{Name: "teams", Type: "local", Command: []string{"npx", "-y", "mcp-server-teams"}},
-
-		// ============================================
-		// Storage MCPs (4)
-		// ============================================
-		{Name: "google-drive", Type: "local", Command: []string{"npx", "-y", "mcp-server-gdrive"}},
-		{Name: "aws-s3", Type: "local", Command: []string{"npx", "-y", "mcp-server-aws-s3"}},
-		{Name: "dropbox", Type: "local", Command: []string{"npx", "-y", "mcp-server-dropbox"}},
-		{Name: "aws-kb-retrieval", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-aws-kb-retrieval"}},
-
-		// ============================================
-		// Search MCPs (3)
-		// ============================================
-		{Name: "exa", Type: "local", Command: []string{"npx", "-y", "mcp-server-exa"}},
-		{Name: "google-search", Type: "local", Command: []string{"npx", "-y", "mcp-server-google-search"}},
-		{Name: "sentry", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-sentry"}},
-
-		// ============================================
-		// Infrastructure MCPs (4)
-		// ============================================
-		{Name: "docker", Type: "local", Command: []string{"npx", "-y", "mcp-server-docker"}},
-		{Name: "kubernetes", Type: "local", Command: []string{"npx", "-y", "mcp-server-kubernetes"}},
-		{Name: "cloudflare", Type: "local", Command: []string{"npx", "-y", "mcp-server-cloudflare"}},
-		{Name: "vercel", Type: "local", Command: []string{"npx", "-y", "mcp-server-vercel"}},
-
-		// ============================================
-		// Analytics MCPs (3)
-		// ============================================
-		{Name: "axiom", Type: "local", Command: []string{"npx", "-y", "mcp-server-axiom"}},
-		{Name: "datadog", Type: "local", Command: []string{"npx", "-y", "mcp-server-datadog"}},
-		{Name: "elasticsearch", Type: "local", Command: []string{"npx", "-y", "mcp-server-elasticsearch"}},
-
-		// ============================================
-		// AI & Design MCPs (5)
-		// ============================================
-		{Name: "replicate", Type: "local", Command: []string{"npx", "-y", "mcp-server-replicate"}},
-		{Name: "huggingface", Type: "local", Command: []string{"npx", "-y", "mcp-server-huggingface"}},
-		{Name: "figma", Type: "local", Command: []string{"npx", "-y", "mcp-server-figma"}},
-		{Name: "svgmaker", Type: "local", Command: []string{"npx", "-y", "mcp-server-svgmaker"}},
-		{Name: "miro", Type: "local", Command: []string{"npx", "-y", "mcp-server-miro"}},
-
-		// ============================================
-		// Automation MCPs (3)
-		// ============================================
-		{Name: "browserbase", Type: "local", Command: []string{"npx", "-y", "mcp-server-browserbase"}},
-		{Name: "playwright", Type: "local", Command: []string{"npx", "-y", "mcp-server-playwright"}},
-		{Name: "e2b", Type: "local", Command: []string{"npx", "-y", "mcp-server-e2b"}},
-
-		// ============================================
-		// Utility MCPs (2)
-		// ============================================
-		{Name: "time", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-time"}},
-		{Name: "stable-diffusion", Type: "local", Command: []string{"npx", "-y", "mcp-server-stable-diffusion"}},
+		{Name: "sqlite", Type: "local", Command: []string{"npx", "-y", "mcp-server-sqlite"}},
 	}
 }
 
