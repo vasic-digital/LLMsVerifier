@@ -271,15 +271,14 @@ func DefaultGeneratorConfig() *GeneratorConfig {
 }
 
 // DefaultMCPServers returns default MCP server configurations
-// ONLY includes MCPs that:
-// 1. Work WITHOUT API keys or external service dependencies
-// 2. Have VERIFIED npm packages on registry.npmjs.org
-// All MCPs listed here are tested and work out-of-the-box
+// ZERO npm/npx dependencies - only HelixAgent remote endpoints
+// These connect to the running HelixAgent server which provides all MCP functionality
 func DefaultMCPServers() []MCPServerConfig {
 	return []MCPServerConfig{
 		// ============================================
 		// HelixAgent Remote Endpoints (6)
 		// Connect to running HelixAgent server at localhost:7061
+		// NO npm/npx dependencies - pure HTTP connections
 		// ============================================
 		{Name: "helixagent-mcp", Type: "remote", URL: "http://localhost:7061/v1/mcp"},
 		{Name: "helixagent-acp", Type: "remote", URL: "http://localhost:7061/v1/acp"},
@@ -287,15 +286,6 @@ func DefaultMCPServers() []MCPServerConfig {
 		{Name: "helixagent-embeddings", Type: "remote", URL: "http://localhost:7061/v1/embeddings"},
 		{Name: "helixagent-vision", Type: "remote", URL: "http://localhost:7061/v1/vision"},
 		{Name: "helixagent-cognee", Type: "remote", URL: "http://localhost:7061/v1/cognee"},
-
-		// ============================================
-		// Local MCPs - VERIFIED on npm, No API Keys (5)
-		// ============================================
-		{Name: "filesystem", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem"}},
-		{Name: "memory", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-memory"}},
-		{Name: "fetch", Type: "local", Command: []string{"npx", "-y", "mcp-fetch"}},
-		{Name: "sequential-thinking", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-sequential-thinking"}},
-		{Name: "sqlite", Type: "local", Command: []string{"npx", "-y", "mcp-server-sqlite"}},
 	}
 }
 
