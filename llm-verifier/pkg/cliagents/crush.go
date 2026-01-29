@@ -17,6 +17,7 @@ type CrushConfig struct {
 	MCP         map[string]CrushMCP       `json:"mcp,omitempty"`
 	Agents      map[string]CrushAgent     `json:"agents,omitempty"`
 	Settings    CrushSettings             `json:"settings,omitempty"`
+	Formatters  FormattersConfig          `json:"formatters,omitempty"`
 }
 
 // CrushProviderConfig represents the provider configuration
@@ -158,6 +159,9 @@ func (g *CrushGenerator) Generate(ctx context.Context, config *GeneratorConfig) 
 		ShowProgress:    true,
 		ConfirmCommands: true,
 	}
+
+	// Configure formatters
+	crushConfig.Formatters = DefaultFormattersConfig(config.HelixAgentHost, config.HelixAgentPort)
 
 	result.Config = crushConfig
 	result.Success = true

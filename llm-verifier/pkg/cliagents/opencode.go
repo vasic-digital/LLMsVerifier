@@ -18,6 +18,7 @@ type OpenCodeConfig struct {
 	Tools       map[string]bool              `json:"tools,omitempty"`
 	Permissions OpenCodePermissions          `json:"permission,omitempty"`
 	Settings    OpenCodeSettings             `json:"settings,omitempty"`
+	Formatters  FormattersConfig             `json:"formatters,omitempty"`
 }
 
 // OpenCodeProviderConfig represents the provider section
@@ -236,6 +237,9 @@ func (g *OpenCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 		AllowExec:  true,
 		AllowNet:   true,
 	}
+
+	// Configure formatters
+	openCodeConfig.Formatters = DefaultFormattersConfig(config.HelixAgentHost, config.HelixAgentPort)
 
 	result.Config = openCodeConfig
 	result.Success = true

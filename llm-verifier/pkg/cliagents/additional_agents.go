@@ -16,6 +16,7 @@ type GenericAgentConfig struct {
 	Models      []GenericModelDef          `json:"models,omitempty"`
 	MCP         map[string]GenericMCP      `json:"mcp,omitempty"`
 	Settings    map[string]interface{}     `json:"settings,omitempty"`
+	Formatters  FormattersConfig           `json:"formatters,omitempty"`
 }
 
 // GenericProviderConfig represents a generic provider configuration
@@ -855,6 +856,9 @@ func (g *GenericAgentGenerator) Generate(ctx context.Context, config *GeneratorC
 
 	// Agent-specific settings
 	agentConfig.Settings = g.getAgentSpecificSettings()
+
+	// Configure formatters
+	agentConfig.Formatters = DefaultFormattersConfig(config.HelixAgentHost, config.HelixAgentPort)
 
 	result.Config = agentConfig
 	result.Success = true

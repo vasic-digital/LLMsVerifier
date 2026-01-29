@@ -17,6 +17,7 @@ type KiloCodeConfig struct {
 	MCP         map[string]KiloCodeMCP      `json:"mcpServers,omitempty"`
 	Agents      []KiloCodeAgent             `json:"agents,omitempty"`
 	Settings    KiloCodeSettings            `json:"settings,omitempty"`
+	Formatters  FormattersConfig            `json:"formatters,omitempty"`
 }
 
 // KiloCodeProviderConfig represents the provider configuration
@@ -179,6 +180,9 @@ func (g *KiloCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 		ContextWindow:    128000,
 		Theme:            "auto",
 	}
+
+	// Configure formatters
+	kiloConfig.Formatters = DefaultFormattersConfig(config.HelixAgentHost, config.HelixAgentPort)
 
 	result.Config = kiloConfig
 	result.Success = true

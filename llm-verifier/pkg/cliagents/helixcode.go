@@ -20,6 +20,7 @@ type HelixCodeConfig struct {
 	Tools       HelixCodeTools               `json:"tools,omitempty"`
 	Permissions HelixCodePermissions         `json:"permissions,omitempty"`
 	Settings    HelixCodeSettings            `json:"settings,omitempty"`
+	Formatters  FormattersConfig             `json:"formatters,omitempty"`
 }
 
 // HelixCodeProviderConfig represents the provider configuration
@@ -258,6 +259,9 @@ func (g *HelixCodeGenerator) Generate(ctx context.Context, config *GeneratorConf
 		ConfirmActions:  true,
 		LogLevel:        "info",
 	}
+
+	// Configure formatters
+	helixConfig.Formatters = DefaultFormattersConfig(config.HelixAgentHost, config.HelixAgentPort)
 
 	result.Config = helixConfig
 	result.Success = true
