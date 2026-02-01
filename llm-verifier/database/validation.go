@@ -8,18 +8,24 @@ import (
 
 // allowedTables is a whitelist of valid table names
 var allowedTables = map[string]bool{
-	"providers":               true,
-	"models":                   true,
-	"verification_results":     true,
-	"schedules":                true,
-	"schedule_runs":            true,
-	"users":                    true,
-	"notifications":           true,
-	"api_keys":                 true,
-	"sessions":                 true,
-	"settings":                 true,
-	"logs":                     true,
-	"migrations":               true,
+	"api_keys":             true,
+	"config_exports":       true,
+	"events":               true,
+	"issues":               true,
+	"limits":               true,
+	"logs":                 true,
+	"migrations":           true,
+	"models":               true,
+	"notifications":        true,
+	"pricing":              true,
+	"providers":            true,
+	"schedule_runs":        true,
+	"schedules":            true,
+	"sessions":             true,
+	"settings":             true,
+	"users":                true,
+	"verification_results": true,
+	"verification_scores":  true,
 }
 
 // allowedColumns is a whitelist of valid column patterns
@@ -69,7 +75,7 @@ func QuoteTableName(tableName string) (string, error) {
 	if err := ValidateTableName(tableName); err != nil {
 		return "", err
 	}
-	return fmt.Sprintf(`"%s"`, tableName), nil
+	return fmt.Sprintf(`"%s"`, tableName), nil // #nosec G201
 }
 
 // QuoteColumnName safely quotes a column name
@@ -77,7 +83,7 @@ func QuoteColumnName(columnName string) (string, error) {
 	if err := ValidateColumnName(columnName); err != nil {
 		return "", err
 	}
-	return fmt.Sprintf(`"%s"`, columnName), nil
+	return fmt.Sprintf(`"%s"`, columnName), nil // #nosec G201
 }
 
 // QuoteColumnNames safely quotes multiple column names
@@ -105,8 +111,8 @@ func BuildSafeSelectQuery(tableName string, columns []string, whereClause string
 		return "", err
 	}
 
-	query := fmt.Sprintf("SELECT %s FROM %s", strings.Join(quotedColumns, ", "), quotedTable)
-	
+	query := fmt.Sprintf("SELECT %s FROM %s", strings.Join(quotedColumns, ", "), quotedTable) // #nosec G201
+
 	if whereClause != "" {
 		query += " " + whereClause
 	}
@@ -131,7 +137,7 @@ func BuildSafeInsertQuery(tableName string, columns []string) (string, error) {
 		placeholders[i] = "?"
 	}
 
-	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
+	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", // #nosec G201
 		quotedTable,
 		strings.Join(quotedColumns, ", "),
 		strings.Join(placeholders, ", "))

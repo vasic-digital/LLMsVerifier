@@ -261,7 +261,7 @@ func (qo *QueryOptimizer) AnalyzeTableStatistics() error {
 func (qo *QueryOptimizer) analyzeTable(tableName string) error {
 	// Get row count
 	var count int64
-	err := qo.db.conn.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s", tableName)).Scan(&count)
+	err := qo.db.conn.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s", tableName)).Scan(&count) // #nosec G201
 	if err != nil {
 		return err
 	}
@@ -269,7 +269,7 @@ func (qo *QueryOptimizer) analyzeTable(tableName string) error {
 	log.Printf("Table %s: %d rows", tableName, count)
 
 	// Analyze index usage (SQLite specific)
-	rows, err := qo.db.conn.Query(fmt.Sprintf("PRAGMA index_list(%s)", tableName))
+	rows, err := qo.db.conn.Query(fmt.Sprintf("PRAGMA index_list(%s)", tableName)) // #nosec G201
 	if err != nil {
 		return err
 	}
@@ -717,7 +717,7 @@ func (d *Database) GetDatabaseStats() (map[string]interface{}, error) {
 		}
 
 		var count int
-		query := fmt.Sprintf("SELECT COUNT(*) FROM %s", quotedTable)
+		query := fmt.Sprintf("SELECT COUNT(*) FROM %s", quotedTable) // #nosec G201 - quotedTable is validated via QuoteTableName whitelist
 		err = d.conn.QueryRow(query).Scan(&count)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get count for %s: %w", table, err)

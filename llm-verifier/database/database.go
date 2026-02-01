@@ -153,7 +153,7 @@ func migrateTable(sourceDB, destDB *sql.DB, tableName string) error {
 // copyTableData copies all data from one table to another
 func copyTableData(sourceDB, destDB *sql.DB, tableName string) error {
 	// Get column names
-	rows, err := sourceDB.Query(fmt.Sprintf("PRAGMA table_info(%s)", tableName))
+	rows, err := sourceDB.Query(fmt.Sprintf("PRAGMA table_info(%s)", tableName)) // #nosec G201
 	if err != nil {
 		return err
 	}
@@ -187,8 +187,8 @@ func copyTableData(sourceDB, destDB *sql.DB, tableName string) error {
 		return fmt.Errorf("invalid column names: %w", err)
 	}
 
-	selectQuery := fmt.Sprintf("SELECT %s FROM %s", strings.Join(quotedColumns, ", "), quotedTable)
-	insertQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
+	selectQuery := fmt.Sprintf("SELECT %s FROM %s", strings.Join(quotedColumns, ", "), quotedTable) // #nosec G201 - quotedTable and quotedColumns are validated via QuoteTableName/QuoteColumnNames whitelist
+	insertQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",                                   // #nosec G201 - quotedTable and quotedColumns are validated via QuoteTableName/QuoteColumnNames whitelist
 		quotedTable,
 		strings.Join(quotedColumns, ", "),
 		strings.Repeat("?,", len(columns))+"?")

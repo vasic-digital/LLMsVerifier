@@ -200,7 +200,7 @@ func (mm *MigrationManager) SetupDefaultMigrations() {
 				"config_exports", "logs",
 			}
 			for _, table := range tables {
-				if _, err := tx.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", table)); err != nil {
+				if _, err := tx.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", table)); err != nil { // #nosec G201
 					return err
 				}
 			}
