@@ -5,8 +5,8 @@
     "docs_url": "https://docs.fireworks.ai/"
   },
   "chutes": {
-    "models_endpoint": "https://api.chutes.ai/v1/models",
-    "chat_endpoint": "https://api.chutes.ai/v1/chat/completions",
+    "models_endpoint": "https://llm.chutes.ai/v1/models",
+    "chat_endpoint": "https://llm.chutes.ai/v1/chat/completions",
     "docs_url": "https://docs.chutes.ai/"
   },
   "siliconflow": {

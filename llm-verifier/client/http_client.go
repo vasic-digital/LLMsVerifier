@@ -216,10 +216,10 @@ func getProviderEndpoint(provider string) string {
 		"togetherai":  "https://api.together.xyz/v1/models",
 		"fireworksai": "https://api.fireworks.ai/v1/models",
 		"fireworks":   "https://api.fireworks.ai/v1/models",
-		"chutes":      "https://api.chutes.ai/v1/models",
+		"chutes":      "https://llm.chutes.ai/v1/models",
 		"siliconflow": "https://api.siliconflow.cn/v1/models",
 		"kimi":        "https://api.moonshot.cn/v1/models",
-		"zai":         "https://api.studio.nebius.ai/v1/models",
+		"zai":         "https://open.bigmodel.cn/api/paas/v4/models",
 		"nebius":      "https://api.studio.nebius.ai/v1/models",
 		"hyperbolic":  "https://api.hyperbolic.xyz/v1/models",
 		"baseten":     "https://inference.baseten.co/v1/models",
@@ -232,7 +232,7 @@ func getProviderEndpoint(provider string) string {
 		
 		// Special API providers
 		"huggingface": "https://api-inference.huggingface.co/models",
-		"cohere":      "https://api.cohere.ai/v1/models",
+		"cohere":      "https://api.cohere.com/v2/models",
 		"replicate":   "https://api.replicate.com/v1/models",
 		"nlpcloud":    "https://api.nlpcloud.com/v1/models",
 		"poe":         "https://api.poe.com/v1/models",
@@ -278,10 +278,10 @@ func getModelEndpoint(provider, modelID string) string {
 		"togetherai":  "https://api.together.xyz/v1/chat/completions",
 		"fireworksai": "https://api.fireworks.ai/v1/chat/completions",
 		"fireworks":   "https://api.fireworks.ai/v1/chat/completions",
-		"chutes":      "https://api.chutes.ai/v1/chat/completions",
+		"chutes":      "https://llm.chutes.ai/v1/chat/completions",
 		"siliconflow": "https://api.siliconflow.cn/v1/chat/completions",
 		"kimi":        "https://api.moonshot.cn/v1/chat/completions",
-		"zai":         "https://api.studio.nebius.ai/v1/chat/completions",
+		"zai":         "https://open.bigmodel.cn/api/paas/v4/chat/completions",
 		"nebius":      "https://api.studio.nebius.ai/v1/chat/completions",
 		"hyperbolic":  "https://api.hyperbolic.xyz/v1/chat/completions",
 		"baseten":     "https://inference.baseten.co/v1/chat/completions",
@@ -294,7 +294,7 @@ func getModelEndpoint(provider, modelID string) string {
 		
 		// Special API providers
 		"huggingface": "https://api-inference.huggingface.co/models/" + modelID,
-		"cohere":      "https://api.cohere.ai/v1/generate",
+		"cohere":      "https://api.cohere.com/v2/chat",
 		"replicate":   "https://api.replicate.com/v1/predictions",
 		"nlpcloud":    "https://api.nlpcloud.com/v1/gpu",
 		"poe":         "https://api.poe.com/v1/chat/completions",
