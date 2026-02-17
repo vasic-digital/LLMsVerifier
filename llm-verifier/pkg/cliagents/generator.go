@@ -422,7 +422,7 @@ func DefaultMCPServersForHost(host string, port int) []MCPServerConfig {
 		// RAG, Formatters, and Monitoring endpoints
 		// ============================================
 		{Name: "helixagent-rag", Type: "remote", URL: baseURL + "/v1/rag"},
-		{Name: "helixagent-formatters", Type: "remote", URL: baseURL + "/v1/format"},
+		{Name: "helixagent-formatters", Type: "remote", URL: baseURL + "/v1/formatters"},
 		{Name: "helixagent-monitoring", Type: "remote", URL: baseURL + "/v1/monitoring"},
 
 		// ============================================
@@ -442,7 +442,7 @@ func DefaultMCPServersForHost(host string, port int) []MCPServerConfig {
 		// No authentication required
 		// ============================================
 		{Name: "context7", Type: "remote", URL: "https://mcp.context7.com/mcp"},
-		{Name: "deepwiki", Type: "remote", URL: "https://mcp.deepwiki.com/sse"},
+		{Name: "deepwiki", Type: "remote", URL: "https://mcp.deepwiki.com/mcp"},
 		{Name: "cloudflare-docs", Type: "remote", URL: "https://docs.mcp.cloudflare.com/sse"},
 	}
 }
