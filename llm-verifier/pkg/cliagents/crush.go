@@ -98,10 +98,16 @@ func (g *CrushGenerator) Generate(ctx context.Context, config *GeneratorConfig) 
 
 	// Configure provider
 	baseURL := fmt.Sprintf("http://%s:%d/v1", config.HelixAgentHost, config.HelixAgentPort)
+	// Use real API key from environment for installed configs;
+	// env var references like "HELIXAGENT_API_KEY" are NOT supported by CLI agents
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
+	if apiKey == "" {
+		apiKey = "<YOUR_HELIXAGENT_API_KEY>"
+	}
 	crushConfig.Provider = CrushProviderConfig{
-		Name:      "helixagent",
-		BaseURL:   baseURL,
-		APIKeyEnv: "HELIXAGENT_API_KEY",
+		Name:    "helixagent",
+		BaseURL: baseURL,
+		APIKey:  apiKey,
 	}
 
 	// Configure models

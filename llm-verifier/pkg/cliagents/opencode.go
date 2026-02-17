@@ -142,10 +142,16 @@ func (g *OpenCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 
 	// Configure provider
 	baseURL := fmt.Sprintf("http://%s:%d/v1", config.HelixAgentHost, config.HelixAgentPort)
+	// Use real API key from environment for installed configs;
+	// env var references like "{env:VAR}" are NOT supported by OpenCode
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
+	if apiKey == "" {
+		apiKey = "<YOUR_HELIXAGENT_API_KEY>"
+	}
 	openCodeConfig.Provider = OpenCodeProviderConfig{
 		Options: OpenCodeProviderOptions{
-			BaseURL:      baseURL,
-			APIKeyEnvVar: "HELIXAGENT_API_KEY",
+			BaseURL: baseURL,
+			APIKey:  apiKey,
 			Models: []OpenCodeModelDef{
 				{
 					ID:        "helixagent-debate",

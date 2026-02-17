@@ -60,16 +60,8 @@ func TestDefaultMCPServers(t *testing.T) {
 		t.Errorf("Expected at least 6 HelixAgent MCP endpoints, got %d", helixAgentCount)
 	}
 
-	// Check for standard MCP servers
-	localCount := 0
-	for _, server := range servers {
-		if server.Type == "local" {
-			localCount++
-		}
-	}
-	if localCount < 6 {
-		t.Errorf("Expected at least 6 local MCP servers, got %d", localCount)
-	}
+	// DefaultMCPServers returns only HelixAgent remote endpoints (no local npx servers)
+	// Local MCP servers are available via ContainerizedMCPServers() instead
 }
 
 func TestListSupportedAgents(t *testing.T) {
@@ -126,7 +118,7 @@ func TestGenerateOpenCode(t *testing.T) {
 	if len(openCodeConfig.Provider.Options.Models) == 0 {
 		t.Error("No models configured")
 	}
-	if len(openCodeConfig.MCP) == 0 {
+	if len(openCodeConfig.MCPServers) == 0 {
 		t.Error("No MCP servers configured")
 	}
 	if len(openCodeConfig.Agent) == 0 {
@@ -308,9 +300,9 @@ func TestValidateOpenCodeConfig(t *testing.T) {
 				BaseURL: "http://localhost:7061/v1",
 			},
 		},
-		MCP: map[string]OpenCodeMCP{
+		MCPServers: map[string]OpenCodeMCPServer{
 			"test": {
-				Type: "remote",
+				Type: "sse",
 				URL:  "http://localhost:7061/mcp",
 			},
 		},
@@ -331,9 +323,9 @@ func TestValidateOpenCodeConfig(t *testing.T) {
 				BaseURL: "http://localhost:7061/v1",
 			},
 		},
-		MCP: map[string]OpenCodeMCP{
+		MCPServers: map[string]OpenCodeMCPServer{
 			"test": {
-				Type: "remote",
+				Type: "sse",
 				// Missing URL
 			},
 		},
@@ -420,8 +412,8 @@ func TestConfigJSONSerialization(t *testing.T) {
 	if _, ok := parsed["provider"]; !ok {
 		t.Error("provider field missing in JSON")
 	}
-	if _, ok := parsed["mcp"]; !ok {
-		t.Error("mcp field missing in JSON")
+	if _, ok := parsed["mcpServers"]; !ok {
+		t.Error("mcpServers field missing in JSON")
 	}
 }
 
