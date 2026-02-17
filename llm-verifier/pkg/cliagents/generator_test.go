@@ -49,19 +49,103 @@ func TestDefaultMCPServers(t *testing.T) {
 		t.Fatal("DefaultMCPServers returned empty slice")
 	}
 
-	// Check for HelixAgent MCP endpoints
+	// Must have at least 15 MCP servers
+	if len(servers) < 15 {
+		t.Errorf("Expected at least 15 MCP servers, got %d", len(servers))
+	}
+
+	// Check for HelixAgent remote endpoints (at least 6)
 	helixAgentCount := 0
+	localCount := 0
+	freeRemoteCount := 0
 	for _, server := range servers {
-		if server.Type == "remote" {
-			helixAgentCount++
+		if server.Type == "remote" && len(server.URL) > 0 {
+			if len(server.URL) > 20 && server.URL[:21] == "http://localhost:7061" {
+				helixAgentCount++
+			} else if server.URL[:5] == "https" {
+				freeRemoteCount++
+			}
+		}
+		if server.Type == "local" {
+			localCount++
 		}
 	}
 	if helixAgentCount < 6 {
 		t.Errorf("Expected at least 6 HelixAgent MCP endpoints, got %d", helixAgentCount)
 	}
+	if localCount < 6 {
+		t.Errorf("Expected at least 6 local npx MCP servers, got %d", localCount)
+	}
+	if freeRemoteCount < 3 {
+		t.Errorf("Expected at least 3 free remote MCP servers, got %d", freeRemoteCount)
+	}
+}
 
-	// DefaultMCPServers returns only HelixAgent remote endpoints (no local npx servers)
-	// Local MCP servers are available via ContainerizedMCPServers() instead
+func TestDefaultMCPServersForHost(t *testing.T) {
+	servers := DefaultMCPServersForHost("myhost", 9999)
+	found := false
+	for _, s := range servers {
+		if s.Name == "helixagent-mcp" && s.URL == "http://myhost:9999/v1/mcp" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("DefaultMCPServersForHost did not configure custom host/port correctly")
+	}
+}
+
+func TestDefaultPlugins(t *testing.T) {
+	plugins := DefaultPlugins()
+	if len(plugins) < 10 {
+		t.Errorf("Expected at least 10 default plugins, got %d", len(plugins))
+	}
+}
+
+func TestDefaultSkills(t *testing.T) {
+	skills := DefaultSkills("localhost", 7061)
+	if len(skills) < 8 {
+		t.Errorf("Expected at least 8 default skills, got %d", len(skills))
+	}
+	for _, skill := range skills {
+		if skill.Name == "" {
+			t.Error("Skill name is empty")
+		}
+		if skill.Description == "" {
+			t.Error("Skill description is empty")
+		}
+		if skill.Endpoint == "" {
+			t.Error("Skill endpoint is empty")
+		}
+		if !skill.Enabled {
+			t.Errorf("Skill %s should be enabled", skill.Name)
+		}
+	}
+}
+
+func TestDefaultHelixAgentExtensions(t *testing.T) {
+	ext := DefaultHelixAgentExtensions("localhost", 7061)
+	if ext == nil {
+		t.Fatal("DefaultHelixAgentExtensions returned nil")
+	}
+	if ext.LSP == nil || !ext.LSP.Enabled {
+		t.Error("LSP should be enabled")
+	}
+	if ext.ACP == nil || !ext.ACP.Enabled {
+		t.Error("ACP should be enabled")
+	}
+	if ext.Embeddings == nil || !ext.Embeddings.Enabled {
+		t.Error("Embeddings should be enabled")
+	}
+	if ext.RAG == nil || !ext.RAG.Enabled {
+		t.Error("RAG should be enabled")
+	}
+	if len(ext.Plugins) < 10 {
+		t.Errorf("Expected at least 10 plugins, got %d", len(ext.Plugins))
+	}
+	if len(ext.Skills) < 8 {
+		t.Errorf("Expected at least 8 skills, got %d", len(ext.Skills))
+	}
 }
 
 func TestListSupportedAgents(t *testing.T) {
@@ -118,11 +202,33 @@ func TestGenerateOpenCode(t *testing.T) {
 	if len(openCodeConfig.Provider.Options.Models) == 0 {
 		t.Error("No models configured")
 	}
-	if len(openCodeConfig.MCPServers) == 0 {
-		t.Error("No MCP servers configured")
+	if len(openCodeConfig.MCPServers) < 15 {
+		t.Errorf("Expected at least 15 MCP servers, got %d", len(openCodeConfig.MCPServers))
 	}
 	if len(openCodeConfig.Agent) == 0 {
 		t.Error("No agents configured")
+	}
+	if len(openCodeConfig.Plugin) == 0 {
+		t.Error("No plugins configured")
+	}
+	if openCodeConfig.Extensions == nil {
+		t.Error("Extensions is nil")
+	} else {
+		if openCodeConfig.Extensions.LSP == nil || !openCodeConfig.Extensions.LSP.Enabled {
+			t.Error("LSP extension should be enabled")
+		}
+		if openCodeConfig.Extensions.ACP == nil || !openCodeConfig.Extensions.ACP.Enabled {
+			t.Error("ACP extension should be enabled")
+		}
+		if openCodeConfig.Extensions.Embeddings == nil || !openCodeConfig.Extensions.Embeddings.Enabled {
+			t.Error("Embeddings extension should be enabled")
+		}
+		if openCodeConfig.Extensions.RAG == nil || !openCodeConfig.Extensions.RAG.Enabled {
+			t.Error("RAG extension should be enabled")
+		}
+		if len(openCodeConfig.Extensions.Skills) < 8 {
+			t.Errorf("Expected at least 8 skills, got %d", len(openCodeConfig.Extensions.Skills))
+		}
 	}
 
 	// Check validation result
@@ -157,6 +263,15 @@ func TestGenerateCrush(t *testing.T) {
 	if crushConfig.Provider.BaseURL == "" {
 		t.Error("Provider BaseURL is empty")
 	}
+	if len(crushConfig.MCP) < 15 {
+		t.Errorf("Expected at least 15 MCP servers, got %d", len(crushConfig.MCP))
+	}
+	if len(crushConfig.Plugins) == 0 {
+		t.Error("No plugins configured")
+	}
+	if crushConfig.Extensions == nil {
+		t.Error("Extensions is nil")
+	}
 }
 
 func TestGenerateKiloCode(t *testing.T) {
@@ -182,6 +297,15 @@ func TestGenerateKiloCode(t *testing.T) {
 
 	if kiloConfig.Provider.BaseURL == "" {
 		t.Error("Provider BaseURL is empty")
+	}
+	if len(kiloConfig.MCP) < 15 {
+		t.Errorf("Expected at least 15 MCP servers, got %d", len(kiloConfig.MCP))
+	}
+	if len(kiloConfig.Plugins) == 0 {
+		t.Error("No plugins configured")
+	}
+	if kiloConfig.Extensions == nil {
+		t.Error("Extensions is nil")
 	}
 }
 
@@ -211,6 +335,15 @@ func TestGenerateHelixCode(t *testing.T) {
 	}
 	if len(helixConfig.Agents) == 0 {
 		t.Error("No agents configured")
+	}
+	if len(helixConfig.MCP) < 15 {
+		t.Errorf("Expected at least 15 MCP servers, got %d", len(helixConfig.MCP))
+	}
+	if len(helixConfig.Plugins) == 0 {
+		t.Error("No plugins configured")
+	}
+	if helixConfig.Extensions == nil {
+		t.Error("Extensions is nil")
 	}
 }
 
@@ -353,9 +486,9 @@ func TestValidateFromMap(t *testing.T) {
 				"baseURL": "http://localhost:7061/v1",
 			},
 		},
-		"mcp": map[string]interface{}{
+		"mcpServers": map[string]interface{}{
 			"test": map[string]interface{}{
-				"type": "remote",
+				"type": "sse",
 				"url":  "http://localhost:7061/mcp",
 			},
 		},
@@ -371,7 +504,7 @@ func TestValidateFromMap(t *testing.T) {
 
 	// Invalid config - missing provider
 	invalidConfig := map[string]interface{}{
-		"mcp": map[string]interface{}{},
+		"mcpServers": map[string]interface{}{},
 	}
 
 	result, err = gen.Validate(AgentOpenCode, invalidConfig)
@@ -415,6 +548,12 @@ func TestConfigJSONSerialization(t *testing.T) {
 	if _, ok := parsed["mcpServers"]; !ok {
 		t.Error("mcpServers field missing in JSON")
 	}
+	if _, ok := parsed["plugin"]; !ok {
+		t.Error("plugin field missing in JSON")
+	}
+	if _, ok := parsed["extensions"]; !ok {
+		t.Error("extensions field missing in JSON")
+	}
 }
 
 func TestGenericAgentGenerator(t *testing.T) {
@@ -447,7 +586,7 @@ func TestGenericAgentGenerator(t *testing.T) {
 				t.Errorf("Expected Success for %s", agentType)
 			}
 			if result.Config == nil {
-				t.Errorf("Config is nil for %s", agentType)
+				t.Fatalf("Config is nil for %s", agentType)
 			}
 
 			// Check schema
@@ -457,6 +596,37 @@ func TestGenericAgentGenerator(t *testing.T) {
 			}
 			if schema.Description == "" {
 				t.Errorf("Description is empty for %s", agentType)
+			}
+
+			// Verify generic agent has 15+ MCPs, plugins, and extensions
+			genericConfig, ok := result.Config.(*GenericAgentConfig)
+			if !ok {
+				t.Fatalf("Config is not *GenericAgentConfig for %s", agentType)
+			}
+			if len(genericConfig.MCP) < 15 {
+				t.Errorf("Expected at least 15 MCP servers for %s, got %d", agentType, len(genericConfig.MCP))
+			}
+			if len(genericConfig.Plugins) == 0 {
+				t.Errorf("No plugins configured for %s", agentType)
+			}
+			if genericConfig.Extensions == nil {
+				t.Errorf("Extensions is nil for %s", agentType)
+			} else {
+				if genericConfig.Extensions.LSP == nil || !genericConfig.Extensions.LSP.Enabled {
+					t.Errorf("LSP should be enabled for %s", agentType)
+				}
+				if genericConfig.Extensions.ACP == nil || !genericConfig.Extensions.ACP.Enabled {
+					t.Errorf("ACP should be enabled for %s", agentType)
+				}
+				if genericConfig.Extensions.Embeddings == nil || !genericConfig.Extensions.Embeddings.Enabled {
+					t.Errorf("Embeddings should be enabled for %s", agentType)
+				}
+				if genericConfig.Extensions.RAG == nil || !genericConfig.Extensions.RAG.Enabled {
+					t.Errorf("RAG should be enabled for %s", agentType)
+				}
+				if len(genericConfig.Extensions.Skills) < 8 {
+					t.Errorf("Expected at least 8 skills for %s, got %d", agentType, len(genericConfig.Extensions.Skills))
+				}
 			}
 		})
 	}
@@ -511,5 +681,141 @@ func TestSupportedAgentsList(t *testing.T) {
 		if !found {
 			t.Errorf("Expected agent %s not found in SupportedAgents", exp)
 		}
+	}
+}
+
+// TestAllAgentsCompleteness validates that ALL 48 agents have the required
+// features: 15+ MCPs, plugins, LSP, ACP, Embeddings, RAG, Skills
+func TestAllAgentsCompleteness(t *testing.T) {
+	gen := NewUnifiedGenerator(nil)
+	ctx := context.Background()
+
+	results, err := gen.GenerateAll(ctx)
+	if err != nil {
+		t.Fatalf("GenerateAll failed: %v", err)
+	}
+
+	for _, result := range results {
+		t.Run(string(result.AgentType), func(t *testing.T) {
+			if !result.Success {
+				t.Fatalf("Generation failed for %s", result.AgentType)
+			}
+
+			// Serialize to JSON and parse back to check structure
+			jsonData, err := json.Marshal(result.Config)
+			if err != nil {
+				t.Fatalf("JSON marshal failed for %s: %v", result.AgentType, err)
+			}
+
+			var parsed map[string]interface{}
+			if err := json.Unmarshal(jsonData, &parsed); err != nil {
+				t.Fatalf("JSON unmarshal failed for %s: %v", result.AgentType, err)
+			}
+
+			// Check MCP servers (various field names across agents)
+			mcpKey := ""
+			for _, key := range []string{"mcp", "mcpServers"} {
+				if _, ok := parsed[key]; ok {
+					mcpKey = key
+					break
+				}
+			}
+			if mcpKey == "" {
+				t.Errorf("Agent %s: no MCP servers field found", result.AgentType)
+			} else {
+				mcpMap, ok := parsed[mcpKey].(map[string]interface{})
+				if !ok {
+					t.Errorf("Agent %s: MCP field is not a map", result.AgentType)
+				} else if len(mcpMap) < 15 {
+					t.Errorf("Agent %s: expected at least 15 MCP servers, got %d", result.AgentType, len(mcpMap))
+				}
+			}
+
+			// Check plugins exist
+			if plugins, ok := parsed["plugins"]; ok {
+				pluginArr, ok := plugins.([]interface{})
+				if !ok {
+					t.Errorf("Agent %s: plugins field is not an array", result.AgentType)
+				} else if len(pluginArr) == 0 {
+					t.Errorf("Agent %s: plugins array is empty", result.AgentType)
+				}
+			} else {
+				// OpenCode uses "plugin" key
+				if plugin, ok := parsed["plugin"]; ok {
+					pluginArr, ok := plugin.([]interface{})
+					if !ok || len(pluginArr) == 0 {
+						t.Errorf("Agent %s: plugin field is invalid or empty", result.AgentType)
+					}
+				} else {
+					t.Errorf("Agent %s: no plugins field found", result.AgentType)
+				}
+			}
+
+			// Check extensions exist
+			extensions, hasExtensions := parsed["extensions"]
+			if !hasExtensions {
+				t.Errorf("Agent %s: no extensions field found", result.AgentType)
+			} else {
+				extMap, ok := extensions.(map[string]interface{})
+				if !ok {
+					t.Errorf("Agent %s: extensions is not a map", result.AgentType)
+				} else {
+					// Check LSP
+					if lsp, ok := extMap["lsp"]; ok {
+						lspMap, ok := lsp.(map[string]interface{})
+						if !ok || lspMap["enabled"] != true {
+							t.Errorf("Agent %s: LSP should be enabled", result.AgentType)
+						}
+					} else {
+						t.Errorf("Agent %s: LSP extension missing", result.AgentType)
+					}
+
+					// Check ACP
+					if acp, ok := extMap["acp"]; ok {
+						acpMap, ok := acp.(map[string]interface{})
+						if !ok || acpMap["enabled"] != true {
+							t.Errorf("Agent %s: ACP should be enabled", result.AgentType)
+						}
+					} else {
+						t.Errorf("Agent %s: ACP extension missing", result.AgentType)
+					}
+
+					// Check Embeddings
+					if emb, ok := extMap["embeddings"]; ok {
+						embMap, ok := emb.(map[string]interface{})
+						if !ok || embMap["enabled"] != true {
+							t.Errorf("Agent %s: Embeddings should be enabled", result.AgentType)
+						}
+					} else {
+						t.Errorf("Agent %s: Embeddings extension missing", result.AgentType)
+					}
+
+					// Check RAG
+					if rag, ok := extMap["rag"]; ok {
+						ragMap, ok := rag.(map[string]interface{})
+						if !ok || ragMap["enabled"] != true {
+							t.Errorf("Agent %s: RAG should be enabled", result.AgentType)
+						}
+					} else {
+						t.Errorf("Agent %s: RAG extension missing", result.AgentType)
+					}
+
+					// Check Skills
+					if skills, ok := extMap["skills"]; ok {
+						skillsArr, ok := skills.([]interface{})
+						if !ok || len(skillsArr) < 8 {
+							t.Errorf("Agent %s: expected at least 8 skills", result.AgentType)
+						}
+					} else {
+						t.Errorf("Agent %s: Skills extension missing", result.AgentType)
+					}
+				}
+			}
+
+			// Check formatters exist
+			if _, ok := parsed["formatters"]; !ok {
+				t.Errorf("Agent %s: no formatters field found", result.AgentType)
+			}
+		})
 	}
 }

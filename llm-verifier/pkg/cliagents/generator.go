@@ -241,6 +241,130 @@ type AgentSchema struct {
 	Description      string            `json:"description"`
 }
 
+// HelixAgentExtensions contains all HelixAgent-provided extensions and capabilities
+// that every CLI agent config should include
+type HelixAgentExtensions struct {
+	// Plugins available for the CLI agent
+	Plugins []string `json:"plugins,omitempty"`
+
+	// LSP endpoints
+	LSP *LSPConfig `json:"lsp,omitempty"`
+
+	// ACP (Agent Communication Protocol) endpoints
+	ACP *ACPConfig `json:"acp,omitempty"`
+
+	// Embeddings configuration
+	Embeddings *EmbeddingsConfig `json:"embeddings,omitempty"`
+
+	// RAG (Retrieval-Augmented Generation) configuration
+	RAG *RAGConfig `json:"rag,omitempty"`
+
+	// Skills available for the CLI agent
+	Skills []SkillConfig `json:"skills,omitempty"`
+}
+
+// LSPConfig represents Language Server Protocol configuration
+type LSPConfig struct {
+	Enabled  bool   `json:"enabled"`
+	Endpoint string `json:"endpoint"`
+}
+
+// ACPConfig represents Agent Communication Protocol configuration
+type ACPConfig struct {
+	Enabled  bool   `json:"enabled"`
+	Endpoint string `json:"endpoint"`
+}
+
+// EmbeddingsConfig represents embeddings service configuration
+type EmbeddingsConfig struct {
+	Enabled  bool   `json:"enabled"`
+	Endpoint string `json:"endpoint"`
+	Model    string `json:"model,omitempty"`
+}
+
+// RAGConfig represents Retrieval-Augmented Generation configuration
+type RAGConfig struct {
+	Enabled     bool   `json:"enabled"`
+	Endpoint    string `json:"endpoint"`
+	VectorStore string `json:"vector_store,omitempty"`
+}
+
+// SkillConfig represents a skill available to the CLI agent
+type SkillConfig struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Endpoint    string `json:"endpoint,omitempty"`
+	Enabled     bool   `json:"enabled"`
+}
+
+// DefaultHelixAgentExtensions returns the default set of extensions for a given host/port
+func DefaultHelixAgentExtensions(host string, port int) *HelixAgentExtensions {
+	baseURL := fmt.Sprintf("http://%s:%d", host, port)
+	return &HelixAgentExtensions{
+		Plugins: DefaultPlugins(),
+		LSP: &LSPConfig{
+			Enabled:  true,
+			Endpoint: baseURL + "/v1/lsp",
+		},
+		ACP: &ACPConfig{
+			Enabled:  true,
+			Endpoint: baseURL + "/v1/acp",
+		},
+		Embeddings: &EmbeddingsConfig{
+			Enabled:  true,
+			Endpoint: baseURL + "/v1/embeddings",
+			Model:    "helixagent-debate",
+		},
+		RAG: &RAGConfig{
+			Enabled:     true,
+			Endpoint:    baseURL + "/v1/rag",
+			VectorStore: "chromadb",
+		},
+		Skills: DefaultSkills(host, port),
+	}
+}
+
+// DefaultPlugins returns the default set of plugins for HelixAgent-powered CLI agents
+func DefaultPlugins() []string {
+	return []string{
+		"helixagent-mcp",
+		"helixagent-lsp",
+		"helixagent-acp",
+		"helixagent-embeddings",
+		"helixagent-vision",
+		"helixagent-rag",
+		"helixagent-formatters",
+		"helixagent-debate",
+		"helixagent-memory",
+		"helixagent-monitoring",
+	}
+}
+
+// DefaultSkills returns the default set of skills for HelixAgent-powered CLI agents
+func DefaultSkills(host string, port int) []SkillConfig {
+	baseURL := fmt.Sprintf("http://%s:%d", host, port)
+	return []SkillConfig{
+		{Name: "code-review", Description: "AI-powered code review with multi-LLM debate", Endpoint: baseURL + "/v1/debate", Enabled: true},
+		{Name: "code-format", Description: "Format code using 32+ formatters", Endpoint: baseURL + "/v1/format", Enabled: true},
+		{Name: "semantic-search", Description: "Semantic code search using embeddings", Endpoint: baseURL + "/v1/embeddings", Enabled: true},
+		{Name: "vision-analysis", Description: "Analyze images and screenshots", Endpoint: baseURL + "/v1/vision", Enabled: true},
+		{Name: "memory-recall", Description: "Persistent memory across sessions", Endpoint: baseURL + "/v1/cognee", Enabled: true},
+		{Name: "rag-retrieval", Description: "Retrieve context from knowledge base", Endpoint: baseURL + "/v1/rag", Enabled: true},
+		{Name: "lsp-diagnostics", Description: "Language server diagnostics and completions", Endpoint: baseURL + "/v1/lsp", Enabled: true},
+		{Name: "agent-communication", Description: "Inter-agent communication via ACP", Endpoint: baseURL + "/v1/acp", Enabled: true},
+	}
+}
+
+// DefaultPluginsCount returns the number of default plugins
+func DefaultPluginsCount() int {
+	return len(DefaultPlugins())
+}
+
+// DefaultSkillsCount returns the number of default skills
+func DefaultSkillsCount() int {
+	return 8
+}
+
 // NewUnifiedGenerator creates a new unified configuration generator
 func NewUnifiedGenerator(config *GeneratorConfig) *UnifiedGenerator {
 	if config == nil {
@@ -270,23 +394,62 @@ func DefaultGeneratorConfig() *GeneratorConfig {
 	}
 }
 
-// DefaultMCPServers returns default MCP server configurations
-// ZERO npm/npx dependencies - only HelixAgent remote endpoints
-// These connect to the running HelixAgent server which provides all MCP functionality
+// DefaultMCPServers returns default MCP server configurations (15+ servers)
+// Includes: HelixAgent remote endpoints + npx-based local servers + free remote MCPs
+// All agents MUST ship with 15+ MCP servers out of the box
 func DefaultMCPServers() []MCPServerConfig {
+	return DefaultMCPServersForHost("localhost", 7061)
+}
+
+// DefaultMCPServersForHost returns default MCP servers for a given host and port
+func DefaultMCPServersForHost(host string, port int) []MCPServerConfig {
+	baseURL := fmt.Sprintf("http://%s:%d", host, port)
 	return []MCPServerConfig{
 		// ============================================
 		// HelixAgent Remote Endpoints (6)
-		// Connect to running HelixAgent server at localhost:7061
+		// Connect to running HelixAgent server
 		// NO npm/npx dependencies - pure HTTP connections
 		// ============================================
-		{Name: "helixagent-mcp", Type: "remote", URL: "http://localhost:7061/v1/mcp"},
-		{Name: "helixagent-acp", Type: "remote", URL: "http://localhost:7061/v1/acp"},
-		{Name: "helixagent-lsp", Type: "remote", URL: "http://localhost:7061/v1/lsp"},
-		{Name: "helixagent-embeddings", Type: "remote", URL: "http://localhost:7061/v1/embeddings"},
-		{Name: "helixagent-vision", Type: "remote", URL: "http://localhost:7061/v1/vision"},
-		{Name: "helixagent-cognee", Type: "remote", URL: "http://localhost:7061/v1/cognee"},
+		{Name: "helixagent-mcp", Type: "remote", URL: baseURL + "/v1/mcp"},
+		{Name: "helixagent-acp", Type: "remote", URL: baseURL + "/v1/acp"},
+		{Name: "helixagent-lsp", Type: "remote", URL: baseURL + "/v1/lsp"},
+		{Name: "helixagent-embeddings", Type: "remote", URL: baseURL + "/v1/embeddings"},
+		{Name: "helixagent-vision", Type: "remote", URL: baseURL + "/v1/vision"},
+		{Name: "helixagent-cognee", Type: "remote", URL: baseURL + "/v1/cognee"},
+
+		// ============================================
+		// HelixAgent Extended Services (3)
+		// RAG, Formatters, and Monitoring endpoints
+		// ============================================
+		{Name: "helixagent-rag", Type: "remote", URL: baseURL + "/v1/rag"},
+		{Name: "helixagent-formatters", Type: "remote", URL: baseURL + "/v1/format"},
+		{Name: "helixagent-monitoring", Type: "remote", URL: baseURL + "/v1/monitoring"},
+
+		// ============================================
+		// Local npx-based MCP Servers (6)
+		// Started on-demand by the CLI agent
+		// Require Node.js/npm installed
+		// ============================================
+		{Name: "filesystem", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", "."}},
+		{Name: "memory", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-memory"}},
+		{Name: "sequential-thinking", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-sequential-thinking"}},
+		{Name: "everything", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-everything"}},
+		{Name: "puppeteer", Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-puppeteer"}},
+		{Name: "sqlite", Type: "local", Command: []string{"npx", "-y", "mcp-server-sqlite-npx"}},
+
+		// ============================================
+		// Free Remote MCP Servers (3)
+		// No authentication required
+		// ============================================
+		{Name: "context7", Type: "remote", URL: "https://mcp.context7.com/mcp"},
+		{Name: "deepwiki", Type: "remote", URL: "https://mcp.deepwiki.com/sse"},
+		{Name: "cloudflare-docs", Type: "remote", URL: "https://docs.mcp.cloudflare.com/sse"},
 	}
+}
+
+// DefaultMCPServersCount returns the total number of default MCP servers
+func DefaultMCPServersCount() int {
+	return 18 // 6 HelixAgent + 3 extended + 6 npx local + 3 free remote
 }
 
 // ContainerizedMCPServers returns MCP servers running as Docker containers
@@ -431,7 +594,7 @@ func ContainerizedMCPServers(host string) []MCPServerConfig {
 
 // ContainerizedMCPServersCount returns the total number of containerized MCPs
 func ContainerizedMCPServersCount() int {
-	return 78 // 6 HelixAgent + 72 container MCPs
+	return len(ContainerizedMCPServers("localhost"))
 }
 
 // registerGenerators registers all 48 agent-specific generators

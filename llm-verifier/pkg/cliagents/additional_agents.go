@@ -11,12 +11,14 @@ import (
 
 // GenericAgentConfig represents a generic configuration for various CLI agents
 type GenericAgentConfig struct {
-	Version     string                     `json:"version,omitempty"`
-	Provider    GenericProviderConfig      `json:"provider"`
-	Models      []GenericModelDef          `json:"models,omitempty"`
-	MCP         map[string]GenericMCP      `json:"mcp,omitempty"`
-	Settings    map[string]interface{}     `json:"settings,omitempty"`
-	Formatters  FormattersConfig           `json:"formatters,omitempty"`
+	Version    string                 `json:"version,omitempty"`
+	Provider   GenericProviderConfig  `json:"provider"`
+	Models     []GenericModelDef      `json:"models,omitempty"`
+	MCP        map[string]GenericMCP  `json:"mcp,omitempty"`
+	Plugins    []string               `json:"plugins,omitempty"`
+	Extensions *HelixAgentExtensions  `json:"extensions,omitempty"`
+	Settings   map[string]interface{} `json:"settings,omitempty"`
+	Formatters FormattersConfig       `json:"formatters,omitempty"`
 }
 
 // GenericProviderConfig represents a generic provider configuration
@@ -819,11 +821,17 @@ func (g *GenericAgentGenerator) Generate(ctx context.Context, config *GeneratorC
 
 	// Configure provider
 	baseURL := fmt.Sprintf("http://%s:%d/v1", config.HelixAgentHost, config.HelixAgentPort)
+	// Use real API key from environment for installed configs;
+	// env var references are NOT supported by most CLI agents
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
+	if apiKey == "" {
+		apiKey = "<YOUR_HELIXAGENT_API_KEY>"
+	}
 	agentConfig.Provider = GenericProviderConfig{
-		Type:      "openai-compatible",
-		Name:      "helixagent",
-		BaseURL:   baseURL,
-		APIKeyEnv: "HELIXAGENT_API_KEY",
+		Type:    "openai-compatible",
+		Name:    "helixagent",
+		BaseURL: baseURL,
+		APIKey:  apiKey,
 	}
 
 	// Configure models
@@ -834,12 +842,12 @@ func (g *GenericAgentGenerator) Generate(ctx context.Context, config *GeneratorC
 			MaxTokens: 128000,
 			Capabilities: []string{
 				"vision", "streaming", "function_calls", "embeddings",
-				"mcp", "acp", "lsp",
+				"mcp", "acp", "lsp", "code_execution", "rag",
 			},
 		},
 	}
 
-	// Configure MCP servers
+	// Configure MCP servers (15+ out of the box)
 	agentConfig.MCP = make(map[string]GenericMCP)
 	for _, mcpServer := range config.MCPServers {
 		mcp := GenericMCP{
@@ -853,6 +861,12 @@ func (g *GenericAgentGenerator) Generate(ctx context.Context, config *GeneratorC
 		}
 		agentConfig.MCP[mcpServer.Name] = mcp
 	}
+
+	// Configure plugins
+	agentConfig.Plugins = DefaultPlugins()
+
+	// Configure extensions (LSP, ACP, Embeddings, RAG, Skills)
+	agentConfig.Extensions = DefaultHelixAgentExtensions(config.HelixAgentHost, config.HelixAgentPort)
 
 	// Agent-specific settings
 	agentConfig.Settings = g.getAgentSpecificSettings()

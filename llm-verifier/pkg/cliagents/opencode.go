@@ -12,12 +12,14 @@ import (
 // OpenCodeConfig represents the configuration for OpenCode CLI
 type OpenCodeConfig struct {
 	Schema      string                       `json:"$schema,omitempty"`
+	Plugin      []string                     `json:"plugin,omitempty"`
 	Provider    OpenCodeProviderConfig       `json:"provider"`
 	MCPServers  map[string]OpenCodeMCPServer `json:"mcpServers,omitempty"`
 	Agent       map[string]OpenCodeAgent     `json:"agent,omitempty"`
 	Tools       map[string]bool              `json:"tools,omitempty"`
 	Permissions OpenCodePermissions          `json:"permission,omitempty"`
 	Settings    OpenCodeSettings             `json:"settings,omitempty"`
+	Extensions  *HelixAgentExtensions        `json:"extensions,omitempty"`
 	Formatters  FormattersConfig             `json:"formatters,omitempty"`
 }
 
@@ -178,7 +180,14 @@ func (g *OpenCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 		},
 	}
 
-	// Configure MCP servers in OpenCode format
+	// Configure OpenCode plugins
+	openCodeConfig.Plugin = []string{
+		"oh-my-opencode",
+		"opencode-agent-memory",
+		"opencode-agent-skills",
+	}
+
+	// Configure MCP servers in OpenCode format (15+ out of the box)
 	// OpenCode uses two formats:
 	// - Local (stdio): {"command": "npx", "args": ["-y", "package"]}
 	// - Remote (SSE): {"type": "sse", "url": "http://..."}
@@ -243,6 +252,9 @@ func (g *OpenCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 		AllowExec:  true,
 		AllowNet:   true,
 	}
+
+	// Configure extensions (LSP, ACP, Embeddings, RAG, Skills)
+	openCodeConfig.Extensions = DefaultHelixAgentExtensions(config.HelixAgentHost, config.HelixAgentPort)
 
 	// Configure formatters
 	openCodeConfig.Formatters = DefaultFormattersConfig(config.HelixAgentHost, config.HelixAgentPort)

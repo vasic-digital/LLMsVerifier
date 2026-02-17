@@ -11,13 +11,15 @@ import (
 
 // KiloCodeConfig represents the configuration for KiloCode VS Code extension
 type KiloCodeConfig struct {
-	Version     string                      `json:"version,omitempty"`
-	Provider    KiloCodeProviderConfig      `json:"provider"`
-	Models      []KiloCodeModelDef          `json:"models,omitempty"`
-	MCP         map[string]KiloCodeMCP      `json:"mcpServers,omitempty"`
-	Agents      []KiloCodeAgent             `json:"agents,omitempty"`
-	Settings    KiloCodeSettings            `json:"settings,omitempty"`
-	Formatters  FormattersConfig            `json:"formatters,omitempty"`
+	Version    string                      `json:"version,omitempty"`
+	Provider   KiloCodeProviderConfig      `json:"provider"`
+	Models     []KiloCodeModelDef          `json:"models,omitempty"`
+	MCP        map[string]KiloCodeMCP      `json:"mcpServers,omitempty"`
+	Plugins    []string                    `json:"plugins,omitempty"`
+	Agents     []KiloCodeAgent             `json:"agents,omitempty"`
+	Settings   KiloCodeSettings            `json:"settings,omitempty"`
+	Extensions *HelixAgentExtensions       `json:"extensions,omitempty"`
+	Formatters FormattersConfig            `json:"formatters,omitempty"`
 }
 
 // KiloCodeProviderConfig represents the provider configuration
@@ -108,10 +110,15 @@ func (g *KiloCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 
 	// Configure provider
 	baseURL := fmt.Sprintf("http://%s:%d/v1", config.HelixAgentHost, config.HelixAgentPort)
+	// Use real API key from environment for installed configs
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
+	if apiKey == "" {
+		apiKey = "<YOUR_HELIXAGENT_API_KEY>"
+	}
 	kiloConfig.Provider = KiloCodeProviderConfig{
-		Type:      "openai-compatible",
-		BaseURL:   baseURL,
-		APIKeyEnv: "HELIXAGENT_API_KEY",
+		Type:    "openai-compatible",
+		BaseURL: baseURL,
+		APIKey:  apiKey,
 	}
 
 	// Configure models
@@ -130,7 +137,7 @@ func (g *KiloCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 		},
 	}
 
-	// Configure MCP servers
+	// Configure MCP servers (15+ out of the box)
 	kiloConfig.MCP = make(map[string]KiloCodeMCP)
 	for _, mcpServer := range config.MCPServers {
 		mcp := KiloCodeMCP{}
@@ -149,6 +156,9 @@ func (g *KiloCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 		}
 		kiloConfig.MCP[mcpServer.Name] = mcp
 	}
+
+	// Configure plugins
+	kiloConfig.Plugins = DefaultPlugins()
 
 	// Configure agents
 	kiloConfig.Agents = []KiloCodeAgent{
@@ -180,6 +190,9 @@ func (g *KiloCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 		ContextWindow:    128000,
 		Theme:            "auto",
 	}
+
+	// Configure extensions (LSP, ACP, Embeddings, RAG, Skills)
+	kiloConfig.Extensions = DefaultHelixAgentExtensions(config.HelixAgentHost, config.HelixAgentPort)
 
 	// Configure formatters
 	kiloConfig.Formatters = DefaultFormattersConfig(config.HelixAgentHost, config.HelixAgentPort)

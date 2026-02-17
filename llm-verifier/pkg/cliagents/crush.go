@@ -11,13 +11,15 @@ import (
 
 // CrushConfig represents the configuration for Crush CLI
 type CrushConfig struct {
-	Version     string                    `json:"version,omitempty"`
-	Provider    CrushProviderConfig       `json:"provider"`
-	Models      []CrushModelDef           `json:"models,omitempty"`
-	MCP         map[string]CrushMCP       `json:"mcp,omitempty"`
-	Agents      map[string]CrushAgent     `json:"agents,omitempty"`
-	Settings    CrushSettings             `json:"settings,omitempty"`
-	Formatters  FormattersConfig          `json:"formatters,omitempty"`
+	Version    string                    `json:"version,omitempty"`
+	Provider   CrushProviderConfig       `json:"provider"`
+	Models     []CrushModelDef           `json:"models,omitempty"`
+	MCP        map[string]CrushMCP       `json:"mcp,omitempty"`
+	Plugins    []string                  `json:"plugins,omitempty"`
+	Agents     map[string]CrushAgent     `json:"agents,omitempty"`
+	Settings   CrushSettings             `json:"settings,omitempty"`
+	Extensions *HelixAgentExtensions     `json:"extensions,omitempty"`
+	Formatters FormattersConfig          `json:"formatters,omitempty"`
 }
 
 // CrushProviderConfig represents the provider configuration
@@ -123,7 +125,7 @@ func (g *CrushGenerator) Generate(ctx context.Context, config *GeneratorConfig) 
 		},
 	}
 
-	// Configure MCP servers
+	// Configure MCP servers (15+ out of the box)
 	crushConfig.MCP = make(map[string]CrushMCP)
 	for _, mcpServer := range config.MCPServers {
 		mcp := CrushMCP{
@@ -138,6 +140,9 @@ func (g *CrushGenerator) Generate(ctx context.Context, config *GeneratorConfig) 
 		}
 		crushConfig.MCP[mcpServer.Name] = mcp
 	}
+
+	// Configure plugins
+	crushConfig.Plugins = DefaultPlugins()
 
 	// Configure agents
 	crushConfig.Agents = map[string]CrushAgent{
@@ -165,6 +170,9 @@ func (g *CrushGenerator) Generate(ctx context.Context, config *GeneratorConfig) 
 		ShowProgress:    true,
 		ConfirmCommands: true,
 	}
+
+	// Configure extensions (LSP, ACP, Embeddings, RAG, Skills)
+	crushConfig.Extensions = DefaultHelixAgentExtensions(config.HelixAgentHost, config.HelixAgentPort)
 
 	// Configure formatters
 	crushConfig.Formatters = DefaultFormattersConfig(config.HelixAgentHost, config.HelixAgentPort)

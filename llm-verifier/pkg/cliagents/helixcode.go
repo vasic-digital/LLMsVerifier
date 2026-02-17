@@ -16,10 +16,12 @@ type HelixCodeConfig struct {
 	Provider    HelixCodeProviderConfig      `json:"provider"`
 	Models      []HelixCodeModelDef          `json:"models,omitempty"`
 	MCP         map[string]HelixCodeMCP      `json:"mcp,omitempty"`
+	Plugins     []string                     `json:"plugins,omitempty"`
 	Agents      map[string]HelixCodeAgent    `json:"agents,omitempty"`
 	Tools       HelixCodeTools               `json:"tools,omitempty"`
 	Permissions HelixCodePermissions         `json:"permissions,omitempty"`
 	Settings    HelixCodeSettings            `json:"settings,omitempty"`
+	Extensions  *HelixAgentExtensions        `json:"extensions,omitempty"`
 	Formatters  FormattersConfig             `json:"formatters,omitempty"`
 }
 
@@ -150,10 +152,15 @@ func (g *HelixCodeGenerator) Generate(ctx context.Context, config *GeneratorConf
 
 	// Configure provider
 	baseURL := fmt.Sprintf("http://%s:%d/v1", config.HelixAgentHost, config.HelixAgentPort)
+	// Use real API key from environment for installed configs
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
+	if apiKey == "" {
+		apiKey = "<YOUR_HELIXAGENT_API_KEY>"
+	}
 	helixConfig.Provider = HelixCodeProviderConfig{
-		Type:      "helixagent",
-		BaseURL:   baseURL,
-		APIKeyEnv: "HELIXAGENT_API_KEY",
+		Type:    "helixagent",
+		BaseURL: baseURL,
+		APIKey:  apiKey,
 		Options: HelixCodeProviderOptions{
 			Timeout:    120,
 			MaxRetries: 3,
@@ -180,7 +187,7 @@ func (g *HelixCodeGenerator) Generate(ctx context.Context, config *GeneratorConf
 		},
 	}
 
-	// Configure MCP servers
+	// Configure MCP servers (15+ out of the box)
 	helixConfig.MCP = make(map[string]HelixCodeMCP)
 	for _, mcpServer := range config.MCPServers {
 		mcp := HelixCodeMCP{
@@ -196,6 +203,9 @@ func (g *HelixCodeGenerator) Generate(ctx context.Context, config *GeneratorConf
 		}
 		helixConfig.MCP[mcpServer.Name] = mcp
 	}
+
+	// Configure plugins
+	helixConfig.Plugins = DefaultPlugins()
 
 	// Configure agents
 	helixConfig.Agents = map[string]HelixCodeAgent{
@@ -259,6 +269,9 @@ func (g *HelixCodeGenerator) Generate(ctx context.Context, config *GeneratorConf
 		ConfirmActions:  true,
 		LogLevel:        "info",
 	}
+
+	// Configure extensions (LSP, ACP, Embeddings, RAG, Skills)
+	helixConfig.Extensions = DefaultHelixAgentExtensions(config.HelixAgentHost, config.HelixAgentPort)
 
 	// Configure formatters
 	helixConfig.Formatters = DefaultFormattersConfig(config.HelixAgentHost, config.HelixAgentPort)
