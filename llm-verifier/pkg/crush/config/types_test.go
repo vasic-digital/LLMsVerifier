@@ -16,7 +16,7 @@ import (
 func TestConfig_Structure(t *testing.T) {
 	config := &Config{
 		Schema: "https://charm.land/crush.json",
-		Providers: map[string]Provider{
+		Providers: map[string]ProviderConfig{
 			"openai": {
 				Name:    "openai",
 				Type:    "openai",
@@ -27,8 +27,8 @@ func TestConfig_Structure(t *testing.T) {
 				},
 			},
 		},
-		Lsp: map[string]LspConfig{
-			"go": {Command: "gopls", Enabled: true},
+		LSP: LSPs{
+			"go": {Command: "gopls", Disabled: false},
 		},
 		Options: &Options{
 			DisableProviderAutoUpdate: false,
@@ -37,12 +37,12 @@ func TestConfig_Structure(t *testing.T) {
 
 	assert.Equal(t, "https://charm.land/crush.json", config.Schema)
 	assert.Contains(t, config.Providers, "openai")
-	assert.Contains(t, config.Lsp, "go")
+	assert.Contains(t, config.LSP, "go")
 	assert.NotNil(t, config.Options)
 }
 
-func TestProvider_Structure(t *testing.T) {
-	provider := Provider{
+func TestProviderConfig_Structure(t *testing.T) {
+	provider := ProviderConfig{
 		Name:    "anthropic",
 		Type:    "anthropic",
 		BaseURL: "https://api.anthropic.com/v1",
@@ -71,10 +71,8 @@ func TestModel_Structure(t *testing.T) {
 		DefaultMaxTokens:    4096,
 		CanReason:           true,
 		SupportsAttachments: true,
-		Streaming:           true,
-		SupportsBrotli:      true,
-		Options: map[string]interface{}{
-			"temperature": 0.7,
+		Options: &ModelOptions{
+			Temperature: 0.7,
 		},
 	}
 
@@ -88,21 +86,20 @@ func TestModel_Structure(t *testing.T) {
 	assert.Equal(t, 4096, model.DefaultMaxTokens)
 	assert.True(t, model.CanReason)
 	assert.True(t, model.SupportsAttachments)
-	assert.True(t, model.Streaming)
-	assert.True(t, model.SupportsBrotli)
-	assert.Contains(t, model.Options, "temperature")
+	assert.NotNil(t, model.Options)
+	assert.Equal(t, 0.7, model.Options.Temperature)
 }
 
-func TestLspConfig_Structure(t *testing.T) {
-	lsp := LspConfig{
-		Command: "typescript-language-server",
-		Args:    []string{"--stdio"},
-		Enabled: true,
+func TestLSPConfig_Structure(t *testing.T) {
+	lsp := LSPConfig{
+		Command:  "typescript-language-server",
+		Args:     []string{"--stdio"},
+		Disabled: false,
 	}
 
 	assert.Equal(t, "typescript-language-server", lsp.Command)
 	assert.Equal(t, []string{"--stdio"}, lsp.Args)
-	assert.True(t, lsp.Enabled)
+	assert.False(t, lsp.Disabled)
 }
 
 func TestOptions_Structure(t *testing.T) {
@@ -179,7 +176,7 @@ func TestConfigLoader_SaveToFile(t *testing.T) {
 
 	config := &Config{
 		Schema: "https://charm.land/crush.json",
-		Providers: map[string]Provider{
+		Providers: map[string]ProviderConfig{
 			"openai": {
 				Name:    "openai",
 				Type:    "openai",
@@ -225,7 +222,7 @@ func TestSaveConfig(t *testing.T) {
 	defer os.Remove(tmpFile.Name())
 
 	config := &Config{
-		Providers: map[string]Provider{
+		Providers: map[string]ProviderConfig{
 			"anthropic": {
 				Name:    "anthropic",
 				Type:    "anthropic",
@@ -249,7 +246,7 @@ func TestSaveConfig(t *testing.T) {
 func TestConfig_JSONRoundTrip(t *testing.T) {
 	original := &Config{
 		Schema: "https://charm.land/crush.json",
-		Providers: map[string]Provider{
+		Providers: map[string]ProviderConfig{
 			"openai": {
 				Name:    "openai",
 				Type:    "openai",
@@ -263,13 +260,12 @@ func TestConfig_JSONRoundTrip(t *testing.T) {
 						ContextWindow:    128000,
 						DefaultMaxTokens: 4096,
 						CanReason:        true,
-						Streaming:        true,
 					},
 				},
 			},
 		},
-		Lsp: map[string]LspConfig{
-			"go": {Command: "gopls", Args: []string{"--remote=auto"}, Enabled: true},
+		LSP: LSPs{
+			"go": {Command: "gopls", Args: []string{"--remote=auto"}, Disabled: false},
 		},
 		Options: &Options{DisableProviderAutoUpdate: false},
 	}
@@ -286,7 +282,7 @@ func TestConfig_JSONRoundTrip(t *testing.T) {
 	// Verify
 	assert.Equal(t, original.Schema, parsed.Schema)
 	assert.Contains(t, parsed.Providers, "openai")
-	assert.Contains(t, parsed.Lsp, "go")
+	assert.Contains(t, parsed.LSP, "go")
 	assert.Equal(t, "GPT-4", parsed.Providers["openai"].Models[0].Name)
 }
 
@@ -302,10 +298,8 @@ func TestModel_JSONRoundTrip(t *testing.T) {
 		DefaultMaxTokens:    4096,
 		CanReason:           true,
 		SupportsAttachments: true,
-		Streaming:           true,
-		SupportsBrotli:      false,
-		Options: map[string]interface{}{
-			"max_tokens": 4096,
+		Options: &ModelOptions{
+			Temperature: 0.7,
 		},
 	}
 
@@ -326,8 +320,7 @@ func TestModel_JSONRoundTrip(t *testing.T) {
 	assert.Equal(t, original.DefaultMaxTokens, parsed.DefaultMaxTokens)
 	assert.Equal(t, original.CanReason, parsed.CanReason)
 	assert.Equal(t, original.SupportsAttachments, parsed.SupportsAttachments)
-	assert.Equal(t, original.Streaming, parsed.Streaming)
-	assert.Equal(t, original.SupportsBrotli, parsed.SupportsBrotli)
+	assert.NotNil(t, parsed.Options)
 }
 
 // ==================== SchemaValidator Extended Tests ====================
@@ -653,7 +646,7 @@ func TestSchemaValidator_ModelInvalidBooleanFields(t *testing.T) {
 					"context_window": 4096,
 					"default_max_tokens": 100,
 					"can_reason": "yes",
-					"streaming": "true"
+					"supports_attachments": "true"
 				}]
 			}
 		}
@@ -700,7 +693,7 @@ func TestSchemaValidator_LSPMissingCommand(t *testing.T) {
 	assert.True(t, hasCommandError)
 }
 
-func TestSchemaValidator_LSPInvalidEnabled(t *testing.T) {
+func TestSchemaValidator_LSPInvalidDisabled(t *testing.T) {
 	sv := NewSchemaValidator()
 
 	config := `{
@@ -715,7 +708,7 @@ func TestSchemaValidator_LSPInvalidEnabled(t *testing.T) {
 		"lsp": {
 			"go": {
 				"command": "gopls",
-				"enabled": "yes"
+				"disabled": "yes"
 			}
 		}
 	}`
@@ -723,13 +716,13 @@ func TestSchemaValidator_LSPInvalidEnabled(t *testing.T) {
 	result, err := sv.ValidateFromReader(strings.NewReader(config))
 	require.NoError(t, err)
 
-	hasEnabledError := false
+	hasDisabledError := false
 	for _, e := range result.Errors {
-		if strings.Contains(e.Field, "enabled") && strings.Contains(e.Message, "boolean") {
-			hasEnabledError = true
+		if strings.Contains(e.Field, "disabled") && strings.Contains(e.Message, "boolean") {
+			hasDisabledError = true
 		}
 	}
-	assert.True(t, hasEnabledError)
+	assert.True(t, hasDisabledError)
 }
 
 func TestSchemaValidator_LSPInvalidArgs(t *testing.T) {
@@ -832,4 +825,45 @@ func TestValidationResult_Structure(t *testing.T) {
 	assert.False(t, result.Valid)
 	assert.Len(t, result.Errors, 1)
 	assert.Len(t, result.Warnings, 1)
+}
+
+// ==================== CreateDefaultConfig Tests ====================
+
+func TestCreateDefaultConfig(t *testing.T) {
+	config := CreateDefaultConfig()
+
+	assert.Equal(t, "https://charm.land/crush.json", config.Schema)
+	assert.Contains(t, config.Providers, "helixagent")
+	assert.Equal(t, "openai-compat", config.Providers["helixagent"].Type)
+	assert.Equal(t, "http://localhost:7061/v1", config.Providers["helixagent"].BaseURL)
+	assert.Contains(t, config.Models, "default")
+	assert.Equal(t, "helixagent-debate", config.Models["default"].Model)
+	assert.Equal(t, "helixagent", config.Models["default"].Provider)
+	assert.NotNil(t, config.Tools)
+	assert.NotNil(t, config.Tools.LS)
+	assert.NotNil(t, config.Tools.Grep)
+}
+
+func TestCreateHelixAgentConfig(t *testing.T) {
+	apiKey := "test-api-key"
+	baseURL := "http://custom-host:8080/v1"
+	mcpServers := MCPs{
+		"test-server": {
+			Type:    "stdio",
+			Command: "test-command",
+		},
+	}
+	lspServers := LSPs{
+		"go": {
+			Command:   "gopls",
+			Filetypes: []string{"go"},
+		},
+	}
+
+	config := CreateHelixAgentConfig(apiKey, baseURL, mcpServers, lspServers)
+
+	assert.Equal(t, apiKey, config.Providers["helixagent"].APIKey)
+	assert.Equal(t, baseURL, config.Providers["helixagent"].BaseURL)
+	assert.Contains(t, config.MCP, "test-server")
+	assert.Contains(t, config.LSP, "go")
 }

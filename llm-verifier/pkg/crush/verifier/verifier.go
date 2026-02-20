@@ -114,7 +114,7 @@ func (v *CrushVerifier) VerifyConfiguration() (*VerificationResult, error) {
 	}
 
 	// Verify LSP servers
-	for name, lsp := range cfg.Lsp {
+	for name, lsp := range cfg.LSP {
 		status := v.VerifyLSP(name, &lsp)
 		result.LspStatus[name] = status
 	}
@@ -161,7 +161,7 @@ func (v *CrushVerifier) VerifySetup(projectPath string) (map[string]*Verificatio
 	return results, nil
 }
 
-func (v *CrushVerifier) VerifyProvider(name string, provider *crush_config.Provider) ProviderVerificationStatus {
+func (v *CrushVerifier) VerifyProvider(name string, provider *crush_config.ProviderConfig) ProviderVerificationStatus {
 	status := ProviderVerificationStatus{
 		Name:       name,
 		Type:       provider.Type,
@@ -207,7 +207,7 @@ func (v *CrushVerifier) VerifyModel(model *crush_config.Model) ModelVerification
 	if model.ContextWindow > 0 && model.DefaultMaxTokens > 0 {
 		status.HasContextInfo = true
 	}
-	if model.CanReason || model.SupportsAttachments || model.Streaming {
+	if model.CanReason || model.SupportsAttachments {
 		status.HasFeatureFlags = true
 	}
 
@@ -222,21 +222,18 @@ func (v *CrushVerifier) VerifyModel(model *crush_config.Model) ModelVerification
 	if status.HasFeatureFlags {
 		score += 10
 	}
-	if model.SupportsBrotli {
-		score += 5 // Bonus for Brotli support
-	}
 	status.Score = score
 
 	return status
 }
 
-func (v *CrushVerifier) VerifyLSP(name string, lsp *crush_config.LspConfig) LspVerificationStatus {
+func (v *CrushVerifier) VerifyLSP(name string, lsp *crush_config.LSPConfig) LspVerificationStatus {
 	status := LspVerificationStatus{
 		Name:       name,
 		Command:    lsp.Command,
 		Args:       lsp.Args,
 		Configured: true,
-		Enabled:    lsp.Enabled,
+		Enabled:    !lsp.Disabled,
 	}
 
 	// Score calculation

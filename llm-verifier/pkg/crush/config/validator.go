@@ -274,12 +274,12 @@ func (sv *SchemaValidator) validateLSPs(lsp map[string]interface{}, errors *[]Va
 				})
 			}
 
-			// Validate enabled field
-			if enabled, exists := c["enabled"]; exists {
-				if _, ok := enabled.(bool); !ok {
+			// Validate disabled field
+			if disabled, exists := c["disabled"]; exists {
+				if _, ok := disabled.(bool); !ok {
 					*errors = append(*errors, ValidationError{
-						Field:   fmt.Sprintf("lsp.%s.enabled", name),
-						Message: "enabled must be a boolean",
+						Field:   fmt.Sprintf("lsp.%s.disabled", name),
+						Message: "disabled must be a boolean",
 					})
 				}
 			}

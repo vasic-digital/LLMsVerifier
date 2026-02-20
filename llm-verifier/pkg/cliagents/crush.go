@@ -7,63 +7,12 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	crush_config "llm-verifier/pkg/crush/config"
 )
 
-// CrushConfig represents the configuration for Crush CLI
-type CrushConfig struct {
-	Version    string                    `json:"version,omitempty"`
-	Provider   CrushProviderConfig       `json:"provider"`
-	Models     []CrushModelDef           `json:"models,omitempty"`
-	MCP        map[string]CrushMCP       `json:"mcp,omitempty"`
-	Plugins    []string                  `json:"plugins,omitempty"`
-	Agents     map[string]CrushAgent     `json:"agents,omitempty"`
-	Settings   CrushSettings             `json:"settings,omitempty"`
-	Extensions *HelixAgentExtensions     `json:"extensions,omitempty"`
-	Formatters FormattersConfig          `json:"formatters,omitempty"`
-}
-
-// CrushProviderConfig represents the provider configuration
-type CrushProviderConfig struct {
-	Name        string            `json:"name"`
-	BaseURL     string            `json:"base_url"`
-	APIKey      string            `json:"api_key,omitempty"`
-	APIKeyEnv   string            `json:"api_key_env,omitempty"`
-	Headers     map[string]string `json:"headers,omitempty"`
-}
-
-// CrushModelDef represents a model definition
-type CrushModelDef struct {
-	ID          string             `json:"id"`
-	Name        string             `json:"name,omitempty"`
-	MaxTokens   int                `json:"max_tokens,omitempty"`
-	Capabilities []string          `json:"capabilities,omitempty"`
-}
-
-// CrushMCP represents an MCP server configuration
-type CrushMCP struct {
-	Type        string            `json:"type"`
-	Command     []string          `json:"command,omitempty"`
-	URL         string            `json:"url,omitempty"`
-	Args        []string          `json:"args,omitempty"`
-	Environment map[string]string `json:"env,omitempty"`
-}
-
-// CrushAgent represents an agent configuration
-type CrushAgent struct {
-	Model       string `json:"model"`
-	System      string `json:"system,omitempty"`
-	MaxTokens   int    `json:"max_tokens,omitempty"`
-}
-
-// CrushSettings represents settings configuration
-type CrushSettings struct {
-	Theme           string `json:"theme,omitempty"`
-	StreamResponses bool   `json:"stream_responses,omitempty"`
-	ShowProgress    bool   `json:"show_progress,omitempty"`
-	ConfirmCommands bool   `json:"confirm_commands,omitempty"`
-}
-
-// CrushGenerator generates Crush configurations
+// CrushGenerator generates Crush configurations matching the official schema
+// Schema: https://charm.land/crush.json
 type CrushGenerator struct {
 	schema *AgentSchema
 }
@@ -78,104 +27,185 @@ func NewCrushGenerator() *CrushGenerator {
 			ConfigDirEnvVar:  "CRUSH_CONFIG_DIR",
 			DefaultConfigDir: filepath.Join(homeDir, ".config", "crush"),
 			SupportedFields: []string{
-				"version", "provider", "models", "mcp", "agents", "settings",
+				"$schema", "providers", "models", "mcp", "lsp", "options", "permissions", "tools",
 			},
-			RequiredFields: []string{"provider"},
+			RequiredFields: []string{"providers", "tools"},
 			Description:    "Charm Land Crush CLI - AI coding assistant from Charm",
 		},
 	}
 }
 
-// Generate generates a Crush configuration
+// Generate generates a Crush configuration matching the official schema
 func (g *CrushGenerator) Generate(ctx context.Context, config *GeneratorConfig) (*GenerationResult, error) {
 	result := &GenerationResult{
 		AgentType:   AgentCrush,
 		GeneratedAt: time.Now(),
 	}
 
-	// Build the configuration
-	crushConfig := &CrushConfig{
-		Version: "1.0",
+	// Build the configuration using the official schema types
+	crushConfig := &crush_config.Config{
+		Schema: "https://charm.land/crush.json",
 	}
 
-	// Configure provider
-	baseURL := fmt.Sprintf("http://%s:%d/v1", config.HelixAgentHost, config.HelixAgentPort)
-	// Use real API key from environment for installed configs;
-	// env var references like "HELIXAGENT_API_KEY" are NOT supported by CLI agents
+	// Get API key from environment for installed configs
+	// CLI agents do NOT support env var references like "$HELIXAGENT_API_KEY"
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
 		apiKey = "<YOUR_HELIXAGENT_API_KEY>"
 	}
-	crushConfig.Provider = CrushProviderConfig{
-		Name:    "helixagent",
-		BaseURL: baseURL,
-		APIKey:  apiKey,
-	}
 
-	// Configure models
-	crushConfig.Models = []CrushModelDef{
-		{
-			ID:        "helixagent-debate",
-			Name:      "HelixAgent AI Debate Ensemble",
-			MaxTokens: 128000,
-			Capabilities: []string{
-				"vision", "streaming", "function_calls", "embeddings",
-				"mcp", "acp", "lsp", "code_execution",
+	baseURL := fmt.Sprintf("http://%s:%d/v1", config.HelixAgentHost, config.HelixAgentPort)
+
+	// Configure providers (map by provider ID)
+	crushConfig.Providers = map[string]crush_config.ProviderConfig{
+		"helixagent": {
+			ID:      "helixagent",
+			Name:    "HelixAgent",
+			Type:    "openai-compat",
+			BaseURL: baseURL,
+			APIKey:  apiKey,
+			Models: []crush_config.Model{
+				{
+					ID:                  "helixagent-debate",
+					Name:                "HelixAgent AI Debate Ensemble",
+					CostPer1MIn:         0,
+					CostPer1MOut:        0,
+					CostPer1MInCached:   0,
+					CostPer1MOutCached:  0,
+					ContextWindow:       128000,
+					DefaultMaxTokens:    8192,
+					CanReason:           true,
+					SupportsAttachments: true,
+					Options: &crush_config.ModelOptions{
+						Temperature: 0.7,
+					},
+				},
 			},
 		},
 	}
 
+	// Configure models (map by model type/role to SelectedModel)
+	crushConfig.Models = map[string]crush_config.SelectedModel{
+		"default": {
+			Model:       "helixagent-debate",
+			Provider:    "helixagent",
+			MaxTokens:   8192,
+			Temperature: 0.7,
+		},
+		"large": {
+			Model:     "helixagent-debate",
+			Provider:  "helixagent",
+			MaxTokens: 32768,
+		},
+		"reasoning": {
+			Model:           "helixagent-debate",
+			Provider:        "helixagent",
+			MaxTokens:       16384,
+			ReasoningEffort: "high",
+		},
+	}
+
 	// Configure MCP servers (15+ out of the box)
-	crushConfig.MCP = make(map[string]CrushMCP)
+	crushConfig.MCP = make(crush_config.MCPs)
 	for _, mcpServer := range config.MCPServers {
-		mcp := CrushMCP{
-			Type: mcpServer.Type,
+		mcp := crush_config.MCPConfig{
+			Timeout: 30,
 		}
-		if mcpServer.Type == "remote" {
+
+		switch mcpServer.Type {
+		case "remote", "sse", "http":
+			mcp.Type = "sse"
 			mcp.URL = mcpServer.URL
-		} else {
-			mcp.Command = mcpServer.Command
-			mcp.Args = mcpServer.Args
-			mcp.Environment = mcpServer.Environment
+		default:
+			mcp.Type = "stdio"
+			mcp.Command = mcpServer.Command[0]
+			if len(mcpServer.Command) > 1 {
+				mcp.Args = mcpServer.Command[1:]
+			}
+			if mcpServer.Args != nil {
+				mcp.Args = append(mcp.Args, mcpServer.Args...)
+			}
+			mcp.Env = mcpServer.Environment
 		}
+
 		crushConfig.MCP[mcpServer.Name] = mcp
 	}
 
-	// Configure plugins
-	crushConfig.Plugins = DefaultPlugins()
+	// Configure LSP servers
+	crushConfig.LSP = make(crush_config.LSPs)
+	lspConfigs := map[string]crush_config.LSPConfig{
+		"go": {
+			Command:     "gopls",
+			Filetypes:   []string{"go"},
+			RootMarkers: []string{"go.mod", "go.sum"},
+			Timeout:     30,
+		},
+		"typescript": {
+			Command:     "typescript-language-server",
+			Args:        []string{"--stdio"},
+			Filetypes:   []string{"typescript", "javascript", "typescriptreact", "javascriptreact"},
+			RootMarkers: []string{"package.json", "tsconfig.json"},
+			Timeout:     30,
+		},
+		"python": {
+			Command:     "pylsp",
+			Filetypes:   []string{"python"},
+			RootMarkers: []string{"pyproject.toml", "setup.py", "requirements.txt"},
+			Timeout:     30,
+		},
+		"rust": {
+			Command:     "rust-analyzer",
+			Filetypes:   []string{"rust"},
+			RootMarkers: []string{"Cargo.toml"},
+			Timeout:     30,
+		},
+	}
+	for name, lsp := range lspConfigs {
+		crushConfig.LSP[name] = lsp
+	}
 
-	// Configure agents
-	crushConfig.Agents = map[string]CrushAgent{
-		"default": {
-			Model:     "helixagent-debate",
-			System:    "You are a helpful AI coding assistant powered by HelixAgent AI Debate Ensemble.",
-			MaxTokens: 8192,
+	// Configure tools (required field)
+	crushConfig.Tools = &crush_config.Tools{
+		LS: &crush_config.ToolLS{
+			MaxDepth: 10,
+			MaxItems: 1000,
 		},
-		"coder": {
-			Model:     "helixagent-debate",
-			System:    "You are an expert software developer. Write clean, efficient, and well-documented code.",
-			MaxTokens: 16384,
-		},
-		"reviewer": {
-			Model:     "helixagent-debate",
-			System:    "You are a code reviewer. Analyze code for bugs, security issues, and best practices.",
-			MaxTokens: 8192,
+		Grep: &crush_config.ToolGrep{
+			Timeout: 60,
 		},
 	}
 
-	// Configure settings
-	crushConfig.Settings = CrushSettings{
-		Theme:           "auto",
-		StreamResponses: true,
-		ShowProgress:    true,
-		ConfirmCommands: true,
+	// Configure options
+	crushConfig.Options = &crush_config.Options{
+		AutoLSP:       true,
+		Progress:      true,
+		Debug:         false,
+		DataDirectory: ".crush",
+		InitializeAs:  "AGENTS.md",
+		ContextPaths:  []string{"AGENTS.md", "CLAUDE.md", ".cursorrules"},
+		SkillsPaths:   []string{"~/.config/crush/skills"},
+		Attribution: &crush_config.Attribution{
+			TrailerStyle:  "assisted-by",
+			GeneratedWith: true,
+		},
+		DisableMetrics: false,
+		TUI: &crush_config.TUIOptions{
+			CompactMode: false,
+			DiffMode:    "unified",
+			Completions: &crush_config.Completions{
+				MaxDepth: 10,
+				MaxItems: 1000,
+			},
+		},
 	}
 
-	// Configure extensions (LSP, ACP, Embeddings, RAG, Skills)
-	crushConfig.Extensions = DefaultHelixAgentExtensions(config.HelixAgentHost, config.HelixAgentPort)
-
-	// Configure formatters
-	crushConfig.Formatters = DefaultFormattersConfig(config.HelixAgentHost, config.HelixAgentPort)
+	// Configure permissions
+	crushConfig.Permissions = &crush_config.Permissions{
+		AllowedTools: []string{
+			"bash", "view", "edit", "glob", "grep", "ls",
+			"sourcegraph", "web_search", "web_fetch",
+		},
+	}
 
 	result.Config = crushConfig
 	result.Success = true
@@ -187,21 +217,62 @@ func (g *CrushGenerator) Generate(ctx context.Context, config *GeneratorConfig) 
 func (g *CrushGenerator) Validate(config any) (*ValidationResult, error) {
 	result := &ValidationResult{Valid: true}
 
-	crushConfig, ok := config.(*CrushConfig)
+	crushConfig, ok := config.(*crush_config.Config)
 	if !ok {
 		// Try to cast from map
 		if configMap, ok := config.(map[string]interface{}); ok {
 			return g.validateMap(configMap)
 		}
 		result.Valid = false
-		result.Errors = append(result.Errors, "invalid configuration type: expected *CrushConfig")
+		result.Errors = append(result.Errors, "invalid configuration type: expected *crush_config.Config")
 		return result, nil
 	}
 
-	// Validate required fields
-	if crushConfig.Provider.BaseURL == "" {
+	// Validate required providers
+	if len(crushConfig.Providers) == 0 {
 		result.Valid = false
-		result.Errors = append(result.Errors, "provider.base_url is required")
+		result.Errors = append(result.Errors, "providers section is required and must have at least one provider")
+	}
+
+	// Validate each provider has required fields
+	for id, provider := range crushConfig.Providers {
+		if provider.Type == "" {
+			result.Valid = false
+			result.Errors = append(result.Errors, fmt.Sprintf("providers.%s: type is required", id))
+		}
+		if provider.BaseURL == "" && provider.Type != "openai" {
+			result.Valid = false
+			result.Errors = append(result.Errors, fmt.Sprintf("providers.%s: base_url is required for non-openai providers", id))
+		}
+	}
+
+	// Validate required tools section
+	if crushConfig.Tools == nil {
+		result.Valid = false
+		result.Errors = append(result.Errors, "tools section is required")
+	} else {
+		if crushConfig.Tools.LS == nil {
+			result.Valid = false
+			result.Errors = append(result.Errors, "tools.ls is required")
+		}
+		if crushConfig.Tools.Grep == nil {
+			result.Valid = false
+			result.Errors = append(result.Errors, "tools.grep is required")
+		}
+	}
+
+	// Validate models reference existing providers
+	for name, model := range crushConfig.Models {
+		if model.Provider == "" {
+			result.Valid = false
+			result.Errors = append(result.Errors, fmt.Sprintf("models.%s: provider is required", name))
+		} else if _, exists := crushConfig.Providers[model.Provider]; !exists {
+			result.Warnings = append(result.Warnings, fmt.Sprintf("models.%s: provider '%s' not found in providers section", name, model.Provider))
+		}
+		if model.Model == "" {
+			result.Valid = false
+			result.Errors = append(result.Errors, fmt.Sprintf("models.%s: model is required", name))
+		}
 	}
 
 	// Validate MCP servers
@@ -210,20 +281,25 @@ func (g *CrushGenerator) Validate(config any) (*ValidationResult, error) {
 			result.Valid = false
 			result.Errors = append(result.Errors, fmt.Sprintf("mcp.%s: type is required", name))
 		}
-		if mcp.Type == "remote" && mcp.URL == "" {
+		validTypes := map[string]bool{"stdio": true, "sse": true, "http": true}
+		if !validTypes[mcp.Type] {
 			result.Valid = false
-			result.Errors = append(result.Errors, fmt.Sprintf("mcp.%s: url is required for remote type", name))
+			result.Errors = append(result.Errors, fmt.Sprintf("mcp.%s: type must be 'stdio', 'sse', or 'http'", name))
 		}
-		if mcp.Type == "local" && len(mcp.Command) == 0 {
+		if mcp.Type == "stdio" && mcp.Command == "" {
 			result.Valid = false
-			result.Errors = append(result.Errors, fmt.Sprintf("mcp.%s: command is required for local type", name))
+			result.Errors = append(result.Errors, fmt.Sprintf("mcp.%s: command is required for stdio type", name))
+		}
+		if (mcp.Type == "sse" || mcp.Type == "http") && mcp.URL == "" {
+			result.Valid = false
+			result.Errors = append(result.Errors, fmt.Sprintf("mcp.%s: url is required for sse/http type", name))
 		}
 	}
 
-	// Validate agents
-	for name, agent := range crushConfig.Agents {
-		if agent.Model == "" {
-			result.Warnings = append(result.Warnings, fmt.Sprintf("agent.%s: model is not specified", name))
+	// Validate LSP servers
+	for name, lsp := range crushConfig.LSP {
+		if lsp.Command == "" {
+			result.Warnings = append(result.Warnings, fmt.Sprintf("lsp.%s: command is empty", name))
 		}
 	}
 
@@ -234,25 +310,92 @@ func (g *CrushGenerator) Validate(config any) (*ValidationResult, error) {
 func (g *CrushGenerator) validateMap(config map[string]interface{}) (*ValidationResult, error) {
 	result := &ValidationResult{Valid: true}
 
-	// Check for required provider section
-	provider, hasProvider := config["provider"]
-	if !hasProvider {
+	// Check for required providers section
+	providers, hasProviders := config["providers"]
+	if !hasProviders {
 		result.Valid = false
-		result.Errors = append(result.Errors, "provider section is required")
+		result.Errors = append(result.Errors, "providers section is required")
 		return result, nil
 	}
 
-	// Validate provider has base_url
-	providerMap, ok := provider.(map[string]interface{})
+	providersMap, ok := providers.(map[string]interface{})
 	if !ok {
 		result.Valid = false
-		result.Errors = append(result.Errors, "provider must be an object")
+		result.Errors = append(result.Errors, "providers must be an object")
 		return result, nil
 	}
 
-	if _, hasBaseURL := providerMap["base_url"]; !hasBaseURL {
+	if len(providersMap) == 0 {
 		result.Valid = false
-		result.Errors = append(result.Errors, "provider.base_url is required")
+		result.Errors = append(result.Errors, "providers must have at least one provider")
+	}
+
+	// Validate each provider
+	for id, provider := range providersMap {
+		providerMap, ok := provider.(map[string]interface{})
+		if !ok {
+			result.Valid = false
+			result.Errors = append(result.Errors, fmt.Sprintf("providers.%s must be an object", id))
+			continue
+		}
+
+		if providerType, hasType := providerMap["type"]; !hasType {
+			result.Valid = false
+			result.Errors = append(result.Errors, fmt.Sprintf("providers.%s: type is required", id))
+		} else if _, ok := providerType.(string); !ok {
+			result.Valid = false
+			result.Errors = append(result.Errors, fmt.Sprintf("providers.%s: type must be a string", id))
+		}
+	}
+
+	// Check for required tools section
+	tools, hasTools := config["tools"]
+	if !hasTools {
+		result.Valid = false
+		result.Errors = append(result.Errors, "tools section is required")
+		return result, nil
+	}
+
+	toolsMap, ok := tools.(map[string]interface{})
+	if !ok {
+		result.Valid = false
+		result.Errors = append(result.Errors, "tools must be an object")
+		return result, nil
+	}
+
+	if _, hasLS := toolsMap["ls"]; !hasLS {
+		result.Valid = false
+		result.Errors = append(result.Errors, "tools.ls is required")
+	}
+	if _, hasGrep := toolsMap["grep"]; !hasGrep {
+		result.Valid = false
+		result.Errors = append(result.Errors, "tools.grep is required")
+	}
+
+	// Validate models if present
+	if models, hasModels := config["models"]; hasModels {
+		modelsMap, ok := models.(map[string]interface{})
+		if !ok {
+			result.Valid = false
+			result.Errors = append(result.Errors, "models must be an object")
+		} else {
+			for name, model := range modelsMap {
+				modelMap, ok := model.(map[string]interface{})
+				if !ok {
+					result.Valid = false
+					result.Errors = append(result.Errors, fmt.Sprintf("models.%s must be an object", name))
+					continue
+				}
+				if _, hasModel := modelMap["model"]; !hasModel {
+					result.Valid = false
+					result.Errors = append(result.Errors, fmt.Sprintf("models.%s: model is required", name))
+				}
+				if _, hasProvider := modelMap["provider"]; !hasProvider {
+					result.Valid = false
+					result.Errors = append(result.Errors, fmt.Sprintf("models.%s: provider is required", name))
+				}
+			}
+		}
 	}
 
 	// Validate MCP servers if present
@@ -276,10 +419,21 @@ func (g *CrushGenerator) validateMap(config map[string]interface{}) (*Validation
 					result.Errors = append(result.Errors, fmt.Sprintf("mcp.%s: type is required", name))
 				}
 
-				if serverType == "remote" {
+				validTypes := map[string]bool{"stdio": true, "sse": true, "http": true}
+				if !validTypes[serverType] {
+					result.Valid = false
+					result.Errors = append(result.Errors, fmt.Sprintf("mcp.%s: type must be 'stdio', 'sse', or 'http'", name))
+				}
+
+				if serverType == "stdio" {
+					if _, hasCommand := serverMap["command"]; !hasCommand {
+						result.Valid = false
+						result.Errors = append(result.Errors, fmt.Sprintf("mcp.%s: command is required for stdio type", name))
+					}
+				} else if serverType == "sse" || serverType == "http" {
 					if _, hasURL := serverMap["url"]; !hasURL {
 						result.Valid = false
-						result.Errors = append(result.Errors, fmt.Sprintf("mcp.%s: url is required for remote type", name))
+						result.Errors = append(result.Errors, fmt.Sprintf("mcp.%s: url is required for sse/http type", name))
 					}
 				}
 			}

@@ -656,15 +656,26 @@ func (ug *UnifiedGenerator) registerGenerators() {
 
 // Generate generates configuration for a specific agent
 func (ug *UnifiedGenerator) Generate(ctx context.Context, agentType AgentType) (*GenerationResult, error) {
+	// DEBUG: First line - confirm function entry
+	fmt.Fprintf(os.Stderr, "[DEBUG-STDERR] Generate ENTERED: agentType=%q\n", agentType)
+
 	generator, ok := ug.generators[agentType]
 	if !ok {
+		fmt.Fprintf(os.Stderr, "[DEBUG-STDERR] Generator NOT FOUND for: %q\n", agentType)
 		return nil, fmt.Errorf("unsupported agent type: %s", agentType)
 	}
 
+	// DEBUG: Log which generator is being used
+	fmt.Fprintf(os.Stderr, "[DEBUG-STDERR] Generate: agentType=%s, generator_type=%T\n", agentType, generator)
+
 	result, err := generator.Generate(ctx, ug.config)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "[DEBUG-STDERR] Generator.Generate FAILED: %v\n", err)
 		return nil, err
 	}
+
+	// DEBUG: Log the result type
+	fmt.Fprintf(os.Stderr, "[DEBUG-STDERR] Result.Config type: %T\n", result.Config)
 
 	// Validate the generated config
 	if result.Config != nil {

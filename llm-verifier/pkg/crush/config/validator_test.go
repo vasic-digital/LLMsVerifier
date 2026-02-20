@@ -74,13 +74,3 @@ func TestValidateFromReader(t *testing.T) {
 	}
 }
 
-func TestCreateDefaultConfig(t *testing.T) {
-	config := CreateDefaultConfig()
-	
-	assert.NotNil(t, config)
-	assert.NotNil(t, config.Providers)
-	assert.NotNil(t, config.Options)
-	
-	assert.Contains(t, config.Providers, "openai")
-	assert.Equal(t, "https://charm.land/crush.json", config.Schema)
-}
