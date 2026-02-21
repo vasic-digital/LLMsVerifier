@@ -11,6 +11,14 @@ import (
 	crush_config "llm-verifier/pkg/crush/config"
 )
 
+// CrushConfig represents the configuration for Crush CLI with HelixAgent extensions
+type CrushConfig struct {
+	*crush_config.Config
+	Plugins    []string              `json:"plugins,omitempty"`
+	Extensions *HelixAgentExtensions `json:"extensions,omitempty"`
+	Formatters FormattersConfig      `json:"formatters,omitempty"`
+}
+
 // CrushGenerator generates Crush configurations matching the official schema
 // Schema: https://charm.land/crush.json
 type CrushGenerator struct {
@@ -42,9 +50,14 @@ func (g *CrushGenerator) Generate(ctx context.Context, config *GeneratorConfig) 
 		GeneratedAt: time.Now(),
 	}
 
-	// Build the configuration using the official schema types
-	crushConfig := &crush_config.Config{
-		Schema: "https://charm.land/crush.json",
+	// Build the configuration using the wrapper struct with HelixAgent extensions
+	crushConfig := &CrushConfig{
+		Config: &crush_config.Config{
+			Schema: "https://charm.land/crush.json",
+		},
+		Plugins:    DefaultPlugins(),
+		Extensions: DefaultHelixAgentExtensions(config.HelixAgentHost, config.HelixAgentPort),
+		Formatters: DefaultFormattersConfig(config.HelixAgentHost, config.HelixAgentPort),
 	}
 
 	// Get API key from environment for installed configs
@@ -217,14 +230,20 @@ func (g *CrushGenerator) Generate(ctx context.Context, config *GeneratorConfig) 
 func (g *CrushGenerator) Validate(config any) (*ValidationResult, error) {
 	result := &ValidationResult{Valid: true}
 
-	crushConfig, ok := config.(*crush_config.Config)
-	if !ok {
+	var crushConfig *crush_config.Config
+
+	switch c := config.(type) {
+	case *CrushConfig:
+		crushConfig = c.Config
+	case *crush_config.Config:
+		crushConfig = c
+	default:
 		// Try to cast from map
 		if configMap, ok := config.(map[string]interface{}); ok {
 			return g.validateMap(configMap)
 		}
 		result.Valid = false
-		result.Errors = append(result.Errors, "invalid configuration type: expected *crush_config.Config")
+		result.Errors = append(result.Errors, "invalid configuration type: expected *CrushConfig or *crush_config.Config")
 		return result, nil
 	}
 

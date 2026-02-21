@@ -260,10 +260,15 @@ func TestGenerateCrush(t *testing.T) {
 		t.Fatal("Config is not *CrushConfig")
 	}
 
-	if crushConfig.Provider.BaseURL == "" {
-		t.Error("Provider BaseURL is empty")
+	if len(crushConfig.Config.Providers) == 0 {
+		t.Error("No providers configured")
 	}
-	if len(crushConfig.MCP) < 15 {
+	for name, provider := range crushConfig.Config.Providers {
+		if provider.BaseURL == "" {
+			t.Errorf("Provider %s BaseURL is empty", name)
+		}
+	}
+	if len(crushConfig.Config.MCP) < 15 {
 		t.Errorf("Expected at least 15 MCP servers, got %d", len(crushConfig.MCP))
 	}
 	if len(crushConfig.Plugins) == 0 {
