@@ -203,7 +203,6 @@ func (pr *ProviderRegistry) registerDefaultProviders() {
 		},
 	}
 
-
 	// Groq configuration (NEW: High-performance inference, free tier)
 	pr.providers["groq"] = &ProviderConfig{
 		Name:            "groq",
@@ -308,12 +307,12 @@ func (pr *ProviderRegistry) registerDefaultProviders() {
 			RetryableErrors: []string{"429", "500", "502", "503", "504"},
 		},
 		Features: map[string]interface{}{
-			"supports_streaming":    true,
-			"supports_functions":    true,
-			"supports_vision":       false,
-			"supports_acp":          true,
-			"supports_oauth":        true, // OAuth via Qwen Code CLI
-			"max_context_length":    32768,
+			"supports_streaming": true,
+			"supports_functions": true,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"supports_oauth":     true, // OAuth via Qwen Code CLI
+			"max_context_length": 32768,
 			"supported_models": []string{
 				"qwen-turbo",
 				"qwen-plus",
@@ -349,17 +348,57 @@ func (pr *ProviderRegistry) registerDefaultProviders() {
 			RetryableErrors: []string{"429", "500", "502", "503", "504"},
 		},
 		Features: map[string]interface{}{
-			"supports_streaming":    true,
-			"supports_functions":    true,
-			"supports_vision":       false,
-			"supports_acp":          true,
-			"free_tier":             true,
-			"max_context_length":    128000,
+			"supports_streaming": true,
+			"supports_functions": true,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"free_tier":          true,
+			"max_context_length": 128000,
 			"supported_models": []string{
-				"opencode/big-pickle",     // Big Pickle (stealth model)
-				"opencode/grok-code",      // Grok Code Fast (xAI code model)
-				"opencode/glm-4.7-free",   // GLM 4.7 Free
-				"opencode/gpt-5-nano",     // GPT 5 Nano free tier
+				"opencode/big-pickle",   // Big Pickle (stealth model)
+				"opencode/grok-code",    // Grok Code Fast (xAI code model)
+				"opencode/glm-4.7-free", // GLM 4.7 Free
+				"opencode/gpt-5-nano",   // GPT 5 Nano free tier
+			},
+		},
+	}
+
+	// Public AI configuration (Swiss AI Apertus - free tier)
+	pr.providers["publicai"] = &ProviderConfig{
+		Name:            "publicai",
+		Endpoint:        "https://api.publicai.co/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "swiss-ai/apertus-8b-instruct",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 20,
+			RequestsPerHour:   1000,
+			BurstLimit:        5,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 60 * time.Second,
+			StreamTimeout:  300 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    2 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"free_tier":          true,
+			"max_context_length": 65536,
+			"max_output_tokens":  8192,
+			"recommended_temp":   0.8,
+			"recommended_top_p":  0.9,
+			"supported_models": []string{
+				"swiss-ai/apertus-8b-instruct",
 			},
 		},
 	}

@@ -140,6 +140,9 @@ func GetFallbackModels(providerID string) []Model {
 			{ID: "meta-llama/Llama-3.1-70B-Instruct", Name: "Llama 3.1 70B Instruct", ProviderID: "huggingface", ProviderName: "Hugging Face", MaxTokens: 8192},
 			{ID: "mistralai/Mixtral-8x7B-Instruct-v0.1", Name: "Mixtral 8x7B Instruct", ProviderID: "huggingface", ProviderName: "Hugging Face", MaxTokens: 32768},
 		},
+		"publicai": {
+			{ID: "swiss-ai/apertus-8b-instruct", Name: "Apertus 8B Instruct", ProviderID: "publicai", ProviderName: "Public AI", MaxTokens: 65536},
+		},
 	}
 
 	if models, exists := commonModels[providerID]; exists {
