@@ -311,7 +311,7 @@ func (pr *ProviderRegistry) registerDefaultProviders() {
 			"supports_functions": true,
 			"supports_vision":    false,
 			"supports_acp":       true,
-			"supports_oauth":     true, // OAuth via Qwen Code CLI
+			"supports_oauth":     true,
 			"max_context_length": 32768,
 			"supported_models": []string{
 				"qwen-turbo",
@@ -320,6 +320,46 @@ func (pr *ProviderRegistry) registerDefaultProviders() {
 				"qwen-max-longcontext",
 				"qwen-coder-turbo",
 			},
+		},
+	}
+
+	pr.providers["qwen-code"] = &ProviderConfig{
+		Name:            "qwen-code",
+		Endpoint:        "https://dashscope.aliyuncs.com/api/v1",
+		AuthType:        "oauth",
+		StreamingFormat: "sse",
+		DefaultModel:    "coder-model",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 60,
+			RequestsPerHour:   1000,
+			BurstLimit:        10,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 180 * time.Second,
+			StreamTimeout:  600 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": true,
+			"supports_vision":    true,
+			"supports_acp":       true,
+			"supports_oauth":     true,
+			"supports_thinking":  true,
+			"max_context_length": 1048576,
+			"supported_models": []string{
+				"coder-model",
+				"vision-model",
+			},
+			"cli_proxy":          true,
+			"oauth_storage_path": ".qwen/oauth_creds.json",
 		},
 	}
 
@@ -438,6 +478,44 @@ func (pr *ProviderRegistry) registerDefaultProviders() {
 				"moonshot-v1-32k",
 				"moonshot-v1-128k",
 			},
+		},
+	}
+
+	pr.providers["kimi-code"] = &ProviderConfig{
+		Name:            "kimi-code",
+		Endpoint:        "https://api.kimi.com/coding/v1",
+		AuthType:        "oauth",
+		StreamingFormat: "sse",
+		DefaultModel:    "kimi-for-coding",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 60,
+			RequestsPerHour:   1000,
+			BurstLimit:        10,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 180 * time.Second,
+			StreamTimeout:  600 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    true,
+			"supports_acp":       true,
+			"supports_thinking":  true,
+			"max_context_length": 262144,
+			"supported_models": []string{
+				"kimi-for-coding",
+			},
+			"cli_proxy":          true,
+			"oauth_storage_path": ".kimi/credentials/kimi-code.json",
 		},
 	}
 

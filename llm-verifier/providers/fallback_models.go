@@ -148,6 +148,9 @@ func GetFallbackModels(providerID string) []Model {
 			{ID: "moonshot-v1-32k", Name: "Moonshot V1 32K", ProviderID: "kimi", ProviderName: "Kimi", MaxTokens: 32768},
 			{ID: "moonshot-v1-128k", Name: "Moonshot V1 128K", ProviderID: "kimi", ProviderName: "Kimi", MaxTokens: 131072},
 		},
+		"kimi-code": {
+			{ID: "kimi-for-coding", Name: "Kimi For Coding", ProviderID: "kimi-code", ProviderName: "Kimi Code", MaxTokens: 262144},
+		},
 		"sambanova": {
 			{ID: "Meta-Llama-3.1-8B-Instruct", Name: "Llama 3.1 8B Instruct", ProviderID: "sambanova", ProviderName: "SambaNova", MaxTokens: 131072},
 			{ID: "Meta-Llama-3.1-70B-Instruct", Name: "Llama 3.1 70B Instruct", ProviderID: "sambanova", ProviderName: "SambaNova", MaxTokens: 131072},
@@ -215,6 +218,18 @@ func GetFallbackModels(providerID string) []Model {
 			{ID: "@cf/meta/llama-3.1-70b-instruct", Name: "Llama 3.1 70B Instruct", ProviderID: "cloudflare", ProviderName: "Cloudflare", MaxTokens: 8192},
 			{ID: "@cf/mistral/mistral-7b-instruct", Name: "Mistral 7B Instruct", ProviderID: "cloudflare", ProviderName: "Cloudflare", MaxTokens: 8192},
 			{ID: "@cf/qwen/qwen1.5-14b-chat-awq", Name: "Qwen 1.5 14B Chat", ProviderID: "cloudflare", ProviderName: "Cloudflare", MaxTokens: 8192},
+		},
+		"qwen": {
+			{ID: "qwen-turbo", Name: "Qwen Turbo", ProviderID: "qwen", ProviderName: "Qwen", MaxTokens: 131072},
+			{ID: "qwen-plus", Name: "Qwen Plus", ProviderID: "qwen", ProviderName: "Qwen", MaxTokens: 131072},
+			{ID: "qwen-max", Name: "Qwen Max", ProviderID: "qwen", ProviderName: "Qwen", MaxTokens: 32768},
+			{ID: "qwen2.5-72b-instruct", Name: "Qwen 2.5 72B Instruct", ProviderID: "qwen", ProviderName: "Qwen", MaxTokens: 131072},
+			{ID: "qwen2.5-32b-instruct", Name: "Qwen 2.5 32B Instruct", ProviderID: "qwen", ProviderName: "Qwen", MaxTokens: 131072},
+			{ID: "qwen2.5-coder-32b-instruct", Name: "Qwen 2.5 Coder 32B", ProviderID: "qwen", ProviderName: "Qwen", MaxTokens: 131072},
+		},
+		"qwen-code": {
+			{ID: "coder-model", Name: "Coder Model (Qwen 3.5 Plus)", ProviderID: "qwen-code", ProviderName: "Qwen Code", MaxTokens: 1048576},
+			{ID: "vision-model", Name: "Vision Model (Qwen VL)", ProviderID: "qwen-code", ProviderName: "Qwen Code", MaxTokens: 262144},
 		},
 	}
 
