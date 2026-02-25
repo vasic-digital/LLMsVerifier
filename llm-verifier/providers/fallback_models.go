@@ -7,15 +7,15 @@ import (
 )
 
 // FallbackModelsVersion tracks when this list was last verified
-// Last updated: 2025-01 based on provider documentation
-const FallbackModelsVersion = "2025-01"
+// Last updated: 2026-02 based on provider documentation
+const FallbackModelsVersion = "2026-02"
 
 // ModelCache provides thread-safe caching for discovered models
 type ModelCache struct {
-	mu        sync.RWMutex
-	models    map[string][]Model
+	mu         sync.RWMutex
+	models     map[string][]Model
 	timestamps map[string]time.Time
-	ttl       time.Duration
+	ttl        time.Duration
 }
 
 var modelCache = &ModelCache{
@@ -68,9 +68,16 @@ func GetFallbackModels(providerID string) []Model {
 			{ID: "o1-mini", Name: "O1 Mini", ProviderID: "openai", ProviderName: "OpenAI", MaxTokens: 128000},
 		},
 		"anthropic": {
-			{ID: "claude-3-5-sonnet-latest", Name: "Claude 3.5 Sonnet (Latest)", ProviderID: "anthropic", ProviderName: "Anthropic", MaxTokens: 200000},
-			{ID: "claude-3-5-haiku-latest", Name: "Claude 3.5 Haiku (Latest)", ProviderID: "anthropic", ProviderName: "Anthropic", MaxTokens: 200000},
-			{ID: "claude-3-opus-latest", Name: "Claude 3 Opus", ProviderID: "anthropic", ProviderName: "Anthropic", MaxTokens: 200000},
+			{ID: "claude-opus-4-6", Name: "Claude Opus 4.6", ProviderID: "anthropic", ProviderName: "Anthropic", MaxTokens: 200000},
+			{ID: "claude-sonnet-4-6", Name: "Claude Sonnet 4.6", ProviderID: "anthropic", ProviderName: "Anthropic", MaxTokens: 200000},
+			{ID: "claude-opus-4-5-20251101", Name: "Claude Opus 4.5", ProviderID: "anthropic", ProviderName: "Anthropic", MaxTokens: 200000},
+			{ID: "claude-sonnet-4-5-20250929", Name: "Claude Sonnet 4.5", ProviderID: "anthropic", ProviderName: "Anthropic", MaxTokens: 200000},
+			{ID: "claude-haiku-4-5-20251001", Name: "Claude Haiku 4.5", ProviderID: "anthropic", ProviderName: "Anthropic", MaxTokens: 200000},
+			{ID: "claude-opus-4-20250514", Name: "Claude Opus 4", ProviderID: "anthropic", ProviderName: "Anthropic", MaxTokens: 200000},
+			{ID: "claude-sonnet-4-20250514", Name: "Claude Sonnet 4", ProviderID: "anthropic", ProviderName: "Anthropic", MaxTokens: 200000},
+			{ID: "claude-3-5-sonnet-20241022", Name: "Claude 3.5 Sonnet", ProviderID: "anthropic", ProviderName: "Anthropic", MaxTokens: 200000},
+			{ID: "claude-3-5-haiku-20241022", Name: "Claude 3.5 Haiku", ProviderID: "anthropic", ProviderName: "Anthropic", MaxTokens: 200000},
+			{ID: "claude-3-opus-20240229", Name: "Claude 3 Opus", ProviderID: "anthropic", ProviderName: "Anthropic", MaxTokens: 200000},
 			{ID: "claude-3-sonnet-20240229", Name: "Claude 3 Sonnet", ProviderID: "anthropic", ProviderName: "Anthropic", MaxTokens: 200000},
 			{ID: "claude-3-haiku-20240307", Name: "Claude 3 Haiku", ProviderID: "anthropic", ProviderName: "Anthropic", MaxTokens: 200000},
 		},
