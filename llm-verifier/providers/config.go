@@ -403,6 +403,541 @@ func (pr *ProviderRegistry) registerDefaultProviders() {
 		},
 	}
 
+	// Kimi (Moonshot) configuration
+	pr.providers["kimi"] = &ProviderConfig{
+		Name:            "kimi",
+		Endpoint:        "https://api.moonshot.cn/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "moonshot-v1-8k",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 30,
+			RequestsPerHour:   1000,
+			BurstLimit:        5,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 60 * time.Second,
+			StreamTimeout:  300 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"max_context_length": 131072,
+			"supported_models": []string{
+				"moonshot-v1-8k",
+				"moonshot-v1-32k",
+				"moonshot-v1-128k",
+			},
+		},
+	}
+
+	// SambaNova configuration
+	pr.providers["sambanova"] = &ProviderConfig{
+		Name:            "sambanova",
+		Endpoint:        "https://api.sambanova.ai/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "Meta-Llama-3.1-8B-Instruct",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 30,
+			RequestsPerHour:   1000,
+			BurstLimit:        5,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 60 * time.Second,
+			StreamTimeout:  300 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"max_context_length": 131072,
+			"supported_models": []string{
+				"Meta-Llama-3.1-8B-Instruct",
+				"Meta-Llama-3.1-70B-Instruct",
+				"Meta-Llama-3.2-1B-Instruct",
+				"Meta-Llama-3.2-3B-Instruct",
+			},
+		},
+	}
+
+	// Upstage configuration
+	pr.providers["upstage"] = &ProviderConfig{
+		Name:            "upstage",
+		Endpoint:        "https://api.upstage.ai/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "solar-1-mini-chat",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 30,
+			RequestsPerHour:   1000,
+			BurstLimit:        5,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 60 * time.Second,
+			StreamTimeout:  300 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"max_context_length": 32768,
+			"supported_models": []string{
+				"solar-1-mini-chat",
+				"solar-1-mini-chat-ja",
+				"solar-pro",
+			},
+		},
+	}
+
+	// Sarvam AI configuration
+	pr.providers["sarvam"] = &ProviderConfig{
+		Name:            "sarvam",
+		Endpoint:        "https://api.sarvam.ai/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "sarvam-m",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 30,
+			RequestsPerHour:   1000,
+			BurstLimit:        5,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 60 * time.Second,
+			StreamTimeout:  300 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"max_context_length": 8192,
+			"supported_models": []string{
+				"sarvam-m",
+				"sarvam-2b",
+				"sarvam-7b",
+			},
+		},
+	}
+
+	// Zhipu AI configuration
+	pr.providers["zhipu"] = &ProviderConfig{
+		Name:            "zhipu",
+		Endpoint:        "https://open.bigmodel.cn/api/paas/v4",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "glm-4-flash",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 30,
+			RequestsPerHour:   1000,
+			BurstLimit:        5,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 60 * time.Second,
+			StreamTimeout:  300 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"max_context_length": 128000,
+			"supported_models": []string{
+				"glm-4-flash",
+				"glm-4",
+				"glm-4-plus",
+				"glm-4-air",
+				"glm-4-airx",
+				"glm-4-long",
+			},
+		},
+	}
+
+	// Hyperbolic configuration
+	pr.providers["hyperbolic"] = &ProviderConfig{
+		Name:            "hyperbolic",
+		Endpoint:        "https://api.hyperbolic.xyz/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "meta-llama/Meta-Llama-3-8B-Instruct",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 30,
+			RequestsPerHour:   1000,
+			BurstLimit:        5,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 60 * time.Second,
+			StreamTimeout:  300 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"max_context_length": 8192,
+			"supported_models": []string{
+				"meta-llama/Meta-Llama-3-8B-Instruct",
+				"meta-llama/Meta-Llama-3-70B-Instruct",
+				"mistralai/Mistral-7B-Instruct-v0.2",
+			},
+		},
+	}
+
+	// SiliconFlow configuration
+	pr.providers["siliconflow"] = &ProviderConfig{
+		Name:            "siliconflow",
+		Endpoint:        "https://api.siliconflow.cn/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "Qwen/Qwen2.5-7B-Instruct",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 30,
+			RequestsPerHour:   1000,
+			BurstLimit:        5,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 60 * time.Second,
+			StreamTimeout:  300 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"max_context_length": 64000,
+			"supported_models": []string{
+				"Qwen/Qwen2.5-7B-Instruct",
+				"Qwen/Qwen2.5-72B-Instruct",
+				"deepseek-ai/DeepSeek-V2.5",
+			},
+		},
+	}
+
+	// Novita configuration
+	pr.providers["novita"] = &ProviderConfig{
+		Name:            "novita",
+		Endpoint:        "https://api.novita.ai/v3/openai",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "meta-llama/llama-3-8b-instruct",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 30,
+			RequestsPerHour:   1000,
+			BurstLimit:        5,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 60 * time.Second,
+			StreamTimeout:  300 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"max_context_length": 8192,
+			"supported_models": []string{
+				"meta-llama/llama-3-8b-instruct",
+				"meta-llama/llama-3-70b-instruct",
+				"mistralai/mistral-7b-instruct",
+			},
+		},
+	}
+
+	// Cloudflare Workers AI configuration
+	pr.providers["cloudflare"] = &ProviderConfig{
+		Name:            "cloudflare",
+		Endpoint:        "https://api.cloudflare.com/client/v4/accounts",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "@cf/meta/llama-3.1-8b-instruct",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 30,
+			RequestsPerHour:   1000,
+			BurstLimit:        5,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 60 * time.Second,
+			StreamTimeout:  300 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"max_context_length": 8192,
+			"supported_models": []string{
+				"@cf/meta/llama-3.1-8b-instruct",
+				"@cf/meta/llama-3.1-70b-instruct",
+				"@cf/mistral/mistral-7b-instruct",
+				"@cf/qwen/qwen1.5-14b-chat-awq",
+			},
+		},
+	}
+
+	// Kilo configuration
+	pr.providers["kilo"] = &ProviderConfig{
+		Name:            "kilo",
+		Endpoint:        "https://api.kilocode.ai/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "kilocode-1.5",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 30,
+			RequestsPerHour:   1000,
+			BurstLimit:        5,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 60 * time.Second,
+			StreamTimeout:  300 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"max_context_length": 32768,
+			"supported_models": []string{
+				"kilocode-1.5",
+				"kilocode-1",
+			},
+		},
+	}
+
+	// Modal configuration
+	pr.providers["modal"] = &ProviderConfig{
+		Name:            "modal",
+		Endpoint:        "https://api.modal.com/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "llama-3.1-8b",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 30,
+			RequestsPerHour:   1000,
+			BurstLimit:        5,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 60 * time.Second,
+			StreamTimeout:  300 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"max_context_length": 131072,
+			"supported_models": []string{
+				"llama-3.1-8b",
+				"llama-3.1-70b",
+				"mistral-7b",
+			},
+		},
+	}
+
+	// Nia configuration
+	pr.providers["nia"] = &ProviderConfig{
+		Name:            "nia",
+		Endpoint:        "https://api.nia.ai/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "nia-1.5",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 30,
+			RequestsPerHour:   1000,
+			BurstLimit:        5,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 60 * time.Second,
+			StreamTimeout:  300 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"max_context_length": 32768,
+			"supported_models": []string{
+				"nia-1.5",
+				"nia-1",
+			},
+		},
+	}
+
+	// NLP Cloud configuration
+	pr.providers["nlpcloud"] = &ProviderConfig{
+		Name:            "nlpcloud",
+		Endpoint:        "https://api.nlpcloud.io/v1/gpu",
+		AuthType:        "api_key",
+		StreamingFormat: "sse",
+		DefaultModel:    "finetuned-llama-3-70b",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 30,
+			RequestsPerHour:   1000,
+			BurstLimit:        5,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 60 * time.Second,
+			StreamTimeout:  300 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"max_context_length": 8192,
+			"supported_models": []string{
+				"finetuned-llama-3-70b",
+				"llama-3-70b",
+				"mixtral-8x7b",
+				"openchat-3-5",
+			},
+		},
+	}
+
+	// Vulavula configuration
+	pr.providers["vulavula"] = &ProviderConfig{
+		Name:            "vulavula",
+		Endpoint:        "https://api.vulavula.ai/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "vulavula-1.5",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 30,
+			RequestsPerHour:   1000,
+			BurstLimit:        5,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 60 * time.Second,
+			StreamTimeout:  300 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"max_context_length": 32768,
+			"supported_models": []string{
+				"vulavula-1.5",
+				"vulavula-1",
+			},
+		},
+	}
+
 	// Generic configuration for unknown providers
 	pr.providers["generic"] = &ProviderConfig{
 		Name:            "generic",

@@ -143,6 +143,79 @@ func GetFallbackModels(providerID string) []Model {
 		"publicai": {
 			{ID: "swiss-ai/apertus-8b-instruct", Name: "Apertus 8B Instruct", ProviderID: "publicai", ProviderName: "Public AI", MaxTokens: 65536},
 		},
+		"kimi": {
+			{ID: "moonshot-v1-8k", Name: "Moonshot V1 8K", ProviderID: "kimi", ProviderName: "Kimi", MaxTokens: 8192},
+			{ID: "moonshot-v1-32k", Name: "Moonshot V1 32K", ProviderID: "kimi", ProviderName: "Kimi", MaxTokens: 32768},
+			{ID: "moonshot-v1-128k", Name: "Moonshot V1 128K", ProviderID: "kimi", ProviderName: "Kimi", MaxTokens: 131072},
+		},
+		"sambanova": {
+			{ID: "Meta-Llama-3.1-8B-Instruct", Name: "Llama 3.1 8B Instruct", ProviderID: "sambanova", ProviderName: "SambaNova", MaxTokens: 131072},
+			{ID: "Meta-Llama-3.1-70B-Instruct", Name: "Llama 3.1 70B Instruct", ProviderID: "sambanova", ProviderName: "SambaNova", MaxTokens: 131072},
+			{ID: "Meta-Llama-3.2-1B-Instruct", Name: "Llama 3.2 1B Instruct", ProviderID: "sambanova", ProviderName: "SambaNova", MaxTokens: 131072},
+			{ID: "Meta-Llama-3.2-3B-Instruct", Name: "Llama 3.2 3B Instruct", ProviderID: "sambanova", ProviderName: "SambaNova", MaxTokens: 131072},
+		},
+		"upstage": {
+			{ID: "solar-1-mini-chat", Name: "Solar 1 Mini Chat", ProviderID: "upstage", ProviderName: "Upstage", MaxTokens: 32768},
+			{ID: "solar-1-mini-chat-ja", Name: "Solar 1 Mini Chat Japanese", ProviderID: "upstage", ProviderName: "Upstage", MaxTokens: 32768},
+			{ID: "solar-pro", Name: "Solar Pro", ProviderID: "upstage", ProviderName: "Upstage", MaxTokens: 32768},
+		},
+		"sarvam": {
+			{ID: "sarvam-m", Name: "Sarvam M", ProviderID: "sarvam", ProviderName: "Sarvam AI", MaxTokens: 8192},
+			{ID: "sarvam-2b", Name: "Sarvam 2B", ProviderID: "sarvam", ProviderName: "Sarvam AI", MaxTokens: 4096},
+			{ID: "sarvam-7b", Name: "Sarvam 7B", ProviderID: "sarvam", ProviderName: "Sarvam AI", MaxTokens: 8192},
+		},
+		"zhipu": {
+			{ID: "glm-4-flash", Name: "GLM 4 Flash", ProviderID: "zhipu", ProviderName: "Zhipu AI", MaxTokens: 128000},
+			{ID: "glm-4", Name: "GLM 4", ProviderID: "zhipu", ProviderName: "Zhipu AI", MaxTokens: 128000},
+			{ID: "glm-4-plus", Name: "GLM 4 Plus", ProviderID: "zhipu", ProviderName: "Zhipu AI", MaxTokens: 128000},
+			{ID: "glm-4-air", Name: "GLM 4 Air", ProviderID: "zhipu", ProviderName: "Zhipu AI", MaxTokens: 128000},
+			{ID: "glm-4-airx", Name: "GLM 4 AirX", ProviderID: "zhipu", ProviderName: "Zhipu AI", MaxTokens: 8192},
+			{ID: "glm-4-long", Name: "GLM 4 Long", ProviderID: "zhipu", ProviderName: "Zhipu AI", MaxTokens: 1048576},
+		},
+		"hyperbolic": {
+			{ID: "meta-llama/Meta-Llama-3-8B-Instruct", Name: "Llama 3 8B Instruct", ProviderID: "hyperbolic", ProviderName: "Hyperbolic", MaxTokens: 8192},
+			{ID: "meta-llama/Meta-Llama-3-70B-Instruct", Name: "Llama 3 70B Instruct", ProviderID: "hyperbolic", ProviderName: "Hyperbolic", MaxTokens: 8192},
+			{ID: "mistralai/Mistral-7B-Instruct-v0.2", Name: "Mistral 7B Instruct", ProviderID: "hyperbolic", ProviderName: "Hyperbolic", MaxTokens: 32768},
+		},
+		"siliconflow": {
+			{ID: "Qwen/Qwen2.5-7B-Instruct", Name: "Qwen 2.5 7B Instruct", ProviderID: "siliconflow", ProviderName: "SiliconFlow", MaxTokens: 32768},
+			{ID: "Qwen/Qwen2.5-72B-Instruct", Name: "Qwen 2.5 72B Instruct", ProviderID: "siliconflow", ProviderName: "SiliconFlow", MaxTokens: 32768},
+			{ID: "deepseek-ai/DeepSeek-V2.5", Name: "DeepSeek V2.5", ProviderID: "siliconflow", ProviderName: "SiliconFlow", MaxTokens: 64000},
+		},
+		"novita": {
+			{ID: "meta-llama/llama-3-8b-instruct", Name: "Llama 3 8B Instruct", ProviderID: "novita", ProviderName: "Novita", MaxTokens: 8192},
+			{ID: "meta-llama/llama-3-70b-instruct", Name: "Llama 3 70B Instruct", ProviderID: "novita", ProviderName: "Novita", MaxTokens: 8192},
+			{ID: "mistralai/mistral-7b-instruct", Name: "Mistral 7B Instruct", ProviderID: "novita", ProviderName: "Novita", MaxTokens: 32768},
+		},
+		"kilo": {
+			{ID: "kilocode-1.5", Name: "KiloCode 1.5", ProviderID: "kilo", ProviderName: "Kilo", MaxTokens: 32768},
+			{ID: "kilocode-1", Name: "KiloCode 1", ProviderID: "kilo", ProviderName: "Kilo", MaxTokens: 32768},
+		},
+		"modal": {
+			{ID: "llama-3.1-8b", Name: "Llama 3.1 8B", ProviderID: "modal", ProviderName: "Modal", MaxTokens: 131072},
+			{ID: "llama-3.1-70b", Name: "Llama 3.1 70B", ProviderID: "modal", ProviderName: "Modal", MaxTokens: 131072},
+			{ID: "mistral-7b", Name: "Mistral 7B", ProviderID: "modal", ProviderName: "Modal", MaxTokens: 32768},
+		},
+		"nia": {
+			{ID: "nia-1.5", Name: "Nia 1.5", ProviderID: "nia", ProviderName: "Nia", MaxTokens: 32768},
+			{ID: "nia-1", Name: "Nia 1", ProviderID: "nia", ProviderName: "Nia", MaxTokens: 32768},
+		},
+		"nlpcloud": {
+			{ID: "finetuned-llama-3-70b", Name: "Finetuned Llama 3 70B", ProviderID: "nlpcloud", ProviderName: "NLP Cloud", MaxTokens: 8192},
+			{ID: "llama-3-70b", Name: "Llama 3 70B", ProviderID: "nlpcloud", ProviderName: "NLP Cloud", MaxTokens: 8192},
+			{ID: "mixtral-8x7b", Name: "Mixtral 8x7B", ProviderID: "nlpcloud", ProviderName: "NLP Cloud", MaxTokens: 32768},
+			{ID: "openchat-3-5", Name: "OpenChat 3.5", ProviderID: "nlpcloud", ProviderName: "NLP Cloud", MaxTokens: 8192},
+		},
+		"vulavula": {
+			{ID: "vulavula-1.5", Name: "Vulavula 1.5", ProviderID: "vulavula", ProviderName: "Vulavula", MaxTokens: 32768},
+			{ID: "vulavula-1", Name: "Vulavula 1", ProviderID: "vulavula", ProviderName: "Vulavula", MaxTokens: 32768},
+		},
+		"cloudflare": {
+			{ID: "@cf/meta/llama-3.1-8b-instruct", Name: "Llama 3.1 8B Instruct", ProviderID: "cloudflare", ProviderName: "Cloudflare", MaxTokens: 8192},
+			{ID: "@cf/meta/llama-3.1-70b-instruct", Name: "Llama 3.1 70B Instruct", ProviderID: "cloudflare", ProviderName: "Cloudflare", MaxTokens: 8192},
+			{ID: "@cf/mistral/mistral-7b-instruct", Name: "Mistral 7B Instruct", ProviderID: "cloudflare", ProviderName: "Cloudflare", MaxTokens: 8192},
+			{ID: "@cf/qwen/qwen1.5-14b-chat-awq", Name: "Qwen 1.5 14B Chat", ProviderID: "cloudflare", ProviderName: "Cloudflare", MaxTokens: 8192},
+		},
 	}
 
 	if models, exists := commonModels[providerID]; exists {
