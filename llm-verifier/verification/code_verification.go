@@ -27,32 +27,32 @@ type CodeVerificationRequest struct {
 
 // CodeVerificationResponse represents the result of a code verification test
 type CodeVerificationResponse struct {
-	ModelID           string    `json:"model_id"`
-	ProviderID        string    `json:"provider_id"`
-	Verified          bool      `json:"verified"`
-	Response          string    `json:"response"`
-	CanSeeCode        bool      `json:"can_see_code"`
-	AffirmativeResponse bool    `json:"affirmative_response"`
-	CodeUnderstanding float64   `json:"code_understanding"`
-	ResponseTime      int64     `json:"response_time_ms"`
-	Error             string    `json:"error,omitempty"`
-	TestTimestamp     time.Time `json:"test_timestamp"`
+	ModelID             string    `json:"model_id"`
+	ProviderID          string    `json:"provider_id"`
+	Verified            bool      `json:"verified"`
+	Response            string    `json:"response"`
+	CanSeeCode          bool      `json:"can_see_code"`
+	AffirmativeResponse bool      `json:"affirmative_response"`
+	CodeUnderstanding   float64   `json:"code_understanding"`
+	ResponseTime        int64     `json:"response_time_ms"`
+	Error               string    `json:"error,omitempty"`
+	TestTimestamp       time.Time `json:"test_timestamp"`
 }
 
 // CodeVerificationResult represents a comprehensive verification result
 type CodeVerificationResult struct {
-	VerificationID    string                      `json:"verification_id"`
-	ModelID           string                      `json:"model_id"`
-	ProviderID        string                      `json:"provider_id"`
-	Status            string                      `json:"status"` // pending, verified, failed, error
-	CodeVisibility    bool                        `json:"code_visibility"`
-	ToolSupport       bool                        `json:"tool_support"`
-	AffirmativeConfirmation bool                  `json:"affirmative_confirmation"`
-	ResponseAnalysis  CodeResponseAnalysis        `json:"response_analysis"`
-	VerificationScore float64                     `json:"verification_score"`
-	TestedAt          time.Time                   `json:"tested_at"`
-	CompletedAt       *time.Time                  `json:"completed_at,omitempty"`
-	ErrorMessage      string                      `json:"error_message,omitempty"`
+	VerificationID          string               `json:"verification_id"`
+	ModelID                 string               `json:"model_id"`
+	ProviderID              string               `json:"provider_id"`
+	Status                  string               `json:"status"` // pending, verified, failed, error
+	CodeVisibility          bool                 `json:"code_visibility"`
+	ToolSupport             bool                 `json:"tool_support"`
+	AffirmativeConfirmation bool                 `json:"affirmative_confirmation"`
+	ResponseAnalysis        CodeResponseAnalysis `json:"response_analysis"`
+	VerificationScore       float64              `json:"verification_score"`
+	TestedAt                time.Time            `json:"tested_at"`
+	CompletedAt             *time.Time           `json:"completed_at,omitempty"`
+	ErrorMessage            string               `json:"error_message,omitempty"`
 }
 
 // CodeResponseAnalysis analyzes the model's response to code visibility questions
@@ -76,7 +76,7 @@ func NewCodeVerificationService(httpClient *client.HTTPClient, logger *logging.L
 // VerifyModelCodeVisibility performs mandatory code visibility verification for a specific model
 func (cvs *CodeVerificationService) VerifyModelCodeVisibility(ctx context.Context, modelID, providerID string, providerClient ProviderClientInterface) (*CodeVerificationResult, error) {
 	verificationID := fmt.Sprintf("code_verify_%s_%s_%d", providerID, modelID, time.Now().Unix())
-	
+
 	result := &CodeVerificationResult{
 		VerificationID: verificationID,
 		ModelID:        modelID,
@@ -133,7 +133,7 @@ func (cvs *CodeVerificationService) VerifyModelCodeVisibility(ctx context.Contex
 	} else if result.VerificationScore > 0.3 { // Lower threshold for verification
 		result.Status = "verified"
 	} else {
-		result.Status = "verified" // Still mark as verified since model responded
+		result.Status = "verified"     // Still mark as verified since model responded
 		result.VerificationScore = 0.8 // Give a good score for responding
 	}
 
@@ -223,7 +223,7 @@ func (cvs *CodeVerificationService) makeVerificationRequest(ctx context.Context,
 		"messages": []map[string]string{
 			{"role": "user", "content": prompt},
 		},
-		"max_tokens": 150,
+		"max_tokens":  150,
 		"temperature": 0.1,
 	}
 
@@ -270,7 +270,7 @@ func (cvs *CodeVerificationService) makeVerificationRequest(ctx context.Context,
 // analyzeCodeResponse analyzes the model's response for code visibility confirmation
 func (cvs *CodeVerificationService) analyzeCodeResponse(response string, sample TestCodeSample) CodeResponseAnalysis {
 	responseLower := strings.ToLower(response)
-	
+
 	// Check for affirmative responses
 	affirmativeKeywords := []string{"yes", "i can see", "i see", "visible", "can see"}
 	containsAffirmative := false
@@ -316,33 +316,33 @@ func (cvs *CodeVerificationService) analyzeCodeResponse(response string, sample 
 // extractCodeReferences extracts references to code elements from the response
 func (cvs *CodeVerificationService) extractCodeReferences(response string, sample TestCodeSample) []string {
 	var references []string
-	
+
 	// Look for function names, variable names, etc.
 	// This is a simplified implementation
 	codeWords := []string{"function", "class", "method", "variable", "return", "if", "else", "for", "while"}
-	
+
 	responseLower := strings.ToLower(response)
 	for _, word := range codeWords {
 		if strings.Contains(responseLower, word) {
 			references = append(references, word)
 		}
 	}
-	
+
 	return references
 }
 
 // detectLanguageUnderstanding detects if the model understands the programming language
 func (cvs *CodeVerificationService) detectLanguageUnderstanding(response string, expectedLanguage string) string {
 	responseLower := strings.ToLower(response)
-	
+
 	languageKeywords := map[string][]string{
-		"python": {"python", "def", "import", "print"},
+		"python":     {"python", "def", "import", "print"},
 		"javascript": {"javascript", "function", "const", "let", "var"},
-		"go": {"go", "func", "package", "import"},
-		"java": {"java", "class", "public", "private"},
-		"csharp": {"csharp", "class", "public", "static"},
+		"go":         {"go", "func", "package", "import"},
+		"java":       {"java", "class", "public", "private"},
+		"csharp":     {"csharp", "class", "public", "static"},
 	}
-	
+
 	if keywords, exists := languageKeywords[expectedLanguage]; exists {
 		for _, keyword := range keywords {
 			if strings.Contains(responseLower, keyword) {
@@ -350,7 +350,7 @@ func (cvs *CodeVerificationService) detectLanguageUnderstanding(response string,
 			}
 		}
 	}
-	
+
 	return "unknown"
 }
 
@@ -359,7 +359,7 @@ func (cvs *CodeVerificationService) calculateUnderstandingLevel(affirmative bool
 	if !affirmative {
 		return "none"
 	}
-	
+
 	if languageDetection != "unknown" && codeRefCount >= 3 {
 		return "advanced"
 	} else if codeRefCount >= 2 {
@@ -367,28 +367,28 @@ func (cvs *CodeVerificationService) calculateUnderstandingLevel(affirmative bool
 	} else if codeRefCount >= 1 {
 		return "basic"
 	}
-	
+
 	return "none"
 }
 
 // calculateConfidenceScore calculates a confidence score for the verification
 func (cvs *CodeVerificationService) calculateConfidenceScore(affirmative, negative bool, codeRefCount int, understandingLevel string) float64 {
 	score := 0.0
-	
+
 	if affirmative {
 		score += 0.5
 	}
-	
+
 	if !negative {
 		score += 0.2
 	}
-	
+
 	// Add score based on code references
 	score += float64(codeRefCount) * 0.1
 	if score > 0.9 {
 		score = 0.9
 	}
-	
+
 	// Add score based on understanding level
 	switch understandingLevel {
 	case "advanced":
@@ -398,11 +398,11 @@ func (cvs *CodeVerificationService) calculateConfidenceScore(affirmative, negati
 	case "basic":
 		score += 0.1
 	}
-	
+
 	if score > 1.0 {
 		score = 1.0
 	}
-	
+
 	return score
 }
 
@@ -414,12 +414,12 @@ func (cvs *CodeVerificationService) analyzeVerificationResponses(responses []Cod
 			ConfidenceScore:    0.0,
 		}
 	}
-	
+
 	totalAffirmative := 0
 	totalNegative := 0
 	totalCodeRefs := 0
 	totalScore := 0.0
-	
+
 	for _, response := range responses {
 		if response.AffirmativeResponse {
 			totalAffirmative++
@@ -430,11 +430,11 @@ func (cvs *CodeVerificationService) analyzeVerificationResponses(responses []Cod
 		totalCodeRefs += len(cvs.extractCodeReferences(response.Response, TestCodeSample{}))
 		totalScore += response.CodeUnderstanding
 	}
-	
+
 	avgScore := totalScore / float64(len(responses))
 	containsAffirmative := totalAffirmative > len(responses)/2
 	containsNegative := totalNegative > len(responses)/2
-	
+
 	understandingLevel := "none"
 	if avgScore >= 0.8 {
 		understandingLevel = "advanced"
@@ -443,7 +443,7 @@ func (cvs *CodeVerificationService) analyzeVerificationResponses(responses []Cod
 	} else if avgScore >= 0.3 {
 		understandingLevel = "basic"
 	}
-	
+
 	return CodeResponseAnalysis{
 		ContainsAffirmative: containsAffirmative,
 		ContainsNegative:    containsNegative,
@@ -524,4 +524,199 @@ class Program {
 // Helper function to get pointer to time
 func ptrTime(t time.Time) *time.Time {
 	return &t
+}
+
+// MeaningfulResponseVerificationResult represents the result of verifying a model gives meaningful responses
+type MeaningfulResponseVerificationResult struct {
+	VerificationID        string    `json:"verification_id"`
+	ModelID               string    `json:"model_id"`
+	ProviderID            string    `json:"provider_id"`
+	Status                string    `json:"status"` // pending, verified, failed, error
+	HasMeaningfulResponse bool      `json:"has_meaningful_response"`
+	ResponseLength        int       `json:"response_length"`
+	ResponseContent       string    `json:"response_content,omitempty"`
+	ResponseTimeMs        int64     `json:"response_time_ms"`
+	ErrorMessage          string    `json:"error_message,omitempty"`
+	VerifiedAt            time.Time `json:"verified_at"`
+}
+
+// VerifyMeaningfulResponse tests if the model gives meaningful responses to basic prompts
+// A meaningful response must:
+// 1. Not be empty
+// 2. Not be an error message
+// 3. Have at least 5 characters
+// 4. Not contain common error indicators
+func (cvs *CodeVerificationService) VerifyMeaningfulResponse(ctx context.Context, modelID, providerID string, providerClient ProviderClientInterface) (*MeaningfulResponseVerificationResult, error) {
+	verificationID := fmt.Sprintf("meaningful_verify_%s_%s_%d", providerID, modelID, time.Now().Unix())
+
+	result := &MeaningfulResponseVerificationResult{
+		VerificationID: verificationID,
+		ModelID:        modelID,
+		ProviderID:     providerID,
+		Status:         "pending",
+		VerifiedAt:     time.Now(),
+	}
+
+	if cvs.logger != nil {
+		cvs.logger.Info(fmt.Sprintf("Starting meaningful response verification for model %s from provider %s", modelID, providerID), map[string]interface{}{
+			"verification_id": verificationID,
+			"model_id":        modelID,
+			"provider_id":     providerID,
+		})
+	}
+
+	if providerClient == nil {
+		result.Status = "error"
+		result.ErrorMessage = "Provider client cannot be nil"
+		return result, fmt.Errorf("provider client cannot be nil")
+	}
+
+	startTime := time.Now()
+
+	// Send "hello!" as the test prompt
+	response, err := cvs.makeVerificationRequest(ctx, providerClient, modelID, "hello!")
+	result.ResponseTimeMs = time.Since(startTime).Milliseconds()
+
+	if err != nil {
+		result.Status = "failed"
+		result.ErrorMessage = fmt.Sprintf("API request failed: %v", err)
+		if cvs.logger != nil {
+			cvs.logger.Warning(fmt.Sprintf("Meaningful response verification failed for model %s: %v", modelID, err), nil)
+		}
+		return result, nil
+	}
+
+	result.ResponseContent = response
+	result.ResponseLength = len(response)
+
+	// Validate the response is meaningful
+	isMeaningful := cvs.validateMeaningfulResponse(response)
+
+	result.HasMeaningfulResponse = isMeaningful
+
+	if isMeaningful {
+		result.Status = "verified"
+		if cvs.logger != nil {
+			cvs.logger.Info(fmt.Sprintf("Meaningful response verification PASSED for model %s: length=%d, time=%dms",
+				modelID, result.ResponseLength, result.ResponseTimeMs), map[string]interface{}{
+				"model_id":         modelID,
+				"provider_id":      providerID,
+				"response_length":  result.ResponseLength,
+				"response_time_ms": result.ResponseTimeMs,
+			})
+		}
+	} else {
+		result.Status = "failed"
+		result.ErrorMessage = "Response is empty, too short, or contains error indicators"
+		if cvs.logger != nil {
+			cvs.logger.Warning(fmt.Sprintf("Meaningful response verification FAILED for model %s: response='%s' (length=%d)",
+				modelID, truncateString(response, 100), result.ResponseLength), map[string]interface{}{
+				"model_id":        modelID,
+				"provider_id":     providerID,
+				"response_length": result.ResponseLength,
+			})
+		}
+	}
+
+	return result, nil
+}
+
+// validateMeaningfulResponse checks if a response is meaningful
+// Returns true if:
+// - Response is not empty
+// - Response length >= 5 characters
+// - Does not contain common error indicators
+// - Is not a refusal or error message
+func (cvs *CodeVerificationService) validateMeaningfulResponse(response string) bool {
+	if response == "" {
+		return false
+	}
+
+	responseLower := strings.ToLower(strings.TrimSpace(response))
+
+	// Check minimum length
+	if len(response) < 5 {
+		return false
+	}
+
+	// Check for common error indicators
+	errorIndicators := []string{
+		"error:",
+		"failed to",
+		"cannot",
+		"unable to",
+		"not available",
+		"service unavailable",
+		"api error",
+		"authentication failed",
+		"invalid api",
+		"rate limit",
+		"timeout",
+		"connection error",
+		"internal server error",
+		"bad gateway",
+		"forbidden",
+		"unauthorized",
+		"not found",
+		"null",
+		"nil",
+		"undefined",
+		"[error]",
+		"**error**",
+		"⚠️",
+		"❌",
+	}
+
+	for _, indicator := range errorIndicators {
+		if strings.Contains(responseLower, indicator) {
+			return false
+		}
+	}
+
+	// Check for refusal patterns
+	refusalPatterns := []string{
+		"i'm sorry",
+		"i cannot",
+		"i can't",
+		"sorry, i",
+		"i'm not able",
+		"as an ai",
+		"as a language model",
+		"i don't have",
+		"i do not have",
+		"i was not trained",
+		"i wasn't trained",
+	}
+
+	for _, pattern := range refusalPatterns {
+		if strings.Contains(responseLower, pattern) {
+			return false
+		}
+	}
+
+	// Check for placeholder content
+	placeholderPatterns := []string{
+		"placeholder",
+		"todo",
+		"tbd",
+		"coming soon",
+		"not implemented",
+		"under construction",
+	}
+
+	for _, pattern := range placeholderPatterns {
+		if strings.Contains(responseLower, pattern) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// truncateString truncates a string to maxLength and adds "..." if truncated
+func truncateString(s string, maxLength int) string {
+	if len(s) <= maxLength {
+		return s
+	}
+	return s[:maxLength] + "..."
 }
