@@ -126,6 +126,26 @@ func (cvs *CodeVerificationService) VerifyModelCodeVisibility(ctx context.Contex
 	result.AffirmativeConfirmation = result.ResponseAnalysis.ContainsAffirmative
 	result.VerificationScore = max(result.ResponseAnalysis.ConfidenceScore, 0.7) // Minimum 0.7 score
 
+	// Apply timeout penalty for slow responses
+	avgResponseTime := cvs.calculateAverageResponseTime(verificationResponses)
+	if avgResponseTime > 20000 {
+		timeoutPenalty := 0.0
+		if avgResponseTime > 60000 {
+			timeoutPenalty = 0.4
+		} else if avgResponseTime > 45000 {
+			timeoutPenalty = 0.3
+		} else if avgResponseTime > 30000 {
+			timeoutPenalty = 0.2
+		} else {
+			timeoutPenalty = 0.1
+		}
+		result.VerificationScore = max(result.VerificationScore-timeoutPenalty, 0.3)
+		if cvs.logger != nil {
+			cvs.logger.Warning(fmt.Sprintf("Applied timeout penalty to model %s: avg response time=%dms, penalty=%.2f, adjusted score=%.2f",
+				modelID, avgResponseTime, timeoutPenalty, result.VerificationScore), nil)
+		}
+	}
+
 	// RELAXED STATUS DETERMINATION: Be more permissive
 	if len(verificationResponses) == 0 {
 		result.Status = "failed"
@@ -546,6 +566,7 @@ type MeaningfulResponseVerificationResult struct {
 // 2. Not be an error message
 // 3. Have at least 5 characters
 // 4. Not contain common error indicators
+// Implements retry logic for timeouts to distinguish temporary vs persistent issues
 func (cvs *CodeVerificationService) VerifyMeaningfulResponse(ctx context.Context, modelID, providerID string, providerClient ProviderClientInterface) (*MeaningfulResponseVerificationResult, error) {
 	verificationID := fmt.Sprintf("meaningful_verify_%s_%s_%d", providerID, modelID, time.Now().Unix())
 
@@ -571,17 +592,74 @@ func (cvs *CodeVerificationService) VerifyMeaningfulResponse(ctx context.Context
 		return result, fmt.Errorf("provider client cannot be nil")
 	}
 
-	startTime := time.Now()
+	const maxRetries = 3
+	const timeoutThreshold = 30000
+	var lastErr error
+	var response string
+	var responseTimes []int64
 
-	// Send "hello!" as the test prompt
-	response, err := cvs.makeVerificationRequest(ctx, providerClient, modelID, "hello!")
-	result.ResponseTimeMs = time.Since(startTime).Milliseconds()
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		startTime := time.Now()
+		response, lastErr = cvs.makeVerificationRequest(ctx, providerClient, modelID, "hello!")
+		responseTime := time.Since(startTime).Milliseconds()
+		responseTimes = append(responseTimes, responseTime)
 
-	if err != nil {
+		if lastErr == nil {
+			result.ResponseTimeMs = responseTime
+			break
+		}
+
+		isTimeout := strings.Contains(strings.ToLower(lastErr.Error()), "timeout") ||
+			strings.Contains(strings.ToLower(lastErr.Error()), "deadline exceeded") ||
+			responseTime >= timeoutThreshold
+
+		if isTimeout && attempt < maxRetries {
+			if cvs.logger != nil {
+				cvs.logger.Warning(fmt.Sprintf("Timeout on attempt %d/%d for model %s, retrying...", attempt, maxRetries, modelID), map[string]interface{}{
+					"model_id":      modelID,
+					"provider_id":   providerID,
+					"attempt":       attempt,
+					"response_time": responseTime,
+				})
+			}
+			time.Sleep(time.Duration(attempt) * time.Second)
+			continue
+		}
+
+		result.ResponseTimeMs = responseTime
+		break
+	}
+
+	if len(responseTimes) > 0 {
+		var totalTime int64
+		for _, rt := range responseTimes {
+			totalTime += rt
+		}
+		result.ResponseTimeMs = totalTime / int64(len(responseTimes))
+	}
+
+	if lastErr != nil {
 		result.Status = "failed"
-		result.ErrorMessage = fmt.Sprintf("API request failed: %v", err)
+		timeoutCount := 0
+		for _, rt := range responseTimes {
+			if rt >= timeoutThreshold {
+				timeoutCount++
+			}
+		}
+
+		if timeoutCount >= 2 {
+			result.ErrorMessage = fmt.Sprintf("Consistent timeout (%d/%d attempts). Model is too slow for reliable use. Avg response time: %dms", timeoutCount, maxRetries, result.ResponseTimeMs)
+		} else {
+			result.ErrorMessage = fmt.Sprintf("API request failed: %v (avg response time: %dms)", lastErr, result.ResponseTimeMs)
+		}
+
 		if cvs.logger != nil {
-			cvs.logger.Warning(fmt.Sprintf("Meaningful response verification failed for model %s: %v", modelID, err), nil)
+			cvs.logger.Warning(fmt.Sprintf("Meaningful response verification failed for model %s: %v", modelID, lastErr), map[string]interface{}{
+				"model_id":        modelID,
+				"provider_id":     providerID,
+				"attempts":        len(responseTimes),
+				"avg_response_ms": result.ResponseTimeMs,
+			})
 		}
 		return result, nil
 	}
@@ -589,8 +667,13 @@ func (cvs *CodeVerificationService) VerifyMeaningfulResponse(ctx context.Context
 	result.ResponseContent = response
 	result.ResponseLength = len(response)
 
-	// Validate the response is meaningful
 	isMeaningful := cvs.validateMeaningfulResponse(response)
+
+	if result.ResponseTimeMs > 20000 && isMeaningful {
+		if cvs.logger != nil {
+			cvs.logger.Warning(fmt.Sprintf("Model %s responded meaningfully but is slow (%dms), applying timeout penalty", modelID, result.ResponseTimeMs), nil)
+		}
+	}
 
 	result.HasMeaningfulResponse = isMeaningful
 
@@ -719,4 +802,18 @@ func truncateString(s string, maxLength int) string {
 		return s
 	}
 	return s[:maxLength] + "..."
+}
+
+// calculateAverageResponseTime calculates the average response time from verification responses
+func (cvs *CodeVerificationService) calculateAverageResponseTime(responses []CodeVerificationResponse) int64 {
+	if len(responses) == 0 {
+		return 0
+	}
+
+	var totalTime int64
+	for _, resp := range responses {
+		totalTime += resp.ResponseTime
+	}
+
+	return totalTime / int64(len(responses))
 }
