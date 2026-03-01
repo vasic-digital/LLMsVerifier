@@ -804,6 +804,90 @@ func truncateString(s string, maxLength int) string {
 	return s[:maxLength] + "..."
 }
 
+// VerifyRealisticDebatePrompt tests if the model can handle realistic debate prompts
+// This uses a longer, more complex prompt similar to actual debate usage
+// CRITICAL: This catches slow providers that pass simple "hello!" tests but timeout on real prompts
+func (cvs *CodeVerificationService) VerifyRealisticDebatePrompt(ctx context.Context, modelID, providerID string, providerClient ProviderClientInterface) (*MeaningfulResponseVerificationResult, error) {
+	verificationID := fmt.Sprintf("debate_verify_%s_%s_%d", providerID, modelID, time.Now().Unix())
+
+	result := &MeaningfulResponseVerificationResult{
+		VerificationID: verificationID,
+		ModelID:        modelID,
+		ProviderID:     providerID,
+		Status:         "pending",
+		VerifiedAt:     time.Now(),
+	}
+
+	if cvs.logger != nil {
+		cvs.logger.Info(fmt.Sprintf("Starting realistic debate prompt verification for model %s from provider %s", modelID, providerID), map[string]interface{}{
+			"verification_id": verificationID,
+			"model_id":        modelID,
+			"provider_id":     providerID,
+		})
+	}
+
+	if providerClient == nil {
+		result.Status = "error"
+		result.ErrorMessage = "Provider client cannot be nil"
+		return result, fmt.Errorf("provider client cannot be nil")
+	}
+
+	realisticPrompt := `You are part of HelixAgent, an AI coding assistant that provides responses through an AI Debate Ensemble.
+
+IMPORTANT CONTEXT:
+- You are integrated with AI coding tools like Claude Code, OpenCode, and Qwen Code
+- The user's coding assistant HAS FULL ACCESS to their codebase through tools
+- Tools available: Read files, Write/Edit files, Search code (grep), List files (glob), Execute shell commands
+- When the user asks about their code, the assistant CAN see and access their files
+- NEVER say "I cannot see your codebase" - the tools handle file access
+- Provide SPECIFIC, ACTIONABLE coding advice
+
+Your role is THE ARCHITECT: Design system architecture, identify components, define data flows, and plan technology choices. For coding questions, provide architectural guidance on structure, patterns, and best practices.
+
+Topic: How should I structure a Go microservice for user authentication?
+
+Provide your analysis in 2-3 sentences, focused on your role.`
+
+	startTime := time.Now()
+	response, err := cvs.makeVerificationRequest(ctx, providerClient, modelID, realisticPrompt)
+	result.ResponseTimeMs = time.Since(startTime).Milliseconds()
+
+	if err != nil {
+		result.Status = "failed"
+		result.ErrorMessage = fmt.Sprintf("Realistic prompt failed: %v (time: %dms)", err, result.ResponseTimeMs)
+		if cvs.logger != nil {
+			cvs.logger.Warning(fmt.Sprintf("Realistic debate prompt verification failed for model %s: %v", modelID, err), map[string]interface{}{
+				"model_id":         modelID,
+				"provider_id":      providerID,
+				"response_time_ms": result.ResponseTimeMs,
+			})
+		}
+		return result, nil
+	}
+
+	result.ResponseContent = response
+	result.ResponseLength = len(response)
+	result.HasMeaningfulResponse = len(response) > 50
+
+	if result.HasMeaningfulResponse {
+		result.Status = "verified"
+		if cvs.logger != nil {
+			cvs.logger.Info(fmt.Sprintf("Realistic debate prompt verification PASSED for model %s: length=%d, time=%dms",
+				modelID, result.ResponseLength, result.ResponseTimeMs), map[string]interface{}{
+				"model_id":         modelID,
+				"provider_id":      providerID,
+				"response_length":  result.ResponseLength,
+				"response_time_ms": result.ResponseTimeMs,
+			})
+		}
+	} else {
+		result.Status = "failed"
+		result.ErrorMessage = "Response too short for realistic prompt"
+	}
+
+	return result, nil
+}
+
 // calculateAverageResponseTime calculates the average response time from verification responses
 func (cvs *CodeVerificationService) calculateAverageResponseTime(responses []CodeVerificationResponse) int64 {
 	if len(responses) == 0 {

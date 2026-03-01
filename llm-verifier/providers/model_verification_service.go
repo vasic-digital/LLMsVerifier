@@ -127,7 +127,48 @@ func (mvs *ModelVerificationService) VerifyModel(ctx context.Context, model Mode
 		return result, nil
 	}
 
-	// Model passed meaningful response check - continue with code visibility verification
+	// Model passed meaningful response check - test with realistic debate prompt
+	// CRITICAL: This catches providers that pass simple tests but timeout on real debate prompts
+	debateResult, err := mvs.codeVerificationSvc.VerifyRealisticDebatePrompt(
+		ctx,
+		model.ID,
+		model.ProviderID,
+		providerClientInterface,
+	)
+
+	if err != nil || !debateResult.HasMeaningfulResponse {
+		mvs.logger.Warning(fmt.Sprintf("Model %s failed realistic debate prompt test: %v", model.ID, err), map[string]interface{}{
+			"model_id":         model.ID,
+			"provider_id":      model.ProviderID,
+			"error":            err,
+			"response_time_ms": debateResult.ResponseTimeMs,
+		})
+		// Don't fail completely, but apply penalty
+		if result.VerificationScore > 0.5 {
+			result.VerificationScore -= 0.3
+			result.ErrorMessage = fmt.Sprintf("Slow on realistic prompts (%dms): %v", debateResult.ResponseTimeMs, err)
+		}
+	} else {
+		// Apply timeout penalty based on realistic response time
+		if debateResult.ResponseTimeMs > 30000 {
+			penalty := 0.0
+			if debateResult.ResponseTimeMs > 45000 {
+				penalty = 0.3
+			} else if debateResult.ResponseTimeMs > 35000 {
+				penalty = 0.2
+			} else {
+				penalty = 0.1
+			}
+			result.VerificationScore -= penalty
+			if result.VerificationScore < 0.3 {
+				result.VerificationScore = 0.3
+			}
+			mvs.logger.Warning(fmt.Sprintf("Model %s is slow on realistic prompts (%dms), applied penalty %.2f",
+				model.ID, debateResult.ResponseTimeMs, penalty), nil)
+		}
+	}
+
+	// Continue with code visibility verification
 	// Perform code visibility verification
 	codeResult, err := mvs.codeVerificationSvc.VerifyModelCodeVisibility(
 		ctx,
