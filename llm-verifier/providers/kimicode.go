@@ -1,7 +1,6 @@
 package providers
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -182,7 +181,7 @@ func (p *KimiCodeCLIAdapter) ChatCompletion(ctx context.Context, request OpenAIC
 		return nil, fmt.Errorf("kimi CLI failed: %w (output: %s)", err, string(output))
 	}
 
-	content, thinking := p.parseJSONResponse(string(output))
+	content, _ := p.parseJSONResponse(string(output))
 
 	promptTokens := len(prompt) / 4
 	completionTokens := len(content) / 4
@@ -197,17 +196,29 @@ func (p *KimiCodeCLIAdapter) ChatCompletion(ctx context.Context, request OpenAIC
 		Object:  "chat.completion",
 		Created: time.Now().Unix(),
 		Model:   model,
-		Choices: []OpenAIChoice{
+		Choices: []struct {
+			Index   int `json:"index"`
+			Message struct {
+				Role    string `json:"role"`
+				Content string `json:"content"`
+			} `json:"message"`
+		}{
 			{
 				Index: 0,
-				Message: OpenAIMessage{
+				Message: struct {
+					Role    string `json:"role"`
+					Content string `json:"content"`
+				}{
 					Role:    "assistant",
 					Content: content,
 				},
-				FinishReason: "stop",
 			},
 		},
-		Usage: OpenAIUsage{
+		Usage: struct {
+			PromptTokens     int `json:"prompt_tokens"`
+			CompletionTokens int `json:"completion_tokens"`
+			TotalTokens      int `json:"total_tokens"`
+		}{
 			PromptTokens:     promptTokens,
 			CompletionTokens: completionTokens,
 			TotalTokens:      promptTokens + completionTokens,
@@ -269,19 +280,20 @@ func (p *KimiCodeCLIAdapter) StreamChatCompletion(ctx context.Context, request O
 		}
 
 		if len(resp.Choices) > 0 {
+			finishReason := "stop"
 			streamResp := OpenAIStreamResponse{
 				ID:      resp.ID,
 				Object:  "chat.completion.chunk",
 				Created: resp.Created,
 				Model:   resp.Model,
-				Choices: []OpenAIStreamChoice{
+				Choices: []OpenAIChoice{
 					{
 						Index: resp.Choices[0].Index,
 						Delta: OpenAIDelta{
 							Role:    resp.Choices[0].Message.Role,
 							Content: resp.Choices[0].Message.Content,
 						},
-						FinishReason: resp.Choices[0].FinishReason,
+						FinishReason: &finishReason,
 					},
 				},
 			}
@@ -293,22 +305,42 @@ func (p *KimiCodeCLIAdapter) StreamChatCompletion(ctx context.Context, request O
 }
 
 func (p *KimiCodeCLIAdapter) ListModels(ctx context.Context) (*OpenAIModelsResponse, error) {
-	return &OpenAIModelsResponse{
+	models := p.GetKnownModels()
+	resp := &OpenAIModelsResponse{
 		Object: "list",
-		Data:   p.GetKnownModels(),
-	}, nil
+	}
+	for _, m := range models {
+		resp.Data = append(resp.Data, struct {
+			ID       string `json:"id"`
+			Object   string `json:"object"`
+			Created  int64  `json:"created"`
+			OwnedBy string `json:"owned_by"`
+		}{
+			ID:       m.ID,
+			Object:   m.Object,
+			Created:  m.Created,
+			OwnedBy:  m.OwnedBy,
+		})
+	}
+	return resp, nil
 }
 
-func (p *KimiCodeCLIAdapter) GetKnownModels() []OpenAIModel {
-	var models []OpenAIModel
+// kimiCodeModel holds model metadata for Kimi Code models.
+type kimiCodeModel struct {
+	ID       string
+	Object   string
+	Created  int64
+	OwnedBy  string
+}
+
+func (p *KimiCodeCLIAdapter) GetKnownModels() []kimiCodeModel {
+	var models []kimiCodeModel
 	for _, m := range knownKimiCodeModels {
-		models = append(models, OpenAIModel{
-			ID:        m,
-			Object:    "model",
-			Created:   time.Now().Unix(),
-			OwnedBy:   "kimi-code",
-			Provider:  "kimi-code-cli",
-			MaxTokens: 32768,
+		models = append(models, kimiCodeModel{
+			ID:       m,
+			Object:   "model",
+			Created:  time.Now().Unix(),
+			OwnedBy:  "kimi-code",
 		})
 	}
 	return models
@@ -336,7 +368,7 @@ func (p *KimiCodeCLIAdapter) HealthCheck(ctx context.Context) error {
 
 	_, err := p.ChatCompletion(checkCtx, OpenAIChatRequest{
 		Model: KimiCodeDefaultModel,
-		Messages: []OpenAIMessage{
+		Messages: []Message{
 			{Role: "user", Content: "Reply with just 'OK'"},
 		},
 		MaxTokens: 10,

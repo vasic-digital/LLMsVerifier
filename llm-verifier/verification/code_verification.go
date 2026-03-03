@@ -207,7 +207,7 @@ func (cvs *CodeVerificationService) testCodeVisibility(ctx context.Context, prov
 			Error:         err.Error(),
 			ResponseTime:  time.Since(startTime).Milliseconds(),
 			TestTimestamp: time.Now(),
-		}, nil
+		}, err // Propagate error so caller can distinguish API failure from negative verification
 	}
 
 	responseTime := time.Since(startTime).Milliseconds()
@@ -444,8 +444,16 @@ func (cvs *CodeVerificationService) analyzeVerificationResponses(responses []Cod
 		if response.AffirmativeResponse {
 			totalAffirmative++
 		}
-		if response.Response != "" && strings.Contains(strings.ToLower(response.Response), "no") {
-			totalNegative++
+		if response.Response != "" {
+			lower := strings.ToLower(response.Response)
+			// Check for actual negative phrases, not bare "no" which matches "know", "function", etc.
+			negativeIndicators := []string{"i cannot see", "not visible", "i don't have access", "no code", "cannot access", "i do not see"}
+			for _, indicator := range negativeIndicators {
+				if strings.Contains(lower, indicator) {
+					totalNegative++
+					break
+				}
+			}
 		}
 		totalCodeRefs += len(cvs.extractCodeReferences(response.Response, TestCodeSample{}))
 		totalScore += response.CodeUnderstanding
@@ -630,7 +638,9 @@ func (cvs *CodeVerificationService) VerifyMeaningfulResponse(ctx context.Context
 		break
 	}
 
-	if len(responseTimes) > 0 {
+	// Only compute average response time when all retries failed;
+	// if a successful response was obtained, keep its actual response time.
+	if lastErr != nil && len(responseTimes) > 0 {
 		var totalTime int64
 		for _, rt := range responseTimes {
 			totalTime += rt
@@ -717,8 +727,8 @@ func (cvs *CodeVerificationService) validateMeaningfulResponse(response string) 
 
 	responseLower := strings.ToLower(strings.TrimSpace(response))
 
-	// Check minimum length
-	if len(response) < 5 {
+	// Check minimum length (use trimmed response to avoid whitespace-only passing)
+	if len(responseLower) < 5 {
 		return false
 	}
 
@@ -862,7 +872,7 @@ Provide your analysis in 2-3 sentences, focused on your role.`
 				"response_time_ms": result.ResponseTimeMs,
 			})
 		}
-		return result, nil
+		return result, err // Propagate error to caller for proper handling
 	}
 
 	result.ResponseContent = response
