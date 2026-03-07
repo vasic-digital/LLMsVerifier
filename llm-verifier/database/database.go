@@ -170,6 +170,10 @@ func copyTableData(sourceDB, destDB *sql.DB, tableName string) error {
 		}
 		columns = append(columns, name)
 	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return fmt.Errorf("error iterating table info rows: %w", err)
+	}
 	rows.Close()
 
 	if len(columns) == 0 {
