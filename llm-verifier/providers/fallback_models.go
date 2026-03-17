@@ -82,11 +82,16 @@ func GetFallbackModels(providerID string) []Model {
 			{ID: "claude-3-haiku-20240307", Name: "Claude 3 Haiku", ProviderID: "anthropic", ProviderName: "Anthropic", MaxTokens: 200000},
 		},
 		"groq": {
-			{ID: "llama-3.3-70b-versatile", Name: "Llama 3.3 70B Versatile", ProviderID: "groq", ProviderName: "Groq", MaxTokens: 128000},
+			{ID: "llama-4-maverick-17b-128e-instruct", Name: "Llama 4 Maverick", ProviderID: "groq", ProviderName: "Groq", MaxTokens: 131072},
+			{ID: "llama-4-scout-17b-16e-instruct", Name: "Llama 4 Scout", ProviderID: "groq", ProviderName: "Groq", MaxTokens: 131072},
+			{ID: "llama-3.3-70b-versatile", Name: "Llama 3.3 70B Versatile", ProviderID: "groq", ProviderName: "Groq", MaxTokens: 131072},
 			{ID: "llama-3.1-70b-versatile", Name: "Llama 3.1 70B Versatile", ProviderID: "groq", ProviderName: "Groq", MaxTokens: 131072},
 			{ID: "llama-3.1-8b-instant", Name: "Llama 3.1 8B Instant", ProviderID: "groq", ProviderName: "Groq", MaxTokens: 131072},
+			{ID: "deepseek-r1-distill-llama-70b", Name: "DeepSeek R1 Distill Llama 70B", ProviderID: "groq", ProviderName: "Groq", MaxTokens: 131072},
 			{ID: "mixtral-8x7b-32768", Name: "Mixtral 8x7B", ProviderID: "groq", ProviderName: "Groq", MaxTokens: 32768},
 			{ID: "gemma2-9b-it", Name: "Gemma 2 9B IT", ProviderID: "groq", ProviderName: "Groq", MaxTokens: 8192},
+			{ID: "qwen-2.5-coder-32b", Name: "Qwen 2.5 Coder 32B", ProviderID: "groq", ProviderName: "Groq", MaxTokens: 131072},
+			{ID: "qwen-qwq-32b", Name: "Qwen QwQ 32B", ProviderID: "groq", ProviderName: "Groq", MaxTokens: 131072},
 		},
 		"gemini": {
 			{ID: "gemini-3.1-pro-preview", Name: "Gemini 3.1 Pro Preview", ProviderID: "gemini", ProviderName: "Google Gemini", MaxTokens: 1048576},
