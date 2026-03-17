@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Tests updated for 2025-01 model lists
+// Tests updated for 2026-02 model lists
 
 func TestFallbackModels_OpenAI_Details(t *testing.T) {
 	models := GetFallbackModels("openai")
@@ -43,7 +43,9 @@ func TestFallbackModels_Anthropic_Details(t *testing.T) {
 	for i, m := range models {
 		modelIDs[i] = m.ID
 	}
-	assert.Contains(t, modelIDs, "claude-3-5-sonnet-latest")
+	assert.Contains(t, modelIDs, "claude-opus-4-6")
+	assert.Contains(t, modelIDs, "claude-sonnet-4-6")
+	assert.Contains(t, modelIDs, "claude-3-5-sonnet-20241022")
 
 	for _, m := range models {
 		assert.Equal(t, "anthropic", m.ProviderID)
@@ -68,14 +70,14 @@ func TestGetFallbackModels_Gemini(t *testing.T) {
 	models := GetFallbackModels("gemini")
 
 	require.NotEmpty(t, models)
-	assert.GreaterOrEqual(t, len(models), 2) // Updated: Gemini has gemini-2.0-flash, gemini-1.5-pro, gemini-1.5-flash, gemini-pro
+	assert.GreaterOrEqual(t, len(models), 7) // Updated: Gemini has 7 current models
 
 	// Check for at least one Gemini model
 	modelIDs := make([]string, len(models))
 	for i, m := range models {
 		modelIDs[i] = m.ID
 	}
-	assert.Contains(t, modelIDs, "gemini-1.5-pro")
+	assert.Contains(t, modelIDs, "gemini-2.5-flash")
 }
 
 func TestGetFallbackModels_DeepSeek(t *testing.T) {
@@ -257,5 +259,5 @@ func TestModelCache_NotFound(t *testing.T) {
 
 func TestFallbackModelsVersion(t *testing.T) {
 	assert.NotEmpty(t, FallbackModelsVersion)
-	assert.Equal(t, "2025-01", FallbackModelsVersion)
+	assert.Equal(t, "2026-02", FallbackModelsVersion)
 }

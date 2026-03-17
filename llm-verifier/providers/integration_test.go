@@ -230,12 +230,12 @@ func TestProviderRegistry_Integration(t *testing.T) {
 	// Test provider names
 	providerNames := registry.GetProviderNames()
 	assert.Contains(t, providerNames, "anthropic")
-	assert.Contains(t, providerNames, "google")
+	assert.Contains(t, providerNames, "gemini")
 	assert.Contains(t, providerNames, "openai")
 
 	// Test provider support
 	assert.True(t, registry.IsProviderSupported("anthropic"))
-	assert.True(t, registry.IsProviderSupported("google"))
+	assert.True(t, registry.IsProviderSupported("gemini"))
 	assert.False(t, registry.IsProviderSupported("nonexistent"))
 
 	// Test adapter instantiation (manual)

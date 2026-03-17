@@ -47,7 +47,7 @@ func (pd *PricingDetector) DetectPricing(providerName, modelID string) (*Pricing
 		return pd.detectAnthropicPricing(modelID)
 	case "azure", "azure openai":
 		return pd.detectAzureOpenAIPricing(modelID)
-	case "google", "google cloud", "gcp":
+	case "gemini", "google", "google cloud", "gcp":
 		return pd.detectGooglePricing(modelID)
 	case "cohere":
 		return pd.detectCoherePricing(modelID)

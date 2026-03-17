@@ -89,10 +89,13 @@ func GetFallbackModels(providerID string) []Model {
 			{ID: "gemma2-9b-it", Name: "Gemma 2 9B IT", ProviderID: "groq", ProviderName: "Groq", MaxTokens: 8192},
 		},
 		"gemini": {
-			{ID: "gemini-2.0-flash-exp", Name: "Gemini 2.0 Flash (Exp)", ProviderID: "gemini", ProviderName: "Google Gemini", MaxTokens: 1048576},
-			{ID: "gemini-1.5-pro", Name: "Gemini 1.5 Pro", ProviderID: "gemini", ProviderName: "Google Gemini", MaxTokens: 2097152},
-			{ID: "gemini-1.5-flash", Name: "Gemini 1.5 Flash", ProviderID: "gemini", ProviderName: "Google Gemini", MaxTokens: 1048576},
-			{ID: "gemini-pro", Name: "Gemini Pro", ProviderID: "gemini", ProviderName: "Google Gemini", MaxTokens: 30720},
+			{ID: "gemini-3.1-pro-preview", Name: "Gemini 3.1 Pro Preview", ProviderID: "gemini", ProviderName: "Google Gemini", MaxTokens: 1048576},
+			{ID: "gemini-3-pro-preview", Name: "Gemini 3 Pro Preview", ProviderID: "gemini", ProviderName: "Google Gemini", MaxTokens: 1048576},
+			{ID: "gemini-3-flash-preview", Name: "Gemini 3 Flash Preview", ProviderID: "gemini", ProviderName: "Google Gemini", MaxTokens: 1048576},
+			{ID: "gemini-2.5-pro", Name: "Gemini 2.5 Pro", ProviderID: "gemini", ProviderName: "Google Gemini", MaxTokens: 1048576},
+			{ID: "gemini-2.5-flash", Name: "Gemini 2.5 Flash", ProviderID: "gemini", ProviderName: "Google Gemini", MaxTokens: 1048576},
+			{ID: "gemini-2.5-flash-lite", Name: "Gemini 2.5 Flash Lite", ProviderID: "gemini", ProviderName: "Google Gemini", MaxTokens: 1048576},
+			{ID: "gemini-2.0-flash", Name: "Gemini 2.0 Flash", ProviderID: "gemini", ProviderName: "Google Gemini", MaxTokens: 1048576},
 		},
 		"deepseek": {
 			{ID: "deepseek-chat", Name: "DeepSeek Chat", ProviderID: "deepseek", ProviderName: "DeepSeek", MaxTokens: 64000},

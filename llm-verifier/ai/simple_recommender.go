@@ -272,7 +272,7 @@ func initializeModelProfiles() map[string]ModelProfile {
 		},
 		"gemini-pro": {
 			ID:       "gemini-pro",
-			Provider: "google",
+			Provider: "gemini",
 			TaskScores: map[string]float64{
 				"coding":   0.85,
 				"writing":  0.85,

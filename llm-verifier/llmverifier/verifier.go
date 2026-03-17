@@ -864,7 +864,7 @@ func (v *Verifier) testHTTP3(client *LLMClient, modelName string) bool {
 	// This would require checking if the underlying HTTP client supports HTTP/3
 	// For now, we'll check based on provider capabilities
 	provider := strings.ToLower(client.endpoint)
-	if strings.Contains(provider, "cloudflare") || strings.Contains(provider, "google") {
+	if strings.Contains(provider, "cloudflare") || strings.Contains(provider, "google") || strings.Contains(provider, "gemini") {
 		return true // These providers typically support HTTP/3
 	}
 	return false // Most providers don't support HTTP/3 yet
@@ -876,7 +876,7 @@ func (v *Verifier) testBrotli(client *LLMClient, modelName string) bool {
 	// accepts brotli encoding
 	provider := strings.ToLower(client.endpoint)
 	if strings.Contains(provider, "anthropic") || strings.Contains(provider, "openai") ||
-		strings.Contains(provider, "google") || strings.Contains(provider, "deepseek") {
+		strings.Contains(provider, "google") || strings.Contains(provider, "gemini") || strings.Contains(provider, "deepseek") {
 		return true // Major providers typically support Brotli
 	}
 	return false

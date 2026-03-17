@@ -71,7 +71,7 @@ func (ec *ErrorClassifier) ClassifyError(resp *http.Response, body []byte) *Prov
 		errorCode, errorMessage, retryable = ec.classifyAnthropicError(resp.StatusCode, body)
 	case "deepseek":
 		errorCode, errorMessage, retryable = ec.classifyDeepSeekError(resp.StatusCode, body)
-	case "google":
+	case "gemini", "google":
 		errorCode, errorMessage, retryable = ec.classifyGoogleError(resp.StatusCode, body)
 	default:
 		errorCode, errorMessage, retryable = ec.classifyGenericError(resp.StatusCode, body)

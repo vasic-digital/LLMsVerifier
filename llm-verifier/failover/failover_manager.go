@@ -280,7 +280,7 @@ func (fm *FailoverManager) calculateCostWeight(provider *database.Provider) floa
 		return 0.8 // Premium
 	case "anthropic":
 		return 0.7 // Premium
-	case "google":
+	case "gemini", "google":
 		return 0.6 // Balanced
 	case "mistral":
 		return 0.7 // Established provider

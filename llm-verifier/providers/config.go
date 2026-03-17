@@ -169,13 +169,13 @@ func (pr *ProviderRegistry) registerDefaultProviders() {
 		},
 	}
 
-	// Google AI configuration
-	pr.providers["google"] = &ProviderConfig{
-		Name:            "google",
+	// Gemini (Google AI) configuration
+	pr.providers["gemini"] = &ProviderConfig{
+		Name:            "gemini",
 		Endpoint:        "https://generativelanguage.googleapis.com/v1beta",
 		AuthType:        "api_key",
 		StreamingFormat: "sse",
-		DefaultModel:    "gemini-pro",
+		DefaultModel:    "gemini-2.5-flash",
 		RateLimits: RateLimitConfig{
 			RequestsPerMinute: 60,
 			RequestsPerHour:   1000,
@@ -195,11 +195,19 @@ func (pr *ProviderRegistry) registerDefaultProviders() {
 		},
 		Features: map[string]interface{}{
 			"supports_streaming": true,
-			"supports_functions": false,
+			"supports_functions": true,
 			"supports_vision":    true,
 			"supports_acp":       true,
-			"max_context_length": 32768,
-			"supported_models":   []string{"gemini-pro", "gemini-pro-vision"},
+			"max_context_length": 1048576,
+			"supported_models": []string{
+				"gemini-3.1-pro-preview",
+				"gemini-3-pro-preview",
+				"gemini-3-flash-preview",
+				"gemini-2.5-pro",
+				"gemini-2.5-flash",
+				"gemini-2.5-flash-lite",
+				"gemini-2.0-flash",
+			},
 		},
 	}
 

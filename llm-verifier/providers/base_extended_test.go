@@ -370,7 +370,7 @@ func TestProviderRegistry_AllDefaultProviders(t *testing.T) {
 		"openai",
 		"deepseek",
 		"anthropic",
-		"google",
+		"gemini",
 		"groq",
 		"togetherai",
 		"generic",
@@ -431,7 +431,7 @@ func TestProviderRegistry_GenericConfig(t *testing.T) {
 func TestProviderConfig_RateLimits(t *testing.T) {
 	registry := NewProviderRegistry()
 
-	providers := []string{"openai", "anthropic", "deepseek", "google"}
+	providers := []string{"openai", "anthropic", "deepseek", "gemini"}
 	for _, provider := range providers {
 		t.Run(provider, func(t *testing.T) {
 			config, _ := registry.GetConfig(provider)
@@ -445,7 +445,7 @@ func TestProviderConfig_RateLimits(t *testing.T) {
 func TestProviderConfig_Timeouts(t *testing.T) {
 	registry := NewProviderRegistry()
 
-	providers := []string{"openai", "anthropic", "deepseek", "google"}
+	providers := []string{"openai", "anthropic", "deepseek", "gemini"}
 	for _, provider := range providers {
 		t.Run(provider, func(t *testing.T) {
 			config, _ := registry.GetConfig(provider)
@@ -459,7 +459,7 @@ func TestProviderConfig_Timeouts(t *testing.T) {
 func TestProviderConfig_RetryConfig(t *testing.T) {
 	registry := NewProviderRegistry()
 
-	providers := []string{"openai", "anthropic", "deepseek", "google"}
+	providers := []string{"openai", "anthropic", "deepseek", "gemini"}
 	for _, provider := range providers {
 		t.Run(provider, func(t *testing.T) {
 			config, _ := registry.GetConfig(provider)

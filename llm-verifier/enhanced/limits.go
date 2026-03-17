@@ -48,7 +48,7 @@ func (ld *LimitsDetector) DetectLimits(providerName, modelID string, headers htt
 		return ld.detectAnthropicLimits(headers)
 	case "azure", "azure openai":
 		return ld.detectAzureOpenAILimits(headers)
-	case "google", "google cloud", "gcp":
+	case "gemini", "google", "google cloud", "gcp":
 		return ld.detectGoogleLimits(headers)
 	case "cohere":
 		return ld.detectCohereLimits(headers)

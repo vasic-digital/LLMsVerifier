@@ -560,13 +560,13 @@ func TestDefaultAnthropicConfig(t *testing.T) {
 	assert.Contains(t, config.DefaultModel, "claude")
 }
 
-func TestDefaultGoogleConfig(t *testing.T) {
+func TestDefaultGeminiConfig(t *testing.T) {
 	registry := NewProviderRegistry()
-	config, exists := registry.GetConfig("google")
+	config, exists := registry.GetConfig("gemini")
 	assert.True(t, exists)
-	assert.Equal(t, "google", config.Name)
+	assert.Equal(t, "gemini", config.Name)
 	assert.Equal(t, "api_key", config.AuthType)
-	assert.Equal(t, "gemini-pro", config.DefaultModel)
+	assert.Equal(t, "gemini-2.5-flash", config.DefaultModel)
 }
 
 func TestProviderFeatures(t *testing.T) {
