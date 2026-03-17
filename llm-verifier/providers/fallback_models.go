@@ -122,10 +122,14 @@ func GetFallbackModels(providerID string) []Model {
 			{ID: "mixtral-8x22b-instruct-v0.1", Name: "Mixtral 8x22B Instruct", ProviderID: "nvidia", ProviderName: "NVIDIA", MaxTokens: 65536},
 		},
 		"openrouter": {
-			{ID: "openai/gpt-4o", Name: "GPT-4o", ProviderID: "openrouter", ProviderName: "OpenRouter", MaxTokens: 128000},
-			{ID: "anthropic/claude-3.5-sonnet", Name: "Claude 3.5 Sonnet", ProviderID: "openrouter", ProviderName: "OpenRouter", MaxTokens: 200000},
-			{ID: "google/gemini-pro-1.5", Name: "Gemini Pro 1.5", ProviderID: "openrouter", ProviderName: "OpenRouter", MaxTokens: 1000000},
-			{ID: "meta-llama/llama-3.1-405b-instruct", Name: "Llama 3.1 405B", ProviderID: "openrouter", ProviderName: "OpenRouter", MaxTokens: 131072},
+			{ID: "openai/gpt-5.2", Name: "GPT-5.2", ProviderID: "openrouter", ProviderName: "OpenRouter", MaxTokens: 128000},
+			{ID: "openai/gpt-4.1", Name: "GPT-4.1", ProviderID: "openrouter", ProviderName: "OpenRouter", MaxTokens: 128000},
+			{ID: "anthropic/claude-sonnet-4.6", Name: "Claude Sonnet 4.6", ProviderID: "openrouter", ProviderName: "OpenRouter", MaxTokens: 200000},
+			{ID: "google/gemini-2.5-pro", Name: "Gemini 2.5 Pro", ProviderID: "openrouter", ProviderName: "OpenRouter", MaxTokens: 1048576},
+			{ID: "meta-llama/llama-4-scout", Name: "Llama 4 Scout", ProviderID: "openrouter", ProviderName: "OpenRouter", MaxTokens: 131072},
+			{ID: "deepseek/deepseek-r1", Name: "DeepSeek R1", ProviderID: "openrouter", ProviderName: "OpenRouter", MaxTokens: 64000},
+			{ID: "mistralai/mistral-large", Name: "Mistral Large", ProviderID: "openrouter", ProviderName: "OpenRouter", MaxTokens: 128000},
+			{ID: "qwen/qwen3-235b-a22b", Name: "Qwen3 235B", ProviderID: "openrouter", ProviderName: "OpenRouter", MaxTokens: 131072},
 		},
 		"together": {
 			{ID: "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo", Name: "Llama 3.1 405B Instruct", ProviderID: "together", ProviderName: "Together AI", MaxTokens: 4096},
@@ -251,6 +255,15 @@ func GetFallbackModels(providerID string) []Model {
 		"qwen-code": {
 			{ID: "coder-model", Name: "Coder Model (Qwen 3.5 Plus)", ProviderID: "qwen-code", ProviderName: "Qwen Code", MaxTokens: 1048576},
 			{ID: "vision-model", Name: "Vision Model (Qwen VL)", ProviderID: "qwen-code", ProviderName: "Qwen Code", MaxTokens: 262144},
+		},
+		"venice": {
+			{ID: "llama-3.3-70b", Name: "Llama 3.3 70B", ProviderID: "venice", ProviderName: "Venice AI", MaxTokens: 131072},
+			{ID: "llama-3.1-405b", Name: "Llama 3.1 405B", ProviderID: "venice", ProviderName: "Venice AI", MaxTokens: 131072},
+			{ID: "deepseek-r1-671b", Name: "DeepSeek R1 671B", ProviderID: "venice", ProviderName: "Venice AI", MaxTokens: 64000},
+			{ID: "venice-uncensored", Name: "Venice Uncensored", ProviderID: "venice", ProviderName: "Venice AI", MaxTokens: 131072},
+			{ID: "qwen3-vl-235b-a22b", Name: "Qwen3 VL 235B", ProviderID: "venice", ProviderName: "Venice AI", MaxTokens: 131072},
+			{ID: "qwen-2.5-vl", Name: "Qwen 2.5 VL", ProviderID: "venice", ProviderName: "Venice AI", MaxTokens: 131072},
+			{ID: "zai-org-glm-4.7", Name: "ZAI GLM 4.7", ProviderID: "venice", ProviderName: "Venice AI", MaxTokens: 131072},
 		},
 		"github-models": {
 			{ID: "openai/gpt-5", Name: "GPT-5", ProviderID: "github-models", MaxTokens: 131072},
