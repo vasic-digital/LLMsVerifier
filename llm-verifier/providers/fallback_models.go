@@ -252,6 +252,19 @@ func GetFallbackModels(providerID string) []Model {
 			{ID: "coder-model", Name: "Coder Model (Qwen 3.5 Plus)", ProviderID: "qwen-code", ProviderName: "Qwen Code", MaxTokens: 1048576},
 			{ID: "vision-model", Name: "Vision Model (Qwen VL)", ProviderID: "qwen-code", ProviderName: "Qwen Code", MaxTokens: 262144},
 		},
+		"github-models": {
+			{ID: "openai/gpt-5", Name: "GPT-5", ProviderID: "github-models", MaxTokens: 131072},
+			{ID: "openai/gpt-4.1", Name: "GPT-4.1", ProviderID: "github-models", MaxTokens: 131072},
+			{ID: "openai/gpt-4.1-mini", Name: "GPT-4.1 Mini", ProviderID: "github-models", MaxTokens: 131072},
+			{ID: "openai/gpt-4o", Name: "GPT-4o", ProviderID: "github-models", MaxTokens: 131072},
+			{ID: "DeepSeek/DeepSeek-V3-0324", Name: "DeepSeek V3", ProviderID: "github-models", MaxTokens: 131072},
+			{ID: "DeepSeek/DeepSeek-R1", Name: "DeepSeek R1", ProviderID: "github-models", MaxTokens: 131072},
+			{ID: "Meta/Llama-4-Scout-17B-16E-Instruct", Name: "Llama 4 Scout", ProviderID: "github-models", MaxTokens: 131072},
+			{ID: "Meta/Llama-3.3-70B-Instruct", Name: "Llama 3.3 70B", ProviderID: "github-models", MaxTokens: 131072},
+			{ID: "Microsoft/Phi-4-reasoning", Name: "Phi-4 Reasoning", ProviderID: "github-models", MaxTokens: 131072},
+			{ID: "Mistral/Mistral-Large-2", Name: "Mistral Large 2", ProviderID: "github-models", MaxTokens: 131072},
+			{ID: "Cohere/Command-A", Name: "Cohere Command A", ProviderID: "github-models", MaxTokens: 131072},
+		},
 	}
 
 	if models, exists := commonModels[providerID]; exists {
