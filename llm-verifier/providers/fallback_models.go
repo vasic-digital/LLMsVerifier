@@ -108,10 +108,14 @@ func GetFallbackModels(providerID string) []Model {
 			{ID: "deepseek-reasoner", Name: "DeepSeek Reasoner", ProviderID: "deepseek", ProviderName: "DeepSeek", MaxTokens: 64000},
 		},
 		"cohere": {
-			{ID: "command-r-plus", Name: "Command R+", ProviderID: "cohere", ProviderName: "Cohere", MaxTokens: 128000},
-			{ID: "command-r", Name: "Command R", ProviderID: "cohere", ProviderName: "Cohere", MaxTokens: 128000},
-			{ID: "command", Name: "Command", ProviderID: "cohere", ProviderName: "Cohere", MaxTokens: 4096},
-			{ID: "command-light", Name: "Command Light", ProviderID: "cohere", ProviderName: "Cohere", MaxTokens: 4096},
+			{ID: "command-a-03-2025", Name: "Command A", ProviderID: "cohere", ProviderName: "Cohere", MaxTokens: 256000},
+			{ID: "command-a-reasoning-08-2025", Name: "Command A Reasoning", ProviderID: "cohere", ProviderName: "Cohere", MaxTokens: 256000},
+			{ID: "command-a-vision-07-2025", Name: "Command A Vision", ProviderID: "cohere", ProviderName: "Cohere", MaxTokens: 128000},
+			{ID: "command-r7b-12-2024", Name: "Command R7B", ProviderID: "cohere", ProviderName: "Cohere", MaxTokens: 128000},
+			{ID: "command-r-plus-08-2024", Name: "Command R+ 08-2024", ProviderID: "cohere", ProviderName: "Cohere", MaxTokens: 128000},
+			{ID: "command-r-08-2024", Name: "Command R 08-2024", ProviderID: "cohere", ProviderName: "Cohere", MaxTokens: 128000},
+			{ID: "c4ai-aya-expanse-32b", Name: "Aya Expanse 32B", ProviderID: "cohere", ProviderName: "Cohere", MaxTokens: 128000},
+			{ID: "c4ai-aya-vision-32b", Name: "Aya Vision 32B", ProviderID: "cohere", ProviderName: "Cohere", MaxTokens: 16000},
 		},
 		"nvidia": {
 			{ID: "llama-3.1-nemotron-70b-instruct", Name: "Llama 3.1 Nemotron 70B", ProviderID: "nvidia", ProviderName: "NVIDIA", MaxTokens: 128000},
