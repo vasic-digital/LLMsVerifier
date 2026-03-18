@@ -189,8 +189,8 @@ func TestGetFallbackModels_Cohere(t *testing.T) {
 	for i, m := range models {
 		modelIDs[i] = m.ID
 	}
-	assert.Contains(t, modelIDs, "command-r-plus")
-	assert.Contains(t, modelIDs, "command")
+	assert.Contains(t, modelIDs, "command-a-03-2025")
+	assert.Contains(t, modelIDs, "command-r-plus-08-2024")
 }
 
 func TestGetFallbackModels_UnknownProvider(t *testing.T) {
