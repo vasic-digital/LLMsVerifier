@@ -211,6 +211,104 @@ func TestVerificationTest_InterfaceExists(t *testing.T) {
 	var _ VerificationTest = (*mockVerificationTest)(nil)
 }
 
+// --- DefaultStrategy Tests ---
+
+func TestDefaultStrategy_Name(t *testing.T) {
+	ds := NewDefaultStrategy()
+	assert.Equal(t, "default", ds.Name())
+}
+
+func TestDefaultStrategy_Description(t *testing.T) {
+	ds := NewDefaultStrategy()
+	assert.NotEmpty(t, ds.Description())
+}
+
+func TestDefaultStrategy_WeightConfig_MatchesExistingWeights(t *testing.T) {
+	ds := NewDefaultStrategy()
+	wc := ds.WeightConfig()
+	assert.NoError(t, wc.Validate())
+	assert.Equal(t, 0.30, wc.Responsiveness)
+	assert.Equal(t, 0.25, wc.CodeCapability)
+	assert.Equal(t, 0.25, wc.FeatureRichness)
+	assert.Equal(t, 0.20, wc.Reliability)
+	assert.Equal(t, 0.0, wc.VisionCapability)
+	assert.Equal(t, 0.0, wc.InstructionFollowing)
+}
+
+func TestDefaultStrategy_CustomTests_Empty(t *testing.T) {
+	ds := NewDefaultStrategy()
+	assert.Empty(t, ds.CustomTests())
+}
+
+func TestDefaultStrategy_FilterModels_PassesAll(t *testing.T) {
+	ds := NewDefaultStrategy()
+	models := []ModelInfo{{ID: "m1"}, {ID: "m2"}, {ID: "m3"}}
+	filtered := ds.FilterModels(models)
+	assert.Len(t, filtered, 3)
+}
+
+func TestDefaultStrategy_MinimumThresholds_Zero(t *testing.T) {
+	ds := NewDefaultStrategy()
+	th := ds.MinimumThresholds()
+	assert.Equal(t, 0.0, th.MinOverallScore)
+	assert.Equal(t, time.Duration(0), th.MaxLatency)
+	assert.Empty(t, th.RequiredCapabilities)
+}
+
+func TestDefaultStrategy_ScoreModel_WithResults(t *testing.T) {
+	ds := NewDefaultStrategy()
+	model := ModelInfo{ID: "test-model"}
+	results := []TestResult{
+		{Category: TestCategoryResponsiveness, Score: 0.90, Passed: true},
+		{Category: TestCategoryCode, Score: 0.80, Passed: true},
+		{Category: TestCategoryFeature, Score: 0.85, Passed: true},
+		{Category: TestCategoryExistence, Score: 0.82, Passed: true},
+	}
+	score, err := ds.ScoreModel(context.Background(), model, results)
+	assert.NoError(t, err)
+	assert.True(t, score.Overall > 0)
+	assert.True(t, score.Passed)
+	// Verify weighted calculation: 0.90*0.30 + 0.80*0.25 + 0.85*0.25 + 0.82*0.20
+	expected := 0.90*0.30 + 0.80*0.25 + 0.85*0.25 + 0.82*0.20
+	assert.InDelta(t, expected, score.Overall, 0.001)
+}
+
+func TestDefaultStrategy_ScoreModel_EmptyResults(t *testing.T) {
+	ds := NewDefaultStrategy()
+	score, err := ds.ScoreModel(context.Background(), ModelInfo{}, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 0.0, score.Overall)
+	assert.True(t, score.Passed)
+}
+
+func TestDefaultStrategy_ScoreModel_MultipleSameCategory(t *testing.T) {
+	ds := NewDefaultStrategy()
+	results := []TestResult{
+		{Category: TestCategoryResponsiveness, Score: 0.80},
+		{Category: TestCategoryResponsiveness, Score: 1.00},
+	}
+	score, err := ds.ScoreModel(context.Background(), ModelInfo{}, results)
+	assert.NoError(t, err)
+	// Average of 0.80 and 1.00 = 0.90, weighted by 0.30 = 0.27
+	assert.InDelta(t, 0.90*0.30, score.Overall, 0.001)
+}
+
+func TestDefaultStrategy_ScoreModel_BreakdownPopulated(t *testing.T) {
+	ds := NewDefaultStrategy()
+	results := []TestResult{
+		{Category: TestCategoryResponsiveness, Score: 0.90},
+		{Category: TestCategoryCode, Score: 0.80},
+	}
+	score, err := ds.ScoreModel(context.Background(), ModelInfo{}, results)
+	assert.NoError(t, err)
+	assert.Equal(t, 0.90, score.Breakdown["responsiveness"])
+	assert.Equal(t, 0.80, score.Breakdown["code_capability"])
+}
+
+func TestDefaultStrategy_ImplementsScoringStrategy(t *testing.T) {
+	var _ ScoringStrategy = NewDefaultStrategy()
+}
+
 type mockVerificationTest struct{}
 
 func (m *mockVerificationTest) ID() string                                            { return "mock-test" }
