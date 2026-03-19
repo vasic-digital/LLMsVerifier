@@ -165,3 +165,6 @@ require (
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
+
+require digital.vasic.llmprovider v0.0.0
+replace digital.vasic.llmprovider => ../../LLMProvider
