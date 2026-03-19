@@ -1,5 +1,15 @@
 # LLMsVerifier Development Guidelines
 
+## MANDATORY: No CI/CD Pipelines
+
+**NO GitHub Actions, GitLab CI/CD, or any automated pipeline may exist in this repository!**
+
+- No `.github/workflows/` directory
+- No `.gitlab-ci.yml` file
+- No Jenkinsfile, .travis.yml, .circleci, or any other CI configuration
+- All builds and tests are run manually or via Makefile targets
+- This rule is permanent and non-negotiable
+
 Auto-generated from all feature plans. Last updated: 2025-12-28
 
 ## Active Technologies
