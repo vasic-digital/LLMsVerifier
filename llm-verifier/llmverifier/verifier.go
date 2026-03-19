@@ -2841,3 +2841,78 @@ func intPtr(i int) *int {
 func floatPtr(f float64) *float64 {
 	return &f
 }
+
+// VerifyWithStrategy runs verification using a custom scoring strategy.
+// Models are first filtered by the strategy, then each is verified and scored.
+// This is a parallel entry point to the existing Verify() — it does not modify
+// any existing function signatures or behavior.
+func (v *Verifier) VerifyWithStrategy(ctx context.Context, strategy ScoringStrategy, models []ModelInfo) ([]VerificationResult, []StrategyScore, error) {
+	if len(models) == 0 {
+		return nil, nil, nil
+	}
+
+	filtered := strategy.FilterModels(models)
+	if len(filtered) == 0 {
+		return nil, nil, nil
+	}
+
+	var results []VerificationResult
+	var scores []StrategyScore
+
+	for _, model := range filtered {
+		select {
+		case <-ctx.Done():
+			return results, scores, ctx.Err()
+		default:
+		}
+
+		// Create client for this model
+		apiKey := model.Endpoint // fallback
+		if v.cfg != nil && v.cfg.Global.APIKey != "" {
+			apiKey = v.cfg.Global.APIKey
+		}
+		// Look for matching LLM config by endpoint or name
+		for _, llmCfg := range v.cfg.LLMs {
+			if llmCfg.Endpoint == model.Endpoint || llmCfg.Name == model.Organization {
+				apiKey = llmCfg.APIKey
+				break
+			}
+		}
+		client := NewLLMClient(model.Endpoint, apiKey, nil)
+
+		vr, err := v.verifySingleModel(client, model.ID, model.Endpoint)
+		if err != nil {
+			vr = VerificationResult{ModelInfo: model, Error: err.Error(), Timestamp: time.Now()}
+		}
+		vr.ModelInfo = model
+		results = append(results, vr)
+
+		// Run custom tests from strategy
+		var testResults []TestResult
+		for _, test := range strategy.CustomTests() {
+			tr, testErr := test.Run(ctx, client)
+			if testErr != nil {
+				if test.Required() {
+					return results, scores, fmt.Errorf("required test %s failed: %w", test.ID(), testErr)
+				}
+				tr = TestResult{TestID: test.ID(), Category: test.Category(), Passed: false, Error: testErr, Timestamp: time.Now()}
+			}
+			testResults = append(testResults, tr)
+		}
+
+		score, scoreErr := strategy.ScoreModel(ctx, model, testResults)
+		if scoreErr != nil {
+			return results, scores, scoreErr
+		}
+		scores = append(scores, score)
+	}
+
+	return results, scores, nil
+}
+
+// CalculateScoresWithStrategy scores a VerificationResult using a custom strategy.
+// This is a parallel entry point to the existing CalculateScores() — it does not
+// modify the existing function.
+func (v *Verifier) CalculateScoresWithStrategy(result VerificationResult, strategy ScoringStrategy) (StrategyScore, error) {
+	return strategy.ScoreModel(context.Background(), result.ModelInfo, nil)
+}
