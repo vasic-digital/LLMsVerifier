@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	crush_config "llm-verifier/pkg/crush/config"
-	"llm-verifier/database"
+	crush_config "digital.vasic.llmsverifier/pkg/crush/config"
+	"digital.vasic.llmsverifier/database"
 )
 
 // CrushVerifier handles verification of Crush configurations and setups

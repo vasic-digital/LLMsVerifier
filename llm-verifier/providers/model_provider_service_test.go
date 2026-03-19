@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"llm-verifier/logging"
+	"digital.vasic.llmsverifier/logging"
 )
 
 // NewTestLogger creates a logger for testing

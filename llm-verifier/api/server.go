@@ -5,8 +5,8 @@ package api
 import (
 	"net/http"
 
-	"llm-verifier/config"
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/config"
+	"digital.vasic.llmsverifier/database"
 )
 
 // Server represents the REST API server

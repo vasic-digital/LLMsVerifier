@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/monitoring"
+	"digital.vasic.llmsverifier/monitoring"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"llm-verifier/providers"
+	"digital.vasic.llmsverifier/providers"
 )
 
 // MockAPIServer provides a comprehensive mock API server for testing

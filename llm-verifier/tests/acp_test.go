@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/config"
-	"llm-verifier/llmverifier"
+	"digital.vasic.llmsverifier/config"
+	"digital.vasic.llmsverifier/llmverifier"
 )
 
 // TestACPsCapabilityDetection tests the ACP capability detection function

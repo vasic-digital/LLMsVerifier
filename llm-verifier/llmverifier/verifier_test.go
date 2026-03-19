@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/config"
+	"digital.vasic.llmsverifier/config"
 )
 
 func TestNewVerifier(t *testing.T) {

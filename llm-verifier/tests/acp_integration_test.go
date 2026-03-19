@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/config"
-	"llm-verifier/llmverifier"
-	"llm-verifier/providers"
+	"digital.vasic.llmsverifier/config"
+	"digital.vasic.llmsverifier/llmverifier"
+	"digital.vasic.llmsverifier/providers"
 )
 
 // TestACPsWithRealProviders tests ACP detection with real LLM providers

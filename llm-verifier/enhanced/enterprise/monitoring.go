@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"llm-verifier/monitoring"
+	"digital.vasic.llmsverifier/monitoring"
 )
 
 // EnterpriseMonitor integrates with enterprise monitoring systems

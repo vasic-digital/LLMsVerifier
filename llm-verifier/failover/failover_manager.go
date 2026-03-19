@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // FailoverManager coordinates circuit breakers, health checking, and routing

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/bubbletea"
-	"llm-verifier/client"
+	"digital.vasic.llmsverifier/client"
 )
 
 func TestNewAppBasic(t *testing.T) {

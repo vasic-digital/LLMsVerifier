@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	crush_config "llm-verifier/pkg/crush/config"
-	crush_verifier "llm-verifier/pkg/crush/verifier"
+	crush_config "digital.vasic.llmsverifier/pkg/crush/config"
+	crush_verifier "digital.vasic.llmsverifier/pkg/crush/verifier"
 )
 
 func main() {

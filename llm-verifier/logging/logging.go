@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // LogLevel represents the severity level of a log entry

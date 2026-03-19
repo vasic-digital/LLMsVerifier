@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	crush_config "llm-verifier/pkg/crush/config"
+	crush_config "digital.vasic.llmsverifier/pkg/crush/config"
 )
 
 // CrushConfig represents the configuration for Crush CLI with HelixAgent extensions

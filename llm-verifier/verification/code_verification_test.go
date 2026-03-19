@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"llm-verifier/client"
-	"llm-verifier/logging"
+	"digital.vasic.llmsverifier/client"
+	"digital.vasic.llmsverifier/logging"
 )
 
 // createTestLogger creates a logger for testing with nil database

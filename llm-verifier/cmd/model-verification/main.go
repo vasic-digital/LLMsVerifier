@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"llm-verifier/logging"
-	"llm-verifier/providers"
+	"digital.vasic.llmsverifier/logging"
+	"digital.vasic.llmsverifier/providers"
 )
 
 func main() {

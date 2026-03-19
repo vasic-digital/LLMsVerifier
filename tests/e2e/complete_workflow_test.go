@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"llm-verifier/config"
+	"digital.vasic.llmsverifier/config"
 )
 
 // Silence unused import warnings for packages used in skipped tests

@@ -6,9 +6,9 @@ import (
 	"log"
 	"time"
 
-	"llm-verifier/database"
-	"llm-verifier/logging"
-	"llm-verifier/scoring"
+	"digital.vasic.llmsverifier/database"
+	"digital.vasic.llmsverifier/logging"
+	"digital.vasic.llmsverifier/scoring"
 )
 
 func main() {

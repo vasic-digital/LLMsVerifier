@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"llm-verifier/partners"
+	"digital.vasic.llmsverifier/partners"
 )
 
 func main() {

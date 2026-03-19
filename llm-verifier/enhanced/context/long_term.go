@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	llmverifier "llm-verifier/llmverifier"
+	llmverifier "digital.vasic.llmsverifier/llmverifier"
 )
 
 // Summary represents a compressed summary of conversation content

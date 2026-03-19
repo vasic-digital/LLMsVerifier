@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"llm-verifier/logging"
-	"llm-verifier/verification"
+	"digital.vasic.llmsverifier/logging"
+	"digital.vasic.llmsverifier/verification"
 )
 
 func createAdapterTestLogger(t *testing.T) *logging.Logger {

@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	enhancedContext "llm-verifier/enhanced/context"
-	llmverifier "llm-verifier/llmverifier"
+	enhancedContext "digital.vasic.llmsverifier/enhanced/context"
+	llmverifier "digital.vasic.llmsverifier/llmverifier"
 )
 
 func TestMetricProcessors(t *testing.T) {

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	llmverifier "llm-verifier/llmverifier"
+	llmverifier "digital.vasic.llmsverifier/llmverifier"
 )
 
 // TestSuite represents a custom test suite

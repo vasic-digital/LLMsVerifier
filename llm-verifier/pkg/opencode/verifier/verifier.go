@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	opencode_config "llm-verifier/pkg/opencode/config"
-	"llm-verifier/database"
+	opencode_config "digital.vasic.llmsverifier/pkg/opencode/config"
+	"digital.vasic.llmsverifier/database"
 )
 
 // OpenCodeVerifier handles verification of OpenCode configurations and setups

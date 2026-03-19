@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"llm-verifier/database"
-	"llm-verifier/events"
+	"digital.vasic.llmsverifier/database"
+	"digital.vasic.llmsverifier/events"
 )
 
 // IssueDetector automatically detects issues from verification results

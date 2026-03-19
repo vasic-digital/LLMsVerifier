@@ -4,7 +4,7 @@ import (
     "context"
     "log"
     
-    "llm-verifier/llmverifier"
+    "digital.vasic.llmsverifier/llmverifier"
 )
 
 func main() {

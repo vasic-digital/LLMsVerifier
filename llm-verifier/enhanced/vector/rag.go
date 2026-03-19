@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	ctxt "llm-verifier/enhanced/context"
+	ctxt "digital.vasic.llmsverifier/enhanced/context"
 )
 
 // Vector represents a vector embedding

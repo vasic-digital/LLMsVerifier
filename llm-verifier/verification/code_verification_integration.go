@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"llm-verifier/database"
-	"llm-verifier/logging"
+	"digital.vasic.llmsverifier/database"
+	"digital.vasic.llmsverifier/logging"
 )
 
 // CodeVerificationIntegration integrates code verification with the model discovery process

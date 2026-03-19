@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"llm-verifier/logging"
+	"digital.vasic.llmsverifier/logging"
 )
 
 // AlertManagerFixed handles sending alerts for various system events

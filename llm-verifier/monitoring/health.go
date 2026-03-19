@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // HealthStatus represents the health status of a component

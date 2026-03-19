@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"llm-verifier/config"
+	"digital.vasic.llmsverifier/config"
 )
 
 // Service provides a simplified interface for provider management

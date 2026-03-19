@@ -4,8 +4,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"llm-verifier/client"
-	"llm-verifier/tui/screens"
+	"digital.vasic.llmsverifier/client"
+	"digital.vasic.llmsverifier/tui/screens"
 )
 
 type App struct {

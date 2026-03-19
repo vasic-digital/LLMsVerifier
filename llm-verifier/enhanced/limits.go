@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // LimitsDetector detects rate limits and quotas for different providers

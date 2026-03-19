@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // ModelRecommender provides AI-powered model recommendations

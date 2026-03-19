@@ -5,13 +5,13 @@ go 1.24.0
 toolchain go1.24.11
 
 require (
+	digital.vasic.llmsverifier v0.0.0
 	github.com/google/uuid v1.6.0
 	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/segmentio/kafka-go v0.4.50
 	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1
 	gopkg.in/yaml.v3 v3.0.1
-	llm-verifier v0.0.0
 )
 
 require (
@@ -75,4 +75,4 @@ require (
 	google.golang.org/protobuf v1.36.10 // indirect
 )
 
-replace llm-verifier => ./llm-verifier
+replace digital.vasic.llmsverifier => ./llm-verifier

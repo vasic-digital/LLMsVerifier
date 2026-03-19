@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // DatabaseIntegration provides database operations for scoring using existing CRUD methods

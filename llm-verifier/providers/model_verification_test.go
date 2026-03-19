@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/client"
-	"llm-verifier/logging"
+	"digital.vasic.llmsverifier/client"
+	"digital.vasic.llmsverifier/logging"
 )
 
 // MockProviderClient implements ProviderClientInterface for testing

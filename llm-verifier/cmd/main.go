@@ -10,11 +10,11 @@ import (
 	"github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
-	"llm-verifier/api"
-	"llm-verifier/client"
-	"llm-verifier/database"
-	"llm-verifier/llmverifier"
-	"llm-verifier/tui"
+	"digital.vasic.llmsverifier/api"
+	"digital.vasic.llmsverifier/client"
+	"digital.vasic.llmsverifier/database"
+	"digital.vasic.llmsverifier/llmverifier"
+	"digital.vasic.llmsverifier/tui"
 )
 
 var (

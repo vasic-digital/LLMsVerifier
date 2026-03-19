@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"llm-verifier/logging"
+	"digital.vasic.llmsverifier/logging"
 )
 
 // ScoringAPIHandlers handles HTTP requests for scoring functionality

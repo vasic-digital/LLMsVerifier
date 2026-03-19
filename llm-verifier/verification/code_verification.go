@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"llm-verifier/client"
-	"llm-verifier/logging"
+	"digital.vasic.llmsverifier/client"
+	"digital.vasic.llmsverifier/logging"
 )
 
 // CodeVerificationService handles mandatory code visibility verification for models

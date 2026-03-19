@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/config"
-	"llm-verifier/llmverifier"
+	"digital.vasic.llmsverifier/config"
+	"digital.vasic.llmsverifier/llmverifier"
 )
 
 // TestACPsPerformanceBaseline establishes performance baselines for ACP detection

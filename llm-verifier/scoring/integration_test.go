@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // TestScoringSystemIntegration tests the complete scoring system integration

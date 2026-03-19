@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/config"
+	"digital.vasic.llmsverifier/config"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"llm-verifier/logging"
+	"digital.vasic.llmsverifier/logging"
 )
 
 func createTestLogger(t *testing.T) *logging.Logger {

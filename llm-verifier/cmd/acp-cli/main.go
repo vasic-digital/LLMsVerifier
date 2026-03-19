@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"llm-verifier/config"
-	"llm-verifier/llmverifier"
+	"digital.vasic.llmsverifier/config"
+	"digital.vasic.llmsverifier/llmverifier"
 )
 
 var (

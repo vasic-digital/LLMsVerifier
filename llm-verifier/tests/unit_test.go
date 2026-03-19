@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/llmverifier"
+	"digital.vasic.llmsverifier/llmverifier"
 )
 
 // Unit tests for the LLM verifier

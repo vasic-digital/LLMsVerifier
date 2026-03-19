@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/enhanced/analytics"
-	contextmanager "llm-verifier/enhanced/context"
+	"digital.vasic.llmsverifier/enhanced/analytics"
+	contextmanager "digital.vasic.llmsverifier/enhanced/context"
 )
 
 // TestCoreComponents tests core enhanced components

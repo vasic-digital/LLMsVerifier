@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"llm-verifier/logging"
+	"digital.vasic.llmsverifier/logging"
 )
 
 // VerifiedConfigGenerator generates configuration files with only verified models

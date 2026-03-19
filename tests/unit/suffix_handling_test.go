@@ -7,8 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"llm-verifier/providers"
-	"llm-verifier/suffix"
+	"digital.vasic.llmsverifier/providers"
+	"digital.vasic.llmsverifier/suffix"
 )
 
 func TestSuffixHandling_ParseSuffixes(t *testing.T) {

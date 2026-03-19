@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/bubbletea"
-	"llm-verifier/client"
+	"digital.vasic.llmsverifier/client"
 )
 
 func TestNewDashboardScreen(t *testing.T) {

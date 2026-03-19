@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/config"
+	"digital.vasic.llmsverifier/config"
 )
 
 // TestVerifier_ExportIntegrationTests tests export functionality integration

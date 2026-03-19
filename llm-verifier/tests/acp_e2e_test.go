@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/config"
-	"llm-verifier/llmverifier"
+	"digital.vasic.llmsverifier/config"
+	"digital.vasic.llmsverifier/llmverifier"
 )
 
 // TestACPsCompleteWorkflow tests the complete ACP verification workflow

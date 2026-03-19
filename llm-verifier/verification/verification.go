@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // Request represents a verification request

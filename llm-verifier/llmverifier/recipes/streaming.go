@@ -5,9 +5,11 @@ package recipes
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
-	"llm-verifier/llmverifier"
+	"digital.vasic.llmsverifier/llmverifier"
 )
 
 type streamingRecipe struct{}
@@ -35,13 +37,60 @@ type streamingTest struct {
 
 func (t *streamingTest) Run(ctx context.Context, client *llmverifier.LLMClient) (llmverifier.TestResult, error) {
 	return runWithClient(ctx, client, func(ctx context.Context, c *llmverifier.LLMClient) (llmverifier.TestResult, error) {
+		modelName, err := discoverModelName(ctx, c)
+		if err != nil {
+			return llmverifier.TestResult{
+				TestID:    t.id,
+				Category:  t.category,
+				Passed:    false,
+				Score:     0,
+				Timestamp: time.Now(),
+				Details:   map[string]any{"error": err.Error(), "phase": "model_discovery"},
+			}, nil
+		}
+
+		// Send 3 consecutive requests and measure response consistency.
+		const totalRequests = 3
+		successCount := 0
+		responses := make([]string, 0, totalRequests)
+		var errors []string
+
+		for i := 0; i < totalRequests; i++ {
+			content, err := sendChat(ctx, c, modelName,
+				"You are a helpful assistant.",
+				fmt.Sprintf("Reply with a single sentence about the number %d.", i+1),
+				100,
+			)
+			if err != nil {
+				errors = append(errors, fmt.Sprintf("request_%d: %s", i+1, err.Error()))
+				responses = append(responses, "")
+				continue
+			}
+
+			trimmed := strings.TrimSpace(content)
+			if len(trimmed) > 0 {
+				successCount++
+			}
+			responses = append(responses, trimmed)
+		}
+
+		score := float64(successCount) / float64(totalRequests)
+		passed := successCount == totalRequests
+
 		return llmverifier.TestResult{
 			TestID:    t.id,
 			Category:  t.category,
-			Passed:    true,
-			Score:     1.0,
+			Passed:    passed,
+			Score:     score,
 			Timestamp: time.Now(),
-			Details:   map[string]any{"test": "streaming_reliability"},
+			Details: map[string]any{
+				"test":            "streaming_reliability",
+				"model":           modelName,
+				"total_requests":  totalRequests,
+				"success_count":   successCount,
+				"responses":       responses,
+				"errors":          errors,
+			},
 		}, nil
 	})
 }

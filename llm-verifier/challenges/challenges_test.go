@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 	"github.com/stretchr/testify/assert"
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // TestProviderModelsDiscovery tests the provider models discovery challenge

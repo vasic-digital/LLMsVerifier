@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // ScoringDatabaseExtensions extends the database with scoring-specific functionality

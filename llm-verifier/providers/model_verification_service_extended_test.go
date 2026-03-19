@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/client"
+	"digital.vasic.llmsverifier/client"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

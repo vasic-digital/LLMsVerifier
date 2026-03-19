@@ -7,7 +7,7 @@ import (
 	"math"
 	"time"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // ScoringEngine handles the core scoring logic

@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"llm-verifier/client"
-	"llm-verifier/logging"
-	"llm-verifier/verification"
+	"digital.vasic.llmsverifier/client"
+	"digital.vasic.llmsverifier/logging"
+	"digital.vasic.llmsverifier/verification"
 )
 
 // ModelVerificationService handles mandatory "Do you see my code?" verification for all models

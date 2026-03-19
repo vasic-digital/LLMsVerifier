@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/auth"
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/auth"
+	"digital.vasic.llmsverifier/database"
 )
 
 // TestIntegrationSuite runs the complete integration test suite

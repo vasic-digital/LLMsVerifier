@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // setupTestDatabase creates a test database

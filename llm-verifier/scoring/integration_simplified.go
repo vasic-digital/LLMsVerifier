@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"llm-verifier/database"
-	"llm-verifier/logging"
+	"digital.vasic.llmsverifier/database"
+	"digital.vasic.llmsverifier/logging"
 )
 
 // ScoringSystem represents the main scoring system integration

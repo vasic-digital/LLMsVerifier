@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/llmverifier"
+	"digital.vasic.llmsverifier/llmverifier"
 )
 
 // Performance and benchmark tests for the LLM verifier

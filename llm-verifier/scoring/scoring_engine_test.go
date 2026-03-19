@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/database"
-	"llm-verifier/logging"
+	"digital.vasic.llmsverifier/database"
+	"digital.vasic.llmsverifier/logging"
 )
 
 // MockModelsDevClient is a mock implementation of ModelsDevClient for testing

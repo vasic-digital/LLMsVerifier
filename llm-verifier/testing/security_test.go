@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/auth"
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/auth"
+	"digital.vasic.llmsverifier/database"
 )
 
 // TestSecuritySuite runs comprehensive security tests

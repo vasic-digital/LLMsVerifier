@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // ModelComparisonEngine provides side-by-side model comparison capabilities

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	llmverifier "llm-verifier/llmverifier"
+	llmverifier "digital.vasic.llmsverifier/llmverifier"
 )
 
 // MockVerifier implements a mock LLM verifier for testing

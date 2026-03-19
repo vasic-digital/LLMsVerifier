@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/enhanced/analytics"
-	contextmanager "llm-verifier/enhanced/context"
-	"llm-verifier/enhanced/supervisor"
+	"digital.vasic.llmsverifier/enhanced/analytics"
+	contextmanager "digital.vasic.llmsverifier/enhanced/context"
+	"digital.vasic.llmsverifier/enhanced/supervisor"
 )
 
 // TestSystemConfiguration performs system-level configuration tests

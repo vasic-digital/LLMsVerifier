@@ -8,7 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"llm-verifier/client"
+	"digital.vasic.llmsverifier/client"
 )
 
 type tickMsg time.Time

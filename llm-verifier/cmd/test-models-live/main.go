@@ -4,7 +4,7 @@ import (
     "context"
     "fmt"
     "time"
-    "llm-verifier/client"
+    "digital.vasic.llmsverifier/client"
 )
 
 func main() {

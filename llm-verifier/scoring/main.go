@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"llm-verifier/database"
-	"llm-verifier/logging"
+	"digital.vasic.llmsverifier/database"
+	"digital.vasic.llmsverifier/logging"
 )
 
 // ScoringService provides the main interface for the scoring system

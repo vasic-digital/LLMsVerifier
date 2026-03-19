@@ -6,9 +6,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"llm-verifier/api"
-	"llm-verifier/config"
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/api"
+	"digital.vasic.llmsverifier/config"
+	"digital.vasic.llmsverifier/database"
 )
 
 // TestIntegrationSuite runs comprehensive integration tests

@@ -11,7 +11,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
-	"llm-verifier/config"
+	"digital.vasic.llmsverifier/config"
 )
 
 // LoadConfig loads the configuration from a YAML file with validation and advanced features

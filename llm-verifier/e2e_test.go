@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/api"
-	"llm-verifier/config"
-	"llm-verifier/llmverifier"
+	"digital.vasic.llmsverifier/api"
+	"digital.vasic.llmsverifier/config"
+	"digital.vasic.llmsverifier/llmverifier"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

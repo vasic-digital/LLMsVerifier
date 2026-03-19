@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/config"
-	"llm-verifier/llmverifier"
+	"digital.vasic.llmsverifier/config"
+	"digital.vasic.llmsverifier/llmverifier"
 )
 
 // End-to-end tests for the LLM verifier

@@ -6,8 +6,8 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"llm-verifier/client"
-	"llm-verifier/tui"
+	"digital.vasic.llmsverifier/client"
+	"digital.vasic.llmsverifier/tui"
 )
 
 func main() {

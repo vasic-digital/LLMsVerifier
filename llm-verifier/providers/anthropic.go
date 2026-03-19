@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"llm-verifier/auth"
+	"digital.vasic.llmsverifier/auth"
 )
 
 // AuthType represents the type of authentication used

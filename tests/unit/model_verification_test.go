@@ -9,8 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"llm-verifier/providers"
-	"llm-verifier/verification"
+	"digital.vasic.llmsverifier/providers"
+	"digital.vasic.llmsverifier/verification"
 )
 
 // TestModelVerification_ValidModel tests verification of a valid model

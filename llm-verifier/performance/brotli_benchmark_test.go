@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/client"
+	"digital.vasic.llmsverifier/client"
 )
 
 func TestBrotliBenchmark(t *testing.T) {

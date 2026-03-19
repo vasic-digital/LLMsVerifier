@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // PricingDetector detects pricing information for different providers

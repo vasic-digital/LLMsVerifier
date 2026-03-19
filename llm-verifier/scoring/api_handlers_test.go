@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"llm-verifier/logging"
+	"digital.vasic.llmsverifier/logging"
 )
 
 func init() {

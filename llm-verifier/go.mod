@@ -1,4 +1,4 @@
-module llm-verifier
+module digital.vasic.llmsverifier
 
 go 1.24.0
 

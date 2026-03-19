@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/llmverifier"
+	"digital.vasic.llmsverifier/llmverifier"
 )
 
 func TestDetectProvider(t *testing.T) {

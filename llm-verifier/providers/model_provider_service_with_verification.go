@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"llm-verifier/client"
-	"llm-verifier/logging"
+	"digital.vasic.llmsverifier/client"
+	"digital.vasic.llmsverifier/logging"
 )
 
 // EnhancedModelProviderService extends ModelProviderService with mandatory verification

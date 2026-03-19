@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 func TestNewScoringDatabaseExtensions(t *testing.T) {

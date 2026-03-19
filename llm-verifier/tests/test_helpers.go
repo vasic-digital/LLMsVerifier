@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"llm-verifier/config"
-	"llm-verifier/database"
-	"llm-verifier/llmverifier"
+	"digital.vasic.llmsverifier/config"
+	"digital.vasic.llmsverifier/database"
+	"digital.vasic.llmsverifier/llmverifier"
 )
 
 // TestHelper provides common test utilities

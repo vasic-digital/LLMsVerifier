@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // HealthHandler handles health check requests

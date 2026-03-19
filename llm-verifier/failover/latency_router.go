@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 var (

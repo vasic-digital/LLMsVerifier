@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	ctxt "llm-verifier/enhanced/context"
+	ctxt "digital.vasic.llmsverifier/enhanced/context"
 )
 
 // LLMRequest represents a request to an LLM

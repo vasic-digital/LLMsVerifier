@@ -10,9 +10,9 @@ import (
 	"strings"
 	_ "time"
 
-	"llm-verifier/logging"
-	"llm-verifier/providers"
-	"llm-verifier/scoring"
+	"digital.vasic.llmsverifier/logging"
+	"digital.vasic.llmsverifier/providers"
+	"digital.vasic.llmsverifier/scoring"
 )
 
 func main() {

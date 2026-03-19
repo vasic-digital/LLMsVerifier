@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 func TestNewIssueManager(t *testing.T) {

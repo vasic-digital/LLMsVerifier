@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	ctxt "llm-verifier/enhanced/context"
-	llmverifier "llm-verifier/llmverifier"
+	ctxt "digital.vasic.llmsverifier/enhanced/context"
+	llmverifier "digital.vasic.llmsverifier/llmverifier"
 )
 
 // ContextManager coordinates short-term and long-term context management

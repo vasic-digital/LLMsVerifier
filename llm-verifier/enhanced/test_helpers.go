@@ -3,7 +3,7 @@ package enhanced
 import (
 	"time"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // MockDatabase is a mock implementation of the database for testing

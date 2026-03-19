@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
-	"llm-verifier/config"
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/config"
+	"digital.vasic.llmsverifier/database"
 )
 
 // FeatureSuffixes contains all valid feature suffixes for verified models

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	llmverifier "llm-verifier/llmverifier"
+	llmverifier "digital.vasic.llmsverifier/llmverifier"
 )
 
 // VerifierInterface defines the interface for LLM verifiers

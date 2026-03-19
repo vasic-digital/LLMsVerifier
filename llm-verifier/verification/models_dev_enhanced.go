@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"llm-verifier/logging"
+	"digital.vasic.llmsverifier/logging"
 )
 
 // EnhancedModelsDevClient is a production-ready client for models.dev API

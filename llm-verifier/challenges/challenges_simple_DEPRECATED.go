@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // Challenge interface

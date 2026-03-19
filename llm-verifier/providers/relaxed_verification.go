@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"llm-verifier/logging"
+	"digital.vasic.llmsverifier/logging"
 )
 
 // RelaxedVerificationService provides relaxed model verification

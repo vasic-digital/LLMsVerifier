@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"llm-verifier/database"
-	llmverifier "llm-verifier/llmverifier"
+	"digital.vasic.llmsverifier/database"
+	llmverifier "digital.vasic.llmsverifier/llmverifier"
 )
 
 // SupervisorConfig holds configuration for the supervisor

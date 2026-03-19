@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // ScheduleType represents the type of scheduling

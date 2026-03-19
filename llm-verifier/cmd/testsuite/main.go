@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"llm-verifier/testsuite"
+	"digital.vasic.llmsverifier/testsuite"
 )
 
 func main() {

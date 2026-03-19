@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"llm-verifier/config"
-	"llm-verifier/events"
+	"digital.vasic.llmsverifier/config"
+	"digital.vasic.llmsverifier/events"
 )
 
 // NotificationType represents the type of notification channel

@@ -11,7 +11,7 @@ import (
 
 	"github.com/andybalholm/brotli"
 	"github.com/quic-go/quic-go/http3"
-	"llm-verifier/logging"
+	"digital.vasic.llmsverifier/logging"
 )
 
 // ModelsDevClient handles API calls to models.dev with HTTP/3 and Brotli support

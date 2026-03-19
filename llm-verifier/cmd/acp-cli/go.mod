@@ -1,12 +1,12 @@
-module llm-verifier/cmd/acp-cli
+module digital.vasic.llmsverifier/cmd/acp-cli
 
 go 1.25.2
 
-replace llm-verifier => ../../
+replace digital.vasic.llmsverifier => ../../
 
 require (
 	github.com/spf13/cobra v1.10.2
-	llm-verifier v0.0.0-00010101000000-000000000000
+	digital.vasic.llmsverifier v0.0.0-00010101000000-000000000000
 )
 
 require (

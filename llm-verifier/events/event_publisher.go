@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // EventPublisher provides high-level event publishing functions

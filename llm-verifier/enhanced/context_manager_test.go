@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"llm-verifier/llmverifier"
+	"digital.vasic.llmsverifier/llmverifier"
 )
 
 func TestNewContextManager(t *testing.T) {

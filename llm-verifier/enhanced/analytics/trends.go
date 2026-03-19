@@ -4,7 +4,7 @@ import (
 	"math"
 	"time"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // TrendAnalyzer analyzes trends in verification data

@@ -9,8 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"llm-verifier/database"
-	"llm-verifier/logging"
+	"digital.vasic.llmsverifier/database"
+	"digital.vasic.llmsverifier/logging"
 )
 
 // MockProviderService implements ProviderServiceInterface for testing

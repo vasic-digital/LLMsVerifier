@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"llm-verifier/config"
+	"digital.vasic.llmsverifier/config"
 )
 
 // Verifier is responsible for verifying LLMs

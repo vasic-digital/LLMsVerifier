@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"llm-verifier/client"
-	"llm-verifier/database"
-	"llm-verifier/logging"
-	"llm-verifier/providers"
-	"llm-verifier/verification"
+	"digital.vasic.llmsverifier/client"
+	"digital.vasic.llmsverifier/database"
+	"digital.vasic.llmsverifier/logging"
+	"digital.vasic.llmsverifier/providers"
+	"digital.vasic.llmsverifier/verification"
 )
 
 // Configuration for the verification run

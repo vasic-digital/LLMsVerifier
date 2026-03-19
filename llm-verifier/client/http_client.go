@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"llm-verifier/monitoring"
+	"digital.vasic.llmsverifier/monitoring"
 )
 
 // HTTPClient represents an HTTP client for making LLM API requests

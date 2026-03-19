@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // IssueManager manages issues and problems with LLM models

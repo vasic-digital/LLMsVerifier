@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	opencodeConfig "llm-verifier/pkg/opencode/config"
+	opencodeConfig "digital.vasic.llmsverifier/pkg/opencode/config"
 )
 
 func TestConfiguration_LoadFromFile(t *testing.T) {

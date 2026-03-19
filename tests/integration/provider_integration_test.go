@@ -15,8 +15,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"llm-verifier/config"
-	"llm-verifier/providers"
+	"digital.vasic.llmsverifier/config"
+	"digital.vasic.llmsverifier/providers"
 )
 
 // Silence unused import warning

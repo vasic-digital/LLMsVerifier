@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"llm-verifier/logging"
+	"digital.vasic.llmsverifier/logging"
 )
 
 // ExampleIntegration demonstrates how to integrate the mandatory verification system

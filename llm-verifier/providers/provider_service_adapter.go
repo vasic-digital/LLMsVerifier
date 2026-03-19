@@ -1,6 +1,6 @@
 package providers
 
-import "llm-verifier/verification"
+import "digital.vasic.llmsverifier/verification"
 
 // ProviderServiceAdapter adapts ModelProviderService to ProviderServiceInterface
 type ProviderServiceAdapter struct {

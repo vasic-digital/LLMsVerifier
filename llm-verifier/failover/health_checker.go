@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"llm-verifier/database"
+	"digital.vasic.llmsverifier/database"
 )
 
 // HealthChecker monitors provider health and updates circuit breakers

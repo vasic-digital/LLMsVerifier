@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"llm-verifier/logging"
+	"digital.vasic.llmsverifier/logging"
 )
 
 // ScoringMonitor handles monitoring and alerting for the scoring system

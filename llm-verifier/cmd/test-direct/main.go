@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"llm-verifier/llmverifier"
+	"digital.vasic.llmsverifier/llmverifier"
 )
 
 func main() {

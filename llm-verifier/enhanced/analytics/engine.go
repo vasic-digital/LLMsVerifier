@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	enhancedContext "llm-verifier/enhanced/context"
+	enhancedContext "digital.vasic.llmsverifier/enhanced/context"
 )
 
 // MetricType represents different types of metrics

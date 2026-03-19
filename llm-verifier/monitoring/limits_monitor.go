@@ -5,8 +5,8 @@ import (
 	"log"
 	"time"
 
-	"llm-verifier/database"
-	"llm-verifier/events"
+	"digital.vasic.llmsverifier/database"
+	"digital.vasic.llmsverifier/events"
 )
 
 // LimitsMonitor monitors usage against configured limits and triggers alerts
