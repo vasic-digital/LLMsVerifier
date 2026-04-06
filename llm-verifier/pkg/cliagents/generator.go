@@ -128,6 +128,11 @@ type GeneratorConfig struct {
 	HelixAgentHost string
 	HelixAgentPort int
 
+	// HelixLLM endpoint configuration (direct LLM access with RAG/agents)
+	HelixLLMHost   string
+	HelixLLMPort   int
+	HelixLLMAPIKey string
+
 	// Output directory for generated configs
 	OutputDir string
 
@@ -449,7 +454,27 @@ func DefaultMCPServersForHost(host string, port int) []MCPServerConfig {
 
 // DefaultMCPServersCount returns the total number of default MCP servers
 func DefaultMCPServersCount() int {
-	return 18 // 6 HelixAgent + 3 extended + 6 npx local + 3 free remote
+	return 25 // 6 HelixAgent + 3 extended + 7 HelixLLM + 6 npx local + 3 free remote
+}
+
+// HelixLLMMCPServers returns MCP server entries for HelixLLM endpoints
+func HelixLLMMCPServers(host string, port int) []MCPServerConfig {
+	if host == "" {
+		host = "localhost"
+	}
+	if port == 0 {
+		port = 8443
+	}
+	baseURL := fmt.Sprintf("http://%s:%d", host, port)
+	return []MCPServerConfig{
+		{Name: "helixllm-chat", Type: "remote", URL: baseURL + "/v1/chat/completions"},
+		{Name: "helixllm-embeddings", Type: "remote", URL: baseURL + "/v1/embeddings"},
+		{Name: "helixllm-models", Type: "remote", URL: baseURL + "/v1/models"},
+		{Name: "helixllm-agents", Type: "remote", URL: baseURL + "/v1/agents/chat"},
+		{Name: "helixllm-agents-tools", Type: "remote", URL: baseURL + "/v1/agents/tools"},
+		{Name: "helixllm-knowledge", Type: "remote", URL: baseURL + "/internal/knowledge/query"},
+		{Name: "helixllm-health", Type: "remote", URL: baseURL + "/internal/health"},
+	}
 }
 
 // ContainerizedMCPServers returns MCP servers running as Docker containers

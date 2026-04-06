@@ -11,18 +11,19 @@ import (
 
 // HelixCodeConfig represents the configuration for HelixCode CLI
 type HelixCodeConfig struct {
-	Schema      string                       `json:"$schema,omitempty"`
-	Version     string                       `json:"version,omitempty"`
-	Provider    HelixCodeProviderConfig      `json:"provider"`
-	Models      []HelixCodeModelDef          `json:"models,omitempty"`
-	MCP         map[string]HelixCodeMCP      `json:"mcp,omitempty"`
-	Plugins     []string                     `json:"plugins,omitempty"`
-	Agents      map[string]HelixCodeAgent    `json:"agents,omitempty"`
-	Tools       HelixCodeTools               `json:"tools,omitempty"`
-	Permissions HelixCodePermissions         `json:"permissions,omitempty"`
-	Settings    HelixCodeSettings            `json:"settings,omitempty"`
-	Extensions  *HelixAgentExtensions        `json:"extensions,omitempty"`
-	Formatters  FormattersConfig             `json:"formatters,omitempty"`
+	Schema              string                                `json:"$schema,omitempty"`
+	Version             string                                `json:"version,omitempty"`
+	Provider            HelixCodeProviderConfig               `json:"provider"`
+	AdditionalProviders map[string]HelixCodeProviderConfig    `json:"additional_providers,omitempty"`
+	Models              []HelixCodeModelDef                   `json:"models,omitempty"`
+	MCP                 map[string]HelixCodeMCP               `json:"mcp,omitempty"`
+	Plugins             []string                              `json:"plugins,omitempty"`
+	Agents              map[string]HelixCodeAgent             `json:"agents,omitempty"`
+	Tools               HelixCodeTools                        `json:"tools,omitempty"`
+	Permissions         HelixCodePermissions                  `json:"permissions,omitempty"`
+	Settings            HelixCodeSettings                     `json:"settings,omitempty"`
+	Extensions          *HelixAgentExtensions                 `json:"extensions,omitempty"`
+	Formatters          FormattersConfig                      `json:"formatters,omitempty"`
 }
 
 // HelixCodeProviderConfig represents the provider configuration
@@ -168,6 +169,29 @@ func (g *HelixCodeGenerator) Generate(ctx context.Context, config *GeneratorConf
 		},
 	}
 
+	// Configure HelixLLM as additional provider
+	helixLLMHost := config.HelixLLMHost
+	if helixLLMHost == "" {
+		helixLLMHost = "localhost"
+	}
+	helixLLMPort := config.HelixLLMPort
+	if helixLLMPort == 0 {
+		helixLLMPort = 8443
+	}
+	helixLLMBaseURL := fmt.Sprintf("http://%s:%d/v1", helixLLMHost, helixLLMPort)
+	helixConfig.AdditionalProviders = map[string]HelixCodeProviderConfig{
+		"helixllm": {
+			Type:    "openai-compatible",
+			BaseURL: helixLLMBaseURL,
+			APIKey:  config.HelixLLMAPIKey,
+			Options: HelixCodeProviderOptions{
+				Timeout:    120,
+				MaxRetries: 3,
+				EnableSSE:  true,
+			},
+		},
+	}
+
 	// Configure models
 	helixConfig.Models = []HelixCodeModelDef{
 		{
@@ -184,6 +208,21 @@ func (g *HelixCodeGenerator) Generate(ctx context.Context, config *GeneratorConf
 				WebSearch:     true,
 			},
 			Protocols: []string{"mcp", "acp", "lsp"},
+		},
+		{
+			ID:        "helixllm-default",
+			Name:      "HelixLLM Default",
+			MaxTokens: 128000,
+			Capabilities: HelixCodeCapabilities{
+				Vision:        true,
+				Streaming:     true,
+				FunctionCalls: true,
+				Embeddings:    true,
+				CodeExec:      true,
+				FileOps:       true,
+				WebSearch:     true,
+			},
+			Protocols: []string{"openai-compatible"},
 		},
 	}
 

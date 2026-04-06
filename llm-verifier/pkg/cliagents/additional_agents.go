@@ -11,14 +11,15 @@ import (
 
 // GenericAgentConfig represents a generic configuration for various CLI agents
 type GenericAgentConfig struct {
-	Version    string                 `json:"version,omitempty"`
-	Provider   GenericProviderConfig  `json:"provider"`
-	Models     []GenericModelDef      `json:"models,omitempty"`
-	MCP        map[string]GenericMCP  `json:"mcp,omitempty"`
-	Plugins    []string               `json:"plugins,omitempty"`
-	Extensions *HelixAgentExtensions  `json:"extensions,omitempty"`
-	Settings   map[string]interface{} `json:"settings,omitempty"`
-	Formatters FormattersConfig       `json:"formatters,omitempty"`
+	Version    string                            `json:"version,omitempty"`
+	Provider   GenericProviderConfig             `json:"provider"`
+	Providers  map[string]GenericProviderConfig  `json:"providers,omitempty"`
+	Models     []GenericModelDef                 `json:"models,omitempty"`
+	MCP        map[string]GenericMCP             `json:"mcp,omitempty"`
+	Plugins    []string                          `json:"plugins,omitempty"`
+	Extensions *HelixAgentExtensions             `json:"extensions,omitempty"`
+	Settings   map[string]interface{}            `json:"settings,omitempty"`
+	Formatters FormattersConfig                  `json:"formatters,omitempty"`
 }
 
 // GenericProviderConfig represents a generic provider configuration
@@ -834,6 +835,31 @@ func (g *GenericAgentGenerator) Generate(ctx context.Context, config *GeneratorC
 		APIKey:  apiKey,
 	}
 
+	// Add HelixLLM as additional provider (direct LLM access with RAG/agents)
+	helixLLMHost := config.HelixLLMHost
+	if helixLLMHost == "" {
+		helixLLMHost = "localhost"
+	}
+	helixLLMPort := config.HelixLLMPort
+	if helixLLMPort == 0 {
+		helixLLMPort = 8443
+	}
+	helixLLMBaseURL := fmt.Sprintf("http://%s:%d/v1", helixLLMHost, helixLLMPort)
+	agentConfig.Providers = map[string]GenericProviderConfig{
+		"helixagent": {
+			Type:    "openai-compatible",
+			Name:    "helixagent",
+			BaseURL: baseURL,
+			APIKey:  apiKey,
+		},
+		"helixllm": {
+			Type:    "openai-compatible",
+			Name:    "helixllm",
+			BaseURL: helixLLMBaseURL,
+			APIKey:  config.HelixLLMAPIKey,
+		},
+	}
+
 	// Configure models
 	agentConfig.Models = []GenericModelDef{
 		{
@@ -843,6 +869,15 @@ func (g *GenericAgentGenerator) Generate(ctx context.Context, config *GeneratorC
 			Capabilities: []string{
 				"vision", "streaming", "function_calls", "embeddings",
 				"mcp", "acp", "lsp", "code_execution", "rag",
+			},
+		},
+		{
+			ID:        "helixllm-default",
+			Name:      "HelixLLM Default",
+			MaxTokens: 128000,
+			Capabilities: []string{
+				"vision", "streaming", "function_calls", "embeddings",
+				"rag", "agents", "knowledge",
 			},
 		},
 	}

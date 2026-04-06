@@ -11,15 +11,16 @@ import (
 
 // KiloCodeConfig represents the configuration for KiloCode VS Code extension
 type KiloCodeConfig struct {
-	Version    string                      `json:"version,omitempty"`
-	Provider   KiloCodeProviderConfig      `json:"provider"`
-	Models     []KiloCodeModelDef          `json:"models,omitempty"`
-	MCP        map[string]KiloCodeMCP      `json:"mcpServers,omitempty"`
-	Plugins    []string                    `json:"plugins,omitempty"`
-	Agents     []KiloCodeAgent             `json:"agents,omitempty"`
-	Settings   KiloCodeSettings            `json:"settings,omitempty"`
-	Extensions *HelixAgentExtensions       `json:"extensions,omitempty"`
-	Formatters FormattersConfig            `json:"formatters,omitempty"`
+	Version             string                             `json:"version,omitempty"`
+	Provider            KiloCodeProviderConfig             `json:"provider"`
+	AdditionalProviders map[string]KiloCodeProviderConfig  `json:"additionalProviders,omitempty"`
+	Models              []KiloCodeModelDef                 `json:"models,omitempty"`
+	MCP                 map[string]KiloCodeMCP             `json:"mcpServers,omitempty"`
+	Plugins             []string                           `json:"plugins,omitempty"`
+	Agents              []KiloCodeAgent                    `json:"agents,omitempty"`
+	Settings            KiloCodeSettings                   `json:"settings,omitempty"`
+	Extensions          *HelixAgentExtensions              `json:"extensions,omitempty"`
+	Formatters          FormattersConfig                   `json:"formatters,omitempty"`
 }
 
 // KiloCodeProviderConfig represents the provider configuration
@@ -121,6 +122,26 @@ func (g *KiloCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 		APIKey:  apiKey,
 	}
 
+	// Configure HelixLLM endpoint
+	helixLLMHost := config.HelixLLMHost
+	if helixLLMHost == "" {
+		helixLLMHost = "localhost"
+	}
+	helixLLMPort := config.HelixLLMPort
+	if helixLLMPort == 0 {
+		helixLLMPort = 8443
+	}
+	helixLLMBaseURL := fmt.Sprintf("http://%s:%d/v1", helixLLMHost, helixLLMPort)
+
+	// Configure additional providers
+	kiloConfig.AdditionalProviders = map[string]KiloCodeProviderConfig{
+		"helixllm": {
+			Type:    "openai-compatible",
+			BaseURL: helixLLMBaseURL,
+			APIKey:  config.HelixLLMAPIKey,
+		},
+	}
+
 	// Configure models
 	kiloConfig.Models = []KiloCodeModelDef{
 		{
@@ -128,6 +149,18 @@ func (g *KiloCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 			Name:            "HelixAgent AI Debate Ensemble",
 			MaxInputTokens:  128000,
 			MaxOutputTokens: 16384,
+			Capabilities: KiloCapabilities{
+				Streaming:     true,
+				Vision:        true,
+				FunctionCalls: true,
+				Embeddings:    true,
+			},
+		},
+		{
+			ID:              "helixllm-default",
+			Name:            "HelixLLM Default",
+			MaxInputTokens:  128000,
+			MaxOutputTokens: 8192,
 			Capabilities: KiloCapabilities{
 				Streaming:     true,
 				Vision:        true,

@@ -69,6 +69,17 @@ func (g *CrushGenerator) Generate(ctx context.Context, config *GeneratorConfig) 
 
 	baseURL := fmt.Sprintf("http://%s:%d/v1", config.HelixAgentHost, config.HelixAgentPort)
 
+	// Configure HelixLLM endpoint
+	helixLLMHost := config.HelixLLMHost
+	if helixLLMHost == "" {
+		helixLLMHost = "localhost"
+	}
+	helixLLMPort := config.HelixLLMPort
+	if helixLLMPort == 0 {
+		helixLLMPort = 8443
+	}
+	helixLLMBaseURL := fmt.Sprintf("http://%s:%d/v1", helixLLMHost, helixLLMPort)
+
 	// Configure providers (map by provider ID)
 	crushConfig.Providers = map[string]crush_config.ProviderConfig{
 		"helixagent": {
@@ -81,6 +92,30 @@ func (g *CrushGenerator) Generate(ctx context.Context, config *GeneratorConfig) 
 				{
 					ID:                  "helixagent-debate",
 					Name:                "HelixAgent AI Debate Ensemble",
+					CostPer1MIn:         0,
+					CostPer1MOut:        0,
+					CostPer1MInCached:   0,
+					CostPer1MOutCached:  0,
+					ContextWindow:       128000,
+					DefaultMaxTokens:    8192,
+					CanReason:           true,
+					SupportsAttachments: true,
+					Options: &crush_config.ModelOptions{
+						Temperature: 0.7,
+					},
+				},
+			},
+		},
+		"helixllm": {
+			ID:      "helixllm",
+			Name:    "HelixLLM",
+			Type:    "openai-compat",
+			BaseURL: helixLLMBaseURL,
+			APIKey:  config.HelixLLMAPIKey,
+			Models: []crush_config.Model{
+				{
+					ID:                  "helixllm-default",
+					Name:                "HelixLLM Default",
 					CostPer1MIn:         0,
 					CostPer1MOut:        0,
 					CostPer1MInCached:   0,
