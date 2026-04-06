@@ -844,7 +844,7 @@ func (g *GenericAgentGenerator) Generate(ctx context.Context, config *GeneratorC
 	if helixLLMPort == 0 {
 		helixLLMPort = 8443
 	}
-	helixLLMBaseURL := fmt.Sprintf("http://%s:%d/v1", helixLLMHost, helixLLMPort)
+	helixLLMBaseURL := fmt.Sprintf("https://%s:%d/v1", helixLLMHost, helixLLMPort)
 	agentConfig.Providers = map[string]GenericProviderConfig{
 		"helixagent": {
 			Type:    "openai-compatible",

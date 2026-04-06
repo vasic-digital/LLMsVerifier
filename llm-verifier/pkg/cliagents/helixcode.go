@@ -178,7 +178,7 @@ func (g *HelixCodeGenerator) Generate(ctx context.Context, config *GeneratorConf
 	if helixLLMPort == 0 {
 		helixLLMPort = 8443
 	}
-	helixLLMBaseURL := fmt.Sprintf("http://%s:%d/v1", helixLLMHost, helixLLMPort)
+	helixLLMBaseURL := fmt.Sprintf("https://%s:%d/v1", helixLLMHost, helixLLMPort)
 	helixConfig.AdditionalProviders = map[string]HelixCodeProviderConfig{
 		"helixllm": {
 			Type:    "openai-compatible",

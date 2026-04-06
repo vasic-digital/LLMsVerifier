@@ -131,7 +131,7 @@ func (g *KiloCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 	if helixLLMPort == 0 {
 		helixLLMPort = 8443
 	}
-	helixLLMBaseURL := fmt.Sprintf("http://%s:%d/v1", helixLLMHost, helixLLMPort)
+	helixLLMBaseURL := fmt.Sprintf("https://%s:%d/v1", helixLLMHost, helixLLMPort)
 
 	// Configure additional providers
 	kiloConfig.AdditionalProviders = map[string]KiloCodeProviderConfig{
