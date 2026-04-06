@@ -454,27 +454,18 @@ func DefaultMCPServersForHost(host string, port int) []MCPServerConfig {
 
 // DefaultMCPServersCount returns the total number of default MCP servers
 func DefaultMCPServersCount() int {
-	return 25 // 6 HelixAgent + 3 extended + 7 HelixLLM + 6 npx local + 3 free remote
+	return 18 // 6 HelixAgent + 3 extended + 6 npx local + 3 free remote
 }
 
-// HelixLLMMCPServers returns MCP server entries for HelixLLM endpoints
+// HelixLLMMCPServers returns MCP server entries for HelixLLM endpoints.
+// NOTE: HelixLLM exposes REST API endpoints, NOT MCP protocol servers.
+// These endpoints do not speak JSON-RPC over SSE, so they MUST NOT be
+// registered as remote MCPs in CLI agents like OpenCode — doing so causes
+// the agent to hang on startup waiting for an MCP handshake that never comes.
+// HelixLLM is accessed via the "helixllm" provider entry instead.
+// This function returns an empty slice; kept for backward compatibility.
 func HelixLLMMCPServers(host string, port int) []MCPServerConfig {
-	if host == "" {
-		host = "localhost"
-	}
-	if port == 0 {
-		port = 8443
-	}
-	baseURL := fmt.Sprintf("http://%s:%d", host, port)
-	return []MCPServerConfig{
-		{Name: "helixllm-chat", Type: "remote", URL: baseURL + "/v1/chat/completions"},
-		{Name: "helixllm-embeddings", Type: "remote", URL: baseURL + "/v1/embeddings"},
-		{Name: "helixllm-models", Type: "remote", URL: baseURL + "/v1/models"},
-		{Name: "helixllm-agents", Type: "remote", URL: baseURL + "/v1/agents/chat"},
-		{Name: "helixllm-agents-tools", Type: "remote", URL: baseURL + "/v1/agents/tools"},
-		{Name: "helixllm-knowledge", Type: "remote", URL: baseURL + "/internal/knowledge/query"},
-		{Name: "helixllm-health", Type: "remote", URL: baseURL + "/internal/health"},
-	}
+	return nil
 }
 
 // ContainerizedMCPServers returns MCP servers running as Docker containers
