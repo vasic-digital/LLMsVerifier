@@ -872,8 +872,8 @@ func (g *GenericAgentGenerator) Generate(ctx context.Context, config *GeneratorC
 			},
 		},
 		{
-			ID:        "helixllm-default",
-			Name:      "HelixLLM Default",
+			ID:        "deepseek-chat",
+			Name:      "HelixLLM with DeepSeek Chat",
 			MaxTokens: 128000,
 			Capabilities: []string{
 				"vision", "streaming", "function_calls", "embeddings",

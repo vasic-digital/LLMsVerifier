@@ -114,8 +114,8 @@ func (g *CrushGenerator) Generate(ctx context.Context, config *GeneratorConfig) 
 			APIKey:  config.HelixLLMAPIKey,
 			Models: []crush_config.Model{
 				{
-					ID:                  "helixllm-default",
-					Name:                "HelixLLM Default",
+					ID:                  "deepseek-chat",
+					Name:                "HelixLLM with DeepSeek Chat",
 					CostPer1MIn:         0,
 					CostPer1MOut:        0,
 					CostPer1MInCached:   0,

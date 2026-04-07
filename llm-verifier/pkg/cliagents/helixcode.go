@@ -210,8 +210,8 @@ func (g *HelixCodeGenerator) Generate(ctx context.Context, config *GeneratorConf
 			Protocols: []string{"mcp", "acp", "lsp"},
 		},
 		{
-			ID:        "helixllm-default",
-			Name:      "HelixLLM Default",
+			ID:        "deepseek-chat",
+			Name:      "HelixLLM with DeepSeek Chat",
 			MaxTokens: 128000,
 			Capabilities: HelixCodeCapabilities{
 				Vision:        true,
