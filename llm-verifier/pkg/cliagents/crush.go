@@ -115,7 +115,7 @@ func (g *CrushGenerator) Generate(ctx context.Context, config *GeneratorConfig) 
 			Models: []crush_config.Model{
 				{
 					ID:                  "deepseek-chat",
-					Name:                "HelixLLM with DeepSeek Chat",
+					Name:                "HelixLLM",
 					CostPer1MIn:         0,
 					CostPer1MOut:        0,
 					CostPer1MInCached:   0,

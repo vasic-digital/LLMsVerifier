@@ -211,7 +211,7 @@ func (g *HelixCodeGenerator) Generate(ctx context.Context, config *GeneratorConf
 		},
 		{
 			ID:        "deepseek-chat",
-			Name:      "HelixLLM with DeepSeek Chat",
+			Name:      "HelixLLM",
 			MaxTokens: 128000,
 			Capabilities: HelixCodeCapabilities{
 				Vision:        true,

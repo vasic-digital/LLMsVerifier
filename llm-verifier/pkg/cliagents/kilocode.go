@@ -158,7 +158,7 @@ func (g *KiloCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 		},
 		{
 			ID:              "deepseek-chat",
-			Name:            "HelixLLM with DeepSeek Chat",
+			Name:            "HelixLLM",
 			MaxInputTokens:  128000,
 			MaxOutputTokens: 8192,
 			Capabilities: KiloCapabilities{
