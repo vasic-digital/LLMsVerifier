@@ -125,7 +125,7 @@ func NewOpenCodeGenerator() *OpenCodeGenerator {
 				"permission", "settings", "keybinds", "command", "tui",
 			},
 			RequiredFields: []string{"provider"},
-			Description:    "OpenCode.ai CLI - AI-powered coding assistant",
+			Description:    "OpenCode.ai CLI - AI-powered coding assistant powered by Helix Agent",
 		},
 	}
 }

@@ -828,36 +828,15 @@ func (g *GenericAgentGenerator) Generate(ctx context.Context, config *GeneratorC
 	if apiKey == "" {
 		apiKey = "<YOUR_HELIXAGENT_API_KEY>"
 	}
+
+	// Single "Helix Agent" provider with TWO models:
+	// - helix-debate: Helix AI Debate Ensemble (for coder, summarizer)
+	// - helix-llm: Helix LLM (for task, title - with provider chain fallback)
 	agentConfig.Provider = GenericProviderConfig{
 		Type:    "openai-compatible",
-		Name:    "helixagent",
+		Name:    "Helix Agent",
 		BaseURL: baseURL,
 		APIKey:  apiKey,
-	}
-
-	// Add HelixLLM as additional provider (direct LLM access with RAG/agents)
-	helixLLMHost := config.HelixLLMHost
-	if helixLLMHost == "" {
-		helixLLMHost = "localhost"
-	}
-	helixLLMPort := config.HelixLLMPort
-	if helixLLMPort == 0 {
-		helixLLMPort = 8443
-	}
-	helixLLMBaseURL := fmt.Sprintf("https://%s:%d/v1", helixLLMHost, helixLLMPort)
-	agentConfig.Providers = map[string]GenericProviderConfig{
-		"helixagent": {
-			Type:    "openai-compatible",
-			Name:    "helixagent",
-			BaseURL: baseURL,
-			APIKey:  apiKey,
-		},
-		"helixllm": {
-			Type:    "openai-compatible",
-			Name:    "helixllm",
-			BaseURL: helixLLMBaseURL,
-			APIKey:  config.HelixLLMAPIKey,
-		},
 	}
 
 	// Configure models

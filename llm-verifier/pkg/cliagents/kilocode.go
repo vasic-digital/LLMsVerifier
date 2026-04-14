@@ -116,30 +116,14 @@ func (g *KiloCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 	if apiKey == "" {
 		apiKey = "<YOUR_HELIXAGENT_API_KEY>"
 	}
+
+	// Single "Helix Agent" provider with TWO models:
+	// - helix-debate: Helix AI Debate Ensemble (for coder, summarizer)
+	// - helix-llm: Helix LLM (for task, title - with provider chain fallback)
 	kiloConfig.Provider = KiloCodeProviderConfig{
 		Type:    "openai-compatible",
 		BaseURL: baseURL,
 		APIKey:  apiKey,
-	}
-
-	// Configure HelixLLM endpoint
-	helixLLMHost := config.HelixLLMHost
-	if helixLLMHost == "" {
-		helixLLMHost = "localhost"
-	}
-	helixLLMPort := config.HelixLLMPort
-	if helixLLMPort == 0 {
-		helixLLMPort = 8443
-	}
-	helixLLMBaseURL := fmt.Sprintf("https://%s:%d/v1", helixLLMHost, helixLLMPort)
-
-	// Configure additional providers
-	kiloConfig.AdditionalProviders = map[string]KiloCodeProviderConfig{
-		"helixllm": {
-			Type:    "openai-compatible",
-			BaseURL: helixLLMBaseURL,
-			APIKey:  config.HelixLLMAPIKey,
-		},
 	}
 
 	// Configure models
@@ -194,12 +178,25 @@ func (g *KiloCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 	kiloConfig.Plugins = DefaultPlugins()
 
 	// Configure agents
+	// Agent routing: task/title → helix-llm, coder/summarizer → helix-debate
 	kiloConfig.Agents = []KiloCodeAgent{
 		{
 			Name:      "default",
 			Model:     "helix-debate",
 			Prompt:    "You are a helpful AI coding assistant integrated into VS Code.",
 			MaxTokens: 8192,
+		},
+		{
+			Name:      "coder",
+			Model:     "helix-debate",
+			Prompt:    "You are an expert software developer. Write clean, efficient, well-tested code.",
+			MaxTokens: 16384,
+		},
+		{
+			Name:      "summarizer",
+			Model:     "helix-debate",
+			Prompt:    "You are a summarization assistant. Create concise summaries of content.",
+			MaxTokens: 4096,
 		},
 		{
 			Name:      "completer",
@@ -212,6 +209,18 @@ func (g *KiloCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 			Model:     "helix-debate",
 			Prompt:    "Explain the selected code clearly and concisely.",
 			MaxTokens: 4096,
+		},
+		{
+			Name:      "task",
+			Model:     "helix-llm",
+			Prompt:    "Execute tasks efficiently with provider chain fallback for reliability.",
+			MaxTokens: 4096,
+		},
+		{
+			Name:      "title",
+			Model:     "helix-llm",
+			Prompt:    "Create concise, descriptive titles.",
+			MaxTokens: 80,
 		},
 	}
 

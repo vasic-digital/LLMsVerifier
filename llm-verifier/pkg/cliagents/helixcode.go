@@ -134,7 +134,7 @@ func NewHelixCodeGenerator() *HelixCodeGenerator {
 				"tools", "permissions", "settings",
 			},
 			RequiredFields: []string{"provider"},
-			Description:    "HelixCode CLI - Native CLI for HelixAgent AI Debate Ensemble",
+			Description:    "HelixCode CLI - Native CLI for HelixAgent with AI Debate Ensemble",
 		},
 	}
 }
@@ -158,6 +158,10 @@ func (g *HelixCodeGenerator) Generate(ctx context.Context, config *GeneratorConf
 	if apiKey == "" {
 		apiKey = "<YOUR_HELIXAGENT_API_KEY>"
 	}
+
+	// Single "Helix Agent" provider with TWO models:
+	// - helix-debate: Helix AI Debate Ensemble (for coder, summarizer)
+	// - helix-llm: Helix LLM (for task, title - with provider chain fallback)
 	helixConfig.Provider = HelixCodeProviderConfig{
 		Type:    "helixagent",
 		BaseURL: baseURL,
@@ -166,29 +170,6 @@ func (g *HelixCodeGenerator) Generate(ctx context.Context, config *GeneratorConf
 			Timeout:    120,
 			MaxRetries: 3,
 			EnableSSE:  true,
-		},
-	}
-
-	// Configure HelixLLM as additional provider
-	helixLLMHost := config.HelixLLMHost
-	if helixLLMHost == "" {
-		helixLLMHost = "localhost"
-	}
-	helixLLMPort := config.HelixLLMPort
-	if helixLLMPort == 0 {
-		helixLLMPort = 8443
-	}
-	helixLLMBaseURL := fmt.Sprintf("https://%s:%d/v1", helixLLMHost, helixLLMPort)
-	helixConfig.AdditionalProviders = map[string]HelixCodeProviderConfig{
-		"helixllm": {
-			Type:    "openai-compatible",
-			BaseURL: helixLLMBaseURL,
-			APIKey:  config.HelixLLMAPIKey,
-			Options: HelixCodeProviderOptions{
-				Timeout:    120,
-				MaxRetries: 3,
-				EnableSSE:  true,
-			},
 		},
 	}
 
@@ -247,6 +228,7 @@ func (g *HelixCodeGenerator) Generate(ctx context.Context, config *GeneratorConf
 	helixConfig.Plugins = DefaultPlugins()
 
 	// Configure agents
+	// Agent routing: task/title → helix-llm, coder/summarizer → helix-debate
 	helixConfig.Agents = map[string]HelixCodeAgent{
 		"default": {
 			Model:        "helix-debate",
@@ -275,6 +257,20 @@ func (g *HelixCodeGenerator) Generate(ctx context.Context, config *GeneratorConf
 			MaxTokens:    16384,
 			Temperature:  0.6,
 			Tools:        []string{"filesystem", "search", "browser"},
+		},
+		"task": {
+			Model:        "helix-llm",
+			SystemPrompt: "You are a task assistant. Execute tasks efficiently with provider chain fallback for reliability.",
+			MaxTokens:    4096,
+			Temperature:  0.7,
+			Tools:        []string{"filesystem", "terminal", "mcp"},
+		},
+		"title": {
+			Model:        "helix-llm",
+			SystemPrompt: "You are a title generator. Create concise, descriptive titles.",
+			MaxTokens:    80,
+			Temperature:  0.5,
+			Tools:        []string{"filesystem"},
 		},
 	}
 
