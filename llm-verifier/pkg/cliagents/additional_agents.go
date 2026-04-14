@@ -11,15 +11,15 @@ import (
 
 // GenericAgentConfig represents a generic configuration for various CLI agents
 type GenericAgentConfig struct {
-	Version    string                            `json:"version,omitempty"`
-	Provider   GenericProviderConfig             `json:"provider"`
-	Providers  map[string]GenericProviderConfig  `json:"providers,omitempty"`
-	Models     []GenericModelDef                 `json:"models,omitempty"`
-	MCP        map[string]GenericMCP             `json:"mcp,omitempty"`
-	Plugins    []string                          `json:"plugins,omitempty"`
-	Extensions *HelixAgentExtensions             `json:"extensions,omitempty"`
-	Settings   map[string]interface{}            `json:"settings,omitempty"`
-	Formatters FormattersConfig                  `json:"formatters,omitempty"`
+	Version    string                           `json:"version,omitempty"`
+	Provider   GenericProviderConfig            `json:"provider"`
+	Providers  map[string]GenericProviderConfig `json:"providers,omitempty"`
+	Models     []GenericModelDef                `json:"models,omitempty"`
+	MCP        map[string]GenericMCP            `json:"mcp,omitempty"`
+	Plugins    []string                         `json:"plugins,omitempty"`
+	Extensions *HelixAgentExtensions            `json:"extensions,omitempty"`
+	Settings   map[string]interface{}           `json:"settings,omitempty"`
+	Formatters FormattersConfig                 `json:"formatters,omitempty"`
 }
 
 // GenericProviderConfig represents a generic provider configuration
@@ -863,21 +863,21 @@ func (g *GenericAgentGenerator) Generate(ctx context.Context, config *GeneratorC
 	// Configure models
 	agentConfig.Models = []GenericModelDef{
 		{
-			ID:        "helixagent-debate",
-			Name:      "HelixAgent AI Debate Ensemble",
-			MaxTokens: 128000,
-			Capabilities: []string{
-				"vision", "streaming", "function_calls", "embeddings",
-				"mcp", "acp", "lsp", "code_execution", "rag",
-			},
-		},
-		{
-			ID:        "deepseek-chat",
-			Name:      "HelixLLM",
+			ID:        "helix-llm",
+			Name:      "Helix LLM",
 			MaxTokens: 128000,
 			Capabilities: []string{
 				"vision", "streaming", "function_calls", "embeddings",
 				"rag", "agents", "knowledge",
+			},
+		},
+		{
+			ID:        "helix-debate",
+			Name:      "Helix AI Debate Ensemble",
+			MaxTokens: 128000,
+			Capabilities: []string{
+				"vision", "streaming", "function_calls", "embeddings",
+				"mcp", "acp", "lsp", "code_execution", "rag",
 			},
 		},
 	}
@@ -1098,7 +1098,7 @@ func (g *GenericAgentGenerator) getAgentSpecificSettings() map[string]interface{
 		}
 	case AgentNoi:
 		return map[string]interface{}{
-			"theme":  "system",
+			"theme":   "system",
 			"prompts": map[string]string{},
 		}
 	case AgentOctogen:

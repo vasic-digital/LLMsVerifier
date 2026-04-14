@@ -90,8 +90,8 @@ func (g *CrushGenerator) Generate(ctx context.Context, config *GeneratorConfig) 
 			APIKey:  apiKey,
 			Models: []crush_config.Model{
 				{
-					ID:                  "helixagent-debate",
-					Name:                "HelixAgent AI Debate Ensemble",
+					ID:                  "helix-debate",
+					Name:                "Helix AI Debate Ensemble",
 					CostPer1MIn:         0,
 					CostPer1MOut:        0,
 					CostPer1MInCached:   0,
@@ -114,8 +114,8 @@ func (g *CrushGenerator) Generate(ctx context.Context, config *GeneratorConfig) 
 			APIKey:  config.HelixLLMAPIKey,
 			Models: []crush_config.Model{
 				{
-					ID:                  "deepseek-chat",
-					Name:                "HelixLLM",
+					ID:                  "helix-llm",
+					Name:                "Helix LLM",
 					CostPer1MIn:         0,
 					CostPer1MOut:        0,
 					CostPer1MInCached:   0,
@@ -135,19 +135,19 @@ func (g *CrushGenerator) Generate(ctx context.Context, config *GeneratorConfig) 
 	// Configure models (map by model type/role to SelectedModel)
 	crushConfig.Models = map[string]crush_config.SelectedModel{
 		"default": {
-			Model:       "helixagent-debate",
+			Model:       "helix-debate",
 			Provider:    "helixagent",
 			MaxTokens:   8192,
 			Temperature: 0.7,
 		},
 		"large": {
-			Model:     "helixagent-debate",
+			Model:     "helix-debate",
 			Provider:  "helixagent",
 			MaxTokens: 32768,
 		},
 		"reasoning": {
-			Model:           "helixagent-debate",
-			Provider:        "helixagent",
+			Model:           "helix-llm",
+			Provider:        "helixllm",
 			MaxTokens:       16384,
 			ReasoningEffort: "high",
 		},

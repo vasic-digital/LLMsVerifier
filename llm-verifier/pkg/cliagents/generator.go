@@ -34,36 +34,36 @@ var SupportedAgents = []string{
 	"qwen-code",      // Qwen Code CLI
 	"amazon-q",       // Amazon Q
 	// New 30 agents
-	"agent-deck",          // Agent-Deck multi-agent orchestration
-	"bridle",              // Bridle CLI
-	"cheshire-cat",        // Cheshire Cat AI
-	"claude-plugins",      // Claude Code Plugins
-	"claude-squad",        // Claude Squad
-	"codai",               // Codai CLI
-	"codex",               // Codex CLI
-	"codex-skills",        // Codex Skills
-	"conduit",             // Conduit CLI
-	"continue",            // Continue.dev extension
-	"emdash",              // Emdash CLI
-	"fauxpilot",           // FauxPilot
-	"get-shit-done",       // Get Shit Done CLI
-	"github-copilot-cli",  // GitHub Copilot CLI
-	"github-spec-kit",     // GitHub Spec Kit
-	"git-mcp",             // GitMCP
-	"gptme",               // GPTME CLI
-	"mobile-agent",        // Mobile Agent
-	"multiagent-coding",   // Multiagent Coding System
-	"nanocoder",           // Nanocoder
-	"noi",                 // Noi CLI
-	"octogen",             // Octogen
-	"openhands",           // OpenHands
-	"postgres-mcp",        // PostgresMCP
-	"shai",                // Shai CLI
-	"snow-cli",            // SnowCLI
-	"task-weaver",         // TaskWeaver
-	"ui-ux-pro-max",       // UI/UX Pro Max
-	"vtcode",              // VTCode
-	"warp",                // Warp terminal
+	"agent-deck",         // Agent-Deck multi-agent orchestration
+	"bridle",             // Bridle CLI
+	"cheshire-cat",       // Cheshire Cat AI
+	"claude-plugins",     // Claude Code Plugins
+	"claude-squad",       // Claude Squad
+	"codai",              // Codai CLI
+	"codex",              // Codex CLI
+	"codex-skills",       // Codex Skills
+	"conduit",            // Conduit CLI
+	"continue",           // Continue.dev extension
+	"emdash",             // Emdash CLI
+	"fauxpilot",          // FauxPilot
+	"get-shit-done",      // Get Shit Done CLI
+	"github-copilot-cli", // GitHub Copilot CLI
+	"github-spec-kit",    // GitHub Spec Kit
+	"git-mcp",            // GitMCP
+	"gptme",              // GPTME CLI
+	"mobile-agent",       // Mobile Agent
+	"multiagent-coding",  // Multiagent Coding System
+	"nanocoder",          // Nanocoder
+	"noi",                // Noi CLI
+	"octogen",            // Octogen
+	"openhands",          // OpenHands
+	"postgres-mcp",       // PostgresMCP
+	"shai",               // Shai CLI
+	"snow-cli",           // SnowCLI
+	"task-weaver",        // TaskWeaver
+	"ui-ux-pro-max",      // UI/UX Pro Max
+	"vtcode",             // VTCode
+	"warp",               // Warp terminal
 }
 
 // AgentType represents the type of CLI agent
@@ -154,25 +154,25 @@ type GeneratorConfig struct {
 
 // ProviderConfig represents a provider configuration
 type ProviderConfig struct {
-	Name         string            `json:"name"`
-	Type         string            `json:"type"`
-	BaseURL      string            `json:"base_url,omitempty"`
-	APIKey       string            `json:"api_key,omitempty"`
-	APIKeyEnvVar string            `json:"api_key_env_var,omitempty"`
-	Model        string            `json:"model,omitempty"`
-	Models       []ModelConfig     `json:"models,omitempty"`
-	Options      map[string]any    `json:"options,omitempty"`
-	Score        float64           `json:"score,omitempty"`
-	Verified     bool              `json:"verified,omitempty"`
+	Name         string         `json:"name"`
+	Type         string         `json:"type"`
+	BaseURL      string         `json:"base_url,omitempty"`
+	APIKey       string         `json:"api_key,omitempty"`
+	APIKeyEnvVar string         `json:"api_key_env_var,omitempty"`
+	Model        string         `json:"model,omitempty"`
+	Models       []ModelConfig  `json:"models,omitempty"`
+	Options      map[string]any `json:"options,omitempty"`
+	Score        float64        `json:"score,omitempty"`
+	Verified     bool           `json:"verified,omitempty"`
 }
 
 // ModelConfig represents a model configuration
 type ModelConfig struct {
-	ID          string   `json:"id"`
-	Name        string   `json:"name,omitempty"`
-	MaxTokens   int      `json:"max_tokens,omitempty"`
+	ID           string   `json:"id"`
+	Name         string   `json:"name,omitempty"`
+	MaxTokens    int      `json:"max_tokens,omitempty"`
 	Capabilities []string `json:"capabilities,omitempty"`
-	Score       float64  `json:"score,omitempty"`
+	Score        float64  `json:"score,omitempty"`
 }
 
 // MCPServerConfig represents an MCP server configuration
@@ -196,21 +196,21 @@ type AgentSpecificConfig struct {
 
 // AgentDef represents an agent definition
 type AgentDef struct {
-	Name        string `json:"name"`
-	Model       string `json:"model,omitempty"`
-	Prompt      string `json:"prompt,omitempty"`
+	Name         string `json:"name"`
+	Model        string `json:"model,omitempty"`
+	Prompt       string `json:"prompt,omitempty"`
 	SystemPrompt string `json:"system_prompt,omitempty"`
 }
 
 // GenerationResult contains the result of configuration generation
 type GenerationResult struct {
-	AgentType    AgentType         `json:"agent_type"`
-	Success      bool              `json:"success"`
-	ConfigPath   string            `json:"config_path,omitempty"`
-	Config       any               `json:"config,omitempty"`
-	Errors       []string          `json:"errors,omitempty"`
-	Warnings     []string          `json:"warnings,omitempty"`
-	GeneratedAt  time.Time         `json:"generated_at"`
+	AgentType        AgentType         `json:"agent_type"`
+	Success          bool              `json:"success"`
+	ConfigPath       string            `json:"config_path,omitempty"`
+	Config           any               `json:"config,omitempty"`
+	Errors           []string          `json:"errors,omitempty"`
+	Warnings         []string          `json:"warnings,omitempty"`
+	GeneratedAt      time.Time         `json:"generated_at"`
 	ValidationResult *ValidationResult `json:"validation,omitempty"`
 }
 
@@ -236,14 +236,14 @@ type AgentGenerator interface {
 
 // AgentSchema describes the configuration schema for an agent
 type AgentSchema struct {
-	AgentType        AgentType         `json:"agent_type"`
-	SchemaURL        string            `json:"schema_url,omitempty"`
-	ConfigFileName   string            `json:"config_file_name"`
-	ConfigDirEnvVar  string            `json:"config_dir_env_var,omitempty"`
-	DefaultConfigDir string            `json:"default_config_dir"`
-	SupportedFields  []string          `json:"supported_fields"`
-	RequiredFields   []string          `json:"required_fields"`
-	Description      string            `json:"description"`
+	AgentType        AgentType `json:"agent_type"`
+	SchemaURL        string    `json:"schema_url,omitempty"`
+	ConfigFileName   string    `json:"config_file_name"`
+	ConfigDirEnvVar  string    `json:"config_dir_env_var,omitempty"`
+	DefaultConfigDir string    `json:"default_config_dir"`
+	SupportedFields  []string  `json:"supported_fields"`
+	RequiredFields   []string  `json:"required_fields"`
+	Description      string    `json:"description"`
 }
 
 // HelixAgentExtensions contains all HelixAgent-provided extensions and capabilities
@@ -318,7 +318,7 @@ func DefaultHelixAgentExtensions(host string, port int) *HelixAgentExtensions {
 		Embeddings: &EmbeddingsConfig{
 			Enabled:  true,
 			Endpoint: baseURL + "/v1/embeddings",
-			Model:    "helixagent-debate",
+			Model:    "helix-llm",
 		},
 		RAG: &RAGConfig{
 			Enabled:     true,
@@ -339,7 +339,7 @@ func DefaultPlugins() []string {
 		"helixagent-vision",
 		"helixagent-rag",
 		"helixagent-formatters",
-		"helixagent-debate",
+		"helixagent",
 		"helixagent-memory",
 		"helixagent-monitoring",
 	}
