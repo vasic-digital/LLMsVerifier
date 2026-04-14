@@ -153,3 +153,7 @@ bulk_exportsdefault/
 *id_ed25519*
 *.gnupg/
 *.ssh/
+
+# API key tracking (allow the api_keys directory for tracking)
+!api_keys/
+api_keys/
