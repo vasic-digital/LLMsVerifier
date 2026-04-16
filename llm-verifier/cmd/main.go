@@ -144,12 +144,24 @@ func runServer(port string) error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	server := api.NewServer(cfg, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create server: %w", err)
+	dbPath := cfg.Database.Path
+	if dbPath == "" {
+		dbPath = "llm_verifier.db"
 	}
 
-	// Use provided port, or config port, or default
+	var db *database.Database
+	if cfg.Database.EncryptionKey != "" {
+		db, err = database.NewEncrypted(dbPath, cfg.Database.EncryptionKey)
+	} else {
+		db, err = database.New(dbPath)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to initialize database: %w", err)
+	}
+	defer db.Close()
+
+	server := api.NewServer(cfg, db)
+
 	if port == "" {
 		port = cfg.API.Port
 		if port == "" {
@@ -157,7 +169,7 @@ func runServer(port string) error {
 		}
 	}
 
-	return server.Start()
+	return server.Start(port)
 }
 
 func runTUI() error {
@@ -591,7 +603,7 @@ func runAIConfigExport(args []string) {
 	var format, outputFile string
 	switch len(args) {
 	case 0:
-		format = "opencode"                                       // default
+		format = "opencode"                                // default
 		outputFile = fmt.Sprintf("%s_config.json", format) // use format-specific default
 	case 1:
 		format = args[0]
@@ -633,9 +645,9 @@ func runAIConfigExport(args []string) {
 
 	// Create export options - include ALL providers and models
 	options := &llmverifier.ExportOptions{
-		Top:           0,    // No limit - include ALL models
-		MinScore:      0,    // No minimum score - include ALL providers
-		MaxModels:     0,    // No limit
+		Top:           0, // No limit - include ALL models
+		MinScore:      0, // No minimum score - include ALL providers
+		MaxModels:     0, // No limit
 		IncludeAPIKey: false,
 	}
 
