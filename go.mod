@@ -1,8 +1,6 @@
 module llmsverifier
 
-go 1.24.0
-
-toolchain go1.24.11
+go 1.25.3
 
 require (
 	digital.vasic.llmsverifier v0.0.0
@@ -76,3 +74,12 @@ require (
 )
 
 replace digital.vasic.llmsverifier => ./llm-verifier
+
+// digital.vasic.challenges lives outside this repo — at ../Challenges
+// relative to this go.mod when LLMsVerifier is checked out as a submodule
+// of HelixAgent (which is the only supported layout). Consumers that
+// want to run llmsverifier test suites in isolation must clone or vendor
+// Challenges separately.
+require digital.vasic.challenges v0.0.0
+
+replace digital.vasic.challenges => ../Challenges
