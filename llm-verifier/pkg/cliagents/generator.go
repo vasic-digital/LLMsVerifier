@@ -339,7 +339,7 @@ func DefaultPlugins() []string {
 		"helixagent-vision",
 		"helixagent-rag",
 		"helixagent-formatters",
-		"helixagent",
+		"helixagent-debate",
 		"helixagent-memory",
 		"helixagent-monitoring",
 	}
