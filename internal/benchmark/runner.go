@@ -391,7 +391,12 @@ func (r *StandardBenchmarkRunner) calculateSummary(results []*BenchmarkResult, t
 	return summary
 }
 
-// GetRun retrieves a run
+// GetRun retrieves a run. Returns a shallow copy so callers can read its
+// scalar fields (Status, EndedAt, Summary) without racing against the
+// runner's executeRun goroutine which mutates the live struct under the
+// mutex. Callers that need a pointer into the live instance must reach
+// for an internal helper that holds the lock for the duration of their
+// read; external test code goes through this safe path.
 func (r *StandardBenchmarkRunner) GetRun(ctx context.Context, runID string) (*BenchmarkRun, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -400,7 +405,8 @@ func (r *StandardBenchmarkRunner) GetRun(ctx context.Context, runID string) (*Be
 	if !ok {
 		return nil, fmt.Errorf("run not found: %s", runID)
 	}
-	return run, nil
+	clone := *run
+	return &clone, nil
 }
 
 // ListRuns lists runs

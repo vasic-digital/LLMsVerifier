@@ -187,7 +187,12 @@ func (e *InMemoryContinuousEvaluator) checkForRegressions(ctx context.Context, r
 	}
 }
 
-// GetRun retrieves an evaluation run
+// GetRun retrieves an evaluation run. Returns a shallow copy so callers
+// can read scalar fields (Status, Results, etc.) without racing against
+// the background executeRun goroutine which mutates the live struct
+// under e.mu. The clone shares map/slice references with the live
+// run; those fields are read-only post-completion so the shallow copy
+// is race-free for the public-API use cases.
 func (e *InMemoryContinuousEvaluator) GetRun(ctx context.Context, runID string) (*EvaluationRun, error) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
@@ -196,7 +201,8 @@ func (e *InMemoryContinuousEvaluator) GetRun(ctx context.Context, runID string) 
 	if !ok {
 		return nil, fmt.Errorf("run not found: %s", runID)
 	}
-	return run, nil
+	clone := *run
+	return &clone, nil
 }
 
 // ListRuns lists all evaluation runs

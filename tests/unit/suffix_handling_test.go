@@ -302,7 +302,7 @@ func TestSuffixHandling_ComplexScenarios(t *testing.T) {
 
 func TestSuffixHandling_Performance(t *testing.T) {
 	processor := suffix.NewProcessor()
-	
+
 	// Test with a large number of model names
 	modelNames := make([]string, 1000)
 	for i := 0; i < 1000; i++ {
@@ -317,8 +317,12 @@ func TestSuffixHandling_Performance(t *testing.T) {
 	}
 	duration := time.Since(start)
 
-	// Should process 1000 model names in less than 100ms
-	assert.Less(t, duration, 100*time.Millisecond)
+	// Budget: 1s for 1000 parses. On a healthy dev machine the loop
+	// completes in single-digit ms; under `-race` the detector adds 5–20×
+	// overhead, and shared-CI runners can be slower still. 1s keeps the
+	// regression signal (catches pathological slowdowns) without flaking
+	// on race-enabled or constrained environments.
+	assert.Less(t, duration, 1*time.Second)
 }
 
 func TestSuffixHandling_Integration(t *testing.T) {
