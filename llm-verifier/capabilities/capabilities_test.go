@@ -644,14 +644,14 @@ func TestGetCLIAgentsWithCapability(t *testing.T) {
 // =============================================================================
 
 func TestNewConfigGenerator(t *testing.T) {
-	generator := NewConfigGenerator("localhost", 7061)
+	generator := NewConfigGenerator("localhost", 8100)
 	require.NotNil(t, generator)
 	assert.Equal(t, "localhost", generator.baseHost)
-	assert.Equal(t, 7061, generator.basePort)
+	assert.Equal(t, 8100, generator.basePort)
 }
 
 func TestConfigGenerator_GenerateForAgent(t *testing.T) {
-	generator := NewConfigGenerator("localhost", 7061)
+	generator := NewConfigGenerator("localhost", 8100)
 
 	agents := []string{
 		"opencode", "claudecode", "kilocode", "cline", "crush",
@@ -675,7 +675,7 @@ func TestConfigGenerator_GenerateForAgent(t *testing.T) {
 }
 
 func TestConfigGenerator_GenerateForAgent_Unknown(t *testing.T) {
-	generator := NewConfigGenerator("localhost", 7061)
+	generator := NewConfigGenerator("localhost", 8100)
 
 	_, err := generator.GenerateForAgent("unknown_agent", nil)
 	assert.Error(t, err)
@@ -683,7 +683,7 @@ func TestConfigGenerator_GenerateForAgent_Unknown(t *testing.T) {
 }
 
 func TestConfigGenerator_OpenCodeConfig(t *testing.T) {
-	generator := NewConfigGenerator("localhost", 7061)
+	generator := NewConfigGenerator("localhost", 8100)
 	config, err := generator.GenerateForAgent("opencode", nil)
 	require.NoError(t, err)
 
@@ -697,12 +697,12 @@ func TestConfigGenerator_OpenCodeConfig(t *testing.T) {
 
 	options, ok := provider["options"].(map[string]interface{})
 	require.True(t, ok)
-	assert.Contains(t, options["baseUrl"], "localhost:7061")
+	assert.Contains(t, options["baseUrl"], "localhost:8100")
 	assert.Equal(t, "helixagent-debate", options["model"])
 }
 
 func TestConfigGenerator_ClineConfig(t *testing.T) {
-	generator := NewConfigGenerator("localhost", 7061)
+	generator := NewConfigGenerator("localhost", 8100)
 	config, err := generator.GenerateForAgent("cline", nil)
 	require.NoError(t, err)
 
@@ -714,7 +714,7 @@ func TestConfigGenerator_ClineConfig(t *testing.T) {
 }
 
 func TestConfigGenerator_AmazonQConfig(t *testing.T) {
-	generator := NewConfigGenerator("localhost", 7061)
+	generator := NewConfigGenerator("localhost", 8100)
 	config, err := generator.GenerateForAgent("amazonq", nil)
 	require.NoError(t, err)
 
@@ -724,7 +724,7 @@ func TestConfigGenerator_AmazonQConfig(t *testing.T) {
 }
 
 func TestConfigGenerator_OllamaCodeConfig(t *testing.T) {
-	generator := NewConfigGenerator("localhost", 7061)
+	generator := NewConfigGenerator("localhost", 8100)
 	config, err := generator.GenerateForAgent("ollamacode", nil)
 	require.NoError(t, err)
 
@@ -811,7 +811,7 @@ func BenchmarkDetector_GetCapabilityMatrix(b *testing.B) {
 }
 
 func BenchmarkConfigGenerator_GenerateForAgent(b *testing.B) {
-	generator := NewConfigGenerator("localhost", 7061)
+	generator := NewConfigGenerator("localhost", 8100)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

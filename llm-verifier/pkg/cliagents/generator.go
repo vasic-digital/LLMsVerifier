@@ -392,7 +392,7 @@ func DefaultGeneratorConfig() *GeneratorConfig {
 	homeDir, _ := os.UserHomeDir()
 	return &GeneratorConfig{
 		HelixAgentHost: "localhost",
-		HelixAgentPort: 7061,
+		HelixAgentPort: 8100,
 		OutputDir:      filepath.Join(homeDir, "Downloads"),
 		IncludeScores:  true,
 		MCPServers:     DefaultMCPServers(),
@@ -403,7 +403,7 @@ func DefaultGeneratorConfig() *GeneratorConfig {
 // Includes: HelixAgent remote endpoints + npx-based local servers + free remote MCPs
 // All agents MUST ship with 15+ MCP servers out of the box
 func DefaultMCPServers() []MCPServerConfig {
-	return DefaultMCPServersForHost("localhost", 7061)
+	return DefaultMCPServersForHost("localhost", 8100)
 }
 
 // DefaultMCPServersForHost returns default MCP servers for a given host and port
@@ -480,12 +480,12 @@ func ContainerizedMCPServers(host string) []MCPServerConfig {
 		// ============================================
 		// HelixAgent Remote Endpoints (6)
 		// ============================================
-		{Name: "helixagent-mcp", Type: "remote", URL: "http://localhost:7061/v1/mcp"},
-		{Name: "helixagent-acp", Type: "remote", URL: "http://localhost:7061/v1/acp"},
-		{Name: "helixagent-lsp", Type: "remote", URL: "http://localhost:7061/v1/lsp"},
-		{Name: "helixagent-embeddings", Type: "remote", URL: "http://localhost:7061/v1/embeddings"},
-		{Name: "helixagent-vision", Type: "remote", URL: "http://localhost:7061/v1/vision"},
-		{Name: "helixagent-cognee", Type: "remote", URL: "http://localhost:7061/v1/cognee"},
+		{Name: "helixagent-mcp", Type: "remote", URL: "http://localhost:8100/v1/mcp"},
+		{Name: "helixagent-acp", Type: "remote", URL: "http://localhost:8100/v1/acp"},
+		{Name: "helixagent-lsp", Type: "remote", URL: "http://localhost:8100/v1/lsp"},
+		{Name: "helixagent-embeddings", Type: "remote", URL: "http://localhost:8100/v1/embeddings"},
+		{Name: "helixagent-vision", Type: "remote", URL: "http://localhost:8100/v1/vision"},
+		{Name: "helixagent-cognee", Type: "remote", URL: "http://localhost:8100/v1/cognee"},
 
 		// ============================================
 		// Core MCP Servers (10) - Ports 9101-9110
