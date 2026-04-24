@@ -1,18 +1,17 @@
-// Package auth — OAuth credential-reader stubs.
+//go:build oauth_stub
+// +build oauth_stub
+
+// Package auth — OAuth credential-reader STUBS.
 //
-// The providers/ package references a small surface (OAuthCredentialReader,
-// GetGlobalOAuthReader, IsClaudeOAuthEnabled, IsQwenOAuthEnabled) that was
-// previously delivered by an OAuth integration with the Claude Code CLI and
-// the Qwen CLI. That integration is not part of the open-source LLMsVerifier
-// build and its implementation file is no longer checked in — without these
-// stubs the providers/ package fails to compile and every downstream test
-// fails with `[setup failed]`.
+// This file compiles only with `-tags=oauth_stub`. The real, non-stub
+// implementation in `oauth_credentials.go` compiles by default and provides
+// the full OAuth path for the Claude Code and Qwen CLI integrations.
 //
-// The stubs keep the providers/ package compiling and make the OAuth path a
-// clean no-op: `Is*OAuthEnabled` returns false, so `NewAnthropicAdapterAuto`
-// and `NewQwenAdapterAuto` fall through to their API-key paths. Anyone
-// re-introducing the real CLI integration should replace this file (or
-// override these symbols via a build tag) with their full implementation.
+// Keep this stub around so that operators who don't have (or don't want to
+// compile) the full OAuth integration can build with `-tags=oauth_stub`
+// and still have the providers/ package link correctly. Without the tag,
+// this file is skipped and there is no symbol collision with
+// oauth_credentials.go.
 package auth
 
 import "fmt"
