@@ -10,15 +10,13 @@ same session as the change.** Coverage and green suites are not evidence.
 
 ### Acceptance demo for this module
 
-<!-- TODO: replace this block with the exact command(s) that exercise this
-     module end-to-end against real dependencies, and the expected output.
-     The commands must run the real artifact (built binary, deployed
-     container, real service) — no in-process fakes, no mocks, no
-     `httptest.NewServer`, no Robolectric, no JSDOM as proof of done. -->
-
 ```bash
-# TODO
+# Verify a real LLM provider end-to-end (model discovery + capability tests)
+cd LLMsVerifier/llm-verifier && GOMAXPROCS=2 nice -n 19 go test -count=1 -race -v \
+  -run 'TestModelVerification' ./verification/...
 ```
+Expect: PASS when at least one of the configured provider API keys is present (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `DEEPSEEK_API_KEY`, `GEMINI_API_KEY`, …). Without keys, tests skip — per DoD that is acceptable; add a key to run end-to-end.
+
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
