@@ -19,7 +19,7 @@ import (
 // TestEndToEnd_API tests the complete API flow from HTTP request to response
 func TestEndToEnd_API(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping end-to-end test in short mode")
+		t.Skip("Skipping end-to-end test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Load config (use default if config file doesn't exist)
@@ -127,7 +127,7 @@ func TestEndToEnd_API(t *testing.T) {
 // TestEndToEnd_LoadTesting tests the API under load
 func TestEndToEnd_LoadTesting(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping load test in short mode")
+		t.Skip("Skipping load test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Load config
@@ -186,7 +186,7 @@ func TestEndToEnd_LoadTesting(t *testing.T) {
 // TestEndToEnd_ErrorScenarios tests various error scenarios
 func TestEndToEnd_ErrorScenarios(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping error scenario test in short mode")
+		t.Skip("Skipping error scenario test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Load config
@@ -240,7 +240,7 @@ func TestEndToEnd_ErrorScenarios(t *testing.T) {
 // TestEndToEnd_Configuration tests configuration-related endpoints
 func TestEndToEnd_Configuration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping configuration test in short mode")
+		t.Skip("Skipping configuration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Load config

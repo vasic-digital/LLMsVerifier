@@ -14,7 +14,7 @@ import (
 // TestAnthropicAdapter_Integration tests Anthropic adapter integration
 func TestAnthropicAdapter_Integration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
+		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Mock Anthropic API server
@@ -70,7 +70,7 @@ func TestAnthropicAdapter_Integration(t *testing.T) {
 // TestCohereAdapter_Integration tests Cohere adapter integration
 func TestCohereAdapter_Integration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
+		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Mock Cohere API server
@@ -132,7 +132,7 @@ func TestCohereAdapter_Integration(t *testing.T) {
 // TestTogetherAIAdapter_Integration tests Together AI adapter integration
 func TestTogetherAIAdapter_Integration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
+		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Mock Together AI API server
@@ -256,7 +256,7 @@ func TestProviderRegistry_Integration(t *testing.T) {
 // TestCrossProviderCompatibility tests compatibility across different providers
 func TestCrossProviderCompatibility(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping cross-provider test in short mode")
+		t.Skip("Skipping cross-provider test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Mock servers for different providers
@@ -417,7 +417,7 @@ func TestErrorHandling_Integration(t *testing.T) {
 // TestLoadBalancing_Integration tests load balancing across providers
 func TestLoadBalancing_Integration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping load balancing test in short mode")
+		t.Skip("Skipping load balancing test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Test that we can create multiple instances manually

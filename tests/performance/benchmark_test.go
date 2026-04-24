@@ -191,7 +191,7 @@ func BenchmarkDatabaseOperations(b *testing.B) {
 // Test performance under load
 func TestPerformanceUnderLoad(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping performance test in short mode")
+		t.Skip("Skipping performance test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Test with increasing load
@@ -258,7 +258,7 @@ func TestPerformanceUnderLoad(t *testing.T) {
 // Test response time consistency
 func TestResponseTimeConsistency(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping performance test in short mode")
+		t.Skip("Skipping performance test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -376,7 +376,7 @@ func BenchmarkJSONSerialization(b *testing.B) {
 // Test memory efficiency
 func TestMemoryEfficiency(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping performance test in short mode")
+		t.Skip("Skipping performance test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Test with different data sizes

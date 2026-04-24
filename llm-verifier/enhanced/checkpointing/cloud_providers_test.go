@@ -105,24 +105,24 @@ func TestS3BackupProvider_HealthCheck_Validation(t *testing.T) {
 
 func TestS3BackupProvider_List(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping S3 integration test in short mode")
+		t.Skip("Skipping S3 integration test in short mode")  // SKIP-OK: #short-mode
 	}
 	// These tests require actual AWS credentials
-	t.Skip("Skipping S3 integration test - requires AWS credentials")
+	t.Skip("Skipping S3 integration test - requires AWS credentials")  // SKIP-OK: #integration-mode-only
 }
 
 func TestS3BackupProvider_Delete(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping S3 integration test in short mode")
+		t.Skip("Skipping S3 integration test in short mode")  // SKIP-OK: #short-mode
 	}
-	t.Skip("Skipping S3 integration test - requires AWS credentials")
+	t.Skip("Skipping S3 integration test - requires AWS credentials")  // SKIP-OK: #integration-mode-only
 }
 
 func TestS3BackupProvider_Exists(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping S3 integration test in short mode")
+		t.Skip("Skipping S3 integration test in short mode")  // SKIP-OK: #short-mode
 	}
-	t.Skip("Skipping S3 integration test - requires AWS credentials")
+	t.Skip("Skipping S3 integration test - requires AWS credentials")  // SKIP-OK: #integration-mode-only
 }
 
 // Test GCSBackupProvider
@@ -230,23 +230,23 @@ func TestGCSBackupProvider_HealthCheck_Validation(t *testing.T) {
 
 func TestGCSBackupProvider_List(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping GCS integration test in short mode")
+		t.Skip("Skipping GCS integration test in short mode")  // SKIP-OK: #short-mode
 	}
-	t.Skip("Skipping GCS integration test - requires GCP credentials")
+	t.Skip("Skipping GCS integration test - requires GCP credentials")  // SKIP-OK: #integration-mode-only
 }
 
 func TestGCSBackupProvider_Delete(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping GCS integration test in short mode")
+		t.Skip("Skipping GCS integration test in short mode")  // SKIP-OK: #short-mode
 	}
-	t.Skip("Skipping GCS integration test - requires GCP credentials")
+	t.Skip("Skipping GCS integration test - requires GCP credentials")  // SKIP-OK: #integration-mode-only
 }
 
 func TestGCSBackupProvider_Exists(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping GCS integration test in short mode")
+		t.Skip("Skipping GCS integration test in short mode")  // SKIP-OK: #short-mode
 	}
-	t.Skip("Skipping GCS integration test - requires GCP credentials")
+	t.Skip("Skipping GCS integration test - requires GCP credentials")  // SKIP-OK: #integration-mode-only
 }
 
 // Test AzureBackupProvider
@@ -367,21 +367,21 @@ func TestAzureBackupProvider_HealthCheck_Validation(t *testing.T) {
 
 func TestAzureBackupProvider_List(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping Azure integration test in short mode")
+		t.Skip("Skipping Azure integration test in short mode")  // SKIP-OK: #short-mode
 	}
-	t.Skip("Skipping Azure integration test - requires Azure credentials")
+	t.Skip("Skipping Azure integration test - requires Azure credentials")  // SKIP-OK: #integration-mode-only
 }
 
 func TestAzureBackupProvider_Delete(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping Azure integration test in short mode")
+		t.Skip("Skipping Azure integration test in short mode")  // SKIP-OK: #short-mode
 	}
-	t.Skip("Skipping Azure integration test - requires Azure credentials")
+	t.Skip("Skipping Azure integration test - requires Azure credentials")  // SKIP-OK: #integration-mode-only
 }
 
 func TestAzureBackupProvider_Exists(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping Azure integration test in short mode")
+		t.Skip("Skipping Azure integration test in short mode")  // SKIP-OK: #short-mode
 	}
-	t.Skip("Skipping Azure integration test - requires Azure credentials")
+	t.Skip("Skipping Azure integration test - requires Azure credentials")  // SKIP-OK: #integration-mode-only
 }

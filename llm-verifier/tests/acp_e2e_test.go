@@ -13,7 +13,7 @@ import (
 // TestACPsCompleteWorkflow tests the complete ACP verification workflow
 func TestACPsCompleteWorkflow(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping end-to-end test in short mode")
+		t.Skip("Skipping end-to-end test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Setup test environment
@@ -99,7 +99,7 @@ func TestACPsCompleteWorkflow(t *testing.T) {
 // TestACPsChallengeFramework tests ACP integration with challenge framework
 func TestACPsChallengeFramework(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping challenge test in short mode")
+		t.Skip("Skipping challenge test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Setup challenge test environment
@@ -128,7 +128,7 @@ func TestACPsChallengeFramework(t *testing.T) {
 // TestACPsAutomationWorkflow tests ACP automation workflows
 func TestACPsAutomationWorkflow(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping automation test in short mode")
+		t.Skip("Skipping automation test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Setup automation environment
@@ -177,7 +177,7 @@ func TestACPsAutomationWorkflow(t *testing.T) {
 // TestACPsPerformanceBenchmark benchmarks ACP detection performance
 func TestACPsPerformanceBenchmark(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping benchmark test in short mode")
+		t.Skip("Skipping benchmark test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Setup benchmark environment
@@ -297,7 +297,7 @@ func TestACPsSecurityValidation(t *testing.T) {
 // TestACPsComprehensiveValidation comprehensive ACP validation test
 func TestACPsComprehensiveValidation(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping comprehensive validation test in short mode")
+		t.Skip("Skipping comprehensive validation test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// This test combines all ACP aspects in a single comprehensive test

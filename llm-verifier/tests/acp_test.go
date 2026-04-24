@@ -147,7 +147,7 @@ func TestACPsAPIValidation(t *testing.T) {
 // TestACPsDatabaseIntegration tests ACP fields in database operations
 func TestACPsDatabaseIntegration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping database integration test in short mode")
+		t.Skip("Skipping database integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Test database field mapping for ACP support
