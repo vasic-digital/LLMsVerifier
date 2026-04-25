@@ -12,6 +12,10 @@ services:
           - llm-verifier:latest
     image: llm-verifier:${TAG:-v1.0.0}
     container_name: llm-verifier-prod
+    mem_limit: 4g
+    memswap_limit: 4g
+    pids_limit: 2048
+    oom_score_adj: 500
     restart: unless-stopped
     ports:
       - "8080:8080"
@@ -77,6 +81,10 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: llm-verifier-postgres
+    mem_limit: 4g
+    memswap_limit: 4g
+    pids_limit: 1024
+    oom_score_adj: 500
     restart: unless-stopped
     environment:
       - POSTGRES_DB=llm_verifier
@@ -112,6 +120,10 @@ services:
   redis:
     image: redis:7-alpine
     container_name: llm-verifier-redis
+    mem_limit: 1g
+    memswap_limit: 1g
+    pids_limit: 1024
+    oom_score_adj: 500
     restart: unless-stopped
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     volumes:
@@ -142,6 +154,10 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: llm-verifier-prometheus
+    mem_limit: 2g
+    memswap_limit: 2g
+    pids_limit: 1024
+    oom_score_adj: 500
     restart: unless-stopped
     ports:
       - "9090:9090"
@@ -174,6 +190,10 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: llm-verifier-grafana
+    mem_limit: 1g
+    memswap_limit: 1g
+    pids_limit: 1024
+    oom_score_adj: 500
     restart: unless-stopped
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
@@ -204,6 +224,10 @@ services:
   nginx:
     image: nginx:alpine
     container_name: llm-verifier-nginx
+    mem_limit: 512m
+    memswap_limit: 512m
+    pids_limit: 1024
+    oom_score_adj: 500
     restart: unless-stopped
     ports:
       - "80:80"
@@ -233,6 +257,10 @@ services:
   watchtower:
     image: containrrr/watchtower:latest
     container_name: llm-verifier-watchtower
+    mem_limit: 2g
+    memswap_limit: 2g
+    pids_limit: 1024
+    oom_score_adj: 500
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

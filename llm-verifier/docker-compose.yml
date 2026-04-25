@@ -3,6 +3,10 @@ version: '3.8'
 services:
   llm-verifier:
     build: .
+    mem_limit: 4g
+    memswap_limit: 4g
+    pids_limit: 2048
+    oom_score_adj: 500
     ports:
       - "8080:8080"
     environment:
@@ -35,6 +39,10 @@ services:
 
   nginx:
     image: nginx:alpine
+    mem_limit: 512m
+    memswap_limit: 512m
+    pids_limit: 1024
+    oom_score_adj: 500
     ports:
       - "80:80"
       - "443:443"
@@ -49,6 +57,10 @@ services:
 
   prometheus:
     image: prom/prometheus:latest
+    mem_limit: 2g
+    memswap_limit: 2g
+    pids_limit: 1024
+    oom_score_adj: 500
     ports:
       - "9090:9090"
     volumes:
@@ -64,6 +76,10 @@ services:
 
   grafana:
     image: grafana/grafana:latest
+    mem_limit: 1g
+    memswap_limit: 1g
+    pids_limit: 1024
+    oom_score_adj: 500
     ports:
       - "3000:3000"
     environment:
