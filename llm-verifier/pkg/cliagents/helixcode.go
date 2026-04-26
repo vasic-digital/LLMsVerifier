@@ -24,6 +24,17 @@ type HelixCodeConfig struct {
 	Settings            HelixCodeSettings                  `json:"settings,omitempty"`
 	Extensions          *HelixAgentExtensions              `json:"extensions,omitempty"`
 	Formatters          FormattersConfig                   `json:"formatters,omitempty"`
+	Auth                *HelixCodeAuth                     `json:"auth,omitempty"`
+}
+
+// HelixCodeAuth carries the JWT secret used by the HelixCode CLI to mint
+// the bearer token it sends to HelixAgent. This MUST match the HelixAgent
+// server's JWT_SECRET (sourced from HelixAgent's .env). Finding #24:
+// generator previously omitted this block; users had to hand-patch every
+// installed config or HelixCode would fail to start with a JWT
+// validation error.
+type HelixCodeAuth struct {
+	JWTSecret string `json:"jwt_secret"`
 }
 
 // HelixCodeProviderConfig represents the provider configuration
@@ -310,6 +321,19 @@ func (g *HelixCodeGenerator) Generate(ctx context.Context, config *GeneratorConf
 
 	// Configure formatters
 	helixConfig.Formatters = DefaultFormattersConfig(config.HelixAgentHost, config.HelixAgentPort)
+
+	// Configure auth: HelixCode mints JWTs that HelixAgent validates with
+	// the same secret. Source from JWT_SECRET (HelixAgent's canonical env
+	// var) with HELIXAGENT_JWT_SECRET as fallback. Finding #24: missing
+	// this block caused every installed HelixCode to fail at startup with
+	// a JWT validation error until manually patched.
+	if jwt := os.Getenv("JWT_SECRET"); jwt != "" {
+		helixConfig.Auth = &HelixCodeAuth{JWTSecret: jwt}
+	} else if jwt := os.Getenv("HELIXAGENT_JWT_SECRET"); jwt != "" {
+		helixConfig.Auth = &HelixCodeAuth{JWTSecret: jwt}
+	} else {
+		helixConfig.Auth = &HelixCodeAuth{JWTSecret: "<YOUR_JWT_SECRET>"}
+	}
 
 	result.Config = helixConfig
 	result.Success = true
