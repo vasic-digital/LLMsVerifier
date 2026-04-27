@@ -30,19 +30,19 @@ type OpenCodeProviderConfig struct {
 
 // OpenCodeProviderOptions contains provider options
 type OpenCodeProviderOptions struct {
-	BaseURL      string                      `json:"baseURL,omitempty"`
-	APIKey       string                      `json:"apiKey,omitempty"`
-	APIKeyEnvVar string                      `json:"apiKeyEnvVar,omitempty"`
-	Model        string                      `json:"model,omitempty"`
-	Models       []OpenCodeModelDef          `json:"models,omitempty"`
+	BaseURL      string             `json:"baseURL,omitempty"`
+	APIKey       string             `json:"apiKey,omitempty"`
+	APIKeyEnvVar string             `json:"apiKeyEnvVar,omitempty"`
+	Model        string             `json:"model,omitempty"`
+	Models       []OpenCodeModelDef `json:"models,omitempty"`
 }
 
 // OpenCodeModelDef represents a model definition
 type OpenCodeModelDef struct {
-	ID           string                 `json:"id"`
-	Name         string                 `json:"name,omitempty"`
-	MaxTokens    int                    `json:"maxTokens,omitempty"`
-	Capabilities OpenCodeCapabilities   `json:"capabilities,omitempty"`
+	ID           string               `json:"id"`
+	Name         string               `json:"name,omitempty"`
+	MaxTokens    int                  `json:"maxTokens,omitempty"`
+	Capabilities OpenCodeCapabilities `json:"capabilities,omitempty"`
 }
 
 // OpenCodeCapabilities represents model capabilities
@@ -92,17 +92,17 @@ type OpenCodeAgent struct {
 
 // OpenCodePermissions represents permissions configuration
 type OpenCodePermissions struct {
-	AllowRead   bool `json:"allowRead,omitempty"`
-	AllowWrite  bool `json:"allowWrite,omitempty"`
-	AllowExec   bool `json:"allowExec,omitempty"`
-	AllowNet    bool `json:"allowNet,omitempty"`
+	AllowRead  bool `json:"allowRead,omitempty"`
+	AllowWrite bool `json:"allowWrite,omitempty"`
+	AllowExec  bool `json:"allowExec,omitempty"`
+	AllowNet   bool `json:"allowNet,omitempty"`
 }
 
 // OpenCodeSettings represents settings configuration
 type OpenCodeSettings struct {
-	Theme           string `json:"theme,omitempty"`
-	AutoSave        bool   `json:"autoSave,omitempty"`
-	ConfirmActions  bool   `json:"confirmActions,omitempty"`
+	Theme          string `json:"theme,omitempty"`
+	AutoSave       bool   `json:"autoSave,omitempty"`
+	ConfirmActions bool   `json:"confirmActions,omitempty"`
 }
 
 // OpenCodeGenerator generates OpenCode configurations
@@ -125,7 +125,7 @@ func NewOpenCodeGenerator() *OpenCodeGenerator {
 				"permission", "settings", "keybinds", "command", "tui",
 			},
 			RequiredFields: []string{"provider"},
-			Description:    "OpenCode.ai CLI - AI-powered coding assistant",
+			Description:    "OpenCode.ai CLI - AI-powered coding assistant powered by Helix Agent",
 		},
 	}
 }
@@ -156,8 +156,29 @@ func (g *OpenCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 			APIKey:  apiKey,
 			Models: []OpenCodeModelDef{
 				{
-					ID:        "helixagent-debate",
-					Name:      "HelixAgent AI Debate Ensemble",
+					ID:        "helix-llm",
+					Name:      "Helix LLM",
+					MaxTokens: 128000,
+					Capabilities: OpenCodeCapabilities{
+						Vision:        true,
+						ImageInput:    true,
+						ImageOutput:   true,
+						OCR:           true,
+						PDF:           true,
+						Streaming:     true,
+						FunctionCalls: true,
+						ToolUse:       true,
+						Embeddings:    true,
+						FileUpload:    true,
+						NoFileLimit:   true,
+						MCP:           true,
+						ACP:           true,
+						LSP:           true,
+					},
+				},
+				{
+					ID:        "helix-debate",
+					Name:      "Helix AI Debate Ensemble",
 					MaxTokens: 128000,
 					Capabilities: OpenCodeCapabilities{
 						Vision:        true,
@@ -216,19 +237,19 @@ func (g *OpenCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 	// Configure agents
 	openCodeConfig.Agent = map[string]OpenCodeAgent{
 		"default": {
-			Model:  "helixagent-debate",
+			Model:  "helix-debate",
 			Prompt: "You are a helpful AI coding assistant powered by HelixAgent AI Debate Ensemble.",
 		},
 		"code-reviewer": {
-			Model:  "helixagent-debate",
+			Model:  "helix-debate",
 			Prompt: "You are an expert code reviewer. Analyze code for bugs, security issues, and improvements.",
 		},
 		"embeddings": {
-			Model:  "helixagent-debate",
+			Model:  "helix-llm",
 			Prompt: "Generate embeddings for semantic search and similarity matching.",
 		},
 		"vision": {
-			Model:  "helixagent-debate",
+			Model:  "helix-debate",
 			Prompt: "Analyze images and visual content with detailed descriptions.",
 		},
 	}

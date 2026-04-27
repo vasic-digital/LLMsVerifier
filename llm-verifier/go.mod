@@ -1,8 +1,6 @@
 module digital.vasic.llmsverifier
 
-go 1.24.0
-
-toolchain go1.24.11
+go 1.25.3
 
 require (
 	cloud.google.com/go/storage v1.58.0
@@ -166,5 +164,9 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-require digital.vasic.llmprovider v0.0.0
+require (
+	digital.vasic.llmprovider v0.0.0
+	github.com/sirupsen/logrus v1.9.3
+)
+
 replace digital.vasic.llmprovider => ../../LLMProvider

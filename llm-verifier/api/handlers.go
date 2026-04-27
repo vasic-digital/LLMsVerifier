@@ -18,10 +18,25 @@ func (s *Server) HealthHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+
+	health := map[string]any{
 		"status":    "healthy",
 		"timestamp": time.Now().Unix(),
-	})
+	}
+
+	if s.database != nil {
+		health["database"] = "connected"
+		if err := s.database.Ping(); err == nil {
+			health["database_status"] = "ok"
+		} else {
+			health["database_status"] = "error"
+			health["database_error"] = err.Error()
+		}
+	} else {
+		health["database"] = "not_configured"
+	}
+
+	json.NewEncoder(w).Encode(health)
 }
 
 // ListModelsHandler handles listing all models

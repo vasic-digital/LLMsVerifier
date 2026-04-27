@@ -835,7 +835,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, "https://charm.land/crush.json", config.Schema)
 	assert.Contains(t, config.Providers, "helixagent")
 	assert.Equal(t, "openai-compat", config.Providers["helixagent"].Type)
-	assert.Equal(t, "http://localhost:7061/v1", config.Providers["helixagent"].BaseURL)
+	assert.Equal(t, "http://localhost:8100/v1", config.Providers["helixagent"].BaseURL)
 	assert.Contains(t, config.Models, "default")
 	assert.Equal(t, "helixagent-debate", config.Models["default"].Model)
 	assert.Equal(t, "helixagent", config.Models["default"].Provider)

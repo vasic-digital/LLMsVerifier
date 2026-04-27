@@ -27,7 +27,7 @@ func mockServer(t *testing.T, response string, statusCode int) *httptest.Server 
 // TestProviderIntegration_CompleteWorkflow tests the complete workflow
 func TestProviderIntegration_CompleteWorkflow(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
+		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Create temp config file
@@ -56,7 +56,7 @@ providers:
 // TestProviderIntegration_MultipleProviders tests handling multiple providers
 func TestProviderIntegration_MultipleProviders(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
+		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	service := providers.NewModelProviderService("", nil)
@@ -73,7 +73,7 @@ func TestProviderIntegration_MultipleProviders(t *testing.T) {
 // TestProviderIntegration_Failover tests failover behavior
 func TestProviderIntegration_Failover(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
+		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Create a failing mock server
@@ -96,7 +96,7 @@ func TestProviderIntegration_Failover(t *testing.T) {
 // TestProviderIntegration_Authentication tests authentication handling
 func TestProviderIntegration_Authentication(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
+		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Create mock server that checks for auth header
@@ -127,7 +127,7 @@ func TestProviderIntegration_Authentication(t *testing.T) {
 // TestProviderIntegration_RateLimiting tests rate limiting behavior
 func TestProviderIntegration_RateLimiting(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
+		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	requestCount := 0
@@ -168,7 +168,7 @@ func TestProviderIntegration_RateLimiting(t *testing.T) {
 // TestProviderIntegration_Timeout tests timeout handling
 func TestProviderIntegration_Timeout(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
+		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Create a slow server
@@ -193,7 +193,7 @@ func TestProviderIntegration_Timeout(t *testing.T) {
 // TestProviderIntegration_Caching tests caching behavior
 func TestProviderIntegration_Caching(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
+		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	service := providers.NewModelProviderService("", nil)
@@ -211,7 +211,7 @@ func TestProviderIntegration_Caching(t *testing.T) {
 // TestProviderIntegration_ErrorRecovery tests error recovery
 func TestProviderIntegration_ErrorRecovery(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
+		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	service := providers.NewModelProviderService("", nil)
@@ -232,7 +232,7 @@ func TestProviderIntegration_ErrorRecovery(t *testing.T) {
 // TestProviderIntegration_ConcurrentOperations tests concurrent access
 func TestProviderIntegration_ConcurrentOperations(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
+		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	service := providers.NewModelProviderService("", nil)
@@ -280,7 +280,7 @@ func TestProviderIntegration_ConcurrentOperations(t *testing.T) {
 // TestProviderIntegration_ModelDiscovery tests model discovery functionality
 func TestProviderIntegration_ModelDiscovery(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
+		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	service := providers.NewModelProviderService("", nil)
@@ -297,7 +297,7 @@ func TestProviderIntegration_ModelDiscovery(t *testing.T) {
 // TestProviderIntegration_ConfigReload tests configuration reloading
 func TestProviderIntegration_ConfigReload(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
+		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Create initial config

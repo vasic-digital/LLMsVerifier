@@ -227,7 +227,7 @@ func CreateDefaultConfig() *Config {
 				ID:      "helixagent",
 				Name:    "HelixAgent",
 				Type:    "openai-compat",
-				BaseURL: "http://localhost:7061/v1",
+				BaseURL: "http://localhost:8100/v1",
 				Models: []Model{
 					{
 						ID:                  "helixagent-debate",

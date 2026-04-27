@@ -11,23 +11,24 @@ import (
 
 // KiloCodeConfig represents the configuration for KiloCode VS Code extension
 type KiloCodeConfig struct {
-	Version    string                      `json:"version,omitempty"`
-	Provider   KiloCodeProviderConfig      `json:"provider"`
-	Models     []KiloCodeModelDef          `json:"models,omitempty"`
-	MCP        map[string]KiloCodeMCP      `json:"mcpServers,omitempty"`
-	Plugins    []string                    `json:"plugins,omitempty"`
-	Agents     []KiloCodeAgent             `json:"agents,omitempty"`
-	Settings   KiloCodeSettings            `json:"settings,omitempty"`
-	Extensions *HelixAgentExtensions       `json:"extensions,omitempty"`
-	Formatters FormattersConfig            `json:"formatters,omitempty"`
+	Version             string                            `json:"version,omitempty"`
+	Provider            KiloCodeProviderConfig            `json:"provider"`
+	AdditionalProviders map[string]KiloCodeProviderConfig `json:"additionalProviders,omitempty"`
+	Models              []KiloCodeModelDef                `json:"models,omitempty"`
+	MCP                 map[string]KiloCodeMCP            `json:"mcpServers,omitempty"`
+	Plugins             []string                          `json:"plugins,omitempty"`
+	Agents              []KiloCodeAgent                   `json:"agents,omitempty"`
+	Settings            KiloCodeSettings                  `json:"settings,omitempty"`
+	Extensions          *HelixAgentExtensions             `json:"extensions,omitempty"`
+	Formatters          FormattersConfig                  `json:"formatters,omitempty"`
 }
 
 // KiloCodeProviderConfig represents the provider configuration
 type KiloCodeProviderConfig struct {
-	Type        string            `json:"type"`
-	BaseURL     string            `json:"baseUrl"`
-	APIKey      string            `json:"apiKey,omitempty"`
-	APIKeyEnv   string            `json:"apiKeyEnv,omitempty"`
+	Type      string `json:"type"`
+	BaseURL   string `json:"baseUrl"`
+	APIKey    string `json:"apiKey,omitempty"`
+	APIKeyEnv string `json:"apiKeyEnv,omitempty"`
 }
 
 // KiloCodeModelDef represents a model definition
@@ -58,19 +59,19 @@ type KiloCodeMCP struct {
 
 // KiloCodeAgent represents an agent configuration
 type KiloCodeAgent struct {
-	Name        string `json:"name"`
-	Model       string `json:"model"`
-	Prompt      string `json:"prompt,omitempty"`
-	MaxTokens   int    `json:"maxTokens,omitempty"`
+	Name      string `json:"name"`
+	Model     string `json:"model"`
+	Prompt    string `json:"prompt,omitempty"`
+	MaxTokens int    `json:"maxTokens,omitempty"`
 }
 
 // KiloCodeSettings represents settings configuration
 type KiloCodeSettings struct {
-	AutoComplete      bool   `json:"autoComplete,omitempty"`
-	InlineCompletion  bool   `json:"inlineCompletion,omitempty"`
-	StreamResponses   bool   `json:"streamResponses,omitempty"`
-	ContextWindow     int    `json:"contextWindow,omitempty"`
-	Theme             string `json:"theme,omitempty"`
+	AutoComplete     bool   `json:"autoComplete,omitempty"`
+	InlineCompletion bool   `json:"inlineCompletion,omitempty"`
+	StreamResponses  bool   `json:"streamResponses,omitempty"`
+	ContextWindow    int    `json:"contextWindow,omitempty"`
+	Theme            string `json:"theme,omitempty"`
 }
 
 // KiloCodeGenerator generates KiloCode configurations
@@ -115,6 +116,10 @@ func (g *KiloCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 	if apiKey == "" {
 		apiKey = "<YOUR_HELIXAGENT_API_KEY>"
 	}
+
+	// Single "Helix Agent" provider with TWO models:
+	// - helix-debate: Helix AI Debate Ensemble (for coder, summarizer)
+	// - helix-llm: Helix LLM (for task, title - with provider chain fallback)
 	kiloConfig.Provider = KiloCodeProviderConfig{
 		Type:    "openai-compatible",
 		BaseURL: baseURL,
@@ -124,8 +129,20 @@ func (g *KiloCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 	// Configure models
 	kiloConfig.Models = []KiloCodeModelDef{
 		{
-			ID:              "helixagent-debate",
-			Name:            "HelixAgent AI Debate Ensemble",
+			ID:              "helix-llm",
+			Name:            "Helix LLM",
+			MaxInputTokens:  128000,
+			MaxOutputTokens: 8192,
+			Capabilities: KiloCapabilities{
+				Streaming:     true,
+				Vision:        true,
+				FunctionCalls: true,
+				Embeddings:    true,
+			},
+		},
+		{
+			ID:              "helix-debate",
+			Name:            "Helix AI Debate Ensemble",
 			MaxInputTokens:  128000,
 			MaxOutputTokens: 16384,
 			Capabilities: KiloCapabilities{
@@ -161,24 +178,49 @@ func (g *KiloCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 	kiloConfig.Plugins = DefaultPlugins()
 
 	// Configure agents
+	// Agent routing: task/title → helix-llm, coder/summarizer → helix-debate
 	kiloConfig.Agents = []KiloCodeAgent{
 		{
 			Name:      "default",
-			Model:     "helixagent-debate",
+			Model:     "helix-debate",
 			Prompt:    "You are a helpful AI coding assistant integrated into VS Code.",
 			MaxTokens: 8192,
 		},
 		{
+			Name:      "coder",
+			Model:     "helix-debate",
+			Prompt:    "You are an expert software developer. Write clean, efficient, well-tested code.",
+			MaxTokens: 16384,
+		},
+		{
+			Name:      "summarizer",
+			Model:     "helix-debate",
+			Prompt:    "You are a summarization assistant. Create concise summaries of content.",
+			MaxTokens: 4096,
+		},
+		{
 			Name:      "completer",
-			Model:     "helixagent-debate",
+			Model:     "helix-llm",
 			Prompt:    "Complete the code following the cursor. Return only the completion.",
 			MaxTokens: 1024,
 		},
 		{
 			Name:      "explainer",
-			Model:     "helixagent-debate",
+			Model:     "helix-debate",
 			Prompt:    "Explain the selected code clearly and concisely.",
 			MaxTokens: 4096,
+		},
+		{
+			Name:      "task",
+			Model:     "helix-llm",
+			Prompt:    "Execute tasks efficiently with provider chain fallback for reliability.",
+			MaxTokens: 4096,
+		},
+		{
+			Name:      "title",
+			Model:     "helix-llm",
+			Prompt:    "Create concise, descriptive titles.",
+			MaxTokens: 80,
 		},
 	}
 

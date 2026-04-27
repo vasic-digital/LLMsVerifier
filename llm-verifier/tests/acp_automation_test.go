@@ -14,7 +14,7 @@ import (
 // TestACPsFullAutomationWorkflow tests complete automated ACP workflow
 func TestACPsFullAutomationWorkflow(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping full automation test in short mode")
+		t.Skip("Skipping full automation test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Setup automation environment
@@ -71,7 +71,7 @@ func TestACPsFullAutomationWorkflow(t *testing.T) {
 // TestACPsAutomatedScheduling tests automated scheduling of ACP verification
 func TestACPsAutomatedScheduling(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping automated scheduling test in short mode")
+		t.Skip("Skipping automated scheduling test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Create test scheduler
@@ -150,7 +150,7 @@ func TestACPsAutomatedScheduling(t *testing.T) {
 // TestACPsAutomatedMonitoring tests automated monitoring and alerting
 func TestACPsAutomatedMonitoring(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping automated monitoring test in short mode")
+		t.Skip("Skipping automated monitoring test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Setup monitoring system
@@ -285,7 +285,7 @@ func TestACPsAutomatedMonitoring(t *testing.T) {
 // TestACPsAutomatedRecovery tests automated recovery mechanisms
 func TestACPsAutomatedRecovery(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping automated recovery test in short mode")
+		t.Skip("Skipping automated recovery test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Setup recovery system
@@ -379,7 +379,7 @@ func TestACPsAutomatedRecovery(t *testing.T) {
 // TestACPsAutomatedReporting tests automated report generation and distribution
 func TestACPsAutomatedReporting(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping automated reporting test in short mode")
+		t.Skip("Skipping automated reporting test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Generate sample ACP results

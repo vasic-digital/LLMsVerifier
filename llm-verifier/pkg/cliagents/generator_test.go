@@ -35,8 +35,8 @@ func TestDefaultGeneratorConfig(t *testing.T) {
 	if config.HelixAgentHost != "localhost" {
 		t.Errorf("Expected host 'localhost', got '%s'", config.HelixAgentHost)
 	}
-	if config.HelixAgentPort != 7061 {
-		t.Errorf("Expected port 7061, got %d", config.HelixAgentPort)
+	if config.HelixAgentPort != 8100 {
+		t.Errorf("Expected port 8100, got %d", config.HelixAgentPort)
 	}
 	if !config.IncludeScores {
 		t.Error("Expected IncludeScores to be true")
@@ -60,7 +60,7 @@ func TestDefaultMCPServers(t *testing.T) {
 	freeRemoteCount := 0
 	for _, server := range servers {
 		if server.Type == "remote" && len(server.URL) > 0 {
-			if len(server.URL) > 20 && server.URL[:21] == "http://localhost:7061" {
+			if len(server.URL) > 20 && server.URL[:21] == "http://localhost:8100" {
 				helixAgentCount++
 			} else if server.URL[:5] == "https" {
 				freeRemoteCount++
@@ -435,13 +435,13 @@ func TestValidateOpenCodeConfig(t *testing.T) {
 	validConfig := &OpenCodeConfig{
 		Provider: OpenCodeProviderConfig{
 			Options: OpenCodeProviderOptions{
-				BaseURL: "http://localhost:7061/v1",
+				BaseURL: "http://localhost:8100/v1",
 			},
 		},
 		MCPServers: map[string]OpenCodeMCPServer{
 			"test": {
 				Type: "sse",
-				URL:  "http://localhost:7061/mcp",
+				URL:  "http://localhost:8100/mcp",
 			},
 		},
 	}
@@ -458,7 +458,7 @@ func TestValidateOpenCodeConfig(t *testing.T) {
 	invalidConfig := &OpenCodeConfig{
 		Provider: OpenCodeProviderConfig{
 			Options: OpenCodeProviderOptions{
-				BaseURL: "http://localhost:7061/v1",
+				BaseURL: "http://localhost:8100/v1",
 			},
 		},
 		MCPServers: map[string]OpenCodeMCPServer{
@@ -488,13 +488,13 @@ func TestValidateFromMap(t *testing.T) {
 	validConfig := map[string]interface{}{
 		"provider": map[string]interface{}{
 			"options": map[string]interface{}{
-				"baseURL": "http://localhost:7061/v1",
+				"baseURL": "http://localhost:8100/v1",
 			},
 		},
 		"mcpServers": map[string]interface{}{
 			"test": map[string]interface{}{
 				"type": "sse",
-				"url":  "http://localhost:7061/mcp",
+				"url":  "http://localhost:8100/mcp",
 			},
 		},
 	}

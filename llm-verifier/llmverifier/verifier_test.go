@@ -269,7 +269,7 @@ func TestVerifier_Verify_Timeout(t *testing.T) {
 
 func TestVerifier_Verify_EmptyLLMList(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping network-dependent test in short mode")
+		t.Skip("Skipping network-dependent test in short mode")  // SKIP-OK: #short-mode
 	}
 	cfg := &config.Config{
 		Concurrency: 1,
@@ -403,7 +403,7 @@ func TestVerifier_verifySingleModel(t *testing.T) {
 
 func TestVerifier_discoverAndVerifyAllModels(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping network-dependent test in short mode")
+		t.Skip("Skipping network-dependent test in short mode")  // SKIP-OK: #short-mode
 	}
 	cfg := &config.Config{
 		Concurrency: 2,
@@ -433,7 +433,7 @@ func TestVerifier_discoverAndVerifyAllModels(t *testing.T) {
 
 func TestVerifier_checkResponsiveness(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping network-dependent test in short mode")
+		t.Skip("Skipping network-dependent test in short mode")  // SKIP-OK: #short-mode
 	}
 	cfg := &config.Config{
 		Concurrency: 1,
@@ -462,7 +462,7 @@ func TestVerifier_checkResponsiveness(t *testing.T) {
 
 func TestVerifier_checkOverload(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping network-dependent test in short mode")
+		t.Skip("Skipping network-dependent test in short mode")  // SKIP-OK: #short-mode
 	}
 	cfg := &config.Config{
 		Concurrency: 1,

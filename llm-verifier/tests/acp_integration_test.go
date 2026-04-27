@@ -15,7 +15,7 @@ import (
 // TestACPsWithRealProviders tests ACP detection with real LLM providers
 func TestACPsWithRealProviders(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
+		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Load test configuration
@@ -73,7 +73,7 @@ func TestACPsWithRealProviders(t *testing.T) {
 // TestACPsEndToEnd tests complete ACP verification workflow
 func TestACPsEndToEnd(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping end-to-end test in short mode")
+		t.Skip("Skipping end-to-end test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	cfg := loadIntegrationTestConfig()
@@ -102,7 +102,7 @@ func TestACPsEndToEnd(t *testing.T) {
 // TestACPsDatabaseOperations tests ACP-related database operations
 func TestACPsDatabaseOperations(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping database operations test in short mode")
+		t.Skip("Skipping database operations test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Test database operations with in-memory storage
@@ -159,7 +159,7 @@ func TestACPsDatabaseOperations(t *testing.T) {
 // TestACPsPerformance tests ACP detection performance
 func TestACPsPerformance(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping performance test in short mode")
+		t.Skip("Skipping performance test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	cfg := loadIntegrationTestConfig()

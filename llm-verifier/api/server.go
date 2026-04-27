@@ -38,19 +38,22 @@ func (s *Server) Router() http.Handler {
 	return mux
 }
 
-// Start starts the HTTP server
-func (s *Server) Start() error {
+// Start starts the HTTP server on the specified port
+func (s *Server) Start(port string) error {
 	mux := http.NewServeMux()
 
-	// Register API endpoints
 	mux.HandleFunc("/api/health", s.HealthHandler)
 	mux.HandleFunc("/api/models", s.ListModelsHandler)
 	mux.HandleFunc("/api/models/", s.GetModelHandler)
 	mux.HandleFunc("/api/models/{id}/verify", s.VerifyModelHandler)
 	mux.HandleFunc("/api/providers", s.ProvidersHandler)
 
+	if port == "" {
+		port = "8080"
+	}
+
 	s.server = &http.Server{
-		Addr:    ":8080",
+		Addr:    ":" + port,
 		Handler: mux,
 	}
 

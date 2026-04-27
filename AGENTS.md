@@ -295,22 +295,20 @@ If you discover security issues with exports or API key handling:
 **Export Version:** 2.0-ultimate  
 **Security Level:** Maximum (600 permissions, gitignore protected, embedded warnings)
 
-
----
-
 ## Universal Mandatory Constraints
 
-> Cascaded from the HelixAgent root `CLAUDE.md` via `/tmp/UNIVERSAL_MANDATORY_RULES.md`.
-> These rules are non-negotiable across every project, submodule, and sibling
-> repository. Project-specific addenda are welcome but cannot weaken or
-> override these.
+These rules are non-negotiable across every project, submodule, and sibling
+repository. They are derived from the HelixAgent root `CLAUDE.md`. Each
+project MUST surface them in its own `CLAUDE.md`, `AGENTS.md`, and
+`CONSTITUTION.md`. Project-specific addenda are welcome but cannot weaken
+or override these.
 
 ### Hard Stops (permanent, non-negotiable)
 
 1. **NO CI/CD pipelines.** No `.github/workflows/`, `.gitlab-ci.yml`,
    `Jenkinsfile`, `.travis.yml`, `.circleci/`, or any automated pipeline.
-   No Git hooks either. All builds and tests run manually or via
-   Makefile/script targets.
+   No Git hooks either. All builds and tests run manually or via Makefile/
+   script targets.
 2. **NO HTTPS for Git.** SSH URLs only (`git@github.com:…`,
    `git@gitlab.com:…`, etc.) for clones, fetches, pushes, and submodule
    updates. Including for public repos. SSH keys are configured on every
@@ -334,8 +332,8 @@ If you discover security issues with exports or API key handling:
    calls, real databases, live services. No simulated success. Fallback
    chains tested with actual failures.
 4. **Health & Observability.** Every service MUST expose health
-   endpoints. Circuit breakers for all external dependencies.
-   Prometheus / OpenTelemetry integration where applicable.
+   endpoints. Circuit breakers for all external dependencies. Prometheus
+   / OpenTelemetry integration where applicable.
 5. **Documentation & Quality.** Update `CLAUDE.md`, `AGENTS.md`, and
    relevant docs alongside code changes. Pass language-appropriate
    format/lint/security gates. Conventional Commits:
@@ -343,34 +341,32 @@ If you discover security issues with exports or API key handling:
 6. **Validation Before Release.** Pass the project's full validation
    suite (`make ci-validate-all`-equivalent) plus all challenges
    (`./challenges/scripts/run_all_challenges.sh`).
-7. **No Mocks or Stubs in Production.** Mocks, stubs, fakes,
-   placeholder classes, TODO implementations are STRICTLY FORBIDDEN in
-   production code. All production code is fully functional with real
-   integrations. Only unit tests may use mocks/stubs.
+7. **No Mocks or Stubs in Production.** Mocks, stubs, fakes, placeholder
+   classes, TODO implementations are STRICTLY FORBIDDEN in production
+   code. All production code is fully functional with real integrations.
+   Only unit tests may use mocks/stubs.
 8. **Comprehensive Verification.** Every fix MUST be verified from all
-   angles: runtime testing (actual HTTP requests / real CLI
-   invocations), compile verification, code structure checks,
-   dependency existence checks, backward compatibility, and no false
-   positives in tests or challenges. Grep-only validation is NEVER
-   sufficient.
+   angles: runtime testing (actual HTTP requests / real CLI invocations),
+   compile verification, code structure checks, dependency existence
+   checks, backward compatibility, and no false positives in tests or
+   challenges. Grep-only validation is NEVER sufficient.
 9. **Resource Limits for Tests & Challenges (CRITICAL).** ALL test and
-   challenge execution MUST be strictly limited to 30-40% of host
-   system resources. Use `GOMAXPROCS=2`, `nice -n 19`, `ionice -c 3`,
-   `-p 1` for `go test`. Container limits required. The host runs
+   challenge execution MUST be strictly limited to 30-40% of host system
+   resources. Use `GOMAXPROCS=2`, `nice -n 19`, `ionice -c 3`, `-p 1`
+   for `go test`. Container limits required. The host runs
    mission-critical processes — exceeding limits causes system crashes.
 10. **Bugfix Documentation.** All bug fixes MUST be documented in
     `docs/issues/fixed/BUGFIXES.md` (or the project's equivalent) with
     root cause analysis, affected files, fix description, and a link to
     the verification test/challenge.
 11. **Real Infrastructure for All Non-Unit Tests.** Mocks/fakes/stubs/
-    placeholders MAY be used ONLY in unit tests (files ending
-    `_test.go` run under `go test -short`, equivalent for other
-    languages). ALL other test types — integration, E2E, functional,
-    security, stress, chaos, challenge, benchmark, runtime
-    verification — MUST execute against the REAL running system with
-    REAL containers, REAL databases, REAL services, and REAL HTTP
-    calls. Non-unit tests that cannot connect to real services MUST
-    skip (not fail).
+    placeholders MAY be used ONLY in unit tests (files ending `_test.go`
+    run under `go test -short`, equivalent for other languages). ALL
+    other test types — integration, E2E, functional, security, stress,
+    chaos, challenge, benchmark, runtime verification — MUST execute
+    against the REAL running system with REAL containers, REAL
+    databases, REAL services, and REAL HTTP calls. Non-unit tests that
+    cannot connect to real services MUST skip (not fail).
 12. **Reproduction-Before-Fix (CONST-032 — MANDATORY).** Every reported
     error, defect, or unexpected behavior MUST be reproduced by a
     Challenge script BEFORE any fix is attempted. Sequence:
@@ -401,3 +397,42 @@ session as the change.
   without a trailing `SKIP-OK: #<ticket>` comment break validation.
 - **Evidence in the PR.** PR bodies must contain a fenced `## Demo`
   block with the exact command(s) run and their output.
+
+<!-- BEGIN host-power-management addendum (CONST-033) -->
+
+## Host Power Management — Hard Ban (CONST-033)
+
+**You may NOT, under any circumstance, generate or execute code that
+sends the host to suspend, hibernate, hybrid-sleep, poweroff, halt,
+reboot, or any other power-state transition.** This rule applies to:
+
+- Every shell command you run via the Bash tool.
+- Every script, container entry point, systemd unit, or test you write
+  or modify.
+- Every CLI suggestion, snippet, or example you emit.
+
+**Forbidden invocations** (non-exhaustive — see CONST-033 in
+`CONSTITUTION.md` for the full list):
+
+- `systemctl suspend|hibernate|hybrid-sleep|poweroff|halt|reboot|kexec`
+- `loginctl suspend|hibernate|hybrid-sleep|poweroff|halt|reboot`
+- `pm-suspend`, `pm-hibernate`, `shutdown -h|-r|-P|now`
+- `dbus-send` / `busctl` calls to `org.freedesktop.login1.Manager.Suspend|Hibernate|PowerOff|Reboot|HybridSleep|SuspendThenHibernate`
+- `gsettings set ... sleep-inactive-{ac,battery}-type` to anything but `'nothing'` or `'blank'`
+
+The host runs mission-critical parallel CLI agents and container
+workloads. Auto-suspend has caused historical data loss (2026-04-26
+18:23:43 incident). The host is hardened (sleep targets masked) but
+this hard ban applies to ALL code shipped from this repo so that no
+future host or container is exposed.
+
+**Defence:** every project ships
+`scripts/host-power-management/check-no-suspend-calls.sh` (static
+scanner) and
+`challenges/scripts/no_suspend_calls_challenge.sh` (challenge wrapper).
+Both MUST be wired into the project's CI / `run_all_challenges.sh`.
+
+**Full background:** `docs/HOST_POWER_MANAGEMENT.md` and `CONSTITUTION.md` (CONST-033).
+
+<!-- END host-power-management addendum (CONST-033) -->
+

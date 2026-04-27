@@ -28,7 +28,7 @@ var (
 // Test complete end-to-end workflow
 func TestCompleteWorkflow_BasicFlow(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping E2E test in short mode")
+		t.Skip("Skipping E2E test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Setup complete test environment
@@ -88,7 +88,7 @@ func TestCompleteWorkflow_BasicFlow(t *testing.T) {
 // Test complete workflow with multiple users
 func TestCompleteWorkflow_MultipleUsers(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping E2E test in short mode")
+		t.Skip("Skipping E2E test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	testEnv := setupCompleteTestEnvironment(t)
@@ -159,7 +159,7 @@ func TestCompleteWorkflow_MultipleUsers(t *testing.T) {
 // Test complete workflow with provider failures
 func TestCompleteWorkflow_ProviderFailures(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping E2E test in short mode")
+		t.Skip("Skipping E2E test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	testEnv := setupCompleteTestEnvironment(t)
@@ -226,7 +226,7 @@ func TestCompleteWorkflow_ProviderFailures(t *testing.T) {
 // Test complete workflow with configuration changes
 func TestCompleteWorkflow_ConfigurationChanges(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping E2E test in short mode")
+		t.Skip("Skipping E2E test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	testEnv := setupCompleteTestEnvironment(t)
@@ -286,7 +286,7 @@ func TestCompleteWorkflow_ConfigurationChanges(t *testing.T) {
 // Test complete workflow with caching
 func TestCompleteWorkflow_Caching(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping E2E test in short mode")
+		t.Skip("Skipping E2E test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	testEnv := setupCompleteTestEnvironment(t)
@@ -348,7 +348,7 @@ func TestCompleteWorkflow_Caching(t *testing.T) {
 // Test complete workflow with security features
 func TestCompleteWorkflow_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping E2E test in short mode")
+		t.Skip("Skipping E2E test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	// Reset rate limit counter for this test
@@ -398,7 +398,7 @@ func TestCompleteWorkflow_Security(t *testing.T) {
 // Test complete workflow with performance monitoring
 func TestCompleteWorkflow_Performance(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping E2E test in short mode")
+		t.Skip("Skipping E2E test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	testEnv := setupCompleteTestEnvironment(t)
@@ -439,7 +439,7 @@ func TestCompleteWorkflow_Performance(t *testing.T) {
 // Test complete workflow with error scenarios
 func TestCompleteWorkflow_ErrorScenarios(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping E2E test in short mode")
+		t.Skip("Skipping E2E test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	testEnv := setupCompleteTestEnvironment(t)

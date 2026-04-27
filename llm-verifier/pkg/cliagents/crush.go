@@ -70,17 +70,35 @@ func (g *CrushGenerator) Generate(ctx context.Context, config *GeneratorConfig) 
 	baseURL := fmt.Sprintf("http://%s:%d/v1", config.HelixAgentHost, config.HelixAgentPort)
 
 	// Configure providers (map by provider ID)
+	// Single "Helix Agent" provider with TWO models:
+	// - helix-debate: Helix AI Debate Ensemble (for coder, summarizer)
+	// - helix-llm: Helix LLM (for task, title - with provider chain fallback)
 	crushConfig.Providers = map[string]crush_config.ProviderConfig{
 		"helixagent": {
 			ID:      "helixagent",
-			Name:    "HelixAgent",
+			Name:    "Helix Agent",
 			Type:    "openai-compat",
 			BaseURL: baseURL,
 			APIKey:  apiKey,
 			Models: []crush_config.Model{
 				{
-					ID:                  "helixagent-debate",
-					Name:                "HelixAgent AI Debate Ensemble",
+					ID:                  "helix-debate",
+					Name:                "Helix AI Debate Ensemble",
+					CostPer1MIn:         0,
+					CostPer1MOut:        0,
+					CostPer1MInCached:   0,
+					CostPer1MOutCached:  0,
+					ContextWindow:       128000,
+					DefaultMaxTokens:    8192,
+					CanReason:           true,
+					SupportsAttachments: true,
+					Options: &crush_config.ModelOptions{
+						Temperature: 0.7,
+					},
+				},
+				{
+					ID:                  "helix-llm",
+					Name:                "Helix LLM",
 					CostPer1MIn:         0,
 					CostPer1MOut:        0,
 					CostPer1MInCached:   0,
@@ -98,23 +116,44 @@ func (g *CrushGenerator) Generate(ctx context.Context, config *GeneratorConfig) 
 	}
 
 	// Configure models (map by model type/role to SelectedModel)
+	// Agent routing: task/title → helix-llm, coder/summarizer → helix-debate
 	crushConfig.Models = map[string]crush_config.SelectedModel{
 		"default": {
-			Model:       "helixagent-debate",
+			Model:       "helix-debate",
 			Provider:    "helixagent",
 			MaxTokens:   8192,
 			Temperature: 0.7,
 		},
 		"large": {
-			Model:     "helixagent-debate",
+			Model:     "helix-debate",
 			Provider:  "helixagent",
 			MaxTokens: 32768,
 		},
 		"reasoning": {
-			Model:           "helixagent-debate",
+			Model:           "helix-llm",
 			Provider:        "helixagent",
 			MaxTokens:       16384,
 			ReasoningEffort: "high",
+		},
+		"coder": {
+			Model:     "helix-debate",
+			Provider:  "helixagent",
+			MaxTokens: 8192,
+		},
+		"summarizer": {
+			Model:     "helix-debate",
+			Provider:  "helixagent",
+			MaxTokens: 4096,
+		},
+		"task": {
+			Model:     "helix-llm",
+			Provider:  "helixagent",
+			MaxTokens: 4096,
+		},
+		"title": {
+			Model:     "helix-llm",
+			Provider:  "helixagent",
+			MaxTokens: 80,
 		},
 	}
 
