@@ -31,7 +31,7 @@ func TestACPsWithRealProviders(t *testing.T) {
 			registry := providers.NewProviderRegistry()
 			providerConfig, exists := registry.GetConfig(providerName)
 			if !exists {
-				t.Skipf("Provider %s not configured", providerName)
+				t.Skipf("Provider %s not configured (SKIP-OK: #unmarked-skip-needs-ticket)", providerName)
 			}
 
 			// Create client for this provider
@@ -44,7 +44,7 @@ func TestACPsWithRealProviders(t *testing.T) {
 			// Get available models for this provider
 			models := getIntegrationProviderModels(providerConfig)
 			if len(models) == 0 {
-				t.Skipf("No models available for provider %s", providerName)
+				t.Skipf("No models available for provider %s (SKIP-OK: #unmarked-skip-needs-ticket)", providerName)
 			}
 
 			// Test ACP support for each model
