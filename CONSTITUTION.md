@@ -223,3 +223,13 @@ challenges/scripts/host_no_auto_suspend_challenge.sh` to confirm the
 hardening is intact. If hardening is intact AND no suspend
 broadcast appears in journal, the perceived event was build-pressure
 sluggishness, not a power transition.
+
+
+<!-- Cascaded governance requirement -->
+**We had been in position that all tests do execute**
+
+
+
+<!-- Cascaded governance requirement -->
+**bar for shipping is not**
+

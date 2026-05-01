@@ -608,3 +608,18 @@ test added going forward MUST pass an honest self-review against
 this taxonomy before being committed.
 
 <!-- END const035-strengthening-2026-04-29 -->
+
+
+<!-- Cascaded governance requirement -->
+**We had been in position that all tests do execute**
+
+
+
+<!-- Cascaded governance requirement -->
+**bar for shipping is not**
+
+
+
+<!-- Cascaded governance requirement -->
+**Host Power Management is Forbidden**
+
