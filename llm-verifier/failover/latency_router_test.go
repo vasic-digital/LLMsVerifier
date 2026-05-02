@@ -269,8 +269,9 @@ func TestLatencyTrackerConcurrentGetStats(t *testing.T) {
 
 	wg.Wait()
 
-	// Should not panic
-	assert.True(t, true)
+	// Anti-bluff: latency stats should still be readable after concurrent access.
+	stats := lt.GetLatencyStats(providerID)
+	assert.NotNil(t, stats, "Latency stats should be queryable after concurrent reads")
 }
 
 func TestNewLatencyBasedRouter(t *testing.T) {

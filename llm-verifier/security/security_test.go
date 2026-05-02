@@ -621,8 +621,9 @@ func TestRequestThrottlerConcurrent(t *testing.T) {
 
 	wg.Wait()
 
-	// Should not panic
-	assert.True(t, true)
+	// Anti-bluff: throttler should still allow requests after concurrent checks.
+	allowed, _ := rt.CheckRequest("192.168.1.1", "")
+	assert.True(t, allowed, "Throttler should remain functional after concurrent checks")
 }
 
 

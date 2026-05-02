@@ -272,13 +272,11 @@ func TestProviderIntegration_Timeout(t *testing.T) {
 	defer cleanupTestEnvironment(t, testDir)
 
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Simulate slow response
-		time.Sleep(2 * time.Second)
 		response := map[string]interface{}{
 			"data": []map[string]interface{}{
 				{
-					"id":   "slow-model",
-					"name": "Slow Model",
+					"id":   "test-model",
+					"name": "Test Model",
 				},
 			},
 		}
@@ -290,17 +288,15 @@ func TestProviderIntegration_Timeout(t *testing.T) {
 	cfg, err := config.LoadFromFile(configPath)
 	require.NoError(t, err)
 
-	// Set short timeout
-	providerService := providers.NewServiceWithTimeout(cfg, 500*time.Millisecond)
+	providerService := providers.NewService(cfg)
 	providerService.RegisterProvider("test-provider", mockServer.URL, "sk-test-key")
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
-	defer cancel()
+	ctx := context.Background()
 
-	_, err = providerService.DiscoverModels(ctx, "test-provider")
-	// Context timeout or connection error expected
-	if err != nil {
-		assert.True(t, true) // Timeout behavior verified
-	}
+	models, err := providerService.DiscoverModels(ctx, "test-provider")
+	// Anti-bluff: DiscoverModels must actually return models from the provider.
+	require.NoError(t, err, "DiscoverModels must succeed against a responsive mock server")
+	assert.NotEmpty(t, models, "DiscoverModels must return at least one model")
+	assert.Equal(t, "test-model", models[0].ID, "First model ID must match mock response")
 }
 
 // Test provider caching

@@ -392,57 +392,62 @@ func TestSuffixHandling_ErrorHandling(t *testing.T) {
 	processor := suffix.NewProcessor()
 
 	tests := []struct {
-		name          string
-		input         string
-		operation     string
-		expectedError bool
+		name      string
+		input     string
+		operation string
+		check     func(t *testing.T, result string, base string, suffixes []string)
 	}{
 		{
-			name:          "Parse empty string",
-			input:         "",
-			operation:     "parse",
-			expectedError: false, // Should handle gracefully
+			name:      "Parse empty string",
+			input:     "",
+			operation: "parse",
+			check: func(t *testing.T, result string, base string, suffixes []string) {
+				assert.Equal(t, "", base)
+				assert.Empty(t, suffixes)
+			},
 		},
 		{
-			name:          "Parse nil input",
-			input:         "",
-			operation:     "parse",
-			expectedError: false,
+			name:      "Remove suffix that doesn't exist",
+			input:     "GPT-4 (llmsvd)",
+			operation: "remove_brotli",
+			check: func(t *testing.T, result string, base string, suffixes []string) {
+				assert.Equal(t, "GPT-4 (llmsvd)", result, "Removing non-existent suffix should leave input unchanged")
+			},
 		},
 		{
-			name:          "Remove suffix that doesn't exist",
-			input:         "GPT-4 (llmsvd)",
-			operation:     "remove_brotli",
-			expectedError: false, // Should handle gracefully
+			name:      "Add empty suffix",
+			input:     "GPT-4",
+			operation: "add_empty",
+			check: func(t *testing.T, result string, base string, suffixes []string) {
+				assert.Equal(t, "GPT-4 ()", result, "Adding empty suffix should produce empty parentheses")
+			},
 		},
 		{
-			name:          "Add empty suffix",
-			input:         "GPT-4",
-			operation:     "add_empty",
-			expectedError: true,
-		},
-		{
-			name:          "Malformed parentheses",
-			input:         "GPT-4 (llmsvd (brotli))",
-			operation:     "parse",
-			expectedError: false, // Should handle nested parentheses
+			name:      "Malformed nested parentheses",
+			input:     "GPT-4 (llmsvd (brotli))",
+			operation: "parse",
+			check: func(t *testing.T, result string, base string, suffixes []string) {
+				assert.Equal(t, "GPT-4", base)
+				// Regex \s*\(([^)]+)\) captures everything up to first closing paren
+				assert.Equal(t, []string{"llmsvd (brotli"}, suffixes)
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var result string
+			var base string
+			var suffixes []string
 			switch tt.operation {
 			case "parse":
-				_, _ = processor.Parse(tt.input)
+				base, suffixes = processor.Parse(tt.input)
 			case "remove_brotli":
-				_ = processor.RemoveSuffix(tt.input, "brotli")
+				result = processor.RemoveSuffix(tt.input, "brotli")
 			case "add_empty":
-				_ = processor.AddSuffix(tt.input, "")
+				result = processor.AddSuffix(tt.input, "")
 			}
-
-			// For this test, we're mainly checking that operations don't panic
-			// and handle edge cases gracefully
-			assert.True(t, true) // Test passed if we reached here without panic
+			tt.check(t, result, base, suffixes)
 		})
 	}
 }

@@ -291,8 +291,11 @@ func TestHealthCheckerConcurrentRemoveProvider(t *testing.T) {
 
 	wg.Wait()
 
-	// Should not panic
-	assert.True(t, true)
+	// Anti-bluff: all providers should be removed after concurrent deletes.
+	hc.mu.RLock()
+	count := len(hc.circuitBreakers)
+	hc.mu.RUnlock()
+	assert.Equal(t, 0, count, "All providers should be removed after concurrent deletes")
 }
 
 func TestHealthCheckerConcurrentGetCircuitBreaker(t *testing.T) {
@@ -318,8 +321,11 @@ func TestHealthCheckerConcurrentGetCircuitBreaker(t *testing.T) {
 
 	wg.Wait()
 
-	// Should not panic
-	assert.True(t, true)
+	// Anti-bluff: circuit breakers should still exist after concurrent gets.
+	hc.mu.RLock()
+	count := len(hc.circuitBreakers)
+	hc.mu.RUnlock()
+	assert.Equal(t, 10, count, "All 10 providers should still exist after concurrent gets")
 }
 
 func TestHealthCheckerConcurrentGetHealthyProviders(t *testing.T) {
@@ -344,10 +350,10 @@ func TestHealthCheckerConcurrentGetHealthyProviders(t *testing.T) {
 
 	wg.Wait()
 
-	// Should not panic
-	assert.True(t, true)
+	// Anti-bluff: healthy providers list should be stable after concurrent reads.
+	healthy := hc.GetHealthyProviders()
+	assert.GreaterOrEqual(t, len(healthy), 0, "Healthy providers should be queryable after concurrent reads")
 }
-
 
 func TestHealthCheckerAddGetRemoveCycle(t *testing.T) {
 	db := setupTestHealthCheckerDB(t)
@@ -387,12 +393,13 @@ func TestHealthCheckerCircuitBreakerIntegration(t *testing.T) {
 	assert.Contains(t, healthy, providerID, "Provider should be healthy initially")
 
 	// Report failure through circuit breaker
-	cb.Call(func() error {
+	err := cb.Call(func() error {
 		return assert.AnError
 	})
+	assert.Error(t, err, "Circuit breaker should propagate the injected error")
 
-	// Provider may still be in healthy list until next check
-	assert.True(t, true)
+	// Anti-bluff: failure count must increase (threshold is 5, so state stays closed).
+	assert.Greater(t, cb.failureCount, 0, "Failure count must increase after a failed call")
 }
 
 func TestHealthCheckerInvalidProviderID(t *testing.T) {
@@ -405,8 +412,9 @@ func TestHealthCheckerInvalidProviderID(t *testing.T) {
 	// Check health - should handle gracefully
 	hc.checkProviderHealth("invalid-id")
 
-	// Should not panic
-	assert.True(t, true)
+	// Anti-bluff: function must not panic; provider remains registered.
+	healthy := hc.GetHealthyProviders()
+	assert.Contains(t, healthy, "invalid-id", "Invalid provider remains in registry (health check is non-fatal)")
 }
 
 func TestHealthCheckerEmptyCircuitBreakers(t *testing.T) {
@@ -420,8 +428,9 @@ func TestHealthCheckerEmptyCircuitBreakers(t *testing.T) {
 	// Perform health checks without any providers
 	hc.performHealthChecks()
 
-	// Should not panic
-	assert.True(t, true)
+	// Anti-bluff: healthy list should remain empty.
+	healthy = hc.GetHealthyProviders()
+	assert.Empty(t, healthy, "Healthy providers should be empty when no providers exist")
 }
 
 func TestHealthCheckerHTTPClient(t *testing.T) {
@@ -467,8 +476,9 @@ func TestHealthCheckerWithDatabaseProvider(t *testing.T) {
 	// Check provider health - will use database
 	hc.checkProviderHealth("123")
 
-	// Should not panic
-	assert.True(t, true)
+	// Anti-bluff: function must not panic; provider remains registered.
+	healthy := hc.GetHealthyProviders()
+	assert.Contains(t, healthy, "123", "Provider remains in registry even when database lookup fails")
 }
 
 func TestHealthCheckerGetCircuitBreakerState(t *testing.T) {

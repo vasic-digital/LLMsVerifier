@@ -595,9 +595,8 @@ func TestSimplePerformancePlugin(t *testing.T) {
 // ==================== Plugin Interface Compliance ====================
 
 func TestPluginInterfaceImplementation(t *testing.T) {
+	// Compile-time verification: these types must satisfy the Plugin interface.
 	var _ Plugin = (*SimpleSentimentPlugin)(nil)
 	var _ Plugin = (*SimpleCodeReviewPlugin)(nil)
 	var _ Plugin = (*SimplePerformancePlugin)(nil)
-
-	assert.True(t, true)
 }
