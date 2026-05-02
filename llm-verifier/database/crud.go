@@ -1381,7 +1381,8 @@ func (d *Database) GetNotifications(limit int, offset int, filters map[string]in
 		whereClause = "WHERE " + strings.Join(conditions, " AND ")
 	}
 
-	query := fmt.Sprintf(` // #nosec G201
+	// #nosec G201 - whereClause is built from validated column names above.
+	query := fmt.Sprintf(`
 		SELECT id, type, channel, priority, title, message, data, recipient,
 		       sent, error, retry_count, created_at, sent_at, updated_at
 		FROM notifications
