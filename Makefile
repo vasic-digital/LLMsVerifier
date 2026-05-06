@@ -26,9 +26,14 @@ deps: ## Download and tidy dependencies
 	go mod download
 	go mod tidy
 
+# P1.5-WP4: API-key loader. Sourced before build/test recipes so credentials
+# from $HOME/api_keys.sh (or .env fallback) are available in the env. Guard
+# keeps recipes working when the loader is absent.
+LOAD_KEYS := if [ -f scripts/load_api_keys.sh ]; then . scripts/load_api_keys.sh; fi
+
 # Building
 build: ## Build the application
-	go build -o bin/llm-verifier ./cmd
+	@$(LOAD_KEYS); go build -o bin/llm-verifier ./cmd
 
 build-all: ## Build for multiple platforms
 	GOOS=linux GOARCH=amd64 go build -o bin/llm-verifier-linux-amd64 ./cmd
@@ -45,7 +50,7 @@ build-acp-all: ## Build ACP CLI for multiple platforms
 
 # Testing
 test: ## Run unit tests
-	go test -v -race -coverprofile=coverage.out ./...
+	@$(LOAD_KEYS); go test -v -race -coverprofile=coverage.out ./...
 
 test-integration: ## Run integration tests
 	go test -v -tags=integration ./tests/integration/...

@@ -225,6 +225,12 @@ results/
 **/*credential*
 **/*token*
 
+# Allow-exception: the loader SCRIPT itself contains NO secrets - it only
+# reads $HOME/api_keys.sh / .env at runtime (P1.5-WP4). The broader rules
+# above still block anything else with "api_key" in its name.
+!scripts/load_api_keys.sh
+!**/scripts/load_api_keys.sh
+
 # Specific OpenCode configuration files (contain embedded API keys)
 opencode.json
 opencode_full.json
