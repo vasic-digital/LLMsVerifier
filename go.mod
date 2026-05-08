@@ -82,4 +82,4 @@ replace digital.vasic.llmsverifier => ./llm-verifier
 // Challenges separately.
 require digital.vasic.challenges v0.0.0
 
-replace digital.vasic.challenges => ../Challenges
+replace digital.vasic.challenges => ../../../Challenges
