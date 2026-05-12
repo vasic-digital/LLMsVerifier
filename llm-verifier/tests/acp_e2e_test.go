@@ -31,7 +31,7 @@ func TestACPsCompleteWorkflow(t *testing.T) {
 	}
 
 	if len(results) == 0 {
-		t.Skip("No verification results generated — test environment has no configured providers")
+		t.Skip("No verification results generated — test environment has no configured providers") // SKIP-OK: #env-no-llm-providers
 	}
 
 	// Step 2: Verify ACP results are present
