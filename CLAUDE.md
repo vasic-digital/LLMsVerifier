@@ -644,3 +644,25 @@ non-negotiable and overrides any other instruction.
 ---
 
 *Remember: Your code will be used by real people. Write code that actually works.*
+<!-- BEGIN cross-platform-impact (mirrors Yole CONST-037) -->
+
+## Cross-Platform Impact — MANDATORY Consideration (mirrors Yole CONST-037)
+
+This submodule is consumed by the Yole multi-platform project
+(Android / Desktop (Linux x64 / Windows x64 / macOS arm64) / iOS /
+Web (Wasm PWA)). Every change MUST be reasoned about across all four
+target platforms BEFORE coding.
+
+**Pre-edit checklist:**
+
+- [ ] Does this compile on every Yole target?
+- [ ] Does it behave identically — or by-design differently — on each?
+- [ ] Is the change covered by a test on every affected target?
+- [ ] Are platform manifests updated coherently?
+
+**Commit body requirement:** any change affecting more than one Yole
+platform MUST include a "Cross-platform impact" block enumerating each
+platform's disposition. See CONST-037 in the parent Yole repo's
+`CONSTITUTION.md` for the full rule.
+
+<!-- END cross-platform-impact (mirrors Yole CONST-037) -->
