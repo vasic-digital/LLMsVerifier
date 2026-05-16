@@ -23,7 +23,7 @@ func NewHyperbolicAdapter(client *http.Client, endpoint, apiKey string) *Hyperbo
 			headers: map[string]string{
 				"Content-Type":  "application/json",
 				"Authorization": fmt.Sprintf("Bearer %s", apiKey),
-				"User-Agent":    "HelixAgent/1.0",
+				"User-Agent":    "helix_agent/1.0",
 			},
 		},
 	}

@@ -66,7 +66,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BINARY_PATHS=(
     "$SCRIPT_DIR/../../../llm-verifier"
     "$SCRIPT_DIR/../../../../llm-verifier"
-    "/run/media/milosvasic/DATA4TB/Projects/HelixAgent/LLMsVerifier/llm-verifier/llm-verifier"
+    "/run/media/milosvasic/DATA4TB/Projects/helix_agent/LLMsVerifier/llm-verifier/llm-verifier"
     "$(which llm-verifier 2>/dev/null || true)"
 )
 

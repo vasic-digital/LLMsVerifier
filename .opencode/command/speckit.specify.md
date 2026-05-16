@@ -224,7 +224,7 @@ When creating this spec from a user prompt:
 6. **Common areas needing clarification** (only if no reasonable default exists):
    - Feature scope and boundaries (include/exclude specific use cases)
    - User types and permissions (if multiple conflicting interpretations possible)
-   - Security/compliance requirements (when legally/financially significant)
+   - security/compliance requirements (when legally/financially significant)
 
 **Examples of reasonable defaults** (don't ask about these):
 
