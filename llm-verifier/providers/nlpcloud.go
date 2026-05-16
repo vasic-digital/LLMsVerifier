@@ -23,7 +23,7 @@ func NewNLPCloudAdapter(client *http.Client, endpoint, apiKey string) *NLPCloudA
 			headers: map[string]string{
 				"Content-Type":  "application/json",
 				"Authorization": fmt.Sprintf("Token %s", apiKey),
-				"User-Agent":    "HelixAgent/1.0",
+				"User-Agent":    "helix_agent/1.0",
 			},
 		},
 	}

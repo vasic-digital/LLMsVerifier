@@ -12,7 +12,7 @@
 //     hard-coding model preferences.
 //
 // The initial registry is intentionally minimal — values come from the
-// rate table documented in HelixQA/CLAUDE.md "Cost Rates" section.
+// rate table documented in helix_qa/CLAUDE.md "Cost Rates" section.
 // Expand per-provider entries as LLMsVerifier adds benchmark data.
 package helixqa
 
@@ -51,7 +51,7 @@ type VisionModel struct {
 // LLMsVerifier. The slice is a fresh copy on every call so callers may
 // mutate it without affecting other readers.
 //
-// Rates below mirror the table in HelixQA/CLAUDE.md (§ "Cost Rates").
+// Rates below mirror the table in helix_qa/CLAUDE.md (§ "Cost Rates").
 // Quality/reliability values are conservative starting points —
 // LLMsVerifier's benchmarks override these when available.
 func VisionModelRegistry() []VisionModel {
