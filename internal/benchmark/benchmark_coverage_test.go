@@ -137,6 +137,13 @@ func TestStandardBenchmarkRunner_CompareRuns_NotFound(t *testing.T) {
 // ============================================================================
 
 func TestStandardBenchmarkRunner_StartRun_Completes(t *testing.T) {
+	// §11.4 anti-bluff (round-28): the runner is intentionally constructed
+	// with provider=nil here. Previously the nil-provider branch in
+	// executeTask fabricated Passed=true/Score=0.8/Latency=100ms/Tokens=50
+	// — a CONST-035 violation. The current contract surfaces
+	// ErrBenchmarkProviderNotConfigured per task; the run still reaches
+	// Completed status (the runner does not abort on per-task errors), but
+	// every result MUST carry the sentinel error string and Passed=false.
 	runner := NewStandardBenchmarkRunner(nil, nil)
 	ctx := context.Background()
 
@@ -160,4 +167,60 @@ func TestStandardBenchmarkRunner_StartRun_Completes(t *testing.T) {
 	got, err := runner.GetRun(ctx, run.ID)
 	require.NoError(t, err)
 	assert.Equal(t, BenchmarkStatusCompleted, got.Status)
+
+	// Anti-bluff assertions: every result must reflect the missing-provider
+	// reality. Empty Results is also acceptable (no tasks queued for the
+	// type) — but if any result exists, it must NOT be a fabricated PASS.
+	for _, r := range got.Results {
+		assert.False(t, r.Passed, "nil-provider runner must NOT report Passed=true (regression of round-28 anti-bluff fix)")
+		assert.Equal(t, ErrBenchmarkProviderNotConfigured.Error(), r.Error,
+			"nil-provider runner must surface ErrBenchmarkProviderNotConfigured")
+		assert.Equal(t, 0.0, r.Score, "nil-provider runner must NOT fabricate Score")
+		assert.Equal(t, 0, r.TokensUsed, "nil-provider runner must NOT fabricate TokensUsed")
+	}
 }
+
+// TestStandardBenchmarkRunner_NilProvider_ReturnsSentinel directly exercises
+// the executeTask nil-provider branch to lock-in the §11.4 sentinel contract.
+func TestStandardBenchmarkRunner_NilProvider_ReturnsSentinel(t *testing.T) {
+	runner := NewStandardBenchmarkRunner(nil, nil)
+	task := &BenchmarkTask{ID: "anti-bluff-probe", Prompt: "what is 2+2?", Expected: "4"}
+	result := runner.executeTask(context.Background(), &BenchmarkRun{}, task)
+
+	require.NotNil(t, result)
+	assert.False(t, result.Passed, "nil-provider executeTask must return Passed=false")
+	assert.Equal(t, ErrBenchmarkProviderNotConfigured.Error(), result.Error)
+	assert.Equal(t, 0.0, result.Score)
+	assert.Equal(t, 0, result.TokensUsed)
+	assert.Empty(t, result.Response)
+}
+
+// TestStandardBenchmarkRunner_SetProvider verifies the SetProvider injection
+// path added in round-28: a runner constructed with provider=nil can be
+// repaired by calling SetProvider before invoking executeTask.
+func TestStandardBenchmarkRunner_SetProvider(t *testing.T) {
+	runner := NewStandardBenchmarkRunner(nil, nil)
+	runner.SetProvider(&fakeBenchmarkProvider{response: "4", tokens: 7})
+
+	task := &BenchmarkTask{ID: "set-provider-probe", Prompt: "what is 2+2?", Expected: "4"}
+	result := runner.executeTask(context.Background(), &BenchmarkRun{}, task)
+
+	require.NotNil(t, result)
+	assert.True(t, result.Passed, "after SetProvider with matching response, task should pass")
+	assert.Empty(t, result.Error)
+	assert.Equal(t, "4", result.Response)
+	assert.Equal(t, 7, result.TokensUsed)
+}
+
+// fakeBenchmarkProvider is a unit-test-only stub (CONST-050(A) permits
+// fakes in *_test.go) that returns a fixed canned response.
+type fakeBenchmarkProvider struct {
+	response string
+	tokens   int
+}
+
+func (f *fakeBenchmarkProvider) Complete(ctx context.Context, prompt, _ string) (string, int, error) {
+	return f.response, f.tokens, nil
+}
+
+func (f *fakeBenchmarkProvider) GetName() string { return "fake-benchmark-provider" }

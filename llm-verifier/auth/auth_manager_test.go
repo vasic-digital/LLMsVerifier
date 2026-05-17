@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -521,10 +522,25 @@ func TestAuthManager_AuthenticateWithSSO_UnknownProvider(t *testing.T) {
 }
 
 func TestAuthManager_CreateRole(t *testing.T) {
+	// §11.4 anti-bluff (round-28): previously CreateRole only fmt.Printf'd,
+	// so the test "just verify it doesn't panic" was a bluff — there was
+	// nothing to verify. The contract now persists the role + permissions
+	// to the in-memory roles map, retrievable via GetRolePermissions.
 	am := NewAuthManager("test-secret")
 
-	// Just verify it doesn't panic
-	am.CreateRole("admin", []string{"read", "write", "delete"})
+	am.CreateRole("custom_role", []string{"read", "write", "delete"})
+	perms := am.GetRolePermissions("custom_role")
+	require.NotNil(t, perms, "CreateRole must persist the role (round-28 anti-bluff fix)")
+	assert.ElementsMatch(t, []string{"read", "write", "delete"}, perms)
+
+	// Defensive-copy invariant: mutating the returned slice must not
+	// corrupt the stored permission set.
+	perms[0] = "MUTATED"
+	freshPerms := am.GetRolePermissions("custom_role")
+	assert.NotContains(t, freshPerms, "MUTATED", "GetRolePermissions must return defensive copy")
+
+	// Unknown role → nil.
+	assert.Nil(t, am.GetRolePermissions("no-such-role"))
 }
 
 func TestAuthManager_AssignRoleToClient_ClientNotFound(t *testing.T) {
@@ -535,11 +551,110 @@ func TestAuthManager_AssignRoleToClient_ClientNotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "client not found")
 }
 
-func TestAuthManager_AuditAuthEvent(t *testing.T) {
+// TestAuthManager_AssignRoleToClient_AppliesPermissions confirms the
+// round-28 RBAC fix: with a real client registered, assigning a default
+// role must merge that role's permissions into the client's permission
+// set (deduplicated). Previously the method looked up `am.clients["dummy"]`
+// — a key that never existed — so this path never produced any effect.
+func TestAuthManager_AssignRoleToClient_AppliesPermissions(t *testing.T) {
 	am := NewAuthManager("test-secret")
 
-	// Just verify it doesn't panic
+	// Register a real client via the existing registration API.
+	client, _, err := am.RegisterClient("test-client", "desc", []string{"read"}, 60)
+	require.NoError(t, err)
+
+	require.NoError(t, am.AssignRoleToClient(client.ID, "editor"))
+
+	// editor default permissions per NewAuthManager: {"read", "write", "delete"}
+	// merged with the client's existing {"read"} (dedup) → {"read","write","delete"}.
+	am.mu.RLock()
+	stored := am.clientsByID[client.ID]
+	am.mu.RUnlock()
+	require.NotNil(t, stored)
+	assert.Contains(t, stored.Permissions, "read")
+	assert.Contains(t, stored.Permissions, "write")
+	assert.Contains(t, stored.Permissions, "delete")
+
+	// No duplicates: "read" should appear exactly once.
+	readCount := 0
+	for _, p := range stored.Permissions {
+		if p == "read" {
+			readCount++
+		}
+	}
+	assert.Equal(t, 1, readCount, "dedup must collapse duplicate 'read'")
+}
+
+// TestAuthManager_AssignRoleToClient_UnknownRole asserts the contract for
+// roles that have never been registered. Default roles registered in
+// NewAuthManager ("admin","editor","viewer","api") are known; anything else
+// must be refused.
+func TestAuthManager_AssignRoleToClient_UnknownRole(t *testing.T) {
+	am := NewAuthManager("test-secret")
+	client, _, err := am.RegisterClient("test-client", "desc", []string{"read"}, 60)
+	require.NoError(t, err)
+
+	err = am.AssignRoleToClient(client.ID, "definitely-not-a-role")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown role")
+}
+
+func TestAuthManager_AuditAuthEvent(t *testing.T) {
+	// §11.4 anti-bluff (round-28): previously AuditAuthEvent only fmt.Printf'd
+	// the event. No record persisted. This test asserts the new in-memory
+	// ring-buffer contract: every call leaves a retrievable record.
+	am := NewAuthManager("test-secret")
+
 	am.AuditAuthEvent("LOGIN", "client-1", "successful login")
+	am.AuditAuthEvent("LOGIN_FAIL", "client-2", "bad credentials")
+
+	log := am.GetAuditLog()
+	require.Len(t, log, 2)
+	assert.Equal(t, "LOGIN", log[0].EventType)
+	assert.Equal(t, "client-1", log[0].ClientID)
+	assert.Equal(t, "success", log[0].Status, "LOGIN without FAIL must be Status=success")
+	assert.Equal(t, "LOGIN_FAIL", log[1].EventType)
+	assert.Equal(t, "failure", log[1].Status, "event containing 'FAIL' must be Status=failure")
+	assert.Equal(t, "successful login", log[0].Details["message"])
+}
+
+// TestAuthManager_AuditLog_FIFOOverflow asserts the bounded-buffer behaviour
+// added in round-28. With capacity 1024, appending 1025 entries must drop
+// the oldest and retain the newest.
+func TestAuthManager_AuditLog_FIFOOverflow(t *testing.T) {
+	am := NewAuthManager("test-secret")
+
+	for i := 0; i < auditLogCapacity+5; i++ {
+		am.AuditAuthEvent("EVT", fmt.Sprintf("client-%d", i), "details")
+	}
+
+	log := am.GetAuditLog()
+	assert.Len(t, log, auditLogCapacity, "ring buffer must cap at auditLogCapacity")
+	// Oldest 5 should have been dropped; first surviving entry's clientID
+	// must reflect the 5th-from-start (clientID "client-5").
+	assert.Equal(t, "client-5", log[0].ClientID, "FIFO overflow must drop oldest entries first")
+	assert.Equal(t, fmt.Sprintf("client-%d", auditLogCapacity+4), log[len(log)-1].ClientID,
+		"newest entry must be preserved at tail")
+}
+
+// TestSSOManager_ValidateToken_RefusesUnsignedJWT pins the round-28 fix for
+// the JWT-signature-bypass bluff: ValidateToken must refuse any well-formed
+// JWT-shaped string with ErrJWTSignatureVerificationNotImplemented rather
+// than fabricating an SSOUserInfo.
+func TestSSOManager_ValidateToken_RefusesUnsignedJWT(t *testing.T) {
+	sm := NewSSOManager()
+	sm.AddProvider(&SSOConfig{Provider: "google", Issuer: "https://accounts.google.com"})
+
+	// A well-formed 3-part JWT-shaped string with base64-valid payload would
+	// previously have been accepted as a verified SSO authentication.
+	// header.payload.signature — payload is base64url("{\"sub\":\"victim\"}").
+	wellFormed := "aGVhZGVy.eyJzdWIiOiJ2aWN0aW0ifQ.c2ln"
+
+	info, err := sm.ValidateToken("google", wellFormed)
+	require.Error(t, err, "round-28 anti-bluff: ValidateToken MUST refuse unsigned JWT")
+	assert.Nil(t, info, "ValidateToken MUST NOT fabricate SSOUserInfo when signature is unverified")
+	assert.ErrorIs(t, err, ErrJWTSignatureVerificationNotImplemented,
+		"refusal MUST surface the specific JWKS-not-implemented sentinel")
 }
 
 func TestAuthManager_HashAPIKey(t *testing.T) {

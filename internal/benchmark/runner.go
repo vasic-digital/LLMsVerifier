@@ -10,6 +10,14 @@ import (
 	"github.com/google/uuid"
 )
 
+// ErrBenchmarkProviderNotConfigured is returned by executeTask when the runner
+// was constructed without an LLMProvider (or had it nil-set). Previously the
+// nil-provider branch fabricated Passed=true / Score=0.8 / Latency=100ms /
+// TokensUsed=50 for every task regardless of input — a §11.4 PASS-bluff at the
+// benchmark-runner default layer. The sentinel makes the absence of wiring an
+// honest, surfaced failure instead of a silent green PASS.
+var ErrBenchmarkProviderNotConfigured = fmt.Errorf("llmsverifier benchmark: provider has not been wired into the runner — call NewBenchmarkRunner with a non-nil provider or use SetProvider before invoking ExecuteRun (the previous nil-provider branch fabricated Passed=true/Score=0.8/Latency=100ms/TokensUsed=50 regardless of input; §11.4 PASS-bluff removed)")
+
 // StandardBenchmarkRunner implements BenchmarkRunner
 type StandardBenchmarkRunner struct {
 	mu             sync.RWMutex
@@ -44,6 +52,16 @@ func (r *StandardBenchmarkRunner) SetDebateEvaluator(eval DebateEvaluator) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.debateEval = eval
+}
+
+// SetProvider injects an LLMProvider after construction. Required when the
+// runner was created with provider=nil (e.g. for fast unit-test bootstrap of
+// the benchmark catalogue). Without a provider, executeTask returns
+// ErrBenchmarkProviderNotConfigured per the §11.4 anti-bluff posture.
+func (r *StandardBenchmarkRunner) SetProvider(provider LLMProvider) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.provider = provider
 }
 
 // initBuiltInBenchmarks initializes built-in benchmarks
@@ -298,10 +316,16 @@ func (r *StandardBenchmarkRunner) executeTask(ctx context.Context, run *Benchmar
 		result.Response = response
 		result.Passed, result.Score = r.evaluateResponse(ctx, run, task, response)
 	} else {
-		result.Passed = true
-		result.Score = 0.8
-		result.Latency = 100 * time.Millisecond
-		result.TokensUsed = 50
+		// §11.4 anti-bluff: the previous else-branch hardcoded
+		// Passed=true / Score=0.8 / Latency=100ms / TokensUsed=50, so every
+		// task PASSed regardless of input whenever the runner had no LLM
+		// provider wired in. That is a fabricated success — exactly the
+		// failure mode Article XI §11.9 (forensic anchor) and CONST-035
+		// (zero-bluff mandate) forbid. Surface the missing-wiring as an
+		// honest failure instead. Do NOT populate fake Score/Latency/Tokens.
+		result.Latency = time.Since(start)
+		result.Passed = false
+		result.Error = ErrBenchmarkProviderNotConfigured.Error()
 	}
 
 	return result

@@ -39,6 +39,12 @@ type ClientUsage struct {
 	HourlyResetAt    time.Time  `json:"hourly_reset_at"`
 }
 
+// auditLogCapacity bounds the in-memory ring buffer of AuditEvent entries.
+// On overflow, the oldest entry is dropped (FIFO). 1024 entries is the
+// agreed baseline per round-28 §11.4 sweep; durable persistence to a real
+// audit database is a separate follow-up tracked outside this anchor.
+const auditLogCapacity = 1024
+
 // AuthManager handles authentication and authorization
 type AuthManager struct {
 	jwtSecret     []byte
@@ -51,6 +57,8 @@ type AuthManager struct {
 	ldapManager   *LDAPManager        // LDAP manager for enterprise auth
 	roles         map[string][]string // Role name -> permissions mapping
 	usageTracking *UsageTracker       // Real usage tracking
+	auditLog      []AuditEvent        // Bounded FIFO buffer of audit events
+	auditMu       sync.Mutex          // Protects auditLog (separate from mu to avoid contention with hot auth path)
 	mu            sync.RWMutex        // Protects concurrent access
 }
 
@@ -111,6 +119,7 @@ func NewAuthManager(jwtSecret string) *AuthManager {
 		clientsByID:   make(map[int64]*Client),
 		roles:         make(map[string][]string),
 		usageTracking: NewUsageTracker(),
+		auditLog:      make([]AuditEvent, 0, auditLogCapacity),
 	}
 
 	// Initialize default roles
@@ -156,8 +165,16 @@ func (am *AuthManager) RegisterClient(name, description string, permissions []st
 		UpdatedAt:   time.Now(),
 	}
 
-	// Store in memory (in production, this would be in database)
+	// Store in memory (in production, this would be in database).
+	// Round-28 §11.4 fix: also index by numeric ID so AssignRoleToClient
+	// (and other ID-based lookups added subsequently) can find the client.
+	// Previously the by-ID map was populated only by SSO authentication —
+	// which made the public RBAC API unusable for normally-registered
+	// clients and hid the RBAC bluff.
+	am.mu.Lock()
 	am.clients[apiKey] = client
+	am.clientsByID[client.ID] = client
+	am.mu.Unlock()
 
 	return client, apiKey, nil
 }
@@ -613,6 +630,19 @@ type SSOConfig struct {
 	Issuer       string `json:"issuer"`        // Expected token issuer
 }
 
+// ErrJWTSignatureVerificationNotImplemented is returned by SSOManager.ValidateToken
+// to refuse parsing any SSO JWT without signature verification. Previously the
+// method base64-decoded the payload directly, fabricated an SSOUserInfo, and
+// returned success — accepting unsigned tokens as authenticated. That is a
+// silent authentication bypass: an attacker presenting any well-formed
+// 3-part dot-delimited base64 string would have been treated as a verified
+// SSO user. Loud failure beats silent auth bypass; the SSO flow is refused
+// until proper JWKS-based verification (golang-jwt/v4 + configured IdP
+// public keys) is wired in. §11.4 PASS-bluff at the authentication layer
+// (CONST-035, Article XI §11.9). Adjacency to CONST-042 (No-Secret-Leak)
+// because a successful bypass would have effectively leaked auth scope.
+var ErrJWTSignatureVerificationNotImplemented = fmt.Errorf("llmsverifier auth: JWT signature verification is not implemented — refusing to parse SSO token because accepting unsigned tokens is an authentication bypass (§11.4 PASS-bluff: security gap). Implement JWKS-based signature verification via golang-jwt/v4 + the configured IdP's public keys before re-enabling SSO")
+
 // SSOManager handles SSO operations
 type SSOManager struct {
 	configs map[string]*SSOConfig
@@ -633,51 +663,43 @@ func (sm *SSOManager) AddProvider(config *SSOConfig) {
 	sm.configs[config.Provider] = config
 }
 
-// ValidateToken validates an SSO token (basic JWT validation)
+// ValidateToken refuses to validate an SSO JWT without a verified signature.
+//
+// §11.4 anti-bluff (round-28): the previous body base64-decoded the JWT
+// payload directly, fabricated an SSOUserInfo (Subject="sso_<provider>_<nano>",
+// Email="", Name="SSO User (<provider>)"), and returned success — accepting
+// ANY well-formed 3-part dot-delimited base64 string as a verified SSO
+// authentication. That is a silent authentication bypass. Per CONST-035 +
+// Article XI §11.9, loud failure beats silent acceptance.
+//
+// Until JWKS-based signature verification is wired in (golang-jwt/v4 + the
+// configured IdP's public keys; documented follow-up), this method refuses
+// the SSO flow entirely by returning ErrJWTSignatureVerificationNotImplemented.
+// Provider-existence and basic format checks are preserved so that callers
+// continue to receive the more-specific error first when applicable.
 func (sm *SSOManager) ValidateToken(provider, tokenString string) (*SSOUserInfo, error) {
 	sm.mu.RLock()
-	config, exists := sm.configs[provider]
+	_, exists := sm.configs[provider]
 	sm.mu.RUnlock()
 
 	if !exists {
 		return nil, fmt.Errorf("SSO provider %s not configured", provider)
 	}
 
-	// Parse the JWT token without verification first to get claims
-	// In production, you would verify the signature using the provider's public keys
+	// Preserve format check so callers receive specific feedback first.
 	parts := strings.Split(tokenString, ".")
 	if len(parts) != 3 {
 		return nil, fmt.Errorf("invalid token format")
 	}
 
-	// Decode the payload (middle part)
-	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
-	if err != nil {
+	// Format-sanity probe only (base64 must decode), then refuse. We do NOT
+	// trust the payload. The decode is purely to reject obvious garbage
+	// before surfacing the security-gap sentinel.
+	if _, err := base64.RawURLEncoding.DecodeString(parts[1]); err != nil {
 		return nil, fmt.Errorf("failed to decode token payload: %w", err)
 	}
 
-	// For production, you would:
-	// 1. Fetch the provider's JWKS (JSON Web Key Set)
-	// 2. Verify the token signature
-	// 3. Validate issuer, audience, expiration
-	// 4. Call userinfo endpoint if needed
-
-	// Basic validation - check token is not empty and has expected structure
-	if len(payload) < 10 {
-		return nil, fmt.Errorf("invalid token payload")
-	}
-
-	// Create user info from token claims
-	userInfo := &SSOUserInfo{
-		Provider: provider,
-		Issuer:   config.Issuer,
-		// In production, parse these from the JWT claims
-		Subject: fmt.Sprintf("sso_%s_%d", provider, time.Now().UnixNano()),
-		Email:   "", // Would be extracted from token
-		Name:    fmt.Sprintf("SSO User (%s)", provider),
-	}
-
-	return userInfo, nil
+	return nil, ErrJWTSignatureVerificationNotImplemented
 }
 
 // SSOUserInfo contains user information from SSO provider
@@ -769,38 +791,134 @@ func (am *AuthManager) getDefaultSSOPermissions(userInfo *SSOUserInfo) []string 
 	return []string{"read"}
 }
 
-// CreateRole creates a role with permissions (RBAC)
+// CreateRole creates (or replaces) a role and stores its permission set in
+// the in-memory roles map. Previously this method only fmt.Printf'd — role
+// data never persisted anywhere, so subsequent AssignRoleToClient calls
+// could not consult it (a §11.4 PASS-bluff at the RBAC layer: the API
+// advertised role management while delivering nothing). The in-memory map
+// already lived on AuthManager (initialised in NewAuthManager); this
+// method now actually writes to it. Durable DB-backed persistence is a
+// documented follow-up — not relevant to closing the bluff.
 func (am *AuthManager) CreateRole(name string, permissions []string) {
-	// In production, this would store roles in database
-	// For demo, just log the role creation
-	fmt.Printf("Created role: %s with permissions: %v\n", name, permissions)
+	am.mu.Lock()
+	defer am.mu.Unlock()
+	// Defensive copy so the caller's slice cannot be mutated under us.
+	perms := make([]string, len(permissions))
+	copy(perms, permissions)
+	am.roles[name] = perms
 }
 
-// AssignRoleToClient assigns a role to a client
+// GetRolePermissions returns the permission set for a role (defensive copy)
+// or nil if the role has not been registered. Added in round-28 to support
+// CONST-035 anti-bluff assertions and to give callers a way to inspect what
+// CreateRole actually persisted.
+func (am *AuthManager) GetRolePermissions(name string) []string {
+	am.mu.RLock()
+	defer am.mu.RUnlock()
+	perms, ok := am.roles[name]
+	if !ok {
+		return nil
+	}
+	out := make([]string, len(perms))
+	copy(out, perms)
+	return out
+}
+
+// AssignRoleToClient assigns a registered role's permissions to a client by
+// numeric ID. Previously this method hardcoded `am.clients["dummy"]` — the
+// lookup ALWAYS missed (no such key existed), so the role-assignment API was
+// effectively a no-op disguised as a working feature. §11.4 PASS-bluff at
+// the RBAC layer.
+//
+// Round-28 fix:
+//   1. Look up the client via the existing clientsByID map (the correct
+//      data structure for the numeric clientID argument the API accepts).
+//   2. Resolve the role's permission set from the in-memory roles map
+//      (populated by CreateRole and by NewAuthManager's default roles).
+//   3. Merge the role's permissions into the client's permission set
+//      (deduplicating) and stamp UpdatedAt.
 func (am *AuthManager) AssignRoleToClient(clientID int64, roleName string) error {
-	client, exists := am.clients["dummy"] // This is simplified
-	if !exists {
+	am.mu.Lock()
+	defer am.mu.Unlock()
+
+	client, ok := am.clientsByID[clientID]
+	if !ok {
 		return fmt.Errorf("client not found")
 	}
 
-	// Add role-based permissions
-	switch roleName {
-	case "admin":
-		client.Permissions = append(client.Permissions, "admin", "read", "write", "delete")
-	case "editor":
-		client.Permissions = append(client.Permissions, "read", "write")
-	case "viewer":
-		client.Permissions = append(client.Permissions, "read")
-	default:
+	rolePerms, ok := am.roles[roleName]
+	if !ok {
 		return fmt.Errorf("unknown role: %s", roleName)
+	}
+
+	// Merge into client.Permissions, deduplicating.
+	existing := make(map[string]struct{}, len(client.Permissions))
+	for _, p := range client.Permissions {
+		existing[p] = struct{}{}
+	}
+	for _, p := range rolePerms {
+		if _, ok := existing[p]; !ok {
+			client.Permissions = append(client.Permissions, p)
+			existing[p] = struct{}{}
+		}
 	}
 
 	client.UpdatedAt = time.Now()
 	return nil
 }
 
-// AuditAuthEvent logs authentication events
+// AuditAuthEvent appends an authentication event to the in-memory audit log.
+//
+// §11.4 anti-bluff (round-28): the previous body was a single fmt.Printf with
+// the comment "In production, this would log to audit database". No event
+// was ever persisted; every audit query saw an empty store; the security
+// claim that authentication is auditable was a bluff at the persistence
+// layer (CONST-035, Article XI §11.9).
+//
+// The fix introduces an in-memory bounded FIFO ring of AuditEvent (capacity
+// auditLogCapacity = 1024). This is an HONEST BASELINE — durable persistence
+// to a real audit database remains a documented follow-up, but no caller
+// can now make a false audit-coverage claim because every call leaves a
+// retrievable record.
+//
+// `eventType` is interpreted as the event name; success is inferred as
+// true unless the eventType contains "FAIL" (case-insensitive). Callers
+// needing finer control should use the lower-level AppendAuditEvent.
 func (am *AuthManager) AuditAuthEvent(eventType, clientID, details string) {
-	// In production, this would log to audit database
-	fmt.Printf("AUDIT [%s] Client: %s, Details: %s\n", eventType, clientID, details)
+	status := "success"
+	if strings.Contains(strings.ToUpper(eventType), "FAIL") {
+		status = "failure"
+	}
+	evt := AuditEvent{
+		Timestamp: time.Now(),
+		EventType: eventType,
+		ClientID:  clientID,
+		Status:    status,
+		Details:   map[string]interface{}{"message": details},
+	}
+	am.AppendAuditEvent(evt)
+}
+
+// AppendAuditEvent is the lower-level audit-trail entry point. Appends `evt`
+// to the in-memory ring buffer, dropping the oldest entry on overflow.
+func (am *AuthManager) AppendAuditEvent(evt AuditEvent) {
+	am.auditMu.Lock()
+	defer am.auditMu.Unlock()
+	if len(am.auditLog) >= auditLogCapacity {
+		// Drop oldest (FIFO).
+		am.auditLog = append(am.auditLog[1:], evt)
+		return
+	}
+	am.auditLog = append(am.auditLog, evt)
+}
+
+// GetAuditLog returns a defensive copy of the current in-memory audit log.
+// Added in round-28 to support CONST-035 anti-bluff assertions and to give
+// callers a way to inspect what AuditAuthEvent actually persisted.
+func (am *AuthManager) GetAuditLog() []AuditEvent {
+	am.auditMu.Lock()
+	defer am.auditMu.Unlock()
+	out := make([]AuditEvent, len(am.auditLog))
+	copy(out, am.auditLog)
+	return out
 }
