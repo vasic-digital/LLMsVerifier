@@ -3,7 +3,6 @@ package verification
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"digital.vasic.llmsverifier/database"
 )
@@ -40,75 +39,34 @@ func (v *Verifier) Verify(ctx context.Context, req *Request) (*database.Verifica
 		return nil, fmt.Errorf("prompt is required")
 	}
 	
-	// Convert model ID string to int64 (this would be done properly in production)
-	var modelID int64 = 1 // Placeholder
-	
-	// Simulate verification process
-	now := time.Now()
-	result := &database.VerificationResult{
-		ID:                       time.Now().UnixNano(),
-		ModelID:                  modelID,
-		VerificationType:         "model_verification",
-		StartedAt:                now,
-		CompletedAt:              &now,
-		Status:                   "completed",
-		ModelExists:              boolPtr(true),
-		Responsive:               boolPtr(true),
-		Overloaded:               boolPtr(false),
-		LatencyMs:                intPtr(1500),
-		SupportsToolUse:          true,
-		SupportsFunctionCalling:  true,
-		SupportsCodeGeneration:   true,
-		SupportsCodeCompletion:   true,
-		SupportsCodeReview:       true,
-		SupportsCodeExplanation:  true,
-		SupportsEmbeddings:       true,
-		SupportsReranking:        true,
-		SupportsImageGeneration:  true,
-		SupportsAudioGeneration:  true,
-		SupportsVideoGeneration:  true,
-		SupportsMCPs:             true,
-		SupportsLSPs:             true,
-		SupportsMultimodal:       true,
-		SupportsStreaming:        true,
-		SupportsJSONMode:         true,
-		SupportsStructuredOutput: true,
-		SupportsReasoning:        true,
-		SupportsParallelToolUse:  true,
-		MaxParallelCalls:         10,
-		SupportsBatchProcessing:  true,
-		SupportsBrotli:           true,
-		CodeLanguageSupport:      []string{"python", "go", "javascript", "java", "csharp"},
-		CodeDebugging:            true,
-		CodeOptimization:         true,
-		TestGeneration:           true,
-		DocumentationGeneration:  true,
-		Refactoring:              true,
-		ErrorResolution:          true,
-		ArchitectureDesign:       true,
-		SecurityAssessment:       true,
-		PatternRecognition:       true,
-		DebuggingAccuracy:        0.85,
-		MaxHandledDepth:          5,
-		CodeQualityScore:         8.5,
-		LogicCorrectnessScore:    8.5,
-		RuntimeEfficiencyScore:   8.5,
-		OverallScore:             8.5,
-		CodeCapabilityScore:      8.5,
-		ResponsivenessScore:      8.5,
-		ReliabilityScore:         8.5,
-		FeatureRichnessScore:     8.5,
-		ValuePropositionScore:    8.5,
-		ScoreDetails:             "Excellent performance across all metrics",
-		AvgLatencyMs:             1500,
-		P95LatencyMs:             2000,
-		MinLatencyMs:             1000,
-		MaxLatencyMs:             3000,
-		ThroughputRPS:            10.0,
-	}
-	
-	return result, nil
+	// Real verification requires: (1) resolve req.ModelID against the
+	// models table to get the int64 PK; (2) dispatch the appropriate
+	// per-feature test via the llmverifier.Verifier against the
+	// configured provider endpoint; (3) compose a VerificationResult
+	// from the actual outcomes.
+	//
+	// Previously this function returned a hardcoded
+	// VerificationResult with EVERY capability flag set to true and
+	// EVERY score set to 8.5, regardless of which model was queried.
+	// That is a CONST-036/037 violation at the verification
+	// entrypoint — the single source of truth was lying to its
+	// consumers about every model's capabilities. §11.4 PASS-bluff
+	// at the highest blast-radius layer.
+	//
+	// Fix: return ErrVerificationNotWired so callers see the gap
+	// loudly. The canonical implementation requires wiring the
+	// existing llmverifier.Verifier (already present at
+	// ./llmverifier/verifier.go with TestCapabilities, TestModel,
+	// etc.) into this VerificationService — work tracked as
+	// round-17 deferral.
+	return nil, ErrVerificationNotWired
 }
+
+// ErrVerificationNotWired is returned by VerifyModel until the
+// llmverifier.Verifier is plumbed into VerificationService. The
+// previous fabricated-all-capabilities-true return was a §11.4 /
+// CONST-036/037 PASS-bluff and is now removed.
+var ErrVerificationNotWired = fmt.Errorf("verification.VerifyModel: real verifier dispatch is not wired (model resolution + per-feature test + score composition required); the previous hardcoded-all-capabilities-true return was a §11.4 / CONST-036/037 PASS-bluff and is now removed — wire llmverifier.Verifier into VerificationService to restore")
 
 // Result is an alias for VerificationResult for backward compatibility
 type Result = database.VerificationResult
