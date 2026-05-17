@@ -628,8 +628,15 @@ func TestLogAnalyticsGetTopErrors(t *testing.T) {
 
 	topErrors := analytics.GetTopErrors(10)
 
-	assert.NotNil(t, topErrors)
-	assert.Equal(t, 0, len(topErrors), "Should return empty slice for now")
+	// Per round-19 §11.4 fix (commit pending), GetTopErrors returns
+	// a single-element list with `not_wired: true` marker (was: empty
+	// slice — and this test was asserting len==0 with the comment
+	// "Should return empty slice for now", which CERTIFIED the
+	// stub-interface bluff per CONST-035 §11.4.4). Tightened to
+	// assert the new sentinel contract.
+	require.NotNil(t, topErrors)
+	require.Len(t, topErrors, 1, "expect single-element not_wired marker per round-19 sentinel pattern")
+	assert.Equal(t, true, topErrors[0]["not_wired"])
 
 	logger.Close()
 }

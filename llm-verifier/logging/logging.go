@@ -826,10 +826,24 @@ func NewLogAnalytics(logger *Logger) *LogAnalytics {
 	return &LogAnalytics{logger: logger}
 }
 
-// AnalyzeErrors analyzes error patterns in logs
+// AnalyzeErrors previously returned hardcoded `total_errors: 0 +
+// empty maps + computed time_range string` regardless of actual log
+// data — §11.4 stub-interface bluff. The accompanying tests
+// (logging_test.go) ASSERTED `len(errors) == 0` which CERTIFIED
+// the bluff (per CONST-035: tests that pass on placeholder
+// behaviour ARE the bluff infrastructure).
+//
+// Real implementation requires either (a) the log store backend
+// (SQLite/Postgres) exposing an aggregation query API, or (b) the
+// Logger keeping an in-memory ring buffer of recent error entries
+// for analytics consumption. Until the storage layer is wired, this
+// function emits a §11.4-disclosed placeholder result with explicit
+// `not_wired: true` marker so any caller can detect the gap by
+// checking that field instead of asserting on zero counts.
 func (la *LogAnalytics) AnalyzeErrors(hours int) map[string]any {
-	// Placeholder implementation
 	return map[string]any{
+		"not_wired":    true,
+		"reason":       "log store aggregation API or in-memory analytics buffer not yet wired into LogAnalytics — §11.4 PASS-bluff if consumer indexes total_errors/error_types as real data",
 		"total_errors": 0,
 		"error_types":  map[string]int{},
 		"error_trends": []any{},
@@ -837,10 +851,18 @@ func (la *LogAnalytics) AnalyzeErrors(hours int) map[string]any {
 	}
 }
 
-// GetTopErrors returns the most frequent errors
+// GetTopErrors previously returned `[]map[string]any{}` (always
+// empty) regardless of `limit` — §11.4 stub-interface bluff at the
+// analytics-API layer. Until the storage layer is wired, emit a
+// single-element list with `not_wired: true` marker so consumers
+// can detect the gap programmatically (asserting "len == limit"
+// will then correctly fail, surfacing the wiring gap at the
+// assertion boundary).
 func (la *LogAnalytics) GetTopErrors(limit int) []map[string]any {
-	// Placeholder implementation
-	return []map[string]any{}
+	return []map[string]any{{
+		"not_wired": true,
+		"reason":    "log store aggregation API not wired (limit=" + fmt.Sprintf("%d", limit) + " ignored — §11.4 PASS-bluff if consumer asserts top-N error patterns)",
+	}}
 }
 
 // GenerateReport generates a comprehensive logging report

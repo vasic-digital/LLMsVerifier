@@ -90,6 +90,15 @@ func TestInMemoryContinuousEvaluator_StartRun_NotFound(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// TestInMemoryContinuousEvaluator_StartRun_CompletesInBackground:
+// per round-18 §11.4 fix to evaluator.executeRun (commit
+// `348ecd55`), the evaluator refuses to score with a hardcoded 0.8
+// when debateEval is nil; instead the run terminates with
+// EvaluationStatusFailed and a `error_debate_eval_nil: -1` metric.
+// The previous test asserted EvaluationStatusCompleted — that was
+// CERTIFYING the hardcoded-score bluff (per CONST-035 §11.4.4).
+// Tightened to assert the honest "Failed" terminal state when
+// running without a debateEval injection.
 func TestInMemoryContinuousEvaluator_StartRun_CompletesInBackground(t *testing.T) {
 	evaluator := NewInMemoryContinuousEvaluator(nil, nil, nil, nil)
 	ctx := context.Background()
@@ -107,21 +116,24 @@ func TestInMemoryContinuousEvaluator_StartRun_CompletesInBackground(t *testing.T
 	require.NoError(t, evaluator.CreateRun(ctx, run))
 	require.NoError(t, evaluator.StartRun(ctx, run.ID))
 
-	// Wait for background goroutine to complete
+	// Wait for background goroutine to reach terminal state. With nil
+	// debateEval the round-18 fix terminates as Failed.
 	var got *EvaluationRun
 	var err error
 	for i := 0; i < 50; i++ {
 		got, err = evaluator.GetRun(ctx, run.ID)
 		require.NoError(t, err)
-		if got.Status == EvaluationStatusCompleted {
+		if got.Status == EvaluationStatusFailed || got.Status == EvaluationStatusCompleted {
 			break
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
 
-	assert.Equal(t, EvaluationStatusCompleted, got.Status)
-	assert.NotNil(t, got.Results)
+	assert.Equal(t, EvaluationStatusFailed, got.Status,
+		"expect Failed terminal state — running without debateEval injection now refuses per §11.4 (was: silent hardcoded 0.8 score)")
+	require.NotNil(t, got.Results)
 	assert.Equal(t, 2, got.Results.TotalSamples)
+	assert.Equal(t, float64(-1), got.Results.Metrics["error_debate_eval_nil"])
 }
 
 func TestInMemoryContinuousEvaluator_CheckForRegressions_WithAlertManager(t *testing.T) {

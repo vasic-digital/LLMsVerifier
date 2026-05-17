@@ -5,24 +5,27 @@ import (
 	"testing"
 )
 
+// TestFeatureDetection_HTTP3: per round-19 §11.4 fix (commit
+// pending), testHTTP3 returns false unconditionally — real HTTP/3
+// detection requires a QUIC negotiation probe not implemented in
+// this codebase. The previous test asserted "Google endpoint
+// supports HTTP/3" + "OpenAI endpoint doesn't" — that was
+// CERTIFYING the URL-keyword-matching bluff (CONST-035 §11.4.4 —
+// tests certifying bluffs MUST be tightened).
+//
+// Tightened: assert the honest sentinel — false for ANY endpoint
+// until real QUIC probe is wired.
 func TestFeatureDetection_HTTP3(t *testing.T) {
-	// Create a test verifier (we'll need to create a minimal one for testing)
 	verifier := &Verifier{}
 
-	// Create mock client with Google endpoint (should support HTTP/3)
-	client := NewLLMClient("https://generativelanguage.googleapis.com/v1", "test-key", nil)
-
-	result := verifier.testHTTP3(client, "gemini-pro")
-	if !result {
-		t.Error("Expected Google endpoint to support HTTP/3")
+	googleClient := NewLLMClient("https://generativelanguage.googleapis.com/v1", "test-key", nil)
+	if verifier.testHTTP3(googleClient, "gemini-pro") {
+		t.Error("HTTP/3 detection: expected false (sentinel) until real QUIC probe is wired; got true")
 	}
 
-	// Create mock client with OpenAI endpoint (should not support HTTP/3)
-	client2 := NewLLMClient("https://api.openai.com/v1", "test-key", nil)
-
-	result2 := verifier.testHTTP3(client2, "gpt-4")
-	if result2 {
-		t.Error("Expected OpenAI endpoint to not support HTTP/3")
+	openaiClient := NewLLMClient("https://api.openai.com/v1", "test-key", nil)
+	if verifier.testHTTP3(openaiClient, "gpt-4") {
+		t.Error("HTTP/3 detection: expected false (sentinel) for OpenAI endpoint too; got true")
 	}
 }
 

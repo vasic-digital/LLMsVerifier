@@ -557,12 +557,24 @@ func (v *Verifier) getModelDetailedInfo(client *LLMClient, modelName string) (*M
 		return nil, err
 	}
 
-	// For now, we'll return a basic model info. In a real implementation,
-	// we might call the models endpoint specifically to get detailed metadata.
+	// §11.4 / CONST-035 — ACKNOWLEDGED-STUB: the canonical fix is
+	// to call the provider's `/v1/models/{model}` endpoint and read
+	// real metadata (Created date, OwnedBy, ContextWindow, etc.).
+	// Until that landing, ID is sourced from the chat response's
+	// echoed Model field (honest — that's what the model identifies
+	// itself as) and Created is stamped time.Now().Unix() with a
+	// caveat comment so consumers know it's a probe timestamp, not
+	// the model's actual creation date.
+	//
+	// Previously this function's docstring said "For now, we'll
+	// return a basic model info" — the marker IS the §11.4
+	// disclosure. Strengthened the comment to make the time.Now()
+	// substitution explicit so any downstream consumer indexing
+	// .Created for "model age" sees the warning.
 	modelInfo := &ModelInfo{
 		ID:       response.Model,
 		Object:   "model",
-		Created:  time.Now().Unix(),
+		Created:  time.Now().Unix(), // PROBE-STAMP, not real model creation date — §11.4 ACK-STUB
 		Endpoint: client.endpoint,
 	}
 
@@ -858,16 +870,18 @@ func (v *Verifier) testMultimodal(client *LLMClient, modelName string, ctx conte
 		strings.Contains(responseText, "describe")
 }
 
-// testHTTP3 checks if the provider supports HTTP/3
+// testHTTP3 returns false unconditionally — real HTTP/3 detection
+// requires a QUIC negotiation probe (h3-32 / h3-29 ALPN) which is
+// not implemented. Previously did URL-keyword matching producing
+// false-positive HTTP/3 claims for any URL containing
+// "cloudflare"/"google"/"gemini" regardless of actual negotiation.
+// §11.4 PASS-bluff at the capability-detection layer; honest
+// sentinel = false until a real QUIC probe is wired (e.g.
+// github.com/quic-go/quic-go).
 func (v *Verifier) testHTTP3(client *LLMClient, modelName string) bool {
-	// HTTP/3 support is determined by the client's HTTP version capability
-	// This would require checking if the underlying HTTP client supports HTTP/3
-	// For now, we'll check based on provider capabilities
-	provider := strings.ToLower(client.endpoint)
-	if strings.Contains(provider, "cloudflare") || strings.Contains(provider, "google") || strings.Contains(provider, "gemini") {
-		return true // These providers typically support HTTP/3
-	}
-	return false // Most providers don't support HTTP/3 yet
+	_ = client
+	_ = modelName
+	return false
 }
 
 // testBrotli checks if the provider supports Brotli compression
@@ -931,32 +945,23 @@ func (v *Verifier) testToon(client *LLMClient, modelName string) bool {
 	return false
 }
 
-// testStreaming checks if the model supports streaming responses
+// testStreaming returns false unconditionally — real streaming
+// detection requires sending stream=true via SSE / chunked transfer
+// and verifying multiple distinct chunks arrive via a flushing
+// http.ResponseWriter handler. The current ChatCompletion call is
+// a one-shot non-streaming POST.
+//
+// Previously this function sent a non-streaming POST with
+// `Stream: true` in the JSON body and treated "no error" as
+// "streaming supported", producing false-positive streaming
+// capability claims for any provider that accepts but silently
+// ignores the stream parameter. §11.4 PASS-bluff at the
+// capability-detection layer; honest sentinel = false until SSE
+// chunk-arrival verification is wired.
 func (v *Verifier) testStreaming(client *LLMClient, modelName string) bool {
-	// In the OpenAI API, streaming is specified by the 'stream' parameter
-	// But since we can only check if the API accepts the parameter, not if it actually streams,
-	// we'll try making a request with stream=true and see if it fails due to unsupported parameter
-	req := ChatCompletionRequest{
-		Model: modelName,
-		Messages: []Message{
-			{
-				Role:    "user",
-				Content: "Say 'hello' in 10 words.",
-			},
-		},
-		Stream: true,
-	}
-
-	// Note: This is just testing if the API accepts the stream parameter.
-	// Actual streaming implementation would require special handling.
-	// For now, we'll just check that it doesn't return an error about unsupported parameter.
-	ctx, cancel := context.WithTimeout(context.Background(), v.cfg.Timeout)
-	defer cancel()
-
-	_, err := client.ChatCompletion(ctx, req)
-	// If the API doesn't support streaming, it would typically return an error
-	// We consider it supported if no error is returned about the stream parameter specifically
-	return err == nil
+	_ = client
+	_ = modelName
+	return false
 }
 
 // testJSONMode checks if the model supports JSON mode
@@ -1088,17 +1093,22 @@ func (v *Verifier) testParallelToolUse(client *LLMClient, modelName string, ctx 
 		return false, 0
 	}
 
-	// Count how many tool calls were made in the response
-	// Note: This is a simplified check - actual implementation would parse the response differently
-	toolCallCount := 0
-	if len(resp.Choices) > 0 {
-		// If the model supports parallel tool use, it would make multiple tool calls
-		// In practice, you'd parse the specific tool call response format
-		// For now, we'll just return true if the request succeeded
-		toolCallCount = 2 // We provided 2 tools
-	}
-
-	return true, toolCallCount
+	// §11.4 / CONST-035 — Counting REAL tool calls requires
+	// parsing the OpenAI-shape `tool_calls` array on every
+	// Choice.Message, but this codebase's Message struct
+	// (llm_client.go:92) does NOT yet carry a ToolCalls field —
+	// extending the schema is a CONST-039 prerequisite tracked
+	// separately. Until the schema lands, return the honest
+	// sentinel (false, 0).
+	//
+	// Previously hardcoded `toolCallCount = 2` — the number of
+	// TOOLS we provided, not the number of tool CALLS in the
+	// response. Any caller asserting "model invokes >= 2 tools"
+	// PASSed against the fabricated count even when the model
+	// invoked 0 or 1 tool. §11.4 PASS-bluff at the parallel-tool-
+	// use detection layer.
+	_ = resp
+	return false, 0
 }
 
 // testBatchProcessing checks for batch processing capability
