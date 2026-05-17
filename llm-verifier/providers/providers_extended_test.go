@@ -213,22 +213,20 @@ func TestNewReplicateAdapter_Extended(t *testing.T) {
 	assert.Equal(t, "Token r8-test-key", adapter.headers["Authorization"])
 }
 
+// TestReplicateAdapter_ListModels_Extended: previously asserted
+// "list" object + meta/llama-2-70b-chat presence which was
+// CERTIFYING the CONST-036 PASS-bluff (hardcoded 3-model list
+// indistinguishable from real Replicate catalog). Tightened to
+// assert ErrReplicateListNotWired per round-18 sentinel-error
+// pattern.
 func TestReplicateAdapter_ListModels_Extended(t *testing.T) {
 	client := &http.Client{Timeout: 30 * time.Second}
 	adapter := NewReplicateAdapter(client, "https://api.replicate.com/v1", "test-key")
 
 	models, err := adapter.ListModels(context.Background())
-	require.NoError(t, err)
-	require.NotNil(t, models)
-	assert.Equal(t, "list", models.Object)
-	assert.NotEmpty(t, models.Data)
-
-	// Check for known replicate models
-	modelIDs := make([]string, len(models.Data))
-	for i, m := range models.Data {
-		modelIDs[i] = m.ID
-	}
-	assert.Contains(t, modelIDs, "meta/llama-2-70b-chat")
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrReplicateListNotWired)
+	assert.Nil(t, models)
 }
 
 func TestExtractPromptFromMessages(t *testing.T) {

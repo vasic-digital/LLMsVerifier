@@ -922,26 +922,26 @@ func TestAnthropicAdapter_ListModels(t *testing.T) {
 
 // ==================== Replicate Adapter Tests ====================
 
+// TestReplicateAdapter_ListModels: per round-18 fix (commit
+// pending), ReplicateAdapter.ListModels returns
+// ErrReplicateListNotWired instead of the previous hardcoded
+// 3-model list. The previous test asserted "list" object +
+// llama-presence which was CERTIFYING the CONST-036 PASS-bluff
+// (any test of catalog coverage PASSed against the hardcoded
+// list, not the real Replicate catalog).
+//
+// Tightened: assert the sentinel-error is returned. When real
+// Replicate /v1/models REST integration lands, this test should
+// be replaced with a real API call (with SKIP-OK guard for
+// missing REPLICATE_API_TOKEN).
 func TestReplicateAdapter_ListModels(t *testing.T) {
-	// Replicate ListModels returns a static list, no server needed
 	adapter := NewReplicateAdapter(&http.Client{}, "https://api.replicate.com/v1", "test-key")
-
 	ctx := context.Background()
 	response, err := adapter.ListModels(ctx)
 
-	require.NoError(t, err)
-	assert.NotNil(t, response)
-	assert.Equal(t, "list", response.Object)
-	assert.NotEmpty(t, response.Data)
-	// Check expected models are present
-	var foundLlama bool
-	for _, model := range response.Data {
-		if strings.Contains(model.ID, "llama") {
-			foundLlama = true
-			break
-		}
-	}
-	assert.True(t, foundLlama, "Should have llama model in list")
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrReplicateListNotWired)
+	assert.Nil(t, response)
 }
 
 // ==================== Edge Cases Tests ====================

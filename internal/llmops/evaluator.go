@@ -132,16 +132,31 @@ func (e *InMemoryContinuousEvaluator) executeRun(ctx context.Context, run *Evalu
 		Metrics:      make(map[string]float64),
 	}
 
+	// Per §11.4 / CONST-035: refuse to score with hardcoded 0.8 if
+	// no real evaluator is wired. Previously this loop fell through
+	// to a hardcoded score, making PassRate meaningless (every
+	// dataset would show ~100% pass rate when debateEval was nil).
+	// Mark the run failed and bail out — caller MUST inject a real
+	// debateEval before kicking off the run.
+	if e.debateEval == nil {
+		run.Status = EvaluationStatusFailed
+		results.Metrics["error_debate_eval_nil"] = -1
+		e.mu.Lock()
+		run.Results = results
+		e.mu.Unlock()
+		return
+	}
+
 	var passed int
 	for _, sample := range samples {
-		// Simulate evaluation
-		score := 0.8 // In real implementation, use LLM or debate
-		if e.debateEval != nil {
-			if s, err := e.debateEval.Evaluate(ctx, sample.Input, "", sample.ExpectedOutput); err == nil {
-				score = s
-			}
+		score, err := e.debateEval.Evaluate(ctx, sample.Input, "", sample.ExpectedOutput)
+		if err != nil {
+			// Per CONST-035: do NOT fall back to a hardcoded score.
+			// Skip the sample explicitly and surface the per-sample
+			// failure so caller can investigate.
+			results.Metrics[fmt.Sprintf("eval_error_%s", sample.ID)] = -1
+			continue
 		}
-
 		if score >= 0.5 {
 			passed++
 		}

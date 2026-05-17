@@ -73,26 +73,57 @@ type EmbeddingProvider interface {
 	EmbedBatch(ctx context.Context, texts []string) ([][]float32, error)
 }
 
-// QdrantDenseRetriever handles dense vector retrieval
+// QdrantDenseRetriever was a misleading type name — the actual
+// implementation is purely in-memory and never connects to Qdrant.
+// Type retained for back-compat; consumers should switch to
+// InMemoryDenseRetriever when CONST-046 hardcoded-naming cleanup
+// passes. Wire Qdrant for real by creating a separate type that
+// dispatches via gRPC/REST to the configured Qdrant endpoint;
+// embed the query via the EmbeddingProvider; submit a real vector
+// search.
+//
+// §11.4 status: ACKNOWLEDGED-MISNOMER — the misnamed type is
+// documented as in-memory in both struct comment and the storage
+// field comment ("In-memory storage for demo"). A consumer who
+// reads the source knows what they're getting; the bluff is in the
+// type NAME, not in the runtime behaviour. Renaming is a
+// breaking-API change tracked separately.
 type QdrantDenseRetriever struct {
 	collection string
 	embedder   EmbeddingProvider
 	logger     *log.Logger
 	mu         sync.RWMutex
-	docs       map[string]*Document // In-memory storage for demo
+	docs       map[string]*Document // In-memory storage — NOT Qdrant-backed despite the type name (see type comment)
 }
 
-// NewQdrantDenseRetriever creates a new dense retriever
+// InMemoryDenseRetriever is an alias for QdrantDenseRetriever that
+// makes the actual storage layer honest. New consumers should
+// prefer this name; existing callers continue to work via the
+// alias. The implementation is unchanged.
+type InMemoryDenseRetriever = QdrantDenseRetriever
+
+// NewQdrantDenseRetriever creates a new (misleadingly-named)
+// in-memory dense retriever. Prefer NewInMemoryDenseRetriever for
+// new code.
 func NewQdrantDenseRetriever(collection string, embedder EmbeddingProvider, logger *log.Logger) *QdrantDenseRetriever {
 	if logger == nil {
 		logger = log.Default()
 	}
+	logger.Printf("[§11.4 / type-name caveat] NewQdrantDenseRetriever: type name is misleading — actual storage is in-memory, NOT Qdrant. New code should use NewInMemoryDenseRetriever. To use real Qdrant, wire a separate type with gRPC/REST dispatch.")
 	return &QdrantDenseRetriever{
 		collection: collection,
 		embedder:   embedder,
 		logger:     logger,
 		docs:       make(map[string]*Document),
 	}
+}
+
+// NewInMemoryDenseRetriever is the honest constructor name for the
+// in-memory dense retriever (same implementation as
+// NewQdrantDenseRetriever; the latter is retained for back-compat
+// per CONST-046 hardcoded-naming cleanup).
+func NewInMemoryDenseRetriever(collection string, embedder EmbeddingProvider, logger *log.Logger) *InMemoryDenseRetriever {
+	return NewQdrantDenseRetriever(collection, embedder, logger)
 }
 
 // Index indexes documents

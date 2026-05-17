@@ -222,10 +222,28 @@ func (rw *responseWriterWrapper) Write(data []byte) (int, error) {
 	return rw.ResponseWriter.Write(data)
 }
 
-// SanitizeJSONResponse sanitizes JSON responses
+// SanitizeJSONResponse previously returned the input data unchanged
+// with the comment "For now, just return the data as-is". Any caller
+// expecting field-redaction / sensitive-data stripping before
+// sending to the TUI client received raw data — potential
+// information-leak surface, §11.4 stub-interface bluff with
+// security implications.
+//
+// Until real struct-tag-driven filtering is implemented, prefix
+// the function's docstring with a CRITICAL marker so anyone
+// adding new sensitive fields knows they are NOT being redacted.
+// Behaviour unchanged (return data as-is) — converting to error
+// would break existing callers that pass non-sensitive data; the
+// proper fix is the actual sanitisation implementation.
+//
+// TODO[§11.4 / CONST-042]: implement real sanitisation via struct
+// tag `json:"...,sensitive"` or similar before shipping new fields
+// that may contain credentials / PII / internal-only data.
 func SanitizeJSONResponse(data interface{}) interface{} {
-	// For now, just return the data as-is
-	// In production, you'd want to sanitize string fields in the JSON
+	// SECURITY NOTICE: this function currently returns input
+	// unchanged. Do NOT pass data containing credentials / PII /
+	// internal-only fields through this function expecting them to
+	// be stripped — implement field-level redaction first.
 	return data
 }
 

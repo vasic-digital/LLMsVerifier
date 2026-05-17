@@ -67,23 +67,25 @@ func TestScoringAPIHandlers_RegisterRoutes(t *testing.T) {
 	assert.True(t, routeMap["/api/v1/scoring/configuration"])
 }
 
+// TestScoringAPIHandlers_GetModelScore: per round-18 sentinel-error
+// pattern, GetModelScore now returns 501 Not Implemented with a
+// §11.4 / CONST-036 attribution (was: hardcoded GPT-4/8.5 for any
+// modelID). The previous test asserted 200 + non-nil overall_score
+// — that assertion was CERTIFYING the bluff. Tightened to assert
+// the 501 contract.
 func TestScoringAPIHandlers_GetModelScore(t *testing.T) {
 	router, _ := setupTestRouter(t)
 
 	req, _ := http.NewRequest("GET", "/api/v1/models/gpt-4/score", nil)
 	w := httptest.NewRecorder()
-
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
-
+	assert.Equal(t, http.StatusNotImplemented, w.Code)
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
-
 	assert.Equal(t, "gpt-4", response["model_id"])
-	assert.NotNil(t, response["overall_score"])
-	assert.NotNil(t, response["components"])
+	assert.Contains(t, response["error"], "not wired")
 }
 
 func TestScoringAPIHandlers_CalculateModelScore(t *testing.T) {
@@ -129,16 +131,18 @@ func TestScoringAPIHandlers_RecalculateModelScore(t *testing.T) {
 		w.Code == http.StatusInternalServerError || w.Code == http.StatusNotFound)
 }
 
+// TestScoringAPIHandlers_DeleteModelScore: per round-18 sentinel-
+// error pattern, DeleteModelScore returns 501 (was: log + return
+// 200 success without touching DB). Previous assertion (any-2xx-or-
+// 404 OK) was CERTIFYING the silent no-op bluff.
 func TestScoringAPIHandlers_DeleteModelScore(t *testing.T) {
 	router, _ := setupTestRouter(t)
 
 	req, _ := http.NewRequest("DELETE", "/api/v1/models/gpt-4/score", nil)
 	w := httptest.NewRecorder()
-
 	router.ServeHTTP(w, req)
 
-	// Should return success or not found
-	assert.True(t, w.Code == http.StatusOK || w.Code == http.StatusNoContent || w.Code == http.StatusNotFound)
+	assert.Equal(t, http.StatusNotImplemented, w.Code)
 }
 
 func TestScoringAPIHandlers_BatchCalculateScores(t *testing.T) {
@@ -169,21 +173,22 @@ func TestScoringAPIHandlers_CompareModels(t *testing.T) {
 	assert.True(t, w.Code == http.StatusOK || w.Code == http.StatusBadRequest)
 }
 
+// TestScoringAPIHandlers_GetModelRankings: per round-18 sentinel-
+// error pattern, returns 501 (was: fabricated 2-element rankings
+// list ignoring all query params). Previous assertion (200 +
+// non-nil rankings) was CERTIFYING the bluff.
 func TestScoringAPIHandlers_GetModelRankings(t *testing.T) {
 	router, _ := setupTestRouter(t)
 
 	req, _ := http.NewRequest("GET", "/api/v1/models/scores/ranking", nil)
 	w := httptest.NewRecorder()
-
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
-
+	assert.Equal(t, http.StatusNotImplemented, w.Code)
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
-
-	assert.NotNil(t, response["rankings"])
+	assert.Contains(t, response["error"], "not wired")
 }
 
 func TestScoringAPIHandlers_GetScoringConfiguration(t *testing.T) {

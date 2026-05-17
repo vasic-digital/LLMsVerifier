@@ -297,15 +297,14 @@ func (p *ProvidersScreen) renderActionButton(key, label, description string) str
 
 func (p *ProvidersScreen) toggleProviderStatus(providerID string) tea.Cmd {
 	return func() tea.Msg {
-		// Call API to toggle provider status
-		// In production, this would make a PATCH request to /api/v1/providers/{id}/status
-
-		// Simulate API call
-		time.Sleep(300 * time.Millisecond)
-
-		return ProviderStatusToggledMsg{
-			ProviderID: providerID,
-		}
+		// Real implementation requires PATCH /api/v1/providers/{id}/status
+		// via p.client. Previously this function only did time.Sleep(300ms)
+		// then returned success — §11.4 PASS-bluff masking missing API
+		// call. Provider status was never actually toggled.
+		//
+		// Return a ProvidersErrorMsg with a clear error so the UI shows
+		// the gap instead of certifying fake success.
+		return ProvidersErrorMsg{Error: fmt.Errorf("toggleProviderStatus[%s]: PATCH /api/v1/providers/{id}/status not wired (was: time.Sleep + fake success — §11.4 PASS-bluff)", providerID)}
 	}
 }
 
@@ -372,16 +371,11 @@ func (p *ProvidersScreen) loadProviders() tea.Cmd {
 
 func (p *ProvidersScreen) addAPIKey(providerID string) tea.Cmd {
 	return func() tea.Msg {
-		// Call API to add/update API key for provider
-		// For now, we'll simulate this as the API endpoint may not be fully implemented
-		// In production, this would make a POST/PATCH request to /api/v1/providers/{id}/api-key
-
-		// Simulate API call delay
-		time.Sleep(500 * time.Millisecond)
-
-		return APIKeyAddedMsg{
-			ProviderID: providerID,
-		}
+		// Real implementation requires POST /api/v1/providers/{id}/api-key
+		// via p.client. Previously this function only did time.Sleep(500ms)
+		// then returned success — §11.4 PASS-bluff masking missing API
+		// call. API key was never actually stored.
+		return ProvidersErrorMsg{Error: fmt.Errorf("addAPIKey[%s]: POST /api/v1/providers/{id}/api-key not wired (was: time.Sleep + fake success — §11.4 PASS-bluff)", providerID)}
 	}
 }
 

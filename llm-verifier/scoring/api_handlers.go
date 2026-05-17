@@ -52,37 +52,18 @@ func (sah *ScoringAPIHandlers) RegisterRoutes(router *gin.RouterGroup) {
 	router.POST("/scoring/validate", sah.ValidateScoreCalculation)
 }
 
-// GetModelScore retrieves the current score for a model
+// GetModelScore previously returned a hardcoded ComprehensiveScore
+// with ModelName: "GPT-4" + OverallScore: 8.5 for ANY model_id —
+// CONST-036/037 violation. Real lookup requires querying the
+// scoring engine / DB for the actual stored score by modelID.
+// Now returns 501 Not Implemented so callers see the gap loudly.
 func (sah *ScoringAPIHandlers) GetModelScore(c *gin.Context) {
 	modelID := c.Param("model_id")
-	
-	// Simulate getting score
-	score := &ComprehensiveScore{
-		ModelID:      modelID,
-		ModelName:    "GPT-4",
-		OverallScore: 8.5,
-		ScoreSuffix:  "(SC:8.5)",
-		Components: ScoreComponents{
-			SpeedScore:      8.0,
-			EfficiencyScore: 9.0,
-			CostScore:       8.5,
-			CapabilityScore: 8.5,
-			RecencyScore:    8.0,
-		},
-		LastCalculated: time.Now(),
-	}
-
-	// Add formatted model name with score suffix
-	formattedName := sah.modelNaming.AddScoreSuffix(score.ModelName, score.OverallScore)
-
-	c.JSON(http.StatusOK, gin.H{
-		"model_id":         modelID,
-		"model_name":       score.ModelName,
-		"formatted_name":   formattedName,
-		"overall_score":    score.OverallScore,
-		"score_suffix":     score.ScoreSuffix,
-		"components":       score.Components,
-		"last_calculated":  score.LastCalculated,
+	sah.logger.Warning("[§11.4 / CONST-036] GetModelScore not wired", map[string]interface{}{"model_id": modelID})
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"error":    "GetModelScore: scoring engine lookup not wired (was: hardcoded GPT-4/8.5 for any modelID — §11.4 CONST-036 PASS-bluff)",
+		"model_id": modelID,
+		"fix":      "wire sah.scoringEngine.GetScore(ctx, modelID) or equivalent DB query",
 	})
 }
 
@@ -197,16 +178,17 @@ func (sah *ScoringAPIHandlers) RecalculateModelScore(c *gin.Context) {
 	})
 }
 
-// DeleteModelScore removes a model score (soft delete)
+// DeleteModelScore previously logged a deactivation message and
+// returned success without touching the DB — §11.4 stub-interface
+// bluff. Real fix requires sah.scoringEngine.DeactivateModel(ctx,
+// modelID) or equivalent DB update. Returns 501 until wired.
 func (sah *ScoringAPIHandlers) DeleteModelScore(c *gin.Context) {
 	modelID := c.Param("model_id")
-	
-	// Simulate deactivation
-	sah.logger.Info("Model score deactivated", map[string]interface{}{"model_id": modelID})
-
-	c.JSON(http.StatusOK, gin.H{
-		"message":   "Model score deactivated successfully",
-		"model_id":  modelID,
+	sah.logger.Warning("[§11.4] DeleteModelScore not wired", map[string]interface{}{"model_id": modelID})
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"error":    "DeleteModelScore: scoring engine deactivation not wired (was: log + return success without touching DB — §11.4 stub-interface bluff)",
+		"model_id": modelID,
+		"fix":      "wire sah.scoringEngine.DeactivateModel(ctx, modelID) or equivalent DB UPDATE",
 	})
 }
 
@@ -259,7 +241,8 @@ func (sah *ScoringAPIHandlers) BatchCalculateScores(c *gin.Context) {
 	})
 }
 
-// CompareModels compares scores between multiple models
+// CompareModels previously returned best_model:modelIDs[0] +
+// hardcoded score_difference:0.5 — §11.4 / CONST-036 bluff.
 func (sah *ScoringAPIHandlers) CompareModels(c *gin.Context) {
 	modelIDs := c.QueryArray("models")
 	if len(modelIDs) < 2 {
@@ -268,52 +251,32 @@ func (sah *ScoringAPIHandlers) CompareModels(c *gin.Context) {
 		})
 		return
 	}
-
-	// Simulate comparison
-	comparison := map[string]interface{}{
-		"best_model": modelIDs[0],
-		"score_difference": 0.5,
-		"analysis": "Model comparison completed",
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"models":      modelIDs,
-		"comparison":  comparison,
+	sah.logger.Warning("[§11.4 / CONST-036] CompareModels not wired", map[string]interface{}{"models": modelIDs})
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"error":  "CompareModels: real per-model score lookup + diff not wired (was: hardcoded best=modelIDs[0] + score_difference=0.5 — §11.4 / CONST-036 PASS-bluff)",
+		"models": modelIDs,
+		"fix":    "fetch real scores for each modelID via scoringEngine.GetScore; compute actual diff",
 	})
 }
 
-// GetModelRankings retrieves model rankings by score
+// GetModelRankings previously discarded all query parameters
+// (category/limit/min_score/max_score with `_ =`) and returned a
+// fabricated 2-element rankings slice — §11.4 / CONST-036 bluff.
 func (sah *ScoringAPIHandlers) GetModelRankings(c *gin.Context) {
 	category := c.DefaultQuery("category", "overall")
-	_ = c.DefaultQuery("limit", "50")
-	_ = c.DefaultQuery("min_score", "0")
-	_ = c.DefaultQuery("max_score", "10")
-
-	// Simulate rankings
-	rankings := []ModelRanking{
-		{
-			Rank:          1,
-			ModelID:       "1",
-			ModelName:     "GPT-4 (SC:8.5)",
-			OverallScore:  8.5,
-			ScoreSuffix:   "(SC:8.5)",
-			CategoryScore: 8.5,
-			LastUpdated:   time.Now(),
-		},
-		{
-			Rank:          2,
-			ModelID:       "2",
-			ModelName:     "Claude-3 (SC:7.8)",
-			OverallScore:  7.8,
-			ScoreSuffix:   "(SC:7.8)",
-			CategoryScore: 7.8,
-			LastUpdated:   time.Now(),
-		},
-	}
-
-	c.JSON(http.StatusOK, gin.H{
+	limit := c.DefaultQuery("limit", "50")
+	minScore := c.DefaultQuery("min_score", "0")
+	maxScore := c.DefaultQuery("max_score", "10")
+	sah.logger.Warning("[§11.4 / CONST-036] GetModelRankings not wired", map[string]interface{}{
+		"category": category, "limit": limit, "min_score": minScore, "max_score": maxScore,
+	})
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"error":     "GetModelRankings: real DB-backed ranking query not wired (was: fabricated 2-element list ignoring all query params — §11.4 / CONST-036 PASS-bluff)",
 		"category":  category,
-		"rankings":  rankings,
+		"limit":     limit,
+		"min_score": minScore,
+		"max_score": maxScore,
+		"fix":       "query scoring engine / DB for actual ranked results filtered by the provided parameters",
 	})
 }
 

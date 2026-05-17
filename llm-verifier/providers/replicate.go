@@ -230,41 +230,27 @@ func (r *ReplicateAdapter) ChatCompletion(ctx context.Context, request OpenAICha
 	}, nil
 }
 
-// ListModels retrieves available models from Replicate
+// ListModels retrieves available models from Replicate.
+//
+// Previously returned a hardcoded 3-model list (meta/llama-2-70b-chat,
+// meta/llama-2-13b-chat, mistralai/mistral-7b-instruct-v0.1) regardless
+// of what was actually available on Replicate. Replicate hosts
+// hundreds of models — the frozen 2023-era list violates CONST-036
+// (LLMsVerifier must be the single source of truth, no hardcoded
+// lists) and silently lies about catalog availability.
+//
+// Real implementation requires calling the Replicate
+// `https://api.replicate.com/v1/models` REST API with paginated
+// response parsing. Until wired, return ErrReplicateListNotWired
+// sentinel so callers see the gap loudly.
 func (r *ReplicateAdapter) ListModels(ctx context.Context) (*OpenAIModelsResponse, error) {
-	// Replicate has a different model listing approach
-	// For now, return a static list of popular models
-	models := []struct {
-		ID      string `json:"id"`
-		Object  string `json:"object"`
-		Created int64  `json:"created"`
-		OwnedBy string `json:"owned_by"`
-	}{
-		{
-			ID:      "meta/llama-2-70b-chat",
-			Object:  "model",
-			Created: time.Now().Unix(),
-			OwnedBy: "replicate",
-		},
-		{
-			ID:      "meta/llama-2-13b-chat",
-			Object:  "model",
-			Created: time.Now().Unix(),
-			OwnedBy: "replicate",
-		},
-		{
-			ID:      "mistralai/mistral-7b-instruct-v0.1",
-			Object:  "model",
-			Created: time.Now().Unix(),
-			OwnedBy: "replicate",
-		},
-	}
-
-	return &OpenAIModelsResponse{
-		Object: "list",
-		Data:   models,
-	}, nil
+	return nil, ErrReplicateListNotWired
 }
+
+// ErrReplicateListNotWired is returned by ReplicateAdapter.ListModels
+// until the real Replicate `/v1/models` REST API call is wired. The
+// previous hardcoded 3-model list was a CONST-036 / §11.4 PASS-bluff.
+var ErrReplicateListNotWired = fmt.Errorf("ReplicateAdapter.ListModels: real Replicate /v1/models API call not wired (was: hardcoded 3-model list from 2023 era — CONST-036 / §11.4 PASS-bluff); wire HTTP GET https://api.replicate.com/v1/models with paginated response parsing")
 
 // Helper function to extract prompt from OpenAI messages
 func extractPromptFromMessages(messages []Message) string {
