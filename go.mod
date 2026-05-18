@@ -75,7 +75,7 @@ require (
 
 replace digital.vasic.llmsverifier => ./llm-verifier
 
-// digital.vasic.challenges lives outside this repo — at ../Challenges
+// digital.vasic.challenges lives outside this repo — at ../challenges
 // relative to this go.mod when LLMsVerifier is checked out as a submodule
 // of HelixAgent (which is the only supported layout). Consumers that
 // want to run llmsverifier test suites in isolation must clone or vendor
