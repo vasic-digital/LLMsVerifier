@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
@@ -628,24 +629,48 @@ type SSOConfig struct {
 	TokenURL     string `json:"token_url"`     // Token validation URL
 	UserInfoURL  string `json:"userinfo_url"`  // User info endpoint
 	Issuer       string `json:"issuer"`        // Expected token issuer
+
+	// Round-59 JWKS-based signature verification fields. When JWKSURL
+	// is non-empty, SSOManager.ValidateToken performs real asymmetric
+	// signature verification (closes round-28 JWT-bypass gap). When
+	// empty, ValidateToken refuses with the round-28 sentinel
+	// ErrJWTSignatureVerificationNotImplemented (preserved semantics:
+	// "SSO configured but JWKS not wired up").
+	JWKSURL     string        `json:"jwks_url,omitempty"`     // IdP's published jwks_uri
+	Audience    string        `json:"audience,omitempty"`     // Expected aud claim
+	AllowedAlgs []string      `json:"allowed_algs,omitempty"` // Sanitised against forbiddenAlgs; defaults to asymmetric-only set
+	CacheTTL    time.Duration `json:"cache_ttl,omitempty"`    // JWKS cache TTL; 0 -> 1h, capped at 24h
+	ClockSkew   time.Duration `json:"clock_skew,omitempty"`   // exp/iat/nbf skew tolerance; 0 -> 60s
 }
 
 // ErrJWTSignatureVerificationNotImplemented is returned by SSOManager.ValidateToken
-// to refuse parsing any SSO JWT without signature verification. Previously the
-// method base64-decoded the payload directly, fabricated an SSOUserInfo, and
-// returned success — accepting unsigned tokens as authenticated. That is a
-// silent authentication bypass: an attacker presenting any well-formed
-// 3-part dot-delimited base64 string would have been treated as a verified
-// SSO user. Loud failure beats silent auth bypass; the SSO flow is refused
-// until proper JWKS-based verification (golang-jwt/v4 + configured IdP
-// public keys) is wired in. §11.4 PASS-bluff at the authentication layer
-// (CONST-035, Article XI §11.9). Adjacency to CONST-042 (No-Secret-Leak)
-// because a successful bypass would have effectively leaked auth scope.
-var ErrJWTSignatureVerificationNotImplemented = fmt.Errorf("llmsverifier auth: JWT signature verification is not implemented — refusing to parse SSO token because accepting unsigned tokens is an authentication bypass (§11.4 PASS-bluff: security gap). Implement JWKS-based signature verification via golang-jwt/v4 + the configured IdP's public keys before re-enabling SSO")
+// when an SSO provider is registered WITHOUT a JWKSURL configured.
+//
+// History:
+//   - Round-28 introduced this sentinel as the original "refuse to parse"
+//     guard after discovering the silent-auth-bypass bluff: the previous
+//     ValidateToken base64-decoded the JWT payload directly, fabricated an
+//     SSOUserInfo, and returned success — accepting unsigned tokens as
+//     authenticated. §11.4 PASS-bluff at the authentication layer.
+//   - Round-59 wired real JWKS-based asymmetric signature verification via
+//     verifyJWTWithJWKS (see jwks.go). The sentinel is PRESERVED — its
+//     meaning is now narrowed to "SSO provider configured WITHOUT JWKS
+//     endpoint", which keeps the round-28 refusal path live for any
+//     deployment that registered an SSO provider but never supplied a
+//     jwks_uri. This guarantees the pre-round-59 test
+//     TestSSOManager_ValidateToken_RefusesUnsignedJWT keeps passing.
+//
+// Adjacency: CONST-035 (anti-bluff), CONST-042 (No-Secret-Leak — a
+// successful bypass would have effectively leaked auth scope),
+// Article XI §11.9 (anti-bluff forensic anchor).
+var ErrJWTSignatureVerificationNotImplemented = fmt.Errorf("llmsverifier auth: SSO provider configured without JWKS endpoint — refusing to parse SSO token because accepting unsigned tokens is an authentication bypass (§11.4 PASS-bluff: security gap). Configure SSOConfig.JWKSURL with the IdP's published jwks_uri to enable round-59 JWKS-based signature verification")
 
 // SSOManager handles SSO operations
 type SSOManager struct {
 	configs map[string]*SSOConfig
+	// Round-59: per-provider JWKS cache. Populated lazily on first
+	// AddProvider call when the supplied SSOConfig has a JWKSURL.
+	keysets map[string]*jwksKeySet
 	mu      sync.RWMutex
 }
 
@@ -653,33 +678,61 @@ type SSOManager struct {
 func NewSSOManager() *SSOManager {
 	return &SSOManager{
 		configs: make(map[string]*SSOConfig),
+		keysets: make(map[string]*jwksKeySet),
 	}
 }
 
 // AddProvider adds an SSO provider configuration
+//
+// Round-59: when config.JWKSURL is non-empty, eagerly builds the
+// jwksKeySet cache so the first ValidateToken call doesn't have to
+// hold sm.mu during the IdP roundtrip. The cache itself is empty until
+// the first verification triggers a refresh — we only stand up the
+// container struct here.
 func (sm *SSOManager) AddProvider(config *SSOConfig) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 	sm.configs[config.Provider] = config
+	if config.JWKSURL != "" {
+		sm.keysets[config.Provider] = newJWKSKeySet(&JWKSConfig{
+			JWKSURL:     config.JWKSURL,
+			Issuer:      config.Issuer,
+			Audience:    config.Audience,
+			AllowedAlgs: config.AllowedAlgs,
+			CacheTTL:    config.CacheTTL,
+			ClockSkew:   config.ClockSkew,
+		})
+	}
 }
 
-// ValidateToken refuses to validate an SSO JWT without a verified signature.
+// ValidateToken verifies an SSO JWT.
 //
-// §11.4 anti-bluff (round-28): the previous body base64-decoded the JWT
-// payload directly, fabricated an SSOUserInfo (Subject="sso_<provider>_<nano>",
-// Email="", Name="SSO User (<provider>)"), and returned success — accepting
-// ANY well-formed 3-part dot-delimited base64 string as a verified SSO
-// authentication. That is a silent authentication bypass. Per CONST-035 +
-// Article XI §11.9, loud failure beats silent acceptance.
+// History:
+//   - Pre-round-28: base64-decoded the payload, fabricated SSOUserInfo,
+//     accepted ANY well-formed 3-part dot-delimited string as
+//     "authenticated". Silent auth bypass. §11.4 PASS-bluff at the
+//     authentication layer.
+//   - Round-28: refused the SSO flow entirely with
+//     ErrJWTSignatureVerificationNotImplemented sentinel. Secure but
+//     blocked all SSO use.
+//   - Round-59 (current): wires real JWKS-based asymmetric signature
+//     verification via verifyJWTWithJWKS (see jwks.go). Re-enables SSO
+//     with full crypto:
+//       1. Provider-existence check (preserved).
+//       2. Token format sanity (preserved).
+//       3. If SSOConfig.JWKSURL is empty -> round-28 sentinel
+//          (preserves "unconfigured" semantics for any deployment that
+//          registered a provider but never supplied jwks_uri).
+//       4. Else -> full JWKS path: fetch JWKS (cached per kid),
+//          enforce alg allowlist (no `none`, no HMAC for SSO), verify
+//          signature against IdP public key, validate iss/aud/exp/iat.
+//       5. On success: synthesise SSOUserInfo from verified claims.
 //
-// Until JWKS-based signature verification is wired in (golang-jwt/v4 + the
-// configured IdP's public keys; documented follow-up), this method refuses
-// the SSO flow entirely by returning ErrJWTSignatureVerificationNotImplemented.
-// Provider-existence and basic format checks are preserved so that callers
-// continue to receive the more-specific error first when applicable.
+// CONST-035 / CONST-042 / CONST-050(A) / Article XI §11.9 anchors apply.
 func (sm *SSOManager) ValidateToken(provider, tokenString string) (*SSOUserInfo, error) {
 	sm.mu.RLock()
-	_, exists := sm.configs[provider]
+	cfg, exists := sm.configs[provider]
+	keySet := sm.keysets[provider]
 	sm.mu.RUnlock()
 
 	if !exists {
@@ -692,14 +745,70 @@ func (sm *SSOManager) ValidateToken(provider, tokenString string) (*SSOUserInfo,
 		return nil, fmt.Errorf("invalid token format")
 	}
 
-	// Format-sanity probe only (base64 must decode), then refuse. We do NOT
-	// trust the payload. The decode is purely to reject obvious garbage
-	// before surfacing the security-gap sentinel.
+	// Format-sanity probe (base64 must decode). This catches obvious
+	// garbage before either path (JWKS or round-28 sentinel) runs.
 	if _, err := base64.RawURLEncoding.DecodeString(parts[1]); err != nil {
 		return nil, fmt.Errorf("failed to decode token payload: %w", err)
 	}
 
-	return nil, ErrJWTSignatureVerificationNotImplemented
+	// Round-28 preserved sentinel path: SSO provider configured WITHOUT
+	// JWKS endpoint. We will NEVER fabricate a verified identity from
+	// an unsigned token. Surface the original sentinel so deployments
+	// upgrading from round-28 see identical refusal behaviour.
+	if cfg.JWKSURL == "" || keySet == nil {
+		return nil, ErrJWTSignatureVerificationNotImplemented
+	}
+
+	// Round-59 JWKS path: real asymmetric signature verification.
+	// 60s context bound: the IdP JWKS endpoint must respond promptly;
+	// the http.Client also enforces its own timeout (default 10s).
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	jwksCfg := &JWKSConfig{
+		JWKSURL:     cfg.JWKSURL,
+		Issuer:      cfg.Issuer,
+		Audience:    cfg.Audience,
+		AllowedAlgs: cfg.AllowedAlgs,
+		CacheTTL:    cfg.CacheTTL,
+		ClockSkew:   cfg.ClockSkew,
+		HTTPClient:  keySet.cfg.HTTPClient,
+	}
+	claims, err := verifyJWTWithJWKS(ctx, jwksCfg, keySet, tokenString)
+	if err != nil {
+		return nil, err
+	}
+
+	// Synthesise SSOUserInfo from verified claims. We pull only fields
+	// the IdP signed — we do not invent any.
+	info := &SSOUserInfo{
+		Provider: provider,
+	}
+	if v, ok := claims["iss"].(string); ok {
+		info.Issuer = v
+	}
+	if v, ok := claims["sub"].(string); ok {
+		info.Subject = v
+	}
+	if v, ok := claims["email"].(string); ok {
+		info.Email = v
+	}
+	if v, ok := claims["name"].(string); ok {
+		info.Name = v
+	}
+	if v, ok := claims["picture"].(string); ok {
+		info.Picture = v
+	}
+	if v, ok := claims["groups"].([]interface{}); ok {
+		groups := make([]string, 0, len(v))
+		for _, g := range v {
+			if s, ok := g.(string); ok {
+				groups = append(groups, s)
+			}
+		}
+		info.Groups = groups
+	}
+	return info, nil
 }
 
 // SSOUserInfo contains user information from SSO provider
