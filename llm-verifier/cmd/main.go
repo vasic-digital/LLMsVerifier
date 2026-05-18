@@ -211,12 +211,14 @@ func printJSON(data interface{}) error {
 
 func printModelsTable(models []map[string]interface{}) {
 	if len(models) == 0 {
-		fmt.Println("No models found")
+		// CONST-046: i18n-routed empty-state message (round 114).
+		fmt.Println(tr("llmsverifier_models_table_empty"))
 		return
 	}
 
-	// Print header
-	fmt.Printf("%-20s %-15s %-10s %-8s %-6s\n", "NAME", "PROVIDER", "VERSION", "SCORE", "STATUS")
+	// Print header — CONST-046: column-header line routed through i18n
+	// so locale bundles can localise the labels (round 114).
+	fmt.Println(tr("llmsverifier_models_table_header"))
 	fmt.Println(strings.Repeat("-", 60))
 
 	// Print rows
@@ -266,12 +268,14 @@ func getFloatField(data map[string]interface{}, key string) float64 {
 
 func printProvidersTable(providers []map[string]interface{}) {
 	if len(providers) == 0 {
-		fmt.Println("No providers found")
+		// CONST-046: i18n-routed empty-state message (round 114).
+		fmt.Println(tr("llmsverifier_providers_table_empty"))
 		return
 	}
 
-	// Print header
-	fmt.Printf("%-20s %-10s %-8s %-6s\n", "NAME", "MODELS", "SCORE", "STATUS")
+	// Print header — CONST-046: column-header line routed through i18n
+	// so locale bundles can localise the labels (round 114).
+	fmt.Println(tr("llmsverifier_providers_table_header"))
 	fmt.Println(strings.Repeat("-", 45))
 
 	// Print rows
@@ -305,7 +309,8 @@ func getIntField(data map[string]interface{}, key string) int {
 
 func printResultsTable(results []map[string]interface{}) {
 	if len(results) == 0 {
-		fmt.Println("No verification results found")
+		// CONST-046: i18n-routed empty-state message (round 114).
+		fmt.Println(tr("llmsverifier_results_table_empty"))
 		return
 	}
 

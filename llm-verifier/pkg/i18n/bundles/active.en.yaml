@@ -1,0 +1,25 @@
+# LLMsVerifier active English bundle — CONST-046 round 114 kickoff (Phase 4 round 8).
+#
+# Message IDs are prefixed `llmsverifier_` to keep them globally unique
+# across the HelixCode programme's i18n namespace. Every entry below
+# replaces a previously hardcoded English literal in LLMsVerifier's CLI
+# table-printers (printModelsTable / printProvidersTable / printResultsTable).
+#
+# Anti-bluff invariant per CONST-035: tests assert the sentinel
+# "<TRANSLATED:msg_id>" returned by fakeTranslator, NEVER the original
+# English text. Regression tests at pkg/i18n/translator_test.go.
+
+llmsverifier_models_table_empty:
+  other: "No models found"
+
+llmsverifier_providers_table_empty:
+  other: "No providers found"
+
+llmsverifier_results_table_empty:
+  other: "No verification results found"
+
+llmsverifier_models_table_header:
+  other: "NAME                 PROVIDER        VERSION    SCORE    STATUS"
+
+llmsverifier_providers_table_header:
+  other: "NAME                 MODELS     SCORE    STATUS"
