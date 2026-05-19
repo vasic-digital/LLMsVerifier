@@ -40,7 +40,7 @@ func main() {
 		os.Exit(1)
 	}
 	
-	fmt.Println("🔍 LLM Model Verification System - Mandatory 'Do you see my code?' Verification")
+	fmt.Println(tr("llmsverifier_modelverify_banner"))
 	fmt.Println(strings.Repeat("=", 80))
 	
 	// Create verification configuration
@@ -91,24 +91,24 @@ func main() {
 }
 
 func listAllProviders(service *providers.EnhancedModelProviderService, logger *logging.Logger) {
-	fmt.Println("\n📋 Available Providers:")
+	fmt.Println("\n" + tr("llmsverifier_modelverify_providers_heading"))
 	fmt.Println(strings.Repeat("-", 40))
-	
+
 	allProviders := service.GetAllProviders()
 	if len(allProviders) == 0 {
-		fmt.Println("No providers registered. Please set API keys in environment variables.")
+		fmt.Println(tr("llmsverifier_modelverify_no_providers"))
 		return
 	}
-	
+
 	for providerID, client := range allProviders {
-		status := "❌ No API Key"
+		status := tr("llmsverifier_modelverify_provider_no_key")
 		if client.APIKey != "" {
-			status = "✅ Configured"
+			status = tr("llmsverifier_modelverify_provider_configured")
 		}
 		fmt.Printf("%-20s %s\n", providerID, status)
 	}
-	
-	fmt.Printf("\nTotal providers: %d\n", len(allProviders))
+
+	fmt.Println("\n" + trData("llmsverifier_modelverify_total_providers", map[string]any{"count": len(allProviders)}))
 }
 
 func verifySpecificModel(ctx context.Context, service *providers.EnhancedModelProviderService, providerID, modelID string, logger *logging.Logger) {
@@ -133,14 +133,14 @@ func verifySpecificModel(ctx context.Context, service *providers.EnhancedModelPr
 	}
 	
 	if targetModel == nil {
-		fmt.Printf("❌ Model %s not found for provider %s\n", modelID, providerID)
+		fmt.Println(trData("llmsverifier_modelverify_model_not_found", map[string]any{"model": modelID, "provider": providerID}))
 		return
 	}
-	
+
 	// Get provider client
 	providerClient, exists := service.GetAllProviders()[providerID]
 	if !exists {
-		fmt.Printf("❌ Provider client not found for %s\n", providerID)
+		fmt.Println(trData("llmsverifier_modelverify_provider_client_not_found", map[string]any{"provider": providerID}))
 		return
 	}
 	
@@ -170,9 +170,9 @@ func verifySpecificModel(ctx context.Context, service *providers.EnhancedModelPr
 	
 	// Determine overall result
 	if result.VerificationStatus == "verified" && result.CanSeeCode && result.AffirmativeResponse {
-		fmt.Println("\n🎉 Model PASSED mandatory verification!")
+		fmt.Println("\n" + tr("llmsverifier_modelverify_model_passed"))
 	} else {
-		fmt.Println("\n❌ Model FAILED mandatory verification!")
+		fmt.Println("\n" + tr("llmsverifier_modelverify_model_failed"))
 	}
 }
 
@@ -188,7 +188,7 @@ func verifyProviderModels(ctx context.Context, service *providers.EnhancedModelP
 		return
 	}
 	
-	fmt.Printf("✅ Found %d verified models for provider %s\n\n", len(models), providerID)
+	fmt.Println(trData("llmsverifier_modelverify_found_verified_models", map[string]any{"count": len(models), "provider": providerID}) + "\n")
 	
 	// Display verification results
 	verificationResults := service.GetVerificationResults()
@@ -203,11 +203,11 @@ func verifyProviderModels(ctx context.Context, service *providers.EnhancedModelP
 		}
 	}
 	
-	fmt.Printf("\n📊 Summary: %d/%d models verified successfully\n", len(models), len(models))
+	fmt.Println("\n" + trData("llmsverifier_modelverify_summary_models", map[string]any{"verified": len(models), "total": len(models)}))
 }
 
 func verifyAllModels(ctx context.Context, service *providers.EnhancedModelProviderService, logger *logging.Logger) {
-	fmt.Println("\n🔍 Verifying all models across all providers")
+	fmt.Println("\n" + tr("llmsverifier_modelverify_verifying_all"))
 	fmt.Println(strings.Repeat("-", 60))
 	
 	startTime := time.Now()
@@ -232,7 +232,7 @@ func verifyAllModels(ctx context.Context, service *providers.EnhancedModelProvid
 	}
 	
 	fmt.Printf("✅ Verification completed in %v\n", duration)
-	fmt.Printf("📊 Summary: %d verified models across %d providers\n\n", verifiedModels, len(allModels))
+	fmt.Println(trData("llmsverifier_modelverify_summary_across_providers", map[string]any{"verified": verifiedModels, "providers": len(allModels)}) + "\n")
 	
 	// Display breakdown by provider
 	verificationResults := service.GetVerificationResults()
@@ -256,7 +256,7 @@ func verifyAllModels(ctx context.Context, service *providers.EnhancedModelProvid
 }
 
 func generateVerifiedConfiguration(service *providers.EnhancedModelProviderService, outputDir string, logger *logging.Logger) {
-	fmt.Println("\n🔧 Generating Verified Configuration")
+	fmt.Println("\n" + tr("llmsverifier_modelverify_generating_config"))
 	fmt.Println(strings.Repeat("-", 60))
 	
 	// Create config generator
@@ -274,7 +274,7 @@ func generateVerifiedConfiguration(service *providers.EnhancedModelProviderServi
 	}
 	
 	fmt.Printf("✅ Verified configuration generated in %v\n", duration)
-	fmt.Printf("📁 Configuration files saved to: %s\n", outputDir)
+	fmt.Println(trData("llmsverifier_modelverify_config_saved_to", map[string]any{"dir": outputDir}))
 	
 	// Show statistics
 	statistics, err := configGenerator.GetVerificationStatistics()
@@ -283,19 +283,19 @@ func generateVerifiedConfiguration(service *providers.EnhancedModelProviderServi
 		return
 	}
 	
-	fmt.Println("\n📊 Verification Statistics:")
-	fmt.Printf("  Total Models Scanned: %v\n", statistics["total_models_scanned"])
-	fmt.Printf("  Verified Models: %v\n", statistics["verified_models"])
-	fmt.Printf("  Verification Rate: %.1f%%\n", statistics["verification_rate"])
-	fmt.Printf("  Providers with Models: %v\n", statistics["providers_with_models"])
-	fmt.Printf("  Verification Enabled: %v\n", statistics["verification_enabled"])
-	fmt.Printf("  Strict Mode: %v\n", statistics["strict_mode"])
-	
-	fmt.Println("\n🎉 Verified configuration generation complete!")
+	fmt.Println("\n" + tr("llmsverifier_modelverify_stats_heading"))
+	fmt.Printf("  %s: %v\n", tr("llmsverifier_modelverify_stat_total_scanned"), statistics["total_models_scanned"])
+	fmt.Printf("  %s: %v\n", tr("llmsverifier_modelverify_stat_verified"), statistics["verified_models"])
+	fmt.Printf("  %s: %.1f%%\n", tr("llmsverifier_modelverify_stat_rate"), statistics["verification_rate"])
+	fmt.Printf("  %s: %v\n", tr("llmsverifier_modelverify_stat_providers"), statistics["providers_with_models"])
+	fmt.Printf("  %s: %v\n", tr("llmsverifier_modelverify_stat_enabled"), statistics["verification_enabled"])
+	fmt.Printf("  %s: %v\n", tr("llmsverifier_modelverify_stat_strict"), statistics["strict_mode"])
+
+	fmt.Println("\n" + tr("llmsverifier_modelverify_config_complete"))
 }
 
 func showVerificationStatistics(service *providers.EnhancedModelProviderService, logger *logging.Logger) {
-	fmt.Println("\n📊 Verification Statistics")
+	fmt.Println("\n" + tr("llmsverifier_modelverify_stats_section"))
 	fmt.Println(strings.Repeat("-", 60))
 	
 	configGenerator := providers.NewVerifiedConfigGenerator(service, logger, "./temp")
@@ -306,15 +306,15 @@ func showVerificationStatistics(service *providers.EnhancedModelProviderService,
 		return
 	}
 	
-	fmt.Printf("Total Models Scanned: %v\n", statistics["total_models_scanned"])
-	fmt.Printf("Verified Models: %v\n", statistics["verified_models"])
-	fmt.Printf("Verification Rate: %.1f%%\n", statistics["verification_rate"])
-	fmt.Printf("Providers with Models: %v\n", statistics["providers_with_models"])
-	fmt.Printf("Verification Enabled: %v\n", statistics["verification_enabled"])
-	fmt.Printf("Strict Mode: %v\n", statistics["strict_mode"])
-	
+	fmt.Printf("%s: %v\n", tr("llmsverifier_modelverify_stat_total_scanned"), statistics["total_models_scanned"])
+	fmt.Printf("%s: %v\n", tr("llmsverifier_modelverify_stat_verified"), statistics["verified_models"])
+	fmt.Printf("%s: %.1f%%\n", tr("llmsverifier_modelverify_stat_rate"), statistics["verification_rate"])
+	fmt.Printf("%s: %v\n", tr("llmsverifier_modelverify_stat_providers"), statistics["providers_with_models"])
+	fmt.Printf("%s: %v\n", tr("llmsverifier_modelverify_stat_enabled"), statistics["verification_enabled"])
+	fmt.Printf("%s: %v\n", tr("llmsverifier_modelverify_stat_strict"), statistics["strict_mode"])
+
 	if providerBreakdown, ok := statistics["provider_breakdown"].(map[string]interface{}); ok {
-		fmt.Println("\nProvider Breakdown:")
+		fmt.Println("\n" + tr("llmsverifier_modelverify_provider_breakdown"))
 		for provider, stats := range providerBreakdown {
 			if providerStats, ok := stats.(map[string]interface{}); ok {
 				fmt.Printf("  %s: %v/%v models (%.1f%% success rate)\n", 

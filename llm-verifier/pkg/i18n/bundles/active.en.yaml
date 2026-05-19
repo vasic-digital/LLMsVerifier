@@ -105,3 +105,57 @@ llmsverifier_providers_list_item_status:
   other: "   Status: {{.status}}"
 llmsverifier_providers_list_item_created:
   other: "   Created: {{.created}}"
+
+# CONST-046 round-312: model-verification CLI (cmd/model-verification/main.go).
+llmsverifier_modelverify_banner:
+  other: "🔍 LLM Model Verification System - Mandatory 'Do you see my code?' Verification"
+llmsverifier_modelverify_providers_heading:
+  other: "📋 Available Providers:"
+llmsverifier_modelverify_no_providers:
+  other: "No providers registered. Please set API keys in environment variables."
+llmsverifier_modelverify_provider_no_key:
+  other: "❌ No API Key"
+llmsverifier_modelverify_provider_configured:
+  other: "✅ Configured"
+llmsverifier_modelverify_total_providers:
+  other: "Total providers: {{.count}}"
+llmsverifier_modelverify_model_not_found:
+  other: "❌ Model {{.model}} not found for provider {{.provider}}"
+llmsverifier_modelverify_provider_client_not_found:
+  other: "❌ Provider client not found for {{.provider}}"
+llmsverifier_modelverify_model_passed:
+  other: "🎉 Model PASSED mandatory verification!"
+llmsverifier_modelverify_model_failed:
+  other: "❌ Model FAILED mandatory verification!"
+llmsverifier_modelverify_found_verified_models:
+  other: "✅ Found {{.count}} verified models for provider {{.provider}}"
+llmsverifier_modelverify_summary_models:
+  other: "📊 Summary: {{.verified}}/{{.total}} models verified successfully"
+llmsverifier_modelverify_verifying_all:
+  other: "🔍 Verifying all models across all providers"
+llmsverifier_modelverify_summary_across_providers:
+  other: "📊 Summary: {{.verified}} verified models across {{.providers}} providers"
+llmsverifier_modelverify_generating_config:
+  other: "🔧 Generating Verified Configuration"
+llmsverifier_modelverify_config_saved_to:
+  other: "📁 Configuration files saved to: {{.dir}}"
+llmsverifier_modelverify_stats_heading:
+  other: "📊 Verification Statistics:"
+llmsverifier_modelverify_stats_section:
+  other: "📊 Verification Statistics"
+llmsverifier_modelverify_stat_total_scanned:
+  other: "Total Models Scanned"
+llmsverifier_modelverify_stat_verified:
+  other: "Verified Models"
+llmsverifier_modelverify_stat_rate:
+  other: "Verification Rate"
+llmsverifier_modelverify_stat_providers:
+  other: "Providers with Models"
+llmsverifier_modelverify_stat_enabled:
+  other: "Verification Enabled"
+llmsverifier_modelverify_stat_strict:
+  other: "Strict Mode"
+llmsverifier_modelverify_config_complete:
+  other: "🎉 Verified configuration generation complete!"
+llmsverifier_modelverify_provider_breakdown:
+  other: "Provider Breakdown:"
