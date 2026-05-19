@@ -231,6 +231,121 @@ func TestRound194_TrData_NoopReturnsMessageID(t *testing.T) {
 	}
 }
 
+// --- Round-308: 9 new sentinel paired-mutation tests ---------------------
+//
+// Each test calls the migrated helper (tr / trData) directly through the
+// translator seam and asserts the fakeTranslator sentinel surfaces. Any
+// revert of a single call site to its hardcoded English literal would
+// bypass the translator and fail the matching test below. Paired-mutation
+// gate per §1.1 / CONST-046.
+
+func TestRound308_ValidateConfigFileValid_Sentinel(t *testing.T) {
+	got := trWith(t, func() string { return tr("llmsverifier_validate_config_file_valid") })
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_validate_config_file_valid>") {
+		t.Fatalf("tr() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound308_ValidateConfigApiPort_Sentinel(t *testing.T) {
+	got := trWith(t, func() string {
+		return trData("llmsverifier_validate_config_api_port", map[string]any{"port": "8080"})
+	})
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_validate_config_api_port>") {
+		t.Fatalf("trData() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound308_ValidateSystemProbeOk_Sentinel(t *testing.T) {
+	got := trWith(t, func() string { return tr("llmsverifier_validate_system_probe_ok") })
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_validate_system_probe_ok>") {
+		t.Fatalf("tr() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound308_ValidateSystemCompleted_Sentinel(t *testing.T) {
+	got := trWith(t, func() string { return tr("llmsverifier_validate_system_completed_successfully") })
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_validate_system_completed_successfully>") {
+		t.Fatalf("tr() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound308_AIConfigExportingForFormat_Sentinel(t *testing.T) {
+	got := trWith(t, func() string {
+		return trData("llmsverifier_aiconfig_exporting_for_format", map[string]any{"format": "opencode"})
+	})
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_aiconfig_exporting_for_format>") {
+		t.Fatalf("trData() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound308_AIConfigExportSuccess_Sentinel(t *testing.T) {
+	got := trWith(t, func() string {
+		return trData("llmsverifier_aiconfig_export_success", map[string]any{"format": "crush", "path": "/tmp/x.json"})
+	})
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_aiconfig_export_success>") {
+		t.Fatalf("trData() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound308_AIConfigValidating_Sentinel(t *testing.T) {
+	got := trWith(t, func() string { return tr("llmsverifier_aiconfig_validating") })
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_aiconfig_validating>") {
+		t.Fatalf("tr() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound308_AIConfigValidationPassed_Sentinel(t *testing.T) {
+	got := trWith(t, func() string { return tr("llmsverifier_aiconfig_validation_passed") })
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_aiconfig_validation_passed>") {
+		t.Fatalf("tr() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound308_AIConfigBulkExportSuccess_Sentinel(t *testing.T) {
+	got := trWith(t, func() string {
+		return trData("llmsverifier_aiconfig_bulk_export_success", map[string]any{"path": "/tmp/out"})
+	})
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_aiconfig_bulk_export_success>") {
+		t.Fatalf("trData() bypass: got %q; expected sentinel", got)
+	}
+}
+
+// TestRound308_Bundle_NoHardcodedLiterals scans the migrated print sites in
+// main.go and asserts none reverted to the English literals — paired
+// mutation per §1.1: a future revert flips the assertion to FAIL.
+func TestRound308_Bundle_NoHardcodedLiterals(t *testing.T) {
+	src, err := os.ReadFile("main.go")
+	if err != nil {
+		t.Fatalf("read main.go: %v", err)
+	}
+	body := string(src)
+
+	forbidden := []string{
+		`fmt.Println("✓ Configuration file is valid")`,
+		`fmt.Printf("✓ API Port: %s\n", cfg.API.Port)`,
+		`fmt.Printf("✓ Database Path: %s\n", cfg.Database.Path)`,
+		`fmt.Printf("✓ LLMs configured: %d\n", len(cfg.LLMs))`,
+		`fmt.Printf("✓ Profile: %s\n", cfg.Profile)`,
+		`fmt.Print("Testing database connectivity... ")`,
+		`fmt.Print("Testing API endpoints... ")`,
+		`fmt.Println("✓ System validation completed successfully")`,
+		`fmt.Printf("📤 Exporting AI CLI configuration for format: %s\n", format)`,
+		`fmt.Printf("📄 Output file: %s\n", outputFile)`,
+		`fmt.Printf("✅ Successfully exported %s configuration to %s\n", format, outputFile)`,
+		`fmt.Println("🔍 Validating exported configuration...")`,
+		`fmt.Println("✅ Configuration validation passed")`,
+		`fmt.Printf("📤 Exporting AI CLI configurations to directory: %s\n", outputDir)`,
+		`fmt.Printf("✅ Successfully exported all AI CLI configurations to %s\n", outputDir)`,
+		`fmt.Println("📄 Generated files:")`,
+		`fmt.Printf("🔍 Validating AI CLI configuration: %s\n", configPath)`,
+	}
+	for _, lit := range forbidden {
+		if strings.Contains(body, lit) {
+			t.Fatalf("CONST-046 round-308 regression: literal %q reappeared in main.go (paired-mutation gate)", lit)
+		}
+	}
+}
+
 // TestRound194_Bundle_NoHardcodedLiterals scans the migrated print sites in
 // main.go and asserts none reverted to the English literals — paired
 // mutation per §1.1: a future revert flips the assertion to FAIL.

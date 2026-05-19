@@ -23,3 +23,47 @@ llmsverifier_models_table_header:
 
 llmsverifier_providers_table_header:
   other: "NAME                 MODELS     SCORE    STATUS"
+
+# CONST-046 round-308: validate-config CLI block (cmd/main.go validateCmd.config).
+llmsverifier_validate_config_file_valid:
+  other: "✓ Configuration file is valid"
+llmsverifier_validate_config_api_port:
+  other: "✓ API Port: {{.port}}"
+llmsverifier_validate_config_db_path:
+  other: "✓ Database Path: {{.path}}"
+llmsverifier_validate_config_llms_count:
+  other: "✓ LLMs configured: {{.count}}"
+llmsverifier_validate_config_profile:
+  other: "✓ Profile: {{.profile}}"
+
+# CONST-046 round-308: validate-system CLI block (cmd/main.go validateCmd.system).
+llmsverifier_validate_system_db_connect_probe:
+  other: "Testing database connectivity... "
+llmsverifier_validate_system_api_probe:
+  other: "Testing API endpoints... "
+llmsverifier_validate_system_probe_ok:
+  other: "✓ OK"
+llmsverifier_validate_system_probe_failed:
+  other: "✗ Failed: {{.err}}"
+llmsverifier_validate_system_completed_successfully:
+  other: "✓ System validation completed successfully"
+
+# CONST-046 round-308: ai-config export / bulk-export / validate banners.
+llmsverifier_aiconfig_exporting_for_format:
+  other: "📤 Exporting AI CLI configuration for format: {{.format}}"
+llmsverifier_aiconfig_output_file:
+  other: "📄 Output file: {{.path}}"
+llmsverifier_aiconfig_export_success:
+  other: "✅ Successfully exported {{.format}} configuration to {{.path}}"
+llmsverifier_aiconfig_validating:
+  other: "🔍 Validating exported configuration..."
+llmsverifier_aiconfig_validation_passed:
+  other: "✅ Configuration validation passed"
+llmsverifier_aiconfig_bulk_exporting_to_dir:
+  other: "📤 Exporting AI CLI configurations to directory: {{.path}}"
+llmsverifier_aiconfig_bulk_export_success:
+  other: "✅ Successfully exported all AI CLI configurations to {{.path}}"
+llmsverifier_aiconfig_generated_files_header:
+  other: "📄 Generated files:"
+llmsverifier_aiconfig_validating_path:
+  other: "🔍 Validating AI CLI configuration: {{.path}}"

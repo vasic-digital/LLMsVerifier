@@ -518,11 +518,12 @@ func validateCmd() *cobra.Command {
 				log.Fatalf("Configuration validation failed: %v", err)
 			}
 
-			fmt.Println("✓ Configuration file is valid")
-			fmt.Printf("✓ API Port: %s\n", cfg.API.Port)
-			fmt.Printf("✓ Database Path: %s\n", cfg.Database.Path)
-			fmt.Printf("✓ LLMs configured: %d\n", len(cfg.LLMs))
-			fmt.Printf("✓ Profile: %s\n", cfg.Profile)
+			// CONST-046 round-308: i18n-routed validate-config success block.
+			fmt.Println(tr("llmsverifier_validate_config_file_valid"))
+			fmt.Println(trData("llmsverifier_validate_config_api_port", map[string]any{"port": cfg.API.Port}))
+			fmt.Println(trData("llmsverifier_validate_config_db_path", map[string]any{"path": cfg.Database.Path}))
+			fmt.Println(trData("llmsverifier_validate_config_llms_count", map[string]any{"count": len(cfg.LLMs)}))
+			fmt.Println(trData("llmsverifier_validate_config_profile", map[string]any{"profile": cfg.Profile}))
 		},
 	}
 
@@ -536,25 +537,26 @@ func validateCmd() *cobra.Command {
 				log.Fatalf("Failed to create client: %v", err)
 			}
 
+			// CONST-046 round-308: i18n-routed system-validate banners.
 			// Test database connectivity
-			fmt.Print("Testing database connectivity... ")
+			fmt.Print(tr("llmsverifier_validate_system_db_connect_probe"))
 			_, err = c.GetModels()
 			if err != nil {
-				fmt.Printf("✗ Failed: %v\n", err)
+				fmt.Println(trData("llmsverifier_validate_system_probe_failed", map[string]any{"err": err}))
 				os.Exit(1)
 			}
-			fmt.Println("✓ OK")
+			fmt.Println(tr("llmsverifier_validate_system_probe_ok"))
 
 			// Test API endpoints
-			fmt.Print("Testing API endpoints... ")
+			fmt.Print(tr("llmsverifier_validate_system_api_probe"))
 			_, err = c.GetProviders()
 			if err != nil {
-				fmt.Printf("✗ Failed: %v\n", err)
+				fmt.Println(trData("llmsverifier_validate_system_probe_failed", map[string]any{"err": err}))
 				os.Exit(1)
 			}
-			fmt.Println("✓ OK")
+			fmt.Println(tr("llmsverifier_validate_system_probe_ok"))
 
-			fmt.Println("✓ System validation completed successfully")
+			fmt.Println(tr("llmsverifier_validate_system_completed_successfully"))
 		},
 	}
 
@@ -644,8 +646,9 @@ func runAIConfigExport(args []string) {
 	}
 	defer db.Close()
 
-	fmt.Printf("📤 Exporting AI CLI configuration for format: %s\n", format)
-	fmt.Printf("📄 Output file: %s\n", outputFile)
+	// CONST-046 round-308: i18n-routed ai-config export banners.
+	fmt.Println(trData("llmsverifier_aiconfig_exporting_for_format", map[string]any{"format": format}))
+	fmt.Println(trData("llmsverifier_aiconfig_output_file", map[string]any{"path": outputFile}))
 
 	// Load configuration
 	cfg, err := llmverifier.LoadConfig(configFile)
@@ -667,17 +670,19 @@ func runAIConfigExport(args []string) {
 		log.Fatalf("❌ Failed to export %s configuration: %v", format, err)
 	}
 
-	fmt.Printf("✅ Successfully exported %s configuration to %s\n", format, outputFile)
+	// CONST-046 round-308: i18n-routed export success + validating banners.
+	fmt.Println(trData("llmsverifier_aiconfig_export_success", map[string]any{"format": format, "path": outputFile}))
 
 	// Validate exported configuration
-	fmt.Println("🔍 Validating exported configuration...")
+	fmt.Println(tr("llmsverifier_aiconfig_validating"))
 	err = llmverifier.ValidateExportedConfig(outputFile)
 	if err != nil {
 		log.Printf("❌ Validation failed: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Println("✅ Configuration validation passed")
+	// CONST-046 round-308: i18n-routed validation-passed banner.
+	fmt.Println(tr("llmsverifier_aiconfig_validation_passed"))
 }
 
 func runAIBulkExport(outputDir string) {
@@ -694,7 +699,8 @@ func runAIBulkExport(outputDir string) {
 		log.Fatalf("❌ Failed to load configuration: %v", err)
 	}
 
-	fmt.Printf("📤 Exporting AI CLI configurations to directory: %s\n", outputDir)
+	// CONST-046 round-308: i18n-routed bulk export banner.
+	fmt.Println(trData("llmsverifier_aiconfig_bulk_exporting_to_dir", map[string]any{"path": outputDir}))
 
 	// Create export options
 	options := &llmverifier.ExportOptions{
@@ -714,8 +720,9 @@ func runAIBulkExport(outputDir string) {
 		log.Fatalf("❌ Failed to export configurations: %v", err)
 	}
 
-	fmt.Printf("✅ Successfully exported all AI CLI configurations to %s\n", outputDir)
-	fmt.Println("📄 Generated files:")
+	// CONST-046 round-308: i18n-routed bulk export success + generated-files header.
+	fmt.Println(trData("llmsverifier_aiconfig_bulk_export_success", map[string]any{"path": outputDir}))
+	fmt.Println(tr("llmsverifier_aiconfig_generated_files_header"))
 	fmt.Println("  - export_opencode.json")
 	fmt.Println("  - export_crush.json")
 	fmt.Println("  - export_claude_code.json")
@@ -724,7 +731,8 @@ func runAIBulkExport(outputDir string) {
 }
 
 func runAIConfigValidate(configPath string) {
-	fmt.Printf("🔍 Validating AI CLI configuration: %s\n", configPath)
+	// CONST-046 round-308: i18n-routed validating-config banner.
+	fmt.Println(trData("llmsverifier_aiconfig_validating_path", map[string]any{"path": configPath}))
 
 	// Check if file exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
@@ -737,7 +745,8 @@ func runAIConfigValidate(configPath string) {
 		log.Fatalf("❌ Validation failed: %v", err)
 	}
 
-	fmt.Println("✅ Configuration validation passed")
+	// CONST-046 round-308: i18n-routed validation-passed banner (validate command).
+	fmt.Println(tr("llmsverifier_aiconfig_validation_passed"))
 }
 
 func contains(slice []string, item string) bool {
