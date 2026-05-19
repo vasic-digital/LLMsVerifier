@@ -264,7 +264,7 @@ func (hc *HealthChecker) initializeComponents() {
 	}
 
 	hc.components["notifications"] = &ComponentHealth{
-		Name:        "Notification System",
+		Name:        tr("monitoring.component.notification_system"),
 		Status:      HealthStatusHealthy,
 		LastChecked: time.Now(),
 	}
@@ -298,7 +298,7 @@ func (hc *HealthChecker) checkDatabaseHealth() {
 		component := hc.components["database"]
 		component.LastChecked = time.Now()
 		component.Status = HealthStatusUnhealthy
-		component.Message = "Database is not configured"
+		component.Message = tr("monitoring.database.not_configured")
 		component.ResponseTime = 0
 		component.Details = map[string]interface{}{
 			"error": "database is nil",
@@ -320,13 +320,13 @@ func (hc *HealthChecker) checkDatabaseHealth() {
 
 	if err != nil {
 		component.Status = HealthStatusUnhealthy
-		component.Message = fmt.Sprintf("Database connection failed: %v", err)
+		component.Message = trData("monitoring.database.connection_failed", map[string]any{"error": err})
 	} else if responseTime > 5*time.Second {
 		component.Status = HealthStatusDegraded
-		component.Message = fmt.Sprintf("Database response slow: %v", responseTime)
+		component.Message = trData("monitoring.database.response_slow", map[string]any{"duration": responseTime})
 	} else {
 		component.Status = HealthStatusHealthy
-		component.Message = "Database is healthy"
+		component.Message = tr("monitoring.database.healthy")
 	}
 
 	component.Details = map[string]interface{}{
@@ -350,16 +350,16 @@ func (hc *HealthChecker) checkAPIHealth() {
 	// Determine health status based on real metrics
 	if apiMetrics.ErrorRate > 0.5 { // More than 50% errors
 		component.Status = HealthStatusUnhealthy
-		component.Message = fmt.Sprintf("API error rate critical: %.1f%%", apiMetrics.ErrorRate*100)
+		component.Message = trData("monitoring.api.error_rate_critical", map[string]any{"percent": apiMetrics.ErrorRate * 100})
 	} else if apiMetrics.ErrorRate > 0.1 { // More than 10% errors
 		component.Status = HealthStatusDegraded
-		component.Message = fmt.Sprintf("API error rate elevated: %.1f%%", apiMetrics.ErrorRate*100)
+		component.Message = trData("monitoring.api.error_rate_elevated", map[string]any{"percent": apiMetrics.ErrorRate * 100})
 	} else if apiMetrics.AverageResponseTime > 5*time.Second {
 		component.Status = HealthStatusDegraded
-		component.Message = fmt.Sprintf("API response slow: %v", apiMetrics.AverageResponseTime)
+		component.Message = trData("monitoring.api.response_slow", map[string]any{"duration": apiMetrics.AverageResponseTime})
 	} else {
 		component.Status = HealthStatusHealthy
-		component.Message = "API server is responding normally"
+		component.Message = tr("monitoring.api.responding_normally")
 	}
 
 	component.Details = map[string]interface{}{
@@ -393,23 +393,23 @@ func (hc *HealthChecker) checkSchedulerHealth() {
 	// Determine health status based on real metrics
 	if !schedStats.IsRunning {
 		component.Status = HealthStatusUnhealthy
-		component.Message = "Scheduler is not running"
+		component.Message = tr("monitoring.scheduler.not_running")
 		component.ResponseTime = 0
 	} else if failureRate > 0.5 { // More than 50% failures
 		component.Status = HealthStatusUnhealthy
-		component.Message = fmt.Sprintf("Scheduler failure rate critical: %.1f%%", failureRate*100)
+		component.Message = trData("monitoring.scheduler.failure_rate_critical", map[string]any{"percent": failureRate * 100})
 		component.ResponseTime = time.Millisecond * 100
 	} else if failureRate > 0.1 { // More than 10% failures
 		component.Status = HealthStatusDegraded
-		component.Message = fmt.Sprintf("Scheduler failure rate elevated: %.1f%%", failureRate*100)
+		component.Message = trData("monitoring.scheduler.failure_rate_elevated", map[string]any{"percent": failureRate * 100})
 		component.ResponseTime = time.Millisecond * 50
 	} else if schedStats.QueuedJobs > 100 { // Large queue backlog
 		component.Status = HealthStatusDegraded
-		component.Message = fmt.Sprintf("Scheduler queue backlog: %d jobs", schedStats.QueuedJobs)
+		component.Message = trData("monitoring.scheduler.queue_backlog", map[string]any{"jobs": schedStats.QueuedJobs})
 		component.ResponseTime = time.Millisecond * 20
 	} else {
 		component.Status = HealthStatusHealthy
-		component.Message = "Scheduler is running normally"
+		component.Message = tr("monitoring.scheduler.running_normally")
 		component.ResponseTime = time.Millisecond * 5
 	}
 
@@ -449,27 +449,27 @@ func (hc *HealthChecker) checkNotificationsHealth() {
 	case channelsConfigured == 0:
 		// No channels configured - degraded state
 		component.Status = HealthStatusDegraded
-		component.Message = "No notification channels configured"
+		component.Message = tr("monitoring.notifications.no_channels_configured")
 
 	case deliveryRate < 0.5 && messagesSent > 10:
 		// Low delivery rate with significant message volume - unhealthy
 		component.Status = HealthStatusUnhealthy
-		component.Message = fmt.Sprintf("Low notification delivery rate: %.1f%%", deliveryRate*100)
+		component.Message = trData("monitoring.notifications.delivery_rate_low", map[string]any{"percent": deliveryRate * 100})
 
 	case deliveryRate < 0.8 && messagesSent > 5:
 		// Moderate delivery rate - degraded
 		component.Status = HealthStatusDegraded
-		component.Message = fmt.Sprintf("Notification delivery rate below optimal: %.1f%%", deliveryRate*100)
+		component.Message = trData("monitoring.notifications.delivery_rate_below_optimal", map[string]any{"percent": deliveryRate * 100})
 
 	case messagesSent == 0:
 		// No messages sent yet - healthy but with note
 		component.Status = HealthStatusHealthy
-		component.Message = "Notification system ready, no messages sent yet"
+		component.Message = tr("monitoring.notifications.ready_no_messages")
 
 	default:
 		// Normal operation
 		component.Status = HealthStatusHealthy
-		component.Message = fmt.Sprintf("Notification system operational (delivery rate: %.1f%%)", deliveryRate*100)
+		component.Message = trData("monitoring.notifications.operational", map[string]any{"percent": deliveryRate * 100})
 	}
 }
 

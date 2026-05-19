@@ -517,3 +517,63 @@ issue.recommendation.default.error_handling:
   other: "• Implement additional error handling"
 issue.recommendation.default.provider_support:
   other: "• Consider reaching out to provider support"
+
+# --- round-326 (CONST-046 Phase 4 round 8): monitoring/health.go ---
+# Health-check component messages surfaced to operators via /health,
+# /health/detailed endpoints and ComponentHealth.Message JSON fields.
+monitoring.component.notification_system:
+  other: "Notification System"
+
+monitoring.database.not_configured:
+  other: "Database is not configured"
+
+monitoring.database.connection_failed:
+  other: "Database connection failed: {{.error}}"
+
+monitoring.database.response_slow:
+  other: "Database response slow: {{.duration}}"
+
+monitoring.database.healthy:
+  other: "Database is healthy"
+
+monitoring.api.error_rate_critical:
+  other: "API error rate critical: {{.percent}}%"
+
+monitoring.api.error_rate_elevated:
+  other: "API error rate elevated: {{.percent}}%"
+
+monitoring.api.response_slow:
+  other: "API response slow: {{.duration}}"
+
+monitoring.api.responding_normally:
+  other: "API server is responding normally"
+
+monitoring.scheduler.not_running:
+  other: "Scheduler is not running"
+
+monitoring.scheduler.failure_rate_critical:
+  other: "Scheduler failure rate critical: {{.percent}}%"
+
+monitoring.scheduler.failure_rate_elevated:
+  other: "Scheduler failure rate elevated: {{.percent}}%"
+
+monitoring.scheduler.queue_backlog:
+  other: "Scheduler queue backlog: {{.jobs}} jobs"
+
+monitoring.scheduler.running_normally:
+  other: "Scheduler is running normally"
+
+monitoring.notifications.no_channels_configured:
+  other: "No notification channels configured"
+
+monitoring.notifications.delivery_rate_low:
+  other: "Low notification delivery rate: {{.percent}}%"
+
+monitoring.notifications.delivery_rate_below_optimal:
+  other: "Notification delivery rate below optimal: {{.percent}}%"
+
+monitoring.notifications.ready_no_messages:
+  other: "Notification system ready, no messages sent yet"
+
+monitoring.notifications.operational:
+  other: "Notification system operational (delivery rate: {{.percent}}%)"

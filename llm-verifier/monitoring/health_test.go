@@ -343,7 +343,10 @@ func TestHealthCheckerNotificationsHealth(t *testing.T) {
 	hc.checkNotificationsHealth()
 
 	component := hc.GetComponentHealth()["notifications"]
-	assert.Equal(t, "Notification System", component.Name)
+	// CONST-046: the component name is i18n-routed; the default
+	// NoopTranslator returns the message ID verbatim. A real backend
+	// substitutes the locale-appropriate display name.
+	assert.Equal(t, "monitoring.component.notification_system", component.Name)
 	assert.Equal(t, HealthStatusHealthy, component.Status)
 	assert.NotNil(t, component.Details)
 }
@@ -356,9 +359,11 @@ func TestHealthCheckerNotificationsHealth_NoChannels(t *testing.T) {
 	hc.checkNotificationsHealth()
 
 	component := hc.GetComponentHealth()["notifications"]
-	assert.Equal(t, "Notification System", component.Name)
+	// CONST-046: name + message are i18n-routed; NoopTranslator (the
+	// production default) returns the message IDs verbatim.
+	assert.Equal(t, "monitoring.component.notification_system", component.Name)
 	assert.Equal(t, HealthStatusDegraded, component.Status)
-	assert.Contains(t, component.Message, "No notification channels configured")
+	assert.Equal(t, "monitoring.notifications.no_channels_configured", component.Message)
 }
 
 func TestHealthCheckerNotificationsHealth_WithMessages(t *testing.T) {
@@ -374,9 +379,12 @@ func TestHealthCheckerNotificationsHealth_WithMessages(t *testing.T) {
 	hc.checkNotificationsHealth()
 
 	component := hc.GetComponentHealth()["notifications"]
-	// Should be healthy with good delivery rate
+	// Should be healthy with good delivery rate. CONST-046: the message is
+	// i18n-routed; NoopTranslator returns the operational message ID
+	// verbatim (a real backend renders the locale-appropriate text with
+	// the delivery-rate percentage substituted).
 	assert.Equal(t, HealthStatusHealthy, component.Status)
-	assert.Contains(t, component.Message, "delivery rate")
+	assert.Equal(t, "monitoring.notifications.operational", component.Message)
 }
 
 func TestHealthCheckerMetricsFields(t *testing.T) {
