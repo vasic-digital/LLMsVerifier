@@ -978,35 +978,42 @@ func runInteractiveMode(client *client.Client) {
 			}
 		case "verify":
 			if len(args) < 2 {
-				fmt.Println("Usage: verify [model_id]")
+				// CONST-046 round-309: i18n-routed interactive verify usage.
+				fmt.Println(tr("llmsverifier_interactive_verify_usage"))
 				continue
 			}
 			result, err := client.VerifyModel(args[1])
 			if err != nil {
-				fmt.Printf("Error: %v\n", err)
+				// CONST-046 round-309: i18n-routed interactive error line.
+				fmt.Println(trData("llmsverifier_interactive_error", map[string]any{"err": err}))
 				continue
 			}
-			fmt.Println("Verification completed:")
+			// CONST-046 round-309: i18n-routed verify-completed banner.
+			fmt.Println(tr("llmsverifier_interactive_verify_completed"))
 			if err := printJSON(result); err != nil {
-				fmt.Printf("Error displaying result: %v\n", err)
+				fmt.Println(trData("llmsverifier_interactive_error_displaying_result", map[string]any{"err": err}))
 			}
 		case "status":
 			models, err := client.GetModels()
 			if err != nil {
-				fmt.Printf("Error getting models: %v\n", err)
+				// CONST-046 round-309: i18n-routed model-fetch error.
+				fmt.Println(trData("llmsverifier_interactive_error_getting_models", map[string]any{"err": err}))
 				continue
 			}
 			providers, err := client.GetProviders()
 			if err != nil {
-				fmt.Printf("Error getting providers: %v\n", err)
+				// CONST-046 round-309: i18n-routed provider-fetch error.
+				fmt.Println(trData("llmsverifier_interactive_error_getting_providers", map[string]any{"err": err}))
 				continue
 			}
-			fmt.Printf("System Status:\n")
-			fmt.Printf("  Models: %d\n", len(models))
-			fmt.Printf("  Providers: %d\n", len(providers))
-			fmt.Printf("  API Server: Connected\n")
+			// CONST-046 round-309: i18n-routed interactive status block.
+			fmt.Println(tr("llmsverifier_interactive_status_header"))
+			fmt.Println(trData("llmsverifier_interactive_status_models", map[string]any{"count": len(models)}))
+			fmt.Println(trData("llmsverifier_interactive_status_providers", map[string]any{"count": len(providers)}))
+			fmt.Println(tr("llmsverifier_interactive_status_api_connected"))
 		default:
-			fmt.Printf("Unknown command: %s\n", args[0])
+			// CONST-046 round-309: i18n-routed unknown-command notice.
+			fmt.Println(trData("llmsverifier_interactive_unknown_command", map[string]any{"command": args[0]}))
 		}
 		fmt.Println()
 	}
@@ -1086,16 +1093,18 @@ func providersCmd() *cobra.Command {
 			}
 
 			if len(providers) == 0 {
-				fmt.Println("No providers found.")
+				// CONST-046 round-309: i18n-routed empty-state for provider list.
+				fmt.Println(tr("llmsverifier_providers_list_none_found"))
 				return
 			}
 
-			fmt.Printf("Found %d providers:\n\n", len(providers))
+			// CONST-046 round-309: i18n-routed provider-list header + item lines.
+			fmt.Printf("%s\n\n", trData("llmsverifier_providers_list_found_header", map[string]any{"count": len(providers)}))
 			for i, provider := range providers {
-				fmt.Printf("%d. Name: %v\n", i+1, provider["name"])
-				fmt.Printf("   Endpoint: %v\n", provider["endpoint"])
-				fmt.Printf("   Status: %v\n", provider["status"])
-				fmt.Printf("   Created: %v\n\n", provider["created_at"])
+				fmt.Println(trData("llmsverifier_providers_list_item_name", map[string]any{"index": i + 1, "name": provider["name"]}))
+				fmt.Println(trData("llmsverifier_providers_list_item_endpoint", map[string]any{"endpoint": provider["endpoint"]}))
+				fmt.Println(trData("llmsverifier_providers_list_item_status", map[string]any{"status": provider["status"]}))
+				fmt.Printf("%s\n\n", trData("llmsverifier_providers_list_item_created", map[string]any{"created": provider["created_at"]}))
 			}
 		},
 	}

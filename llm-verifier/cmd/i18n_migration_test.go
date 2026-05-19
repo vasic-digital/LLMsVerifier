@@ -346,6 +346,210 @@ func TestRound308_Bundle_NoHardcodedLiterals(t *testing.T) {
 	}
 }
 
+// --- Round-309: sentinel paired-mutation tests --------------------------
+//
+// Each test calls the migrated helper (tr / trData) directly through the
+// translator seam and asserts the fakeTranslator sentinel surfaces. Any
+// revert of a single call site to its hardcoded English literal would
+// bypass the translator and fail the matching test below. Paired-mutation
+// gate per §1.1 / CONST-046.
+
+func TestRound309_InteractiveVerifyUsage_Sentinel(t *testing.T) {
+	got := trWith(t, func() string { return tr("llmsverifier_interactive_verify_usage") })
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_interactive_verify_usage>") {
+		t.Fatalf("tr() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound309_InteractiveError_Sentinel(t *testing.T) {
+	got := trWith(t, func() string {
+		return trData("llmsverifier_interactive_error", map[string]any{"err": "boom"})
+	})
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_interactive_error>") {
+		t.Fatalf("trData() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound309_InteractiveVerifyCompleted_Sentinel(t *testing.T) {
+	got := trWith(t, func() string { return tr("llmsverifier_interactive_verify_completed") })
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_interactive_verify_completed>") {
+		t.Fatalf("tr() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound309_InteractiveErrorDisplayingResult_Sentinel(t *testing.T) {
+	got := trWith(t, func() string {
+		return trData("llmsverifier_interactive_error_displaying_result", map[string]any{"err": "x"})
+	})
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_interactive_error_displaying_result>") {
+		t.Fatalf("trData() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound309_InteractiveErrorGettingModels_Sentinel(t *testing.T) {
+	got := trWith(t, func() string {
+		return trData("llmsverifier_interactive_error_getting_models", map[string]any{"err": "x"})
+	})
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_interactive_error_getting_models>") {
+		t.Fatalf("trData() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound309_InteractiveErrorGettingProviders_Sentinel(t *testing.T) {
+	got := trWith(t, func() string {
+		return trData("llmsverifier_interactive_error_getting_providers", map[string]any{"err": "x"})
+	})
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_interactive_error_getting_providers>") {
+		t.Fatalf("trData() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound309_InteractiveStatusHeader_Sentinel(t *testing.T) {
+	got := trWith(t, func() string { return tr("llmsverifier_interactive_status_header") })
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_interactive_status_header>") {
+		t.Fatalf("tr() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound309_InteractiveStatusModels_Sentinel(t *testing.T) {
+	got := trWith(t, func() string {
+		return trData("llmsverifier_interactive_status_models", map[string]any{"count": 4})
+	})
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_interactive_status_models>") {
+		t.Fatalf("trData() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound309_InteractiveStatusProviders_Sentinel(t *testing.T) {
+	got := trWith(t, func() string {
+		return trData("llmsverifier_interactive_status_providers", map[string]any{"count": 2})
+	})
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_interactive_status_providers>") {
+		t.Fatalf("trData() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound309_InteractiveStatusApiConnected_Sentinel(t *testing.T) {
+	got := trWith(t, func() string { return tr("llmsverifier_interactive_status_api_connected") })
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_interactive_status_api_connected>") {
+		t.Fatalf("tr() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound309_InteractiveUnknownCommand_Sentinel(t *testing.T) {
+	got := trWith(t, func() string {
+		return trData("llmsverifier_interactive_unknown_command", map[string]any{"command": "frob"})
+	})
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_interactive_unknown_command>") {
+		t.Fatalf("trData() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound309_ProvidersListNoneFound_Sentinel(t *testing.T) {
+	got := trWith(t, func() string { return tr("llmsverifier_providers_list_none_found") })
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_providers_list_none_found>") {
+		t.Fatalf("tr() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound309_ProvidersListFoundHeader_Sentinel(t *testing.T) {
+	got := trWith(t, func() string {
+		return trData("llmsverifier_providers_list_found_header", map[string]any{"count": 3})
+	})
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_providers_list_found_header>") {
+		t.Fatalf("trData() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound309_ProvidersListItemName_Sentinel(t *testing.T) {
+	got := trWith(t, func() string {
+		return trData("llmsverifier_providers_list_item_name", map[string]any{"index": 1, "name": "p"})
+	})
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_providers_list_item_name>") {
+		t.Fatalf("trData() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound309_ProvidersListItemCreated_Sentinel(t *testing.T) {
+	got := trWith(t, func() string {
+		return trData("llmsverifier_providers_list_item_created", map[string]any{"created": "now"})
+	})
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_providers_list_item_created>") {
+		t.Fatalf("trData() bypass: got %q; expected sentinel", got)
+	}
+}
+
+// TestRound309_Bundle_NoHardcodedLiterals scans the migrated print sites in
+// main.go and asserts none reverted to the English literals — paired
+// mutation per §1.1: a future revert flips the assertion to FAIL.
+func TestRound309_Bundle_NoHardcodedLiterals(t *testing.T) {
+	src, err := os.ReadFile("main.go")
+	if err != nil {
+		t.Fatalf("read main.go: %v", err)
+	}
+	body := string(src)
+
+	forbidden := []string{
+		`fmt.Println("Usage: verify [model_id]")`,
+		`fmt.Println("Verification completed:")`,
+		`fmt.Printf("Error displaying result: %v\n", err)`,
+		`fmt.Printf("Error getting models: %v\n", err)`,
+		`fmt.Printf("Error getting providers: %v\n", err)`,
+		`fmt.Printf("System Status:\n")`,
+		`fmt.Printf("  Models: %d\n", len(models))`,
+		`fmt.Printf("  Providers: %d\n", len(providers))`,
+		`fmt.Printf("  API Server: Connected\n")`,
+		`fmt.Printf("Unknown command: %s\n", args[0])`,
+		`fmt.Println("No providers found.")`,
+		`fmt.Printf("Found %d providers:\n\n", len(providers))`,
+		`fmt.Printf("%d. Name: %v\n", i+1, provider["name"])`,
+		`fmt.Printf("   Endpoint: %v\n", provider["endpoint"])`,
+		`fmt.Printf("   Status: %v\n", provider["status"])`,
+		`fmt.Printf("   Created: %v\n\n", provider["created_at"])`,
+	}
+	for _, lit := range forbidden {
+		if strings.Contains(body, lit) {
+			t.Fatalf("CONST-046 round-309 regression: literal %q reappeared in main.go (paired-mutation gate)", lit)
+		}
+	}
+}
+
+// TestRound309_Bundle_KeysPresent scans the active.en.yaml bundle and asserts
+// every round-309 message key is present — bundle-scan no-revert paired
+// mutation: deleting a key flips the assertion to FAIL.
+func TestRound309_Bundle_KeysPresent(t *testing.T) {
+	src, err := os.ReadFile("../pkg/i18n/bundles/active.en.yaml")
+	if err != nil {
+		t.Fatalf("read active.en.yaml: %v", err)
+	}
+	body := string(src)
+
+	keys := []string{
+		"llmsverifier_interactive_verify_usage",
+		"llmsverifier_interactive_error",
+		"llmsverifier_interactive_verify_completed",
+		"llmsverifier_interactive_error_displaying_result",
+		"llmsverifier_interactive_error_getting_models",
+		"llmsverifier_interactive_error_getting_providers",
+		"llmsverifier_interactive_status_header",
+		"llmsverifier_interactive_status_models",
+		"llmsverifier_interactive_status_providers",
+		"llmsverifier_interactive_status_api_connected",
+		"llmsverifier_interactive_unknown_command",
+		"llmsverifier_providers_list_none_found",
+		"llmsverifier_providers_list_found_header",
+		"llmsverifier_providers_list_item_name",
+		"llmsverifier_providers_list_item_endpoint",
+		"llmsverifier_providers_list_item_status",
+		"llmsverifier_providers_list_item_created",
+	}
+	for _, k := range keys {
+		if !strings.Contains(body, k+":") {
+			t.Fatalf("CONST-046 round-309: bundle key %q missing from active.en.yaml (no-revert gate)", k)
+		}
+	}
+}
+
 // TestRound194_Bundle_NoHardcodedLiterals scans the migrated print sites in
 // main.go and asserts none reverted to the English literals — paired
 // mutation per §1.1: a future revert flips the assertion to FAIL.

@@ -67,3 +67,41 @@ llmsverifier_aiconfig_generated_files_header:
   other: "📄 Generated files:"
 llmsverifier_aiconfig_validating_path:
   other: "🔍 Validating AI CLI configuration: {{.path}}"
+
+# CONST-046 round-309: interactive-mode REPL runtime output (cmd/main.go runInteractiveMode).
+llmsverifier_interactive_verify_usage:
+  other: "Usage: verify [model_id]"
+llmsverifier_interactive_error:
+  other: "Error: {{.err}}"
+llmsverifier_interactive_verify_completed:
+  other: "Verification completed:"
+llmsverifier_interactive_error_displaying_result:
+  other: "Error displaying result: {{.err}}"
+llmsverifier_interactive_error_getting_models:
+  other: "Error getting models: {{.err}}"
+llmsverifier_interactive_error_getting_providers:
+  other: "Error getting providers: {{.err}}"
+llmsverifier_interactive_status_header:
+  other: "System Status:"
+llmsverifier_interactive_status_models:
+  other: "  Models: {{.count}}"
+llmsverifier_interactive_status_providers:
+  other: "  Providers: {{.count}}"
+llmsverifier_interactive_status_api_connected:
+  other: "  API Server: Connected"
+llmsverifier_interactive_unknown_command:
+  other: "Unknown command: {{.command}}"
+
+# CONST-046 round-309: provider-list CLI output (cmd/main.go providerCmd list).
+llmsverifier_providers_list_none_found:
+  other: "No providers found."
+llmsverifier_providers_list_found_header:
+  other: "Found {{.count}} providers:"
+llmsverifier_providers_list_item_name:
+  other: "{{.index}}. Name: {{.name}}"
+llmsverifier_providers_list_item_endpoint:
+  other: "   Endpoint: {{.endpoint}}"
+llmsverifier_providers_list_item_status:
+  other: "   Status: {{.status}}"
+llmsverifier_providers_list_item_created:
+  other: "   Created: {{.created}}"
