@@ -291,3 +291,229 @@ report.section.by_feature_richness:
   other: "By Feature Richness"
 report.section.by_value_proposition:
   other: "By Value Proposition"
+
+# --- Round-319 (CONST-046 Phase 4 round 7): enhanced/issues.go ---
+# Issue templates, issue-report headers, auto-resolution note, and
+# remediation recommendations migrated from hardcoded English literals.
+
+# Issue template: high latency
+issue.high_latency.name:
+  other: "High Latency"
+issue.high_latency.title:
+  other: "Model showing consistently high response times"
+issue.high_latency.description:
+  other: "The model is taking significantly longer than expected to respond to requests"
+issue.high_latency.symptom.response_time:
+  other: "Response times consistently above 5 seconds"
+issue.high_latency.symptom.timeouts:
+  other: "Timeouts occurring frequently"
+issue.high_latency.symptom.degradation:
+  other: "Performance degradation compared to baseline"
+issue.high_latency.workaround.retry:
+  other: "Implement request timeout with retry logic"
+issue.high_latency.workaround.context_window:
+  other: "Use smaller context windows to reduce processing time"
+issue.high_latency.workaround.different_model:
+  other: "Consider using a different model for time-sensitive operations"
+
+# Issue template: rate limit exceeded
+issue.rate_limit_exceeded.name:
+  other: "Rate Limit Exceeded"
+issue.rate_limit_exceeded.title:
+  other: "Rate limit being exceeded frequently"
+issue.rate_limit_exceeded.description:
+  other: "The model is hitting rate limits, causing requests to be rejected"
+issue.rate_limit_exceeded.symptom.http_429:
+  other: "HTTP 429 errors occurring frequently"
+issue.rate_limit_exceeded.symptom.rejected:
+  other: "Requests being rejected due to rate limits"
+issue.rate_limit_exceeded.symptom.quota:
+  other: "API quota being exhausted quickly"
+issue.rate_limit_exceeded.workaround.backoff:
+  other: "Implement exponential backoff retry logic"
+issue.rate_limit_exceeded.workaround.frequency:
+  other: "Reduce request frequency"
+issue.rate_limit_exceeded.workaround.upgrade_tier:
+  other: "Upgrade to higher tier plan if available"
+issue.rate_limit_exceeded.workaround.queuing:
+  other: "Implement request queuing"
+
+# Issue template: model unresponsive
+issue.model_unresponsive.name:
+  other: "Model Unresponsive"
+issue.model_unresponsive.title:
+  other: "Model not responding to requests"
+issue.model_unresponsive.description:
+  other: "The model is completely unresponsive or returning errors for all requests"
+issue.model_unresponsive.symptom.timeouts:
+  other: "All requests timing out"
+issue.model_unresponsive.symptom.http_5xx:
+  other: "HTTP 5xx errors for all requests"
+issue.model_unresponsive.symptom.unavailable:
+  other: "Model status showing as unavailable"
+issue.model_unresponsive.workaround.status_page:
+  other: "Check provider status page for outages"
+issue.model_unresponsive.workaround.backup_model:
+  other: "Switch to backup model if available"
+issue.model_unresponsive.workaround.support:
+  other: "Contact provider support"
+issue.model_unresponsive.workaround.retry_later:
+  other: "Monitor for recovery and retry later"
+
+# Issue template: accuracy degradation
+issue.accuracy_degradation.name:
+  other: "Accuracy Degradation"
+issue.accuracy_degradation.title:
+  other: "Model accuracy has degraded"
+issue.accuracy_degradation.description:
+  other: "The model's responses are less accurate or relevant than expected"
+issue.accuracy_degradation.symptom.low_scores:
+  other: "Lower accuracy scores in verification results"
+issue.accuracy_degradation.symptom.incorrect:
+  other: "Increased irrelevant or incorrect responses"
+issue.accuracy_degradation.symptom.complaints:
+  other: "User complaints about response quality"
+issue.accuracy_degradation.workaround.prompt_engineering:
+  other: "Improve prompt engineering"
+issue.accuracy_degradation.workaround.specific_instructions:
+  other: "Use more specific instructions"
+issue.accuracy_degradation.workaround.fine_tuning:
+  other: "Consider fine-tuning if available"
+issue.accuracy_degradation.workaround.capable_model:
+  other: "Switch to a more capable model"
+
+# Issue template: security concern
+issue.security_concern.name:
+  other: "Security Concern"
+issue.security_concern.title:
+  other: "Potential security vulnerability detected"
+issue.security_concern.description:
+  other: "The model may be vulnerable to prompt injection or other security issues"
+issue.security_concern.symptom.sensitive_info:
+  other: "Model revealing sensitive information"
+issue.security_concern.symptom.injection:
+  other: "Prompt injection attacks succeeding"
+issue.security_concern.symptom.unauthorized:
+  other: "Unauthorized access attempts"
+issue.security_concern.workaround.input_validation:
+  other: "Implement input validation and sanitization"
+issue.security_concern.workaround.secure_templates:
+  other: "Use secure prompt templates"
+issue.security_concern.workaround.monitoring:
+  other: "Monitor for suspicious activity"
+issue.security_concern.workaround.content_filtering:
+  other: "Implement content filtering"
+
+# Issue template: cost spike
+issue.cost_spike.name:
+  other: "Cost Spike"
+issue.cost_spike.title:
+  other: "Unexpected increase in usage costs"
+issue.cost_spike.description:
+  other: "The model's usage costs have increased significantly without corresponding usage increase"
+issue.cost_spike.symptom.billing:
+  other: "Higher than expected billing charges"
+issue.cost_spike.symptom.cost_per_request:
+  other: "Cost per request increasing"
+issue.cost_spike.symptom.budget_alerts:
+  other: "Budget alerts being triggered"
+issue.cost_spike.workaround.optimize_patterns:
+  other: "Review and optimize request patterns"
+issue.cost_spike.workaround.cost_monitoring:
+  other: "Implement cost monitoring"
+issue.cost_spike.workaround.cost_effective_model:
+  other: "Consider switching to more cost-effective model"
+issue.cost_spike.workaround.budget_alerts:
+  other: "Set up budget alerts"
+
+# Issue report headers and field labels
+issue.report.title:
+  other: "Issue Report"
+issue.report.generated:
+  other: "Generated"
+issue.report.section.filters_applied:
+  other: "Filters Applied"
+issue.report.section.summary_statistics:
+  other: "Summary Statistics"
+issue.report.section.by_severity:
+  other: "Issues by Severity"
+issue.report.section.by_type:
+  other: "Issues by Type"
+issue.report.section.detailed_issues:
+  other: "Detailed Issues"
+issue.report.field.total_issues:
+  other: "Total Issues"
+issue.report.field.open_issues:
+  other: "Open Issues"
+issue.report.field.resolved_issues:
+  other: "Resolved Issues"
+issue.report.field.model_id:
+  other: "Model ID"
+issue.report.field.type:
+  other: "Type"
+issue.report.field.severity:
+  other: "Severity"
+issue.report.field.description:
+  other: "Description"
+issue.report.field.symptoms:
+  other: "Symptoms"
+issue.report.field.workarounds:
+  other: "Workarounds"
+issue.report.field.affected_features:
+  other: "Affected Features"
+issue.report.field.first_detected:
+  other: "First Detected"
+issue.report.field.last_occurred:
+  other: "Last Occurred"
+issue.report.field.resolved:
+  other: "Resolved"
+issue.report.field.resolution_notes:
+  other: "Resolution Notes"
+issue.report.footer.llm_verifier:
+  other: "LLM Verifier"
+
+# Auto-resolution note
+issue.auto_resolution.note:
+  other: "Automatically resolved based on system criteria"
+
+# Remediation recommendations
+issue.recommendation.availability.api_status:
+  other: "• Check provider API status and documentation"
+issue.recommendation.availability.credentials:
+  other: "• Verify API credentials and permissions"
+issue.recommendation.availability.fallback:
+  other: "• Consider implementing fallback providers"
+issue.recommendation.availability.status_pages:
+  other: "• Monitor provider service status pages"
+issue.recommendation.performance.rate_limiting:
+  other: "• Review rate limiting and request patterns"
+issue.recommendation.performance.upgrade_tier:
+  other: "• Consider upgrading to higher-tier API plans"
+issue.recommendation.performance.batching:
+  other: "• Implement request batching and optimization"
+issue.recommendation.performance.timeouts:
+  other: "• Monitor response times and implement timeouts"
+issue.recommendation.accuracy.prompt_engineering:
+  other: "• Review prompt engineering and formatting"
+issue.recommendation.accuracy.model_versions:
+  other: "• Test with different model versions"
+issue.recommendation.accuracy.validation:
+  other: "• Implement response validation and retry logic"
+issue.recommendation.accuracy.fine_tuning:
+  other: "• Consider fine-tuning for specific use cases"
+issue.recommendation.security.api_key_audit:
+  other: "• Audit API key usage and permissions"
+issue.recommendation.security.content_filtering:
+  other: "• Implement content filtering and validation"
+issue.recommendation.security.privacy_compliance:
+  other: "• Review data handling and privacy compliance"
+issue.recommendation.security.policies:
+  other: "• Update security policies and monitoring"
+issue.recommendation.default.monitor_trends:
+  other: "• Monitor issue trends and patterns"
+issue.recommendation.default.review_config:
+  other: "• Review system configuration and settings"
+issue.recommendation.default.error_handling:
+  other: "• Implement additional error handling"
+issue.recommendation.default.provider_support:
+  other: "• Consider reaching out to provider support"

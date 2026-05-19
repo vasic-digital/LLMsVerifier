@@ -46,7 +46,13 @@ const (
 	IssueTypeCompatibility IssueType = "compatibility"
 )
 
-// IssueTemplate represents a template for common issues
+// IssueTemplate represents a template for common issues.
+//
+// CONST-046: the Name, Title, Description, Symptoms, and Workarounds
+// fields hold i18n message IDs, not English literals. They are resolved
+// to locale-aware strings by Localized() at consumption time (e.g. inside
+// CreateIssueFromTemplate). The non-text fields (ID, IssueType, Severity)
+// remain stable identifier tokens.
 type IssueTemplate struct {
 	ID          string        `json:"id"`
 	Name        string        `json:"name"`
@@ -58,130 +64,147 @@ type IssueTemplate struct {
 	Workarounds []string      `json:"workarounds"`
 }
 
-// Common issue templates
+// Localized returns a copy of the template with its Name, Title,
+// Description, Symptoms, and Workarounds resolved through the active i18n
+// translator. The receiver is unchanged so the package-level
+// IssueTemplates registry keeps storing stable message IDs.
+func (t IssueTemplate) Localized() IssueTemplate {
+	loc := t
+	loc.Name = tr(t.Name)
+	loc.Title = tr(t.Title)
+	loc.Description = tr(t.Description)
+	loc.Symptoms = trList(t.Symptoms...)
+	loc.Workarounds = trList(t.Workarounds...)
+	return loc
+}
+
+// Common issue templates. Text fields hold i18n message IDs per CONST-046;
+// resolve to display strings via IssueTemplate.Localized().
 var IssueTemplates = []IssueTemplate{
 	{
 		ID:          "high_latency",
-		Name:        "High Latency",
+		Name:        "issue.high_latency.name",
 		IssueType:   IssueTypePerformance,
 		Severity:    SeverityMedium,
-		Title:       "Model showing consistently high response times",
-		Description: "The model is taking significantly longer than expected to respond to requests",
+		Title:       "issue.high_latency.title",
+		Description: "issue.high_latency.description",
 		Symptoms: []string{
-			"Response times consistently above 5 seconds",
-			"Timeouts occurring frequently",
-			"Performance degradation compared to baseline",
+			"issue.high_latency.symptom.response_time",
+			"issue.high_latency.symptom.timeouts",
+			"issue.high_latency.symptom.degradation",
 		},
 		Workarounds: []string{
-			"Implement request timeout with retry logic",
-			"Use smaller context windows to reduce processing time",
-			"Consider using a different model for time-sensitive operations",
+			"issue.high_latency.workaround.retry",
+			"issue.high_latency.workaround.context_window",
+			"issue.high_latency.workaround.different_model",
 		},
 	},
 	{
 		ID:          "rate_limit_exceeded",
-		Name:        "Rate Limit Exceeded",
+		Name:        "issue.rate_limit_exceeded.name",
 		IssueType:   IssueTypeAvailability,
 		Severity:    SeverityHigh,
-		Title:       "Rate limit being exceeded frequently",
-		Description: "The model is hitting rate limits, causing requests to be rejected",
+		Title:       "issue.rate_limit_exceeded.title",
+		Description: "issue.rate_limit_exceeded.description",
 		Symptoms: []string{
-			"HTTP 429 errors occurring frequently",
-			"Requests being rejected due to rate limits",
-			"API quota being exhausted quickly",
+			"issue.rate_limit_exceeded.symptom.http_429",
+			"issue.rate_limit_exceeded.symptom.rejected",
+			"issue.rate_limit_exceeded.symptom.quota",
 		},
 		Workarounds: []string{
-			"Implement exponential backoff retry logic",
-			"Reduce request frequency",
-			"Upgrade to higher tier plan if available",
-			"Implement request queuing",
+			"issue.rate_limit_exceeded.workaround.backoff",
+			"issue.rate_limit_exceeded.workaround.frequency",
+			"issue.rate_limit_exceeded.workaround.upgrade_tier",
+			"issue.rate_limit_exceeded.workaround.queuing",
 		},
 	},
 	{
 		ID:          "model_unresponsive",
-		Name:        "Model Unresponsive",
+		Name:        "issue.model_unresponsive.name",
 		IssueType:   IssueTypeAvailability,
 		Severity:    SeverityCritical,
-		Title:       "Model not responding to requests",
-		Description: "The model is completely unresponsive or returning errors for all requests",
+		Title:       "issue.model_unresponsive.title",
+		Description: "issue.model_unresponsive.description",
 		Symptoms: []string{
-			"All requests timing out",
-			"HTTP 5xx errors for all requests",
-			"Model status showing as unavailable",
+			"issue.model_unresponsive.symptom.timeouts",
+			"issue.model_unresponsive.symptom.http_5xx",
+			"issue.model_unresponsive.symptom.unavailable",
 		},
 		Workarounds: []string{
-			"Check provider status page for outages",
-			"Switch to backup model if available",
-			"Contact provider support",
-			"Monitor for recovery and retry later",
+			"issue.model_unresponsive.workaround.status_page",
+			"issue.model_unresponsive.workaround.backup_model",
+			"issue.model_unresponsive.workaround.support",
+			"issue.model_unresponsive.workaround.retry_later",
 		},
 	},
 	{
 		ID:          "accuracy_degradation",
-		Name:        "Accuracy Degradation",
+		Name:        "issue.accuracy_degradation.name",
 		IssueType:   IssueTypeAccuracy,
 		Severity:    SeverityMedium,
-		Title:       "Model accuracy has degraded",
-		Description: "The model's responses are less accurate or relevant than expected",
+		Title:       "issue.accuracy_degradation.title",
+		Description: "issue.accuracy_degradation.description",
 		Symptoms: []string{
-			"Lower accuracy scores in verification results",
-			"Increased irrelevant or incorrect responses",
-			"User complaints about response quality",
+			"issue.accuracy_degradation.symptom.low_scores",
+			"issue.accuracy_degradation.symptom.incorrect",
+			"issue.accuracy_degradation.symptom.complaints",
 		},
 		Workarounds: []string{
-			"Improve prompt engineering",
-			"Use more specific instructions",
-			"Consider fine-tuning if available",
-			"Switch to a more capable model",
+			"issue.accuracy_degradation.workaround.prompt_engineering",
+			"issue.accuracy_degradation.workaround.specific_instructions",
+			"issue.accuracy_degradation.workaround.fine_tuning",
+			"issue.accuracy_degradation.workaround.capable_model",
 		},
 	},
 	{
 		ID:          "security_concern",
-		Name:        "Security Concern",
+		Name:        "issue.security_concern.name",
 		IssueType:   IssueTypeSecurity,
 		Severity:    SeverityHigh,
-		Title:       "Potential security vulnerability detected",
-		Description: "The model may be vulnerable to prompt injection or other security issues",
+		Title:       "issue.security_concern.title",
+		Description: "issue.security_concern.description",
 		Symptoms: []string{
-			"Model revealing sensitive information",
-			"Prompt injection attacks succeeding",
-			"Unauthorized access attempts",
+			"issue.security_concern.symptom.sensitive_info",
+			"issue.security_concern.symptom.injection",
+			"issue.security_concern.symptom.unauthorized",
 		},
 		Workarounds: []string{
-			"Implement input validation and sanitization",
-			"Use secure prompt templates",
-			"Monitor for suspicious activity",
-			"Implement content filtering",
+			"issue.security_concern.workaround.input_validation",
+			"issue.security_concern.workaround.secure_templates",
+			"issue.security_concern.workaround.monitoring",
+			"issue.security_concern.workaround.content_filtering",
 		},
 	},
 	{
 		ID:          "cost_spike",
-		Name:        "Cost Spike",
+		Name:        "issue.cost_spike.name",
 		IssueType:   IssueTypeCost,
 		Severity:    SeverityMedium,
-		Title:       "Unexpected increase in usage costs",
-		Description: "The model's usage costs have increased significantly without corresponding usage increase",
+		Title:       "issue.cost_spike.title",
+		Description: "issue.cost_spike.description",
 		Symptoms: []string{
-			"Higher than expected billing charges",
-			"Cost per request increasing",
-			"Budget alerts being triggered",
+			"issue.cost_spike.symptom.billing",
+			"issue.cost_spike.symptom.cost_per_request",
+			"issue.cost_spike.symptom.budget_alerts",
 		},
 		Workarounds: []string{
-			"Review and optimize request patterns",
-			"Implement cost monitoring",
-			"Consider switching to more cost-effective model",
-			"Set up budget alerts",
+			"issue.cost_spike.workaround.optimize_patterns",
+			"issue.cost_spike.workaround.cost_monitoring",
+			"issue.cost_spike.workaround.cost_effective_model",
+			"issue.cost_spike.workaround.budget_alerts",
 		},
 	},
 }
 
 // CreateIssueFromTemplate creates an issue from a template
 func (im *IssueManager) CreateIssueFromTemplate(modelID int64, templateID string, verificationResultID *int64, additionalDetails map[string]interface{}) error {
-	// Find the template
+	// Find the template, then resolve its CONST-046 message IDs to
+	// locale-aware display strings before persisting the issue.
 	var template *IssueTemplate
 	for _, t := range IssueTemplates {
 		if t.ID == templateID {
-			template = &t
+			localized := t.Localized()
+			template = &localized
 			break
 		}
 	}
@@ -395,11 +418,11 @@ func (im *IssueManager) GenerateIssueReport(filters map[string]interface{}) (str
 		return "", fmt.Errorf("failed to get issues: %w", err)
 	}
 
-	report := fmt.Sprintf("# Issue Report\n\n")
-	report += fmt.Sprintf("Generated: %s\n\n", time.Now().Format(time.RFC3339))
+	report := fmt.Sprintf("# %s\n\n", tr("issue.report.title"))
+	report += fmt.Sprintf("%s: %s\n\n", tr("issue.report.generated"), time.Now().Format(time.RFC3339))
 
 	if len(filters) > 0 {
-		report += "## Filters Applied\n\n"
+		report += fmt.Sprintf("## %s\n\n", tr("issue.report.section.filters_applied"))
 		for key, value := range filters {
 			report += fmt.Sprintf("- %s: %v\n", key, value)
 		}
@@ -409,16 +432,16 @@ func (im *IssueManager) GenerateIssueReport(filters map[string]interface{}) (str
 	// Summary statistics
 	stats, err := im.GetIssueStatistics()
 	if err == nil {
-		report += "## Summary Statistics\n\n"
-		report += fmt.Sprintf("- Total Issues: %d\n", stats["total_issues"])
-		report += fmt.Sprintf("- Open Issues: %d\n", stats["open_issues"])
-		report += fmt.Sprintf("- Resolved Issues: %d\n", stats["resolved_issues"])
+		report += fmt.Sprintf("## %s\n\n", tr("issue.report.section.summary_statistics"))
+		report += fmt.Sprintf("- %s: %d\n", tr("issue.report.field.total_issues"), stats["total_issues"])
+		report += fmt.Sprintf("- %s: %d\n", tr("issue.report.field.open_issues"), stats["open_issues"])
+		report += fmt.Sprintf("- %s: %d\n", tr("issue.report.field.resolved_issues"), stats["resolved_issues"])
 		report += "\n"
 	}
 
 	// Issues by severity
 	if bySeverity, ok := stats["by_severity"].(map[string]int); ok {
-		report += "## Issues by Severity\n\n"
+		report += fmt.Sprintf("## %s\n\n", tr("issue.report.section.by_severity"))
 		for severity, count := range bySeverity {
 			report += fmt.Sprintf("- %s: %d\n", severity, count)
 		}
@@ -427,7 +450,7 @@ func (im *IssueManager) GenerateIssueReport(filters map[string]interface{}) (str
 
 	// Issues by type
 	if byType, ok := stats["by_type"].(map[string]int); ok {
-		report += "## Issues by Type\n\n"
+		report += fmt.Sprintf("## %s\n\n", tr("issue.report.section.by_type"))
 		for issueType, count := range byType {
 			report += fmt.Sprintf("- %s: %d\n", issueType, count)
 		}
@@ -435,41 +458,41 @@ func (im *IssueManager) GenerateIssueReport(filters map[string]interface{}) (str
 	}
 
 	// Detailed issues
-	report += "## Detailed Issues\n\n"
+	report += fmt.Sprintf("## %s\n\n", tr("issue.report.section.detailed_issues"))
 
 	for _, issue := range issues {
 		report += fmt.Sprintf("### %s (ID: %d)\n\n", issue.Title, issue.ID)
-		report += fmt.Sprintf("**Model ID:** %d\n\n", issue.ModelID)
-		report += fmt.Sprintf("**Type:** %s\n\n", issue.IssueType)
-		report += fmt.Sprintf("**Severity:** %s\n\n", issue.Severity)
-		report += fmt.Sprintf("**Description:** %s\n\n", issue.Description)
+		report += fmt.Sprintf("**%s:** %d\n\n", tr("issue.report.field.model_id"), issue.ModelID)
+		report += fmt.Sprintf("**%s:** %s\n\n", tr("issue.report.field.type"), issue.IssueType)
+		report += fmt.Sprintf("**%s:** %s\n\n", tr("issue.report.field.severity"), issue.Severity)
+		report += fmt.Sprintf("**%s:** %s\n\n", tr("issue.report.field.description"), issue.Description)
 
 		if issue.Symptoms != nil && *issue.Symptoms != "" {
-			report += fmt.Sprintf("**Symptoms:** %s\n\n", *issue.Symptoms)
+			report += fmt.Sprintf("**%s:** %s\n\n", tr("issue.report.field.symptoms"), *issue.Symptoms)
 		}
 
 		if issue.Workarounds != nil && *issue.Workarounds != "" {
-			report += fmt.Sprintf("**Workarounds:** %s\n\n", *issue.Workarounds)
+			report += fmt.Sprintf("**%s:** %s\n\n", tr("issue.report.field.workarounds"), *issue.Workarounds)
 		}
 
 		if len(issue.AffectedFeatures) > 0 {
-			report += "**Affected Features:**\n"
+			report += fmt.Sprintf("**%s:**\n", tr("issue.report.field.affected_features"))
 			for _, feature := range issue.AffectedFeatures {
 				report += fmt.Sprintf("- %s\n", feature)
 			}
 			report += "\n"
 		}
 
-		report += fmt.Sprintf("**First Detected:** %s\n", issue.FirstDetected.Format(time.RFC3339))
+		report += fmt.Sprintf("**%s:** %s\n", tr("issue.report.field.first_detected"), issue.FirstDetected.Format(time.RFC3339))
 
 		if issue.LastOccurred != nil {
-			report += fmt.Sprintf("**Last Occurred:** %s\n", issue.LastOccurred.Format(time.RFC3339))
+			report += fmt.Sprintf("**%s:** %s\n", tr("issue.report.field.last_occurred"), issue.LastOccurred.Format(time.RFC3339))
 		}
 
 		if issue.ResolvedAt != nil {
-			report += fmt.Sprintf("**Resolved:** %s\n", issue.ResolvedAt.Format(time.RFC3339))
+			report += fmt.Sprintf("**%s:** %s\n", tr("issue.report.field.resolved"), issue.ResolvedAt.Format(time.RFC3339))
 			if issue.ResolutionNotes != nil {
-				report += fmt.Sprintf("**Resolution Notes:** %s\n", *issue.ResolutionNotes)
+				report += fmt.Sprintf("**%s:** %s\n", tr("issue.report.field.resolution_notes"), *issue.ResolutionNotes)
 			}
 		}
 
@@ -501,7 +524,7 @@ func (im *IssueManager) AutoResolutionChecker() error {
 		shouldResolve := im.checkAutoResolutionCriteria(issue)
 
 		if shouldResolve {
-			resolutionNotes := "Automatically resolved based on system criteria"
+			resolutionNotes := tr("issue.auto_resolution.note")
 			if err := im.UpdateIssueStatus(issue.ID, true, resolutionNotes); err != nil {
 				fmt.Printf("Warning: Failed to auto-resolve issue %d: %v\n", issue.ID, err)
 			}
@@ -730,40 +753,40 @@ func (gir *GitHubIssueReporter) generateRecommendations(issue *database.Issue) s
 
 	switch IssueType(issue.IssueType) {
 	case IssueTypeAvailability:
-		recommendations = []string{
-			"• Check provider API status and documentation",
-			"• Verify API credentials and permissions",
-			"• Consider implementing fallback providers",
-			"• Monitor provider service status pages",
-		}
+		recommendations = trList(
+			"issue.recommendation.availability.api_status",
+			"issue.recommendation.availability.credentials",
+			"issue.recommendation.availability.fallback",
+			"issue.recommendation.availability.status_pages",
+		)
 	case IssueTypePerformance:
-		recommendations = []string{
-			"• Review rate limiting and request patterns",
-			"• Consider upgrading to higher-tier API plans",
-			"• Implement request batching and optimization",
-			"• Monitor response times and implement timeouts",
-		}
+		recommendations = trList(
+			"issue.recommendation.performance.rate_limiting",
+			"issue.recommendation.performance.upgrade_tier",
+			"issue.recommendation.performance.batching",
+			"issue.recommendation.performance.timeouts",
+		)
 	case IssueTypeAccuracy:
-		recommendations = []string{
-			"• Review prompt engineering and formatting",
-			"• Test with different model versions",
-			"• Implement response validation and retry logic",
-			"• Consider fine-tuning for specific use cases",
-		}
+		recommendations = trList(
+			"issue.recommendation.accuracy.prompt_engineering",
+			"issue.recommendation.accuracy.model_versions",
+			"issue.recommendation.accuracy.validation",
+			"issue.recommendation.accuracy.fine_tuning",
+		)
 	case IssueTypeSecurity:
-		recommendations = []string{
-			"• Audit API key usage and permissions",
-			"• Implement content filtering and validation",
-			"• Review data handling and privacy compliance",
-			"• Update security policies and monitoring",
-		}
+		recommendations = trList(
+			"issue.recommendation.security.api_key_audit",
+			"issue.recommendation.security.content_filtering",
+			"issue.recommendation.security.privacy_compliance",
+			"issue.recommendation.security.policies",
+		)
 	default:
-		recommendations = []string{
-			"• Monitor issue trends and patterns",
-			"• Review system configuration and settings",
-			"• Implement additional error handling",
-			"• Consider reaching out to provider support",
-		}
+		recommendations = trList(
+			"issue.recommendation.default.monitor_trends",
+			"issue.recommendation.default.review_config",
+			"issue.recommendation.default.error_handling",
+			"issue.recommendation.default.provider_support",
+		)
 	}
 
 	return strings.Join(recommendations, "\n")
@@ -802,27 +825,27 @@ func (sir *SlackIssueReporter) ReportIssue(issue *database.Issue, modelInfo map[
 				"text":  issue.Description,
 				"fields": []map[string]interface{}{
 					{
-						"title": "Severity",
+						"title": tr("issue.report.field.severity"),
 						"value": issue.Severity,
 						"short": true,
 					},
 					{
-						"title": "Type",
+						"title": tr("issue.report.field.type"),
 						"value": issue.IssueType,
 						"short": true,
 					},
 					{
-						"title": "Affected Features",
+						"title": tr("issue.report.field.affected_features"),
 						"value": strings.Join(issue.AffectedFeatures, ", "),
 						"short": false,
 					},
 					{
-						"title": "First Detected",
+						"title": tr("issue.report.field.first_detected"),
 						"value": issue.FirstDetected.Format("2006-01-02 15:04:05"),
 						"short": true,
 					},
 				},
-				"footer": "LLM Verifier",
+				"footer": tr("issue.report.footer.llm_verifier"),
 				"ts":     time.Now().Unix(),
 			},
 		},

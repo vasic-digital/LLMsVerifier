@@ -212,26 +212,32 @@ func TestGitHubIssueReporter_FormatIssueDetails(t *testing.T) {
 func TestGitHubIssueReporter_GenerateRecommendations(t *testing.T) {
 	reporter := NewGitHubIssueReporter("token", "owner/repo")
 
+	// CONST-046: recommendation text is i18n-routed. Anti-bluff per
+	// CONST-035 — asserting the original English literal would silently
+	// pass if the call-site bypassed the translator. Install the
+	// fakeTranslator and assert the routed sentinel instead.
 	tests := []struct {
-		issueType      IssueType
-		expectedPhrase string
+		issueType        IssueType
+		expectedSentinel string
 	}{
-		{IssueTypeAvailability, "Check provider API status"},
-		{IssueTypePerformance, "Review rate limiting"},
-		{IssueTypeAccuracy, "Review prompt engineering"},
-		{IssueTypeSecurity, "Audit API key usage"},
-		{IssueTypeCost, "Monitor issue trends"},
+		{IssueTypeAvailability, "<TRANSLATED:issue.recommendation.availability.api_status>"},
+		{IssueTypePerformance, "<TRANSLATED:issue.recommendation.performance.rate_limiting>"},
+		{IssueTypeAccuracy, "<TRANSLATED:issue.recommendation.accuracy.prompt_engineering>"},
+		{IssueTypeSecurity, "<TRANSLATED:issue.recommendation.security.api_key_audit>"},
+		{IssueTypeCost, "<TRANSLATED:issue.recommendation.default.monitor_trends>"},
 	}
 
-	for _, tt := range tests {
-		issue := &database.Issue{
-			IssueType:   string(tt.issueType),
-			FirstDetected: time.Now(),
+	withFakeTranslator(t, func() {
+		for _, tt := range tests {
+			issue := &database.Issue{
+				IssueType:     string(tt.issueType),
+				FirstDetected: time.Now(),
+			}
+
+			result := reporter.generateRecommendations(issue)
+			assert.Contains(t, result, tt.expectedSentinel)
 		}
-
-		result := reporter.generateRecommendations(issue)
-		assert.Contains(t, result, tt.expectedPhrase)
-	}
+	})
 }
 
 func TestGitHubIssueReporter_GenerateIssueBody(t *testing.T) {
