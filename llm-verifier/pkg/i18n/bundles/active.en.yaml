@@ -159,3 +159,135 @@ llmsverifier_modelverify_config_complete:
   other: "🎉 Verified configuration generation complete!"
 llmsverifier_modelverify_provider_breakdown:
   other: "Provider Breakdown:"
+
+# Markdown verification-report keys (llmverifier/reporter.go) — round-316 CONST-046 migration.
+report.title:
+  other: "LLM Verification Report"
+report.generated_on:
+  other: "Generated on:"
+report.section.summary:
+  other: "Summary"
+report.summary.total_models:
+  other: "Total Models:"
+report.summary.available_models:
+  other: "Available Models:"
+report.summary.failed_models:
+  other: "Failed Models:"
+report.summary.average_overall_score:
+  other: "Average Overall Score:"
+report.summary.brotli_support_rate:
+  other: "Brotli Support Rate:"
+report.section.top_performers_overall:
+  other: "Top Performers by Overall Score"
+report.model.label:
+  other: "Model:"
+report.model.failed:
+  other: "FAILED"
+report.section.basic_information:
+  other: "Basic Information"
+report.field.endpoint:
+  other: "Endpoint"
+report.field.verified_at:
+  other: "Verified at"
+report.field.attempted_at:
+  other: "Attempted at"
+report.field.error:
+  other: "Error"
+report.section.performance_scores:
+  other: "Performance Scores"
+report.field.overall_score:
+  other: "Overall Score"
+report.field.code_capability:
+  other: "Code Capability"
+report.field.responsiveness:
+  other: "Responsiveness"
+report.field.reliability:
+  other: "Reliability"
+report.field.feature_richness:
+  other: "Feature Richness"
+report.field.value_proposition:
+  other: "Value Proposition"
+report.section.availability:
+  other: "Availability"
+report.field.exists:
+  other: "Exists"
+report.field.responsive:
+  other: "Responsive"
+report.field.overloaded:
+  other: "Overloaded"
+report.field.response_time:
+  other: "Response Time"
+report.section.response_time_metrics:
+  other: "Response Time Metrics"
+report.field.average_latency:
+  other: "Average Latency"
+report.field.throughput:
+  other: "Throughput"
+report.value.requests_per_sec:
+  other: "{{.value}} requests/sec"
+report.section.supported_features:
+  other: "Supported Features"
+report.field.tool_use:
+  other: "Tool Use"
+report.field.function_calling:
+  other: "Function Calling"
+report.field.code_generation:
+  other: "Code Generation"
+report.field.code_completion:
+  other: "Code Completion"
+report.field.code_explanation:
+  other: "Code Explanation"
+report.field.code_review:
+  other: "Code Review"
+report.field.image_generation:
+  other: "Image Generation"
+report.field.audio_generation:
+  other: "Audio Generation"
+report.field.video_generation:
+  other: "Video Generation"
+report.field.json_mode:
+  other: "JSON Mode"
+report.field.structured_output:
+  other: "Structured Output"
+report.field.reasoning:
+  other: "Reasoning"
+report.field.parallel_tool_use:
+  other: "Parallel Tool Use"
+report.value.parallel_tool_use:
+  other: "{{.enabled}} (Max {{.max}} calls)"
+report.field.brotli_compression:
+  other: "Brotli Compression"
+report.section.code_capabilities:
+  other: "Code Capabilities"
+report.field.language_support:
+  other: "Language Support"
+report.section.language_specific_performance:
+  other: "Language-Specific Performance"
+report.field.python_success_rate:
+  other: "Python Success Rate"
+report.field.javascript_success_rate:
+  other: "JavaScript Success Rate"
+report.field.go_success_rate:
+  other: "Go Success Rate"
+report.field.java_success_rate:
+  other: "Java Success Rate"
+report.field.cpp_success_rate:
+  other: "C++ Success Rate"
+report.field.typescript_success_rate:
+  other: "TypeScript Success Rate"
+report.field.overall_success_rate:
+  other: "Overall Success Rate"
+report.section.category_rankings:
+  other: "Category Rankings"
+report.section.overall_performance:
+  other: "Overall Performance"
+report.section.by_code_capability:
+  other: "By Code Capability"
+report.section.by_responsiveness:
+  other: "By Responsiveness"
+report.section.by_reliability:
+  other: "By Reliability"
+report.section.by_feature_richness:
+  other: "By Feature Richness"
+report.section.by_value_proposition:
+  other: "By Value Proposition"

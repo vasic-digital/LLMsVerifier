@@ -133,21 +133,24 @@ func TestGenerateMarkdownReport(t *testing.T) {
 		t.Fatalf("Failed to read markdown report: %v", err)
 	}
 
-	// Basic content checks
+	// Basic content checks. Per CONST-046 the report headers are routed
+	// through the package i18n seam; with the default NoopTranslator the
+	// message ID is emitted verbatim, so structural assertions key off the
+	// stable message IDs rather than English literals.
 	reportContent := string(content)
-	if !contains(reportContent, "# LLM Verification Report") {
+	if !contains(reportContent, "# report.title") {
 		t.Error("Report missing title")
 	}
-	if !contains(reportContent, "## Model: test-model-1") {
+	if !contains(reportContent, "## report.model.label test-model-1") {
 		t.Error("Report missing successful model section")
 	}
-	if !contains(reportContent, "## Model: test-model-2 (FAILED)") {
+	if !contains(reportContent, "## report.model.label test-model-2 (report.model.failed)") {
 		t.Error("Report missing failed model section")
 	}
-	if !contains(reportContent, "## Summary") {
+	if !contains(reportContent, "## report.section.summary") {
 		t.Error("Report missing summary section")
 	}
-	if !contains(reportContent, "## Category Rankings") {
+	if !contains(reportContent, "## report.section.category_rankings") {
 		t.Error("Report missing category rankings section")
 	}
 }
@@ -474,11 +477,13 @@ func TestReportGenerationWithAllFailedModels(t *testing.T) {
 		t.Fatalf("Failed to read markdown report: %v", err)
 	}
 
+	// Per CONST-046 summary labels route through the i18n seam; with the
+	// default NoopTranslator the message ID is emitted verbatim.
 	reportContent := string(content)
-	if !contains(reportContent, "Available Models: 0") {
+	if !contains(reportContent, "report.summary.available_models 0") {
 		t.Error("Report should show 0 available models")
 	}
-	if !contains(reportContent, "Failed Models: 2") {
+	if !contains(reportContent, "report.summary.failed_models 2") {
 		t.Error("Report should show 2 failed models")
 	}
 }

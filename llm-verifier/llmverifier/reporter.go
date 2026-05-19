@@ -24,8 +24,8 @@ func (v *Verifier) GenerateMarkdownReport(results []VerificationResult, outputDi
 	defer file.Close()
 
 	// Write report header
-	fmt.Fprintf(file, "# LLM Verification Report\n\n")
-	fmt.Fprintf(file, "Generated on: %s\n\n", time.Now().Format("2006-01-02 15:04:05"))
+	fmt.Fprintf(file, "# %s\n\n", tr("report.title"))
+	fmt.Fprintf(file, "%s %s\n\n", tr("report.generated_on"), time.Now().Format("2006-01-02 15:04:05"))
 
 	// Generate summary
 	summary := v.generateSummary(results)
@@ -246,16 +246,16 @@ func (v *Verifier) generateCategoryRankings(results []VerificationResult) Catego
 
 // writeSummary writes the summary section of the report
 func (v *Verifier) writeSummary(file *os.File, summary Summary) {
-	fmt.Fprintf(file, "## Summary\n\n")
-	fmt.Fprintf(file, "- Total Models: %d\n", summary.TotalModels)
-	fmt.Fprintf(file, "- Available Models: %d\n", summary.AvailableModels)
-	fmt.Fprintf(file, "- Failed Models: %d\n", summary.FailedModels)
-	fmt.Fprintf(file, "- Average Overall Score: %.2f\n", summary.AverageScore)
-	fmt.Fprintf(file, "- Brotli Support Rate: %.2f%%\n", summary.BrotliSupportRate)
+	fmt.Fprintf(file, "## %s\n\n", tr("report.section.summary"))
+	fmt.Fprintf(file, "- %s %d\n", tr("report.summary.total_models"), summary.TotalModels)
+	fmt.Fprintf(file, "- %s %d\n", tr("report.summary.available_models"), summary.AvailableModels)
+	fmt.Fprintf(file, "- %s %d\n", tr("report.summary.failed_models"), summary.FailedModels)
+	fmt.Fprintf(file, "- %s %.2f\n", tr("report.summary.average_overall_score"), summary.AverageScore)
+	fmt.Fprintf(file, "- %s %.2f%%\n", tr("report.summary.brotli_support_rate"), summary.BrotliSupportRate)
 	fmt.Fprintf(file, "\n")
 
 	// Show top performers by overall score
-	fmt.Fprintf(file, "### Top Performers by Overall Score\n\n")
+	fmt.Fprintf(file, "### %s\n\n", tr("report.section.top_performers_overall"))
 	for i, performer := range summary.CategoryRankings.ByCodeCapability {
 		if i >= 5 { // Show top 5
 			break
@@ -267,69 +267,73 @@ func (v *Verifier) writeSummary(file *os.File, summary Summary) {
 
 // writeModelReport writes the report for a single successfully verified model
 func (v *Verifier) writeModelReport(file *os.File, result VerificationResult) {
-	fmt.Fprintf(file, "## Model: %s\n\n", result.ModelInfo.ID)
+	fmt.Fprintf(file, "## %s %s\n\n", tr("report.model.label"), result.ModelInfo.ID)
 
 	// Basic information
-	fmt.Fprintf(file, "### Basic Information\n")
-	fmt.Fprintf(file, "- **Endpoint**: %s\n", result.ModelInfo.Endpoint)
-	fmt.Fprintf(file, "- **Verified at**: %s\n", result.Timestamp.Format("2006-01-02 15:04:05"))
+	fmt.Fprintf(file, "### %s\n", tr("report.section.basic_information"))
+	fmt.Fprintf(file, "- **%s**: %s\n", tr("report.field.endpoint"), result.ModelInfo.Endpoint)
+	fmt.Fprintf(file, "- **%s**: %s\n", tr("report.field.verified_at"), result.Timestamp.Format("2006-01-02 15:04:05"))
 	fmt.Fprintf(file, "\n")
 
 	// Scores
-	fmt.Fprintf(file, "### Performance Scores\n")
-	fmt.Fprintf(file, "- **Overall Score**: %.2f\n", result.PerformanceScores.OverallScore)
-	fmt.Fprintf(file, "- **Code Capability**: %.2f\n", result.PerformanceScores.CodeCapability)
-	fmt.Fprintf(file, "- **Responsiveness**: %.2f\n", result.PerformanceScores.Responsiveness)
-	fmt.Fprintf(file, "- **Reliability**: %.2f\n", result.PerformanceScores.Reliability)
-	fmt.Fprintf(file, "- **Feature Richness**: %.2f\n", result.PerformanceScores.FeatureRichness)
-	fmt.Fprintf(file, "- **Value Proposition**: %.2f\n", result.PerformanceScores.ValueProposition)
+	fmt.Fprintf(file, "### %s\n", tr("report.section.performance_scores"))
+	fmt.Fprintf(file, "- **%s**: %.2f\n", tr("report.field.overall_score"), result.PerformanceScores.OverallScore)
+	fmt.Fprintf(file, "- **%s**: %.2f\n", tr("report.field.code_capability"), result.PerformanceScores.CodeCapability)
+	fmt.Fprintf(file, "- **%s**: %.2f\n", tr("report.field.responsiveness"), result.PerformanceScores.Responsiveness)
+	fmt.Fprintf(file, "- **%s**: %.2f\n", tr("report.field.reliability"), result.PerformanceScores.Reliability)
+	fmt.Fprintf(file, "- **%s**: %.2f\n", tr("report.field.feature_richness"), result.PerformanceScores.FeatureRichness)
+	fmt.Fprintf(file, "- **%s**: %.2f\n", tr("report.field.value_proposition"), result.PerformanceScores.ValueProposition)
 	fmt.Fprintf(file, "\n")
 
 	// Availability
-	fmt.Fprintf(file, "### Availability\n")
-	fmt.Fprintf(file, "- **Exists**: %t\n", result.Availability.Exists)
-	fmt.Fprintf(file, "- **Responsive**: %t\n", result.Availability.Responsive)
-	fmt.Fprintf(file, "- **Overloaded**: %t\n", result.Availability.Overloaded)
-	fmt.Fprintf(file, "- **Response Time**: %s\n", result.Availability.Latency.String())
+	fmt.Fprintf(file, "### %s\n", tr("report.section.availability"))
+	fmt.Fprintf(file, "- **%s**: %t\n", tr("report.field.exists"), result.Availability.Exists)
+	fmt.Fprintf(file, "- **%s**: %t\n", tr("report.field.responsive"), result.Availability.Responsive)
+	fmt.Fprintf(file, "- **%s**: %t\n", tr("report.field.overloaded"), result.Availability.Overloaded)
+	fmt.Fprintf(file, "- **%s**: %s\n", tr("report.field.response_time"), result.Availability.Latency.String())
 	fmt.Fprintf(file, "\n")
 
 	// Response time metrics
 	if result.ResponseTime.AverageLatency > 0 {
-		fmt.Fprintf(file, "### Response Time Metrics\n")
-		fmt.Fprintf(file, "- **Average Latency**: %s\n", result.ResponseTime.AverageLatency.String())
+		fmt.Fprintf(file, "### %s\n", tr("report.section.response_time_metrics"))
+		fmt.Fprintf(file, "- **%s**: %s\n", tr("report.field.average_latency"), result.ResponseTime.AverageLatency.String())
 		// fmt.Fprintf(file, "- **P95 Latency**: %s\n", result.ResponseTime.P95Latency.String())  // We're not calculating P95 currently
-		fmt.Fprintf(file, "- **Throughput**: %.2f requests/sec\n", result.ResponseTime.Throughput)
+		fmt.Fprintf(file, "- **%s**: %s\n", tr("report.field.throughput"), trData("report.value.requests_per_sec", map[string]any{"value": result.ResponseTime.Throughput}))
 		fmt.Fprintf(file, "\n")
 	}
 
 	// Features
-	fmt.Fprintf(file, "### Supported Features\n")
-	fmt.Fprintf(file, "- **Tool Use**: %t\n", result.FeatureDetection.ToolUse)
-	fmt.Fprintf(file, "- **Function Calling**: %t\n", result.FeatureDetection.FunctionCalling)
-	fmt.Fprintf(file, "- **Code Generation**: %t\n", result.FeatureDetection.CodeGeneration)
-	fmt.Fprintf(file, "- **Code Completion**: %t\n", result.FeatureDetection.CodeCompletion)
-	fmt.Fprintf(file, "- **Code Explanation**: %t\n", result.FeatureDetection.CodeExplanation)
-	fmt.Fprintf(file, "- **Code Review**: %t\n", result.FeatureDetection.CodeReview)
+	fmt.Fprintf(file, "### %s\n", tr("report.section.supported_features"))
+	fmt.Fprintf(file, "- **%s**: %t\n", tr("report.field.tool_use"), result.FeatureDetection.ToolUse)
+	fmt.Fprintf(file, "- **%s**: %t\n", tr("report.field.function_calling"), result.FeatureDetection.FunctionCalling)
+	fmt.Fprintf(file, "- **%s**: %t\n", tr("report.field.code_generation"), result.FeatureDetection.CodeGeneration)
+	fmt.Fprintf(file, "- **%s**: %t\n", tr("report.field.code_completion"), result.FeatureDetection.CodeCompletion)
+	fmt.Fprintf(file, "- **%s**: %t\n", tr("report.field.code_explanation"), result.FeatureDetection.CodeExplanation)
+	fmt.Fprintf(file, "- **%s**: %t\n", tr("report.field.code_review"), result.FeatureDetection.CodeReview)
 	fmt.Fprintf(file, "- **Embeddings**: %t\n", result.FeatureDetection.Embeddings)
 	fmt.Fprintf(file, "- **Reranking**: %t\n", result.FeatureDetection.Reranking)
-	fmt.Fprintf(file, "- **Image Generation**: %t\n", result.FeatureDetection.ImageGeneration)
-	fmt.Fprintf(file, "- **Audio Generation**: %t\n", result.FeatureDetection.AudioGeneration)
-	fmt.Fprintf(file, "- **Video Generation**: %t\n", result.FeatureDetection.VideoGeneration)
+	fmt.Fprintf(file, "- **%s**: %t\n", tr("report.field.image_generation"), result.FeatureDetection.ImageGeneration)
+	fmt.Fprintf(file, "- **%s**: %t\n", tr("report.field.audio_generation"), result.FeatureDetection.AudioGeneration)
+	fmt.Fprintf(file, "- **%s**: %t\n", tr("report.field.video_generation"), result.FeatureDetection.VideoGeneration)
 	fmt.Fprintf(file, "- **MCPs**: %t\n", result.FeatureDetection.MCPs)
 	fmt.Fprintf(file, "- **LSPs**: %t\n", result.FeatureDetection.LSPs)
 	fmt.Fprintf(file, "- **ACPs**: %t\n", result.FeatureDetection.ACPs)
 	fmt.Fprintf(file, "- **Multimodal**: %t\n", result.FeatureDetection.Multimodal)
 	fmt.Fprintf(file, "- **Streaming**: %t\n", result.FeatureDetection.Streaming)
-	fmt.Fprintf(file, "- **JSON Mode**: %t\n", result.FeatureDetection.JSONMode)
-	fmt.Fprintf(file, "- **Structured Output**: %t\n", result.FeatureDetection.StructuredOutput)
-	fmt.Fprintf(file, "- **Reasoning**: %t\n", result.FeatureDetection.Reasoning)
-	fmt.Fprintf(file, "- **Parallel Tool Use**: %t (Max %d calls)\n", result.FeatureDetection.ParallelToolUse, result.FeatureDetection.MaxParallelCalls)
-	fmt.Fprintf(file, "- **Brotli Compression**: %t\n", result.FeatureDetection.SupportsBrotli)
+	fmt.Fprintf(file, "- **%s**: %t\n", tr("report.field.json_mode"), result.FeatureDetection.JSONMode)
+	fmt.Fprintf(file, "- **%s**: %t\n", tr("report.field.structured_output"), result.FeatureDetection.StructuredOutput)
+	fmt.Fprintf(file, "- **%s**: %t\n", tr("report.field.reasoning"), result.FeatureDetection.Reasoning)
+	fmt.Fprintf(file, "- **%s**: %s\n", tr("report.field.parallel_tool_use"),
+		trData("report.value.parallel_tool_use", map[string]any{
+			"enabled": result.FeatureDetection.ParallelToolUse,
+			"max":     result.FeatureDetection.MaxParallelCalls,
+		}))
+	fmt.Fprintf(file, "- **%s**: %t\n", tr("report.field.brotli_compression"), result.FeatureDetection.SupportsBrotli)
 	fmt.Fprintf(file, "\n")
 
 	// Code capabilities
-	fmt.Fprintf(file, "### Code Capabilities\n")
-	fmt.Fprintf(file, "- **Language Support**: %s\n", strings.Join(result.CodeCapabilities.LanguageSupport, ", "))
+	fmt.Fprintf(file, "### %s\n", tr("report.section.code_capabilities"))
+	fmt.Fprintf(file, "- **%s**: %s\n", tr("report.field.language_support"), strings.Join(result.CodeCapabilities.LanguageSupport, ", "))
 	fmt.Fprintf(file, "- **Code Generation**: %t\n", result.CodeCapabilities.CodeGeneration)
 	fmt.Fprintf(file, "- **Code Completion**: %t\n", result.CodeCapabilities.CodeCompletion)
 	fmt.Fprintf(file, "- **Code Debugging**: %t\n", result.CodeCapabilities.CodeDebugging)
@@ -351,29 +355,29 @@ func (v *Verifier) writeModelReport(file *os.File, result VerificationResult) {
 	fmt.Fprintf(file, "\n")
 
 	// Language-specific scores
-	fmt.Fprintf(file, "### Language-Specific Performance\n")
-	fmt.Fprintf(file, "- **Python Success Rate**: %.2f%%\n", result.CodeCapabilities.PromptResponse.PythonSuccessRate)
-	fmt.Fprintf(file, "- **JavaScript Success Rate**: %.2f%%\n", result.CodeCapabilities.PromptResponse.JavascriptSuccessRate)
-	fmt.Fprintf(file, "- **Go Success Rate**: %.2f%%\n", result.CodeCapabilities.PromptResponse.GoSuccessRate)
-	fmt.Fprintf(file, "- **Java Success Rate**: %.2f%%\n", result.CodeCapabilities.PromptResponse.JavaSuccessRate)
-	fmt.Fprintf(file, "- **C++ Success Rate**: %.2f%%\n", result.CodeCapabilities.PromptResponse.CppSuccessRate)
-	fmt.Fprintf(file, "- **TypeScript Success Rate**: %.2f%%\n", result.CodeCapabilities.PromptResponse.TypescriptSuccessRate)
-	fmt.Fprintf(file, "- **Overall Success Rate**: %.2f%%\n", result.CodeCapabilities.PromptResponse.OverallSuccessRate)
+	fmt.Fprintf(file, "### %s\n", tr("report.section.language_specific_performance"))
+	fmt.Fprintf(file, "- **%s**: %.2f%%\n", tr("report.field.python_success_rate"), result.CodeCapabilities.PromptResponse.PythonSuccessRate)
+	fmt.Fprintf(file, "- **%s**: %.2f%%\n", tr("report.field.javascript_success_rate"), result.CodeCapabilities.PromptResponse.JavascriptSuccessRate)
+	fmt.Fprintf(file, "- **%s**: %.2f%%\n", tr("report.field.go_success_rate"), result.CodeCapabilities.PromptResponse.GoSuccessRate)
+	fmt.Fprintf(file, "- **%s**: %.2f%%\n", tr("report.field.java_success_rate"), result.CodeCapabilities.PromptResponse.JavaSuccessRate)
+	fmt.Fprintf(file, "- **%s**: %.2f%%\n", tr("report.field.cpp_success_rate"), result.CodeCapabilities.PromptResponse.CppSuccessRate)
+	fmt.Fprintf(file, "- **%s**: %.2f%%\n", tr("report.field.typescript_success_rate"), result.CodeCapabilities.PromptResponse.TypescriptSuccessRate)
+	fmt.Fprintf(file, "- **%s**: %.2f%%\n", tr("report.field.overall_success_rate"), result.CodeCapabilities.PromptResponse.OverallSuccessRate)
 	fmt.Fprintf(file, "\n")
 }
 
 // writeFailedModelReport writes the report for a model that failed verification
 func (v *Verifier) writeFailedModelReport(file *os.File, result VerificationResult) {
-	fmt.Fprintf(file, "## Model: %s (FAILED)\n\n", result.ModelInfo.ID)
-	fmt.Fprintf(file, "**Error**: %s\n\n", result.Error)
-	fmt.Fprintf(file, "- **Endpoint**: %s\n", result.ModelInfo.Endpoint)
-	fmt.Fprintf(file, "- **Attempted at**: %s\n", result.Timestamp.Format("2006-01-02 15:04:05"))
+	fmt.Fprintf(file, "## %s %s (%s)\n\n", tr("report.model.label"), result.ModelInfo.ID, tr("report.model.failed"))
+	fmt.Fprintf(file, "**%s**: %s\n\n", tr("report.field.error"), result.Error)
+	fmt.Fprintf(file, "- **%s**: %s\n", tr("report.field.endpoint"), result.ModelInfo.Endpoint)
+	fmt.Fprintf(file, "- **%s**: %s\n", tr("report.field.attempted_at"), result.Timestamp.Format("2006-01-02 15:04:05"))
 	fmt.Fprintf(file, "\n")
 }
 
 // writeCategoryRankings writes the category-wise rankings
 func (v *Verifier) writeCategoryRankings(file *os.File, results []VerificationResult) {
-	fmt.Fprintf(file, "## Category Rankings\n\n")
+	fmt.Fprintf(file, "## %s\n\n", tr("report.section.category_rankings"))
 
 	// Create sorted lists for each category
 	overallSorted := v.SortResultsByScore(results, func(r VerificationResult) float64 { return r.PerformanceScores.OverallScore })
@@ -384,7 +388,7 @@ func (v *Verifier) writeCategoryRankings(file *os.File, results []VerificationRe
 	valueSorted := v.SortResultsByScore(results, func(r VerificationResult) float64 { return r.PerformanceScores.ValueProposition })
 
 	// Overall rankings
-	fmt.Fprintf(file, "### Overall Performance\n")
+	fmt.Fprintf(file, "### %s\n", tr("report.section.overall_performance"))
 	for i, performer := range overallSorted {
 		if i >= 10 { // Show top 10
 			break
@@ -396,7 +400,7 @@ func (v *Verifier) writeCategoryRankings(file *os.File, results []VerificationRe
 	fmt.Fprintf(file, "\n")
 
 	// Code Capability Rankings
-	fmt.Fprintf(file, "### By Code Capability\n")
+	fmt.Fprintf(file, "### %s\n", tr("report.section.by_code_capability"))
 	for i, performer := range codeSorted {
 		if i >= 10 { // Show top 10
 			break
@@ -408,7 +412,7 @@ func (v *Verifier) writeCategoryRankings(file *os.File, results []VerificationRe
 	fmt.Fprintf(file, "\n")
 
 	// Responsiveness Rankings
-	fmt.Fprintf(file, "### By Responsiveness\n")
+	fmt.Fprintf(file, "### %s\n", tr("report.section.by_responsiveness"))
 	for i, performer := range responsivenessSorted {
 		if i >= 10 { // Show top 10
 			break
@@ -420,7 +424,7 @@ func (v *Verifier) writeCategoryRankings(file *os.File, results []VerificationRe
 	fmt.Fprintf(file, "\n")
 
 	// Reliability Rankings
-	fmt.Fprintf(file, "### By Reliability\n")
+	fmt.Fprintf(file, "### %s\n", tr("report.section.by_reliability"))
 	for i, performer := range reliabilitySorted {
 		if i >= 10 { // Show top 10
 			break
@@ -432,7 +436,7 @@ func (v *Verifier) writeCategoryRankings(file *os.File, results []VerificationRe
 	fmt.Fprintf(file, "\n")
 
 	// Feature Richness Rankings
-	fmt.Fprintf(file, "### By Feature Richness\n")
+	fmt.Fprintf(file, "### %s\n", tr("report.section.by_feature_richness"))
 	for i, performer := range featureSorted {
 		if i >= 10 { // Show top 10
 			break
@@ -444,7 +448,7 @@ func (v *Verifier) writeCategoryRankings(file *os.File, results []VerificationRe
 	fmt.Fprintf(file, "\n")
 
 	// Value Proposition Rankings
-	fmt.Fprintf(file, "### By Value Proposition\n")
+	fmt.Fprintf(file, "### %s\n", tr("report.section.by_value_proposition"))
 	for i, performer := range valueSorted {
 		if i >= 10 { // Show top 10
 			break
