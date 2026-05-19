@@ -43,7 +43,7 @@ func (s *LLMOpsSystem) Initialize() error {
 	s.evaluator = NewInMemoryContinuousEvaluator(s.config, s.alertManager, nil, s.logger)
 
 	s.initialized = true
-	s.logger.Println("LLMOps system initialized")
+	s.logger.Print(tr("llmops_log_system_initialized"))
 	return nil
 }
 
@@ -87,7 +87,7 @@ func (s *LLMOpsSystem) CreatePromptExperiment(ctx context.Context, name string, 
 
 	exp := &Experiment{
 		Name:        name,
-		Description: "A/B test between prompt versions",
+		Description: tr("llmops_experiment_desc_ab_prompt_versions"),
 		Variants: []*Variant{
 			{Name: "Control", PromptID: control.ID, IsControl: true},
 			{Name: "Treatment", PromptID: treatment.ID},

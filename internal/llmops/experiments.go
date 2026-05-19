@@ -66,7 +66,7 @@ func (m *InMemoryExperimentManager) Create(ctx context.Context, exp *Experiment)
 	m.assignments[exp.ID] = make(map[string]string)
 	m.metrics[exp.ID] = make(map[string][]float64)
 
-	m.logger.Printf("Created experiment: %s", exp.Name)
+	m.logger.Print(trData("llmops_log_experiment_created", map[string]any{"name": exp.Name}))
 	return nil
 }
 
@@ -113,7 +113,7 @@ func (m *InMemoryExperimentManager) Start(ctx context.Context, id string) error 
 	exp.StartedAt = &now
 	exp.UpdatedAt = time.Now()
 
-	m.logger.Printf("Started experiment: %s", exp.Name)
+	m.logger.Print(trData("llmops_log_experiment_started", map[string]any{"name": exp.Name}))
 	return nil
 }
 
@@ -134,7 +134,7 @@ func (m *InMemoryExperimentManager) Pause(ctx context.Context, id string) error 
 	exp.Status = ExperimentStatusPaused
 	exp.UpdatedAt = time.Now()
 
-	m.logger.Printf("Paused experiment: %s", exp.Name)
+	m.logger.Print(trData("llmops_log_experiment_paused", map[string]any{"name": exp.Name}))
 	return nil
 }
 
@@ -154,7 +154,7 @@ func (m *InMemoryExperimentManager) Complete(ctx context.Context, id, winner str
 	exp.EndedAt = &now
 	exp.UpdatedAt = time.Now()
 
-	m.logger.Printf("Completed experiment: %s, winner: %s", exp.Name, winner)
+	m.logger.Print(trData("llmops_log_experiment_completed", map[string]any{"name": exp.Name, "winner": winner}))
 	return nil
 }
 

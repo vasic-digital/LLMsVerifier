@@ -55,7 +55,7 @@ func (r *InMemoryPromptRegistry) Create(ctx context.Context, prompt *PromptVersi
 	}
 
 	r.prompts[prompt.Name][prompt.Version] = prompt
-	r.logger.Printf("Created prompt %s version %s", prompt.Name, prompt.Version)
+	r.logger.Print(trData("llmops_log_prompt_created", map[string]any{"name": prompt.Name, "version": prompt.Version}))
 	return nil
 }
 
@@ -132,7 +132,7 @@ func (r *InMemoryPromptRegistry) Activate(ctx context.Context, name, version str
 	versions[version].IsActive = true
 	r.active[name] = version
 
-	r.logger.Printf("Activated prompt %s version %s", name, version)
+	r.logger.Print(trData("llmops_log_prompt_activated", map[string]any{"name": name, "version": version}))
 	return nil
 }
 
@@ -156,7 +156,7 @@ func (r *InMemoryPromptRegistry) Delete(ctx context.Context, name, version strin
 	}
 
 	delete(versions, version)
-	r.logger.Printf("Deleted prompt %s version %s", name, version)
+	r.logger.Print(trData("llmops_log_prompt_deleted", map[string]any{"name": name, "version": version}))
 	return nil
 }
 
@@ -239,7 +239,7 @@ func (c *PromptVersionComparator) Compare(ctx context.Context, name, version1, v
 
 	// Simple diff - in production use proper diff library
 	if p1.Content != p2.Content {
-		diff.ContentDiff = fmt.Sprintf("Content changed from %d to %d chars", len(p1.Content), len(p2.Content))
+		diff.ContentDiff = trData("llmops_diff_content_changed", map[string]any{"old_chars": len(p1.Content), "new_chars": len(p2.Content)})
 	}
 
 	// Compare variables

@@ -59,7 +59,7 @@ func (e *InMemoryContinuousEvaluator) CreateDataset(ctx context.Context, dataset
 	e.datasets[dataset.ID] = dataset
 	e.samples[dataset.ID] = make([]*DatasetSample, 0)
 
-	e.logger.Printf("Created dataset: %s", dataset.Name)
+	e.logger.Print(trData("llmops_log_dataset_created", map[string]any{"name": dataset.Name}))
 	return nil
 }
 
@@ -97,7 +97,7 @@ func (e *InMemoryContinuousEvaluator) CreateRun(ctx context.Context, run *Evalua
 
 	e.runs[run.ID] = run
 
-	e.logger.Printf("Created evaluation run: %s", run.Name)
+	e.logger.Print(trData("llmops_log_evaluation_run_created", map[string]any{"name": run.Name}))
 	return nil
 }
 
@@ -177,7 +177,7 @@ func (e *InMemoryContinuousEvaluator) executeRun(ctx context.Context, run *Evalu
 	// Check for regressions
 	e.checkForRegressions(ctx, run)
 
-	e.logger.Printf("Completed evaluation run: %s, pass rate: %.2f", run.Name, results.PassRate)
+	e.logger.Print(trData("llmops_log_evaluation_run_completed", map[string]any{"name": run.Name, "pass_rate": results.PassRate}))
 }
 
 // checkForRegressions checks for quality regressions
@@ -191,7 +191,7 @@ func (e *InMemoryContinuousEvaluator) checkForRegressions(ctx context.Context, r
 		alert := &Alert{
 			Type:     AlertTypeRegression,
 			Severity: AlertSeverityWarning,
-			Message:  fmt.Sprintf("Pass rate dropped to %.2f%%", run.Results.PassRate*100),
+			Message:  trData("llmops_alert_pass_rate_dropped", map[string]any{"pass_rate_pct": run.Results.PassRate * 100}),
 			Source:   "evaluator",
 			Data: map[string]interface{}{
 				"run_id":    run.ID,
@@ -269,7 +269,7 @@ func (m *InMemoryAlertManager) Create(ctx context.Context, alert *Alert) error {
 		go h(alert)
 	}
 
-	m.logger.Printf("Created alert: %s - %s", alert.Type, alert.Message)
+	m.logger.Print(trData("llmops_log_alert_created", map[string]any{"type": alert.Type, "message": alert.Message}))
 	return nil
 }
 
