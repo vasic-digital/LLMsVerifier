@@ -1,0 +1,8 @@
+# LLMsVerifier round-296 challenge fixture — German (de).
+locale: de
+provider_id: "groq-de"
+prompt: "Pruefe ob der Anbieter Streaming-Komplettierungen unterstuetzt"
+expect_valid_minimal_config: true
+expect_invalid_no_providers: false
+expect_invalid_json_error: true
+expect_roundtrip_preserves_provider: true

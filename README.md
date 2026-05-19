@@ -731,3 +731,97 @@ This LLMsVerifier project has achieved **impeccable status** with:
 **Performance:** Optimized
 
 **Built with ❤️ for the AI community - Now with mandatory model verification and (llmsvd) branding**
+
+---
+
+## Anti-Bluff Round-296 Challenge Surface (added 2026-05-19)
+
+LLMsVerifier is the constitutional single source of truth for
+provider and model metadata in consuming projects
+(CONST-036 / CONST-037 / CONST-038 / CONST-039 / CONST-040).
+A bluff in the validator surface — for example, silently
+accepting a configuration with no providers, or treating
+malformed JSON as valid — would translate downstream into a
+user-facing "the documented model is unreachable" defect. That
+class of failure is exactly what the 2026-04-28 operator mandate
+forbids.
+
+The round-296 Challenge addresses this at the crush_config
+validation seam:
+
+| Artefact | Path | Purpose |
+|----------|------|---------|
+| Runner | `challenges/runner/main.go` | In-process Go binary exercising 5 invariants per locale fixture on real `crush_config.SchemaValidator` + `ConfigLoader` surfaces |
+| Fixtures | `challenges/fixtures/{de,en,es,ja,sr}.yaml` | 5 locale fixtures driving the runner with distinct provider IDs and prompts |
+| Wrapper | `challenges/llmsverifier_describe_challenge.sh` | Bash wrapper with `normal` + `mutate` modes; mutation inverts invariant 3 polarity to prove the runner actually checks what it claims |
+| Coverage matrix | `docs/test-coverage.md` | Per-symbol → per-test-type → captured-evidence ledger |
+
+### Invariants enforced (5 per locale, 25 total)
+
+1. `NewSchemaValidator()` returns non-nil.
+2. `ValidateFromReader` on a minimal valid config returns
+   `Valid=true`.
+3. `ValidateFromReader` on a config WITHOUT providers returns
+   `Valid=false` with at least one error. **Paired-mutation
+   invariant** (CONST-050(A), §1.1).
+4. `ValidateFromReader` on syntactically invalid JSON surfaces
+   an error containing `"invalid JSON"`.
+5. `ConfigLoader.SaveToFile` + `LoadFromFile` round-trip
+   preserves the provider ID on a real temp file (no in-memory
+   echo).
+
+### Anti-bluff guarantees
+
+- **No simulation.** Every invariant exercises a real
+  `crush_config` exported symbol; no stubs, no in-memory maps,
+  no metadata-only PASS lines.
+- **Paired mutation.** Invariant 3 inverts under
+  `LLMSVERIFIER_MUTATE_RUNNER=1`; the wrapper rewrites the
+  resulting non-zero exit to **exit 99**. If the runner
+  exits 0 under mutation, the wrapper FAILS — proving the
+  runner truly observes the rejection it claims to observe.
+- **Decoupling preserved.** Runner imports
+  `digital.vasic.llmsverifier/pkg/crush/config` plus stdlib
+  only — no consuming-project namespace leaks (CONST-051(B)).
+- **5-locale bilingual posture.** Fixtures cover en, sr, de,
+  es, ja so future i18n migrations of the validator surface
+  cannot silently break a single locale (CONST-046).
+
+### Running the Challenge
+
+```bash
+# Normal mode — runner must exit 0, wrapper echoes PASSED.
+bash challenges/llmsverifier_describe_challenge.sh normal
+# Mutation mode — runner must exit non-zero, wrapper echoes
+# MUTATION DETECTED and exits 99.
+bash challenges/llmsverifier_describe_challenge.sh mutate
+```
+
+Captured runtime evidence (this session, 2026-05-19):
+
+```
+$ bash challenges/llmsverifier_describe_challenge.sh normal
+...
+=== Summary: PASS=25 FAIL=0 ===
+=== Describe Challenge: PASSED ===
+$ echo $?
+0
+
+$ bash challenges/llmsverifier_describe_challenge.sh mutate
+...
+=== Summary: PASS=20 FAIL=5 ===
+=== Describe Challenge: MUTATION DETECTED (runner rc=1 → exit 99) ===
+$ echo $?
+99
+```
+
+### Verbatim 2026-05-19 operator mandate (preserved per CONST-049 §11.4.17)
+
+> "all existing tests and Challenges do work in anti-bluff manner -
+> they MUST confirm that all tested codebase really works as
+> expected! We had been in position that all tests do execute with
+> success and all Challenges as well, but in reality the most of
+> the features does not work and can't be used! This MUST NOT be
+> the case and execution of tests and Challenges MUST guarantee
+> the quality, the completition and full usability by end users
+> of the product!"

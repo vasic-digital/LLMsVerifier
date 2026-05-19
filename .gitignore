@@ -17,6 +17,11 @@ llm-verifier-*
 main
 test-tui
 
+# round-296 Challenge runner binary (built from challenges/runner/main.go)
+# CONST-053 — no versioned build artefacts.
+/runner
+/challenges/runner/runner
+
 # Ultimate challenge binaries (large files)
 ultimate-challenge*
 llm-verifier/cmd/ultimate-challenge/ultimate-challenge*

@@ -1,0 +1,8 @@
+# LLMsVerifier round-296 challenge fixture — Japanese (ja).
+locale: ja
+provider_id: "gemini-ja"
+prompt: "Streaming hokan o provider ga support shiteiruka verify suru"
+expect_valid_minimal_config: true
+expect_invalid_no_providers: false
+expect_invalid_json_error: true
+expect_roundtrip_preserves_provider: true

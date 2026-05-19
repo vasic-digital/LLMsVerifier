@@ -1,0 +1,8 @@
+# LLMsVerifier round-296 challenge fixture — Spanish (es).
+locale: es
+provider_id: "deepseek-es"
+prompt: "Verifica que el proveedor admite finalizacion en streaming"
+expect_valid_minimal_config: true
+expect_invalid_no_providers: false
+expect_invalid_json_error: true
+expect_roundtrip_preserves_provider: true

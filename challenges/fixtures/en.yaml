@@ -1,0 +1,13 @@
+# LLMsVerifier round-296 challenge fixture — English (en).
+#
+# Drives the Challenge runner at challenges/runner/main.go through a
+# real crush_config.SchemaValidator + ConfigLoader flow. Anti-bluff:
+# every PASS in the runner is backed by a runtime invariant on the
+# real validator surface — never a metadata-only check.
+locale: en
+provider_id: "openai-en"
+prompt: "Verify the provider supports streaming completions"
+expect_valid_minimal_config: true
+expect_invalid_no_providers: false
+expect_invalid_json_error: true
+expect_roundtrip_preserves_provider: true
