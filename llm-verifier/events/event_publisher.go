@@ -2,7 +2,6 @@ package events
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"time"
 
@@ -28,8 +27,11 @@ func (ep *EventPublisher) PublishVerificationStarted(modelCount int, providerCou
 	event := CreateEvent(
 		EventVerificationStarted,
 		SeverityInfo,
-		"Model Verification Started",
-		fmt.Sprintf("Starting verification of %d models across %d providers", modelCount, providerCount),
+		tr("events.verification.started.title"),
+		trData("events.verification.started.message", map[string]any{
+			"model_count":    modelCount,
+			"provider_count": providerCount,
+		}),
 	)
 
 	event.Details = map[string]interface{}{
@@ -46,9 +48,12 @@ func (ep *EventPublisher) PublishVerificationCompleted(duration time.Duration, s
 	event := CreateEvent(
 		EventVerificationCompleted,
 		SeverityInfo,
-		"Model Verification Completed",
-		fmt.Sprintf("Verification completed in %s. %d models verified successfully, %d failed",
-			duration, successCount, failureCount),
+		tr("events.verification.completed.title"),
+		trData("events.verification.completed.message", map[string]any{
+			"duration":      duration.String(),
+			"success_count": successCount,
+			"failure_count": failureCount,
+		}),
 	)
 
 	event.Details = map[string]interface{}{
@@ -66,8 +71,8 @@ func (ep *EventPublisher) PublishVerificationFailed(errorMsg string) error {
 	event := CreateEvent(
 		EventVerificationFailed,
 		SeverityError,
-		"Model Verification Failed",
-		fmt.Sprintf("Verification failed with error: %s", errorMsg),
+		tr("events.verification.failed.title"),
+		trData("events.verification.failed.message", map[string]any{"error": errorMsg}),
 	)
 
 	event.Details = map[string]interface{}{
@@ -85,12 +90,20 @@ func (ep *EventPublisher) PublishScoreChanged(modelID int64, oldScore, newScore 
 
 	if newScore > oldScore {
 		severity = SeverityInfo
-		title = "Model Score Improved"
-		message = fmt.Sprintf("Model score increased from %d to %d (%s)", oldScore, newScore, scoreType)
+		title = tr("events.score.improved.title")
+		message = trData("events.score.improved.message", map[string]any{
+			"old_score":  oldScore,
+			"new_score":  newScore,
+			"score_type": scoreType,
+		})
 	} else if newScore < oldScore {
 		severity = SeverityWarning
-		title = "Model Score Decreased"
-		message = fmt.Sprintf("Model score decreased from %d to %d (%s)", oldScore, newScore, scoreType)
+		title = tr("events.score.decreased.title")
+		message = trData("events.score.decreased.message", map[string]any{
+			"old_score":  oldScore,
+			"new_score":  newScore,
+			"score_type": scoreType,
+		})
 	} else {
 		// No change, don't publish
 		return nil
@@ -113,8 +126,11 @@ func (ep *EventPublisher) PublishIssueDetected(modelID int64, issueType, severit
 	event := CreateModelEvent(
 		EventIssueDetected,
 		Severity(severity),
-		"Issue Detected",
-		fmt.Sprintf("%s: %s", title, description),
+		tr("events.issue.detected.title"),
+		trData("events.issue.detected.message", map[string]any{
+			"title":       title,
+			"description": description,
+		}),
 		modelID,
 	)
 
@@ -134,8 +150,11 @@ func (ep *EventPublisher) PublishIssueResolved(modelID int64, issueID int64, res
 	event := CreateModelEvent(
 		EventIssueResolved,
 		SeverityInfo,
-		"Issue Resolved",
-		fmt.Sprintf("Issue %d resolved: %s", issueID, resolution),
+		tr("events.issue.resolved.title"),
+		trData("events.issue.resolved.message", map[string]any{
+			"issue_id":   issueID,
+			"resolution": resolution,
+		}),
 		modelID,
 	)
 
@@ -153,8 +172,11 @@ func (ep *EventPublisher) PublishClientConnected(clientID, clientType string) er
 	event := CreateClientEvent(
 		EventClientConnected,
 		SeverityInfo,
-		"Client Connected",
-		fmt.Sprintf("%s client connected: %s", clientType, clientID),
+		tr("events.client.connected.title"),
+		trData("events.client.connected.message", map[string]any{
+			"client_type": clientType,
+			"client_id":   clientID,
+		}),
 		clientID,
 	)
 
@@ -172,8 +194,11 @@ func (ep *EventPublisher) PublishClientDisconnected(clientID, clientType string)
 	event := CreateClientEvent(
 		EventClientDisconnected,
 		SeverityInfo,
-		"Client Disconnected",
-		fmt.Sprintf("%s client disconnected: %s", clientType, clientID),
+		tr("events.client.disconnected.title"),
+		trData("events.client.disconnected.message", map[string]any{
+			"client_type": clientType,
+			"client_id":   clientID,
+		}),
 		clientID,
 	)
 
@@ -194,22 +219,22 @@ func (ep *EventPublisher) PublishSystemHealthChanged(healthStatus string, detail
 	switch healthStatus {
 	case "healthy":
 		severity = SeverityInfo
-		title = "System Health: Healthy"
+		title = tr("events.health.healthy.title")
 	case "degraded":
 		severity = SeverityWarning
-		title = "System Health: Degraded"
+		title = tr("events.health.degraded.title")
 	case "unhealthy":
 		severity = SeverityError
-		title = "System Health: Unhealthy"
+		title = tr("events.health.unhealthy.title")
 	case "critical":
 		severity = SeverityCritical
-		title = "System Health: Critical"
+		title = tr("events.health.critical.title")
 	default:
 		severity = SeverityInfo
-		title = "System Health Changed"
+		title = tr("events.health.changed.title")
 	}
 
-	message := fmt.Sprintf("System health status changed to: %s", healthStatus)
+	message := trData("events.health.changed.message", map[string]any{"health_status": healthStatus})
 	event := CreateEvent(EventSystemHealthChanged, severity, title, message)
 
 	event.Details = details
@@ -224,8 +249,11 @@ func (ep *EventPublisher) PublishConfigExported(configType string, targetCount i
 	event := CreateEvent(
 		EventConfigExported,
 		SeverityInfo,
-		"Configuration Exported",
-		fmt.Sprintf("Exported %s configuration for %d targets", configType, targetCount),
+		tr("events.config.exported.title"),
+		trData("events.config.exported.message", map[string]any{
+			"config_type":  configType,
+			"target_count": targetCount,
+		}),
 	)
 
 	event.Details = map[string]interface{}{
@@ -242,8 +270,11 @@ func (ep *EventPublisher) PublishSecurityAlert(alertType, message string, detail
 	event := CreateEvent(
 		EventSecurityAlert,
 		SeverityCritical,
-		"Security Alert",
-		fmt.Sprintf("[%s] %s", alertType, message),
+		tr("events.security.alert.title"),
+		trData("events.security.alert.message", map[string]any{
+			"alert_type": alertType,
+			"message":    message,
+		}),
 	)
 
 	event.Details = details
@@ -260,12 +291,18 @@ func (ep *EventPublisher) PublishDatabaseMigration(migrationVersion int, descrip
 
 	if success {
 		severity = SeverityInfo
-		title = "Database Migration Completed"
-		message = fmt.Sprintf("Successfully applied migration %d: %s", migrationVersion, description)
+		title = tr("events.migration.completed.title")
+		message = trData("events.migration.completed.message", map[string]any{
+			"migration_version": migrationVersion,
+			"description":       description,
+		})
 	} else {
 		severity = SeverityError
-		title = "Database Migration Failed"
-		message = fmt.Sprintf("Failed to apply migration %d: %s", migrationVersion, description)
+		title = tr("events.migration.failed.title")
+		message = trData("events.migration.failed.message", map[string]any{
+			"migration_version": migrationVersion,
+			"description":       description,
+		})
 	}
 
 	event := CreateEvent(EventDatabaseMigration, severity, title, message)
