@@ -605,7 +605,7 @@ func (ar *AdvancedReporting) GenerateExecutiveSummary(ctx context.Context, timeR
 
 	// Add sample metrics for demonstration
 	summary.KeyMetrics["system_health"] = MetricSummary{
-		Name:   "System Health Score",
+		Name:   tr("analytics.metric.system_health_score"),
 		Value:  94.2,
 		Unit:   "percentage",
 		Change: 2.1,
@@ -613,7 +613,7 @@ func (ar *AdvancedReporting) GenerateExecutiveSummary(ctx context.Context, timeR
 	}
 
 	summary.KeyMetrics["performance"] = MetricSummary{
-		Name:   "Verification Success Rate",
+		Name:   tr("analytics.metric.verification_success_rate"),
 		Value:  98.7,
 		Unit:   "percentage",
 		Change: 1.5,
@@ -709,21 +709,21 @@ func (ar *AdvancedReporting) generateTrendAnalysis(ctx context.Context, timeRang
 			Trend:     "decreasing",
 			Magnitude: -15.2,
 			Period:    "30 days",
-			Insight:   "Response times have improved by 15.2% over the last month",
+			Insight:   tr("analytics.insight.response_time_improved"),
 		},
 		{
 			Metric:    "error_rate",
 			Trend:     "stable",
 			Magnitude: 0.1,
 			Period:    "30 days",
-			Insight:   "Error rates remain stable with minimal variation",
+			Insight:   tr("analytics.insight.error_rate_stable"),
 		},
 		{
 			Metric:    "verification_success",
 			Trend:     "increasing",
 			Magnitude: 8.7,
 			Period:    "30 days",
-			Insight:   "Verification success rate has improved by 8.7%",
+			Insight:   tr("analytics.insight.verification_success_improved"),
 		},
 	}
 
@@ -734,14 +734,14 @@ func (ar *AdvancedReporting) generateSystemAlerts(ctx context.Context, timeRange
 	alerts := []SystemAlert{
 		{
 			Severity:    "warning",
-			Title:       "High Memory Usage",
-			Description: "System memory usage has exceeded 85% threshold for 2 consecutive hours",
+			Title:       tr("analytics.alert.high_memory_usage.title"),
+			Description: tr("analytics.alert.high_memory_usage.description"),
 			Timestamp:   time.Now().Add(-1 * time.Hour),
 		},
 		{
 			Severity:    "info",
-			Title:       "Scheduled Maintenance",
-			Description: "System maintenance window scheduled for tonight at 2 AM",
+			Title:       tr("analytics.alert.scheduled_maintenance.title"),
+			Description: tr("analytics.alert.scheduled_maintenance.description"),
 			Timestamp:   time.Now().Add(2 * time.Hour),
 		},
 	}
@@ -751,20 +751,20 @@ func (ar *AdvancedReporting) generateSystemAlerts(ctx context.Context, timeRange
 
 func (ar *AdvancedReporting) generateRecommendations(summary *ExecutiveSummary) []string {
 	recommendations := []string{
-		"Consider upgrading to the latest model versions for improved performance",
-		"Implement additional monitoring for API rate limits",
-		"Review and optimize verification workflows",
-		"Consider implementing caching for frequently accessed data",
+		tr("analytics.recommendation.upgrade_model_versions"),
+		tr("analytics.recommendation.monitor_rate_limits"),
+		tr("analytics.recommendation.optimize_workflows"),
+		tr("analytics.recommendation.cache_frequent_data"),
 	}
 
 	// Add specific recommendations based on metrics
 	for _, metric := range summary.KeyMetrics {
 		if metric.Status == "critical" {
 			recommendations = append(recommendations,
-				fmt.Sprintf("URGENT: Address %s immediately - current status is critical", metric.Name))
+				trData("analytics.recommendation.metric_critical", map[string]any{"metric": metric.Name}))
 		} else if metric.Status == "warning" {
 			recommendations = append(recommendations,
-				fmt.Sprintf("Review %s - showing warning signs that need attention", metric.Name))
+				trData("analytics.recommendation.metric_warning", map[string]any{"metric": metric.Name}))
 		}
 	}
 
@@ -783,7 +783,7 @@ func (ar *AdvancedReporting) GenerateDetailedReport(ctx context.Context, timeRan
 	execSummary, err := ar.GenerateExecutiveSummary(ctx, timeRange)
 	if err == nil {
 		report.Sections = append(report.Sections, ReportSection{
-			Title:       "Executive Summary",
+			Title:       tr("analytics.section.executive_summary"),
 			Content:     execSummary,
 			SectionType: "executive_summary",
 		})
@@ -834,22 +834,22 @@ type ChartData struct {
 // Generate methods for different report sections
 func (ar *AdvancedReporting) generatePerformanceSection(ctx context.Context, timeRange QueryTimeRange) ReportSection {
 	return ReportSection{
-		Title:       "Performance Analysis",
+		Title:       tr("analytics.section.performance_analysis"),
 		SectionType: "performance",
 		Content: map[string]interface{}{
-			"response_time_trend":       "Response times have improved by 12% over the last month",
-			"throughput_analysis":       "System can handle 1500 requests per minute at peak",
-			"error_rate_analysis":       "Error rate has decreased from 2.1% to 0.8%",
-			"bottleneck_identification": "Database queries are the primary bottleneck",
+			"response_time_trend":       tr("analytics.perf.response_time_trend"),
+			"throughput_analysis":       tr("analytics.perf.throughput_analysis"),
+			"error_rate_analysis":       tr("analytics.perf.error_rate_analysis"),
+			"bottleneck_identification": tr("analytics.perf.bottleneck_identification"),
 		},
 		Charts: []ChartData{
 			{
 				Type:  "line",
-				Title: "Response Time Trend",
+				Title: tr("analytics.chart.response_time_trend"),
 				Data: map[string]interface{}{
 					"datasets": []map[string]interface{}{
 						{
-							"label": "Average Response Time (ms)",
+							"label": tr("analytics.chart.avg_response_time_label"),
 							"data":  []float64{1250, 1180, 1150, 1120, 1080, 1050},
 						},
 					},
@@ -862,7 +862,7 @@ func (ar *AdvancedReporting) generatePerformanceSection(ctx context.Context, tim
 
 func (ar *AdvancedReporting) generateHealthSection(ctx context.Context, timeRange QueryTimeRange) ReportSection {
 	return ReportSection{
-		Title:       "System Health Overview",
+		Title:       tr("analytics.section.system_health_overview"),
 		SectionType: "health",
 		Content: map[string]interface{}{
 			"overall_health_score": 94.2,
@@ -882,26 +882,26 @@ func (ar *AdvancedReporting) generateHealthSection(ctx context.Context, timeRang
 
 func (ar *AdvancedReporting) generateCostSection(ctx context.Context, timeRange QueryTimeRange) ReportSection {
 	return ReportSection{
-		Title:       "Cost Analysis",
+		Title:       tr("analytics.section.cost_analysis"),
 		SectionType: "cost",
 		Content: map[string]interface{}{
 			"total_cost":       12500.50,
 			"cost_per_request": 0.0083,
-			"cost_trend":       "Increased by 15% due to higher usage",
+			"cost_trend":       tr("analytics.cost.cost_trend"),
 			"optimization_opportunities": []string{
-				"Implement response caching to reduce API calls",
-				"Use more cost-effective models for simple tasks",
-				"Implement request batching for bulk operations",
+				tr("analytics.cost.opt_response_caching"),
+				tr("analytics.cost.opt_cost_effective_models"),
+				tr("analytics.cost.opt_request_batching"),
 			},
 		},
 		Charts: []ChartData{
 			{
 				Type:  "bar",
-				Title: "Cost by Provider",
+				Title: tr("analytics.chart.cost_by_provider"),
 				Data: map[string]interface{}{
 					"datasets": []map[string]interface{}{
 						{
-							"label": "Monthly Cost ($)",
+							"label": tr("analytics.chart.monthly_cost_label"),
 							"data":  []float64{4200, 3800, 3100, 1400},
 						},
 					},
@@ -914,7 +914,7 @@ func (ar *AdvancedReporting) generateCostSection(ctx context.Context, timeRange 
 
 func (ar *AdvancedReporting) generateRecommendationsSection(ctx context.Context, timeRange QueryTimeRange) ReportSection {
 	return ReportSection{
-		Title:       "Strategic Recommendations",
+		Title:       tr("analytics.section.strategic_recommendations"),
 		SectionType: "recommendations",
 		Content: map[string]interface{}{
 			"immediate_actions": []string{
