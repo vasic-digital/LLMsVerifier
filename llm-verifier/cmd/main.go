@@ -370,11 +370,13 @@ func modelsCmd() *cobra.Command {
 			}
 
 			if len(models) == 0 {
-				fmt.Println("No models found.")
+				// CONST-046 round-194: i18n-routed empty-state for `list` cmd.
+				fmt.Println(tr("llmsverifier_list_models_empty"))
 				return
 			}
 
-			fmt.Printf("Found %d models:\n\n", len(models))
+			// CONST-046 round-194: i18n-routed header for `list` cmd (count payload).
+			fmt.Println(trData("llmsverifier_list_models_found_header", map[string]any{"count": len(models)}))
 			for i, model := range models {
 				fmt.Printf("%d. Name: %v\n", i+1, model["name"])
 				fmt.Printf("   Provider: %v\n", model["provider_name"])
@@ -414,7 +416,8 @@ func modelsCmd() *cobra.Command {
 				log.Fatalf("Failed to create model: %v", err)
 			}
 
-			fmt.Printf("Model created successfully\n")
+			// CONST-046 round-194: i18n-routed creation success banner.
+			fmt.Println(tr("llmsverifier_model_created_successfully"))
 			fmt.Printf("ID: %v\n", result["id"])
 			fmt.Printf("Name: %v\n", result["name"])
 			fmt.Printf("Provider: %v\n", result["provider"])
@@ -439,7 +442,8 @@ func modelsCmd() *cobra.Command {
 				log.Fatalf("Failed to fetch model: %v", err)
 			}
 
-			fmt.Printf("Model Details:\n")
+			// CONST-046 round-194: i18n-routed details banner.
+			fmt.Println(tr("llmsverifier_model_details_header"))
 			fmt.Printf("ID: %v\n", model["id"])
 			fmt.Printf("Name: %v\n", model["name"])
 			fmt.Printf("Provider: %v\n", model["provider_name"])
@@ -465,7 +469,8 @@ func modelsCmd() *cobra.Command {
 				log.Fatalf("Failed to verify model: %v", err)
 			}
 
-			fmt.Printf("Verification started for model %s\n", modelID)
+			// CONST-046 round-194: i18n-routed verify-started banner (model_id payload).
+			fmt.Println(trData("llmsverifier_verify_started_for_model", map[string]any{"model_id": modelID}))
 			fmt.Printf("Status: %v\n", result["status"])
 		},
 	}
@@ -778,7 +783,8 @@ func exportCmd() *cobra.Command {
 				log.Fatalf("Failed to write file: %v", err)
 			}
 
-			fmt.Printf("Exported %d models to %s\n", len(models), args[0])
+			// CONST-046 round-194: i18n-routed export-models confirmation (count + path payload).
+			fmt.Println(trData("llmsverifier_export_models_success", map[string]any{"count": len(models), "path": args[0]}))
 		},
 	}
 
@@ -900,8 +906,10 @@ func importCmd() *cobra.Command {
 }
 
 func runInteractiveMode(client *client.Client) {
-	fmt.Println("=== LLM Verifier Interactive Mode ===")
-	fmt.Println("Available commands:")
+	// CONST-046 round-194: i18n-routed interactive-mode banner.
+	fmt.Println(tr("llmsverifier_interactive_mode_banner"))
+	// CONST-046 round-194: i18n-routed help intro (also reused below in `help` branch).
+	fmt.Println(tr("llmsverifier_interactive_available_commands"))
 	fmt.Println("  list models     - List all models")
 	fmt.Println("  list providers  - List all providers")
 	fmt.Println("  verify [id]     - Verify a specific model")
@@ -922,10 +930,12 @@ func runInteractiveMode(client *client.Client) {
 
 		switch args[0] {
 		case "quit", "q", "exit":
-			fmt.Println("Goodbye!")
+			// CONST-046 round-194: i18n-routed exit banner.
+			fmt.Println(tr("llmsverifier_interactive_goodbye"))
 			return
 		case "help", "h":
-			fmt.Println("Available commands:")
+			// CONST-046 round-194: same key reused from banner site above.
+			fmt.Println(tr("llmsverifier_interactive_available_commands"))
 			fmt.Println("  list models     - List all models")
 			fmt.Println("  list providers  - List all providers")
 			fmt.Println("  verify [id]     - Verify a specific model")
@@ -934,7 +944,8 @@ func runInteractiveMode(client *client.Client) {
 			fmt.Println("  quit            - Exit interactive mode")
 		case "list":
 			if len(args) < 2 {
-				fmt.Println("Usage: list models|providers")
+				// CONST-046 round-194: i18n-routed usage hint.
+				fmt.Println(tr("llmsverifier_interactive_list_usage"))
 				continue
 			}
 			switch args[1] {
@@ -953,7 +964,8 @@ func runInteractiveMode(client *client.Client) {
 				}
 				printProvidersTable(providers)
 			default:
-				fmt.Println("Usage: list models|providers")
+				// CONST-046 round-194: same usage key as empty-args branch.
+				fmt.Println(tr("llmsverifier_interactive_list_usage"))
 			}
 		case "verify":
 			if len(args) < 2 {

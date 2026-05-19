@@ -31,3 +31,20 @@ func tr(id string) string {
 	}
 	return s
 }
+
+// trData is the parameterised companion to tr — used by call sites that
+// previously emitted fmt.Printf with substitution placeholders. The
+// translator backend is responsible for materialising the placeholders
+// against its own template syntax (go-i18n {{.field}}, ICU {field}, etc.);
+// NoopTranslator still returns the messageID verbatim so tests can assert
+// the i18n-routed sentinel without coupling to a specific backend.
+// Round-194 migration introduces this helper to keep tr() backward-
+// compatible while serving parameterised sites (Exported %d models …,
+// Verification started for model %s, etc.).
+func trData(id string, data map[string]any) string {
+	s, err := translator.T(context.Background(), id, data)
+	if err != nil {
+		return id
+	}
+	return s
+}

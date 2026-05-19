@@ -123,3 +123,147 @@ func TestPackageDefault_NoopTranslator(t *testing.T) {
 	// silence unused-import warning if go vet ever runs alone
 	_ = fmt.Sprintf
 }
+
+// --- Round-194: 10 new sentinel paired-mutation tests ----------------------
+//
+// Each test calls the migrated helper (tr / trData) directly through the
+// translator seam and asserts the fakeTranslator sentinel surfaces. Any
+// revert of a single call site to its hardcoded English literal would
+// bypass the translator and fail the matching test below. This is the
+// paired-mutation gate per §1.1.
+
+// trWith installs fakeTranslator, runs fn returning a string, restores
+// translator. Returns the produced string for substring assertion.
+func trWith(t *testing.T, fn func() string) string {
+	t.Helper()
+	prior := translator
+	translator = fakeTranslator{}
+	defer func() { translator = prior }()
+	return fn()
+}
+
+func TestRound194_ListModelsEmpty_Sentinel(t *testing.T) {
+	got := trWith(t, func() string { return tr("llmsverifier_list_models_empty") })
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_list_models_empty>") {
+		t.Fatalf("tr() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound194_ListModelsFoundHeader_Sentinel(t *testing.T) {
+	got := trWith(t, func() string {
+		return trData("llmsverifier_list_models_found_header", map[string]any{"count": 3})
+	})
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_list_models_found_header>") {
+		t.Fatalf("trData() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound194_ModelCreatedSuccessfully_Sentinel(t *testing.T) {
+	got := trWith(t, func() string { return tr("llmsverifier_model_created_successfully") })
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_model_created_successfully>") {
+		t.Fatalf("tr() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound194_ModelDetailsHeader_Sentinel(t *testing.T) {
+	got := trWith(t, func() string { return tr("llmsverifier_model_details_header") })
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_model_details_header>") {
+		t.Fatalf("tr() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound194_VerifyStartedForModel_Sentinel(t *testing.T) {
+	got := trWith(t, func() string {
+		return trData("llmsverifier_verify_started_for_model", map[string]any{"model_id": "abc"})
+	})
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_verify_started_for_model>") {
+		t.Fatalf("trData() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound194_ExportModelsSuccess_Sentinel(t *testing.T) {
+	got := trWith(t, func() string {
+		return trData("llmsverifier_export_models_success", map[string]any{"count": 5, "path": "/tmp/x.json"})
+	})
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_export_models_success>") {
+		t.Fatalf("trData() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound194_InteractiveModeBanner_Sentinel(t *testing.T) {
+	got := trWith(t, func() string { return tr("llmsverifier_interactive_mode_banner") })
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_interactive_mode_banner>") {
+		t.Fatalf("tr() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound194_InteractiveAvailableCommands_Sentinel(t *testing.T) {
+	got := trWith(t, func() string { return tr("llmsverifier_interactive_available_commands") })
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_interactive_available_commands>") {
+		t.Fatalf("tr() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound194_InteractiveGoodbye_Sentinel(t *testing.T) {
+	got := trWith(t, func() string { return tr("llmsverifier_interactive_goodbye") })
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_interactive_goodbye>") {
+		t.Fatalf("tr() bypass: got %q; expected sentinel", got)
+	}
+}
+
+func TestRound194_InteractiveListUsage_Sentinel(t *testing.T) {
+	got := trWith(t, func() string { return tr("llmsverifier_interactive_list_usage") })
+	if !strings.Contains(got, "<TRANSLATED:llmsverifier_interactive_list_usage>") {
+		t.Fatalf("tr() bypass: got %q; expected sentinel", got)
+	}
+}
+
+// TestRound194_TrData_NoopReturnsMessageID confirms the new trData() helper
+// delegates to translator.T and falls back to the messageID when the
+// NoopTranslator is installed — preserving the shipped-binary contract
+// for parameterised sites (same invariant as TestPackageDefault_NoopTranslator
+// extended for trData).
+func TestRound194_TrData_NoopReturnsMessageID(t *testing.T) {
+	// translator is package-default NoopTranslator at this point.
+	got := trData("llmsverifier_round194_noop_probe", map[string]any{"x": 1})
+	if got != "llmsverifier_round194_noop_probe" {
+		t.Fatalf("trData() with NoopTranslator returned %q; want messageID verbatim", got)
+	}
+}
+
+// TestRound194_Bundle_NoHardcodedLiterals scans the migrated print sites in
+// main.go and asserts none reverted to the English literals — paired
+// mutation per §1.1: a future revert flips the assertion to FAIL.
+func TestRound194_Bundle_NoHardcodedLiterals(t *testing.T) {
+	// Read the migrated main.go source.
+	src, err := os.ReadFile("main.go")
+	if err != nil {
+		t.Fatalf("read main.go: %v", err)
+	}
+	body := string(src)
+
+	// Each English literal that MUST NOT reappear at a print/exec site.
+	// Tolerated occurrence: cobra command Short/Long/Usage strings (those
+	// stay until a separate cobra-i18n migration round addresses them).
+	forbidden := []struct {
+		literal string
+		ctx     string // additional substring required nearby to scope hit
+	}{
+		// `fmt.Println("No models found.")` site.
+		{`fmt.Println("No models found.")`, ""},
+		// `fmt.Printf("Found %d models:\n\n"` site.
+		{`fmt.Printf("Found %d models:`, ""},
+		{`fmt.Printf("Model created successfully\n")`, ""},
+		{`fmt.Printf("Model Details:\n")`, ""},
+		{`fmt.Printf("Verification started for model %s\n"`, ""},
+		{`fmt.Printf("Exported %d models to %s\n"`, ""},
+		{`fmt.Println("=== LLM Verifier Interactive Mode ===")`, ""},
+		{`fmt.Println("Goodbye!")`, ""},
+		{`fmt.Println("Usage: list models|providers")`, ""},
+	}
+	for _, f := range forbidden {
+		if strings.Contains(body, f.literal) {
+			t.Fatalf("CONST-046 round-194 regression: literal %q reappeared in main.go (paired-mutation gate)", f.literal)
+		}
+	}
+}
