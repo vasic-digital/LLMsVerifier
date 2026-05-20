@@ -29,33 +29,33 @@ func main() {
 	case "status":
 		handleStatus()
 	default:
-		fmt.Printf("Unknown command: %s\n", command)
+		fmt.Println(trData("llmsverifier_partners_unknown_command", map[string]any{"command": command}))
 		printUsage()
 		os.Exit(1)
 	}
 }
 
 func printUsage() {
-	fmt.Println("LLM Verifier Partner Integrations")
+	fmt.Println(tr("llmsverifier_partners_usage_title"))
 	fmt.Println()
-	fmt.Println("Usage:")
-	fmt.Println("  partners list                          List all integrations")
-	fmt.Println("  partners add <type> <name> [config]    Add new integration")
-	fmt.Println("  partners remove <id>                   Remove integration")
-	fmt.Println("  partners sync <id>                     Sync integration")
-	fmt.Println("  partners status <id>                   Show integration status")
+	fmt.Println(tr("llmsverifier_partners_usage_heading"))
+	fmt.Println(tr("llmsverifier_partners_usage_list"))
+	fmt.Println(tr("llmsverifier_partners_usage_add"))
+	fmt.Println(tr("llmsverifier_partners_usage_remove"))
+	fmt.Println(tr("llmsverifier_partners_usage_sync"))
+	fmt.Println(tr("llmsverifier_partners_usage_status"))
 	fmt.Println()
-	fmt.Println("Supported integration types:")
-	fmt.Println("  opencode     OpenCode AI assistant")
-	fmt.Println("  claude_code  Anthropic Claude Code")
-	fmt.Println("  cursor       Cursor IDE")
-	fmt.Println("  vscode       Visual Studio Code")
-	fmt.Println("  jetbrains    JetBrains IDEs")
-	fmt.Println("  github       GitHub")
+	fmt.Println(tr("llmsverifier_partners_types_heading"))
+	fmt.Println(tr("llmsverifier_partners_type_opencode"))
+	fmt.Println(tr("llmsverifier_partners_type_claude_code"))
+	fmt.Println(tr("llmsverifier_partners_type_cursor"))
+	fmt.Println(tr("llmsverifier_partners_type_vscode"))
+	fmt.Println(tr("llmsverifier_partners_type_jetbrains"))
+	fmt.Println(tr("llmsverifier_partners_type_github"))
 	fmt.Println()
-	fmt.Println("Examples:")
-	fmt.Println("  partners add opencode \"My OpenCode\" --base-url https://opencode.example.com --api-key abc123")
-	fmt.Println("  partners sync opencode-123")
+	fmt.Println(tr("llmsverifier_partners_examples_heading"))
+	fmt.Println(tr("llmsverifier_partners_example_add"))
+	fmt.Println(tr("llmsverifier_partners_example_sync"))
 }
 
 func handleList() {
@@ -63,7 +63,7 @@ func handleList() {
 	// For demo, show predefined integrations
 	integrations := getPredefinedIntegrations()
 
-	fmt.Println("Partner Integrations:")
+	fmt.Println(tr("llmsverifier_partners_list_heading"))
 	fmt.Println("====================")
 
 	for _, integration := range integrations {
@@ -74,7 +74,9 @@ func handleList() {
 
 		fmt.Printf("%s %s (%s) - %s\n", status, integration.Name, integration.Type, integration.Description)
 		if integration.LastSync != nil {
-			fmt.Printf("  Last sync: %s\n", integration.LastSync.Format("2006-01-02 15:04:05"))
+			fmt.Println(trData("llmsverifier_partners_last_sync_indented", map[string]any{
+				"time": integration.LastSync.Format("2006-01-02 15:04:05"),
+			}))
 		}
 		fmt.Println()
 	}
@@ -82,7 +84,7 @@ func handleList() {
 
 func handleAdd() {
 	if len(os.Args) < 4 {
-		fmt.Println("Error: add command requires type and name")
+		fmt.Println(tr("llmsverifier_partners_err_add_args"))
 		os.Exit(1)
 	}
 
@@ -126,25 +128,27 @@ func handleAdd() {
 	// In real implementation, register with manager
 	// For demo, just show success message
 
-	fmt.Printf("Added integration: %s (%s)\n", integration.Name, integration.ID)
-	fmt.Printf("Type: %s\n", integration.Type)
-	fmt.Printf("Capabilities: %v\n", integration.Capabilities)
+	fmt.Println(trData("llmsverifier_partners_added_integration", map[string]any{
+		"name": integration.Name, "id": integration.ID,
+	}))
+	fmt.Println(trData("llmsverifier_partners_field_type", map[string]any{"type": integration.Type}))
+	fmt.Println(trData("llmsverifier_partners_field_capabilities", map[string]any{"capabilities": integration.Capabilities}))
 }
 
 func handleRemove() {
 	if len(os.Args) < 3 {
-		fmt.Println("Error: remove command requires integration ID")
+		fmt.Println(tr("llmsverifier_partners_err_remove_args"))
 		os.Exit(1)
 	}
 
 	id := os.Args[2]
-	fmt.Printf("Removed integration: %s\n", id)
+	fmt.Println(trData("llmsverifier_partners_removed_integration", map[string]any{"id": id}))
 	// In real implementation, remove from storage
 }
 
 func handleSync() {
 	if len(os.Args) < 3 {
-		fmt.Println("Error: sync command requires integration name or ID")
+		fmt.Println(tr("llmsverifier_partners_err_sync_args"))
 		os.Exit(1)
 	}
 
@@ -165,7 +169,7 @@ func handleSync() {
 		log.Fatalf("Integration not found: %s", nameOrID)
 	}
 
-	fmt.Printf("Syncing integration: %s...\n", targetIntegration.Name)
+	fmt.Println(trData("llmsverifier_partners_syncing_integration", map[string]any{"name": targetIntegration.Name}))
 
 	// Create manager and register integration for sync
 	manager := partners.NewIntegrationManager()
@@ -179,15 +183,17 @@ func handleSync() {
 		log.Fatalf("Sync failed: %v", err)
 	}
 
-	fmt.Printf("Successfully synced: %s\n", targetIntegration.Name)
+	fmt.Println(trData("llmsverifier_partners_synced_success", map[string]any{"name": targetIntegration.Name}))
 	if targetIntegration.LastSync != nil {
-		fmt.Printf("Last sync: %s\n", targetIntegration.LastSync.Format("2006-01-02 15:04:05"))
+		fmt.Println(trData("llmsverifier_partners_last_sync", map[string]any{
+			"time": targetIntegration.LastSync.Format("2006-01-02 15:04:05"),
+		}))
 	}
 }
 
 func handleStatus() {
 	if len(os.Args) < 3 {
-		fmt.Println("Error: status command requires integration ID")
+		fmt.Println(tr("llmsverifier_partners_err_status_args"))
 		os.Exit(1)
 	}
 
@@ -208,21 +214,23 @@ func handleStatus() {
 		log.Fatalf("Integration not found: %s", id)
 	}
 
-	fmt.Printf("Integration Status: %s\n", targetIntegration.Name)
-	fmt.Printf("ID: %s\n", targetIntegration.ID)
-	fmt.Printf("Type: %s\n", targetIntegration.Type)
-	fmt.Printf("Status: %s\n", targetIntegration.Status)
-	fmt.Printf("Version: %s\n", targetIntegration.Version)
+	fmt.Println(trData("llmsverifier_partners_status_heading", map[string]any{"name": targetIntegration.Name}))
+	fmt.Println(trData("llmsverifier_partners_field_id", map[string]any{"id": targetIntegration.ID}))
+	fmt.Println(trData("llmsverifier_partners_field_type", map[string]any{"type": targetIntegration.Type}))
+	fmt.Println(trData("llmsverifier_partners_field_status", map[string]any{"status": targetIntegration.Status}))
+	fmt.Println(trData("llmsverifier_partners_field_version", map[string]any{"version": targetIntegration.Version}))
 
 	if targetIntegration.LastSync != nil {
-		fmt.Printf("Last Sync: %s\n", targetIntegration.LastSync.Format("2006-01-02 15:04:05"))
+		fmt.Println(trData("llmsverifier_partners_field_last_sync", map[string]any{
+			"time": targetIntegration.LastSync.Format("2006-01-02 15:04:05"),
+		}))
 	}
 
 	if targetIntegration.ErrorMessage != "" {
-		fmt.Printf("Error: %s\n", targetIntegration.ErrorMessage)
+		fmt.Println(trData("llmsverifier_partners_field_error", map[string]any{"error": targetIntegration.ErrorMessage}))
 	}
 
-	fmt.Printf("Capabilities: %v\n", targetIntegration.Capabilities)
+	fmt.Println(trData("llmsverifier_partners_field_capabilities", map[string]any{"capabilities": targetIntegration.Capabilities}))
 }
 
 // Helper functions

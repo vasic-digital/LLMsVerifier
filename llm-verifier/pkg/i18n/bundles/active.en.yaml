@@ -1189,3 +1189,82 @@ llmsverifier_ai_rec_reason_highly_reliable:
   other: "Highly reliable"
 llmsverifier_ai_rec_reason_good_general_purpose:
   other: "Good general-purpose model"
+
+# --- Round-411 (Phase 4 round 28): cmd/partners CLI i18n seam ---
+# User-facing output of the `partners` CLI tool (cmd/partners/main.go) —
+# usage banner, list/add/remove/sync/status command output, and the
+# argument-validation error messages.
+llmsverifier_partners_unknown_command:
+  other: "Unknown command: {{.command}}"
+llmsverifier_partners_usage_title:
+  other: "LLM Verifier Partner Integrations"
+llmsverifier_partners_usage_heading:
+  other: "Usage:"
+llmsverifier_partners_usage_list:
+  other: "  partners list                          List all integrations"
+llmsverifier_partners_usage_add:
+  other: "  partners add <type> <name> [config]    Add new integration"
+llmsverifier_partners_usage_remove:
+  other: "  partners remove <id>                   Remove integration"
+llmsverifier_partners_usage_sync:
+  other: "  partners sync <id>                     Sync integration"
+llmsverifier_partners_usage_status:
+  other: "  partners status <id>                   Show integration status"
+llmsverifier_partners_types_heading:
+  other: "Supported integration types:"
+llmsverifier_partners_type_opencode:
+  other: "  opencode     OpenCode AI assistant"
+llmsverifier_partners_type_claude_code:
+  other: "  claude_code  Anthropic Claude Code"
+llmsverifier_partners_type_cursor:
+  other: "  cursor       Cursor IDE"
+llmsverifier_partners_type_vscode:
+  other: "  vscode       Visual Studio Code"
+llmsverifier_partners_type_jetbrains:
+  other: "  jetbrains    JetBrains IDEs"
+llmsverifier_partners_type_github:
+  other: "  github       GitHub"
+llmsverifier_partners_examples_heading:
+  other: "Examples:"
+llmsverifier_partners_example_add:
+  other: "  partners add opencode \"My OpenCode\" --base-url https://opencode.example.com --api-key abc123"
+llmsverifier_partners_example_sync:
+  other: "  partners sync opencode-123"
+llmsverifier_partners_list_heading:
+  other: "Partner Integrations:"
+llmsverifier_partners_last_sync_indented:
+  other: "  Last sync: {{.time}}"
+llmsverifier_partners_err_add_args:
+  other: "Error: add command requires type and name"
+llmsverifier_partners_added_integration:
+  other: "Added integration: {{.name}} ({{.id}})"
+llmsverifier_partners_err_remove_args:
+  other: "Error: remove command requires integration ID"
+llmsverifier_partners_removed_integration:
+  other: "Removed integration: {{.id}}"
+llmsverifier_partners_err_sync_args:
+  other: "Error: sync command requires integration name or ID"
+llmsverifier_partners_syncing_integration:
+  other: "Syncing integration: {{.name}}..."
+llmsverifier_partners_synced_success:
+  other: "Successfully synced: {{.name}}"
+llmsverifier_partners_last_sync:
+  other: "Last sync: {{.time}}"
+llmsverifier_partners_err_status_args:
+  other: "Error: status command requires integration ID"
+llmsverifier_partners_status_heading:
+  other: "Integration Status: {{.name}}"
+llmsverifier_partners_field_id:
+  other: "ID: {{.id}}"
+llmsverifier_partners_field_type:
+  other: "Type: {{.type}}"
+llmsverifier_partners_field_status:
+  other: "Status: {{.status}}"
+llmsverifier_partners_field_version:
+  other: "Version: {{.version}}"
+llmsverifier_partners_field_last_sync:
+  other: "Last Sync: {{.time}}"
+llmsverifier_partners_field_error:
+  other: "Error: {{.error}}"
+llmsverifier_partners_field_capabilities:
+  other: "Capabilities: {{.capabilities}}"
