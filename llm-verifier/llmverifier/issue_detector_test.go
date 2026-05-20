@@ -49,7 +49,9 @@ func TestIssueDetector_detectIssues_LowOverallScore(t *testing.T) {
 	for _, issue := range issues {
 		if issue.IssueType == "performance" && issue.Severity == "critical" {
 			found = true
-			assert.Equal(t, "Severely Underperforming Model", issue.Title)
+			// CONST-046 round-388: Title is i18n-routed; NoopTranslator
+			// returns the message ID verbatim.
+			assert.Equal(t, tr("issue.underperforming.title"), issue.Title)
 			break
 		}
 	}
@@ -77,7 +79,7 @@ func TestIssueDetector_detectIssues_LowCodeCapability(t *testing.T) {
 
 	found := false
 	for _, issue := range issues {
-		if issue.IssueType == "capability" && issue.Title == "Poor Code Generation Capability" {
+		if issue.IssueType == "capability" && issue.Title == tr("issue.poor_code.title") {
 			found = true
 			assert.Equal(t, "high", issue.Severity)
 			assert.Contains(t, issue.AffectedFeatures, "code_generation")
@@ -111,7 +113,7 @@ func TestIssueDetector_detectIssues_LowReliability(t *testing.T) {
 		if issue.IssueType == "reliability" {
 			found = true
 			assert.Equal(t, "high", issue.Severity)
-			assert.Equal(t, "Unreliable Model Responses", issue.Title)
+			assert.Equal(t, tr("issue.unreliable.title"), issue.Title)
 			break
 		}
 	}
@@ -141,7 +143,7 @@ func TestIssueDetector_detectIssues_SlowResponseTimes(t *testing.T) {
 	for _, issue := range issues {
 		if issue.IssueType == "performance" && issue.Severity == "medium" {
 			found = true
-			assert.Equal(t, "Slow Response Times", issue.Title)
+			assert.Equal(t, tr("issue.slow_response.title"), issue.Title)
 			break
 		}
 	}
@@ -169,7 +171,7 @@ func TestIssueDetector_detectIssues_MissingToolUse(t *testing.T) {
 
 	found := false
 	for _, issue := range issues {
-		if issue.IssueType == "capability" && issue.Title == "Missing Tool Use Capabilities" {
+		if issue.IssueType == "capability" && issue.Title == tr("issue.missing_tool_use.title") {
 			found = true
 			assert.Equal(t, "medium", issue.Severity)
 			assert.Contains(t, issue.AffectedFeatures, "tool_use")

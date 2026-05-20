@@ -48,8 +48,8 @@ func (id *IssueDetector) detectIssues(result *VerificationResult) []*database.Is
 			ModelID:          0, // Will be set when creating
 			IssueType:        "performance",
 			Severity:         "critical",
-			Title:            "Severely Underperforming Model",
-			Description:      "Model has critically low performance scores",
+			Title:            tr("issue.underperforming.title"),
+			Description:      tr("issue.underperforming.description"),
 			AffectedFeatures: []string{"all"},
 			FirstDetected:    now,
 			LastOccurred:     &now,
@@ -63,8 +63,8 @@ func (id *IssueDetector) detectIssues(result *VerificationResult) []*database.Is
 			ModelID:          0,
 			IssueType:        "capability",
 			Severity:         "high",
-			Title:            "Poor Code Generation Capability",
-			Description:      "Model struggles significantly with code-related tasks",
+			Title:            tr("issue.poor_code.title"),
+			Description:      tr("issue.poor_code.description"),
 			AffectedFeatures: []string{"code_generation", "code_review", "code_explanation"},
 			FirstDetected:    now,
 			LastOccurred:     &now,
@@ -77,8 +77,8 @@ func (id *IssueDetector) detectIssues(result *VerificationResult) []*database.Is
 			ModelID:          0,
 			IssueType:        "reliability",
 			Severity:         "high",
-			Title:            "Unreliable Model Responses",
-			Description:      "Model exhibits high error rates or inconsistent behavior",
+			Title:            tr("issue.unreliable.title"),
+			Description:      tr("issue.unreliable.description"),
 			AffectedFeatures: []string{"reliability"},
 		})
 	}
@@ -89,8 +89,8 @@ func (id *IssueDetector) detectIssues(result *VerificationResult) []*database.Is
 			ModelID:          0,
 			IssueType:        "performance",
 			Severity:         "medium",
-			Title:            "Slow Response Times",
-			Description:      "Model has slow response times affecting user experience",
+			Title:            tr("issue.slow_response.title"),
+			Description:      tr("issue.slow_response.description"),
 			AffectedFeatures: []string{"responsiveness"},
 		})
 	}
@@ -101,8 +101,8 @@ func (id *IssueDetector) detectIssues(result *VerificationResult) []*database.Is
 			ModelID:          0,
 			IssueType:        "capability",
 			Severity:         "medium",
-			Title:            "Missing Tool Use Capabilities",
-			Description:      "Model does not support tool use or function calling",
+			Title:            tr("issue.missing_tool_use.title"),
+			Description:      tr("issue.missing_tool_use.description"),
 			AffectedFeatures: []string{"tool_use", "function_calling"},
 		})
 	}
@@ -114,8 +114,8 @@ func (id *IssueDetector) detectIssues(result *VerificationResult) []*database.Is
 			ModelID:          0,
 			IssueType:        "connectivity",
 			Severity:         "high",
-			Title:            "Network Connectivity Issues",
-			Description:      "Model experiences network or API connectivity problems",
+			Title:            tr("issue.connectivity.title"),
+			Description:      tr("issue.connectivity.description"),
 			AffectedFeatures: []string{"connectivity"},
 		})
 	}
@@ -127,8 +127,8 @@ func (id *IssueDetector) detectIssues(result *VerificationResult) []*database.Is
 			ModelID:          0,
 			IssueType:        "authentication",
 			Severity:         "critical",
-			Title:            "Authentication Problems",
-			Description:      "Model has authentication or authorization issues",
+			Title:            tr("issue.authentication.title"),
+			Description:      tr("issue.authentication.description"),
 			AffectedFeatures: []string{"authentication"},
 		})
 	}
@@ -175,7 +175,7 @@ func (id *IssueDetector) createOrUpdateIssue(issue *database.Issue, result *Veri
 	event := events.CreateEventWithDetails(
 		events.EventIssueDetected,
 		id.mapSeverityToEventSeverity(issue.Severity),
-		fmt.Sprintf("Issue Detected: %s", issue.Title),
+		fmt.Sprintf("%s %s", tr("issue.event.detected_prefix"), issue.Title),
 		issue.Description,
 		map[string]interface{}{
 			"model_id":          issue.ModelID,

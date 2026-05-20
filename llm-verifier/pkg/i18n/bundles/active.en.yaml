@@ -1055,3 +1055,37 @@ llmsverifier_testsuite_created_template:
   other: "Created template: {{.name}} ({{.count}} test cases)"
 llmsverifier_testsuite_use_list_hint:
   other: "Use 'testsuite list' to see available suites"
+
+# CONST-046 round-388: issue-detector auto-detected issue titles + descriptions
+# (llmverifier/issue_detector.go detectIssues + createOrUpdateIssue). These are
+# user-facing strings surfaced on detected-issue events and the issues tracker.
+issue.underperforming.title:
+  other: "Severely Underperforming Model"
+issue.underperforming.description:
+  other: "Model has critically low performance scores"
+issue.poor_code.title:
+  other: "Poor Code Generation Capability"
+issue.poor_code.description:
+  other: "Model struggles significantly with code-related tasks"
+issue.unreliable.title:
+  other: "Unreliable Model Responses"
+issue.unreliable.description:
+  other: "Model exhibits high error rates or inconsistent behavior"
+issue.slow_response.title:
+  other: "Slow Response Times"
+issue.slow_response.description:
+  other: "Model has slow response times affecting user experience"
+issue.missing_tool_use.title:
+  other: "Missing Tool Use Capabilities"
+issue.missing_tool_use.description:
+  other: "Model does not support tool use or function calling"
+issue.connectivity.title:
+  other: "Network Connectivity Issues"
+issue.connectivity.description:
+  other: "Model experiences network or API connectivity problems"
+issue.authentication.title:
+  other: "Authentication Problems"
+issue.authentication.description:
+  other: "Model has authentication or authorization issues"
+issue.event.detected_prefix:
+  other: "Issue Detected:"
