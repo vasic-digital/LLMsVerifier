@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/gin-gonic/gin"
 )
 
 // fakeTranslator returns "<TRANSLATED:msg_id>" so tests can assert the
@@ -137,4 +139,91 @@ func containsTranslated(violations []ComplianceViolation) bool {
 		}
 	}
 	return false
+}
+
+// TestGetValidationErrors_RouteThroughTranslator drives GetValidationErrors
+// (api/validation.go) through every validator tag branch and asserts each
+// produced field-error message routes through the i18n seam. Paired-mutation
+// anti-bluff per CONST-035 / CONST-046: if any branch regressed to a
+// hardcoded English literal, the "<TRANSLATED:...>" sentinel would be absent
+// and the corresponding sub-assertion fails.
+func TestGetValidationErrors_RouteThroughTranslator(t *testing.T) {
+	type tagStruct struct {
+		Req   string `binding:"required"`
+		Min   string `binding:"omitempty,min=5"`
+		Max   string `binding:"omitempty,max=2"`
+		Len   string `binding:"omitempty,len=4"`
+		Email string `binding:"omitempty,email"`
+		URL   string `binding:"omitempty,url"`
+		OneOf string `binding:"omitempty,oneof=a b c"`
+		Gt    int    `binding:"omitempty,gt=10"`
+		Gte   int    `binding:"omitempty,gte=10"`
+		Lt    int    `binding:"omitempty,lt=1"`
+		Lte   int    `binding:"omitempty,lte=1"`
+		Eq    int    `binding:"omitempty,eq=7"`
+		Ne    int    `binding:"omitempty,ne=3"`
+	}
+
+	withFakeTranslator(t, func() {
+		// Values deliberately chosen so every constraint is violated.
+		bad := tagStruct{
+			Min: "ab", Max: "abcdef", Len: "abcdefg",
+			Email: "not-an-email", URL: "not a url", OneOf: "z",
+			Gt: 1, Gte: 1, Lt: 99, Lte: 99, Eq: 1, Ne: 3,
+		}
+		err := ValidateRequest(bad)
+		if err == nil {
+			t.Fatal("expected validation errors from constraint-violating struct")
+		}
+		errs := GetValidationErrors(err)
+		if len(errs) == 0 {
+			t.Fatal("GetValidationErrors returned no field errors")
+		}
+		for field, msg := range errs {
+			if !strings.HasPrefix(msg, "<TRANSLATED:") {
+				t.Errorf("field %q error message not routed through translator: %q", field, msg)
+			}
+		}
+	})
+}
+
+// TestErrorHandlers_RouteThroughTranslator exercises the REST error helpers
+// in api/errors.go and asserts each user-facing error message routes through
+// the i18n seam. Paired-mutation: a regressed call-site emitting a hardcoded
+// literal drops the sentinel and fails the matching sub-assertion.
+func TestErrorHandlers_RouteThroughTranslator(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	type errCase struct {
+		name   string
+		invoke func(*gin.Context)
+	}
+	cases := []errCase{
+		{"unauthorized_default", func(c *gin.Context) { HandleUnauthorizedError(c, "") }},
+		{"forbidden_default", func(c *gin.Context) { HandleForbiddenError(c, "") }},
+		{"internal", func(c *gin.Context) { HandleInternalError(c, context.DeadlineExceeded) }},
+		{"database", func(c *gin.Context) { HandleDatabaseError(c, context.DeadlineExceeded) }},
+		{"rate_limit", func(c *gin.Context) { HandleRateLimitError(c, 30) }},
+	}
+
+	withFakeTranslator(t, func() {
+		for _, tc := range cases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				rec := httptest.NewRecorder()
+				c, _ := gin.CreateTestContext(rec)
+				c.Request = httptest.NewRequest(http.MethodGet, "/x", nil)
+				tc.invoke(c)
+				// gin's JSON renderer HTML-escapes the sentinel's
+				// leading "<" into a < unicode sequence, so we
+				// assert on the "TRANSLATED:<id>" core — its presence
+				// proves the message routed through the translator
+				// rather than a hardcoded English literal.
+				body := rec.Body.String()
+				if !strings.Contains(body, "TRANSLATED:") {
+					t.Errorf("%s: response body has no translator-routed message: %s", tc.name, body)
+				}
+			})
+		}
+	})
 }

@@ -665,35 +665,35 @@ func GetValidationErrors(err error) map[string]string {
 
 			switch tag {
 			case "required":
-				errors[field] = "This field is required"
+				errors[field] = tr("api.validation.required")
 			case "min":
-				errors[field] = fmt.Sprintf("Value must be at least %s", param)
+				errors[field] = trData("api.validation.min", map[string]any{"param": param})
 			case "max":
-				errors[field] = fmt.Sprintf("Value must be at most %s", param)
+				errors[field] = trData("api.validation.max", map[string]any{"param": param})
 			case "len":
-				errors[field] = fmt.Sprintf("Value must be exactly %s characters", param)
+				errors[field] = trData("api.validation.len", map[string]any{"param": param})
 			case "email":
-				errors[field] = "Invalid email format"
+				errors[field] = tr("api.validation.email")
 			case "url":
-				errors[field] = "Invalid URL format"
+				errors[field] = tr("api.validation.url")
 			case "alphanumspace":
-				errors[field] = "Only alphanumeric characters, spaces, hyphens, underscores, and periods are allowed"
+				errors[field] = tr("api.validation.alphanumspace")
 			case "oneof":
-				errors[field] = "Invalid value. Must be one of the allowed values"
+				errors[field] = tr("api.validation.oneof")
 			case "gt":
-				errors[field] = fmt.Sprintf("Value must be greater than %s", param)
+				errors[field] = trData("api.validation.gt", map[string]any{"param": param})
 			case "gte":
-				errors[field] = fmt.Sprintf("Value must be greater than or equal to %s", param)
+				errors[field] = trData("api.validation.gte", map[string]any{"param": param})
 			case "lt":
-				errors[field] = fmt.Sprintf("Value must be less than %s", param)
+				errors[field] = trData("api.validation.lt", map[string]any{"param": param})
 			case "lte":
-				errors[field] = fmt.Sprintf("Value must be less than or equal to %s", param)
+				errors[field] = trData("api.validation.lte", map[string]any{"param": param})
 			case "eq":
-				errors[field] = fmt.Sprintf("Value must be equal to %s", param)
+				errors[field] = trData("api.validation.eq", map[string]any{"param": param})
 			case "ne":
-				errors[field] = fmt.Sprintf("Value must not be equal to %s", param)
+				errors[field] = trData("api.validation.ne", map[string]any{"param": param})
 			default:
-				errors[field] = "Invalid value"
+				errors[field] = tr("api.validation.invalid_value")
 			}
 		}
 	}

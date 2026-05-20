@@ -143,7 +143,9 @@ func TestHandleUnauthorizedError(t *testing.T) {
 		expectedMessage string
 	}{
 		{"with message", "Custom auth error", "Custom auth error"},
-		{"without message", "", "Authentication required"},
+		// Empty message routes through the i18n seam (CONST-046); the
+		// default NoopTranslator returns the message ID verbatim.
+		{"without message", "", "api.error.authentication_required"},
 	}
 
 	for _, tt := range tests {
@@ -172,7 +174,9 @@ func TestHandleForbiddenError(t *testing.T) {
 		expectedMessage string
 	}{
 		{"with message", "Access denied", "Access denied"},
-		{"without message", "", "Insufficient permissions"},
+		// Empty message routes through the i18n seam (CONST-046); the
+		// default NoopTranslator returns the message ID verbatim.
+		{"without message", "", "api.error.insufficient_permissions"},
 	}
 
 	for _, tt := range tests {
@@ -207,7 +211,9 @@ func TestHandleInternalError(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, ErrCodeInternal, response.Code)
-	assert.Equal(t, "Internal server error", response.Message)
+	// Message routes through the i18n seam (CONST-046); the default
+	// NoopTranslator returns the message ID verbatim.
+	assert.Equal(t, "api.error.internal_server_error", response.Message)
 }
 
 func TestHandleDatabaseError(t *testing.T) {
@@ -223,7 +229,9 @@ func TestHandleDatabaseError(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, ErrCodeDatabase, response.Code)
-	assert.Equal(t, "Database operation failed", response.Message)
+	// Message routes through the i18n seam (CONST-046); the default
+	// NoopTranslator returns the message ID verbatim.
+	assert.Equal(t, "api.error.database_operation_failed", response.Message)
 }
 
 func TestHandleConflictError(t *testing.T) {
@@ -259,7 +267,9 @@ func TestHandleRateLimitError(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, ErrCodeRateLimit, response.Code)
-	assert.Equal(t, "Rate limit exceeded", response.Message)
+	// Message routes through the i18n seam (CONST-046); the default
+	// NoopTranslator returns the message ID verbatim.
+	assert.Equal(t, "api.error.rate_limit_exceeded", response.Message)
 	assert.Equal(t, "60", response.Details["retry_after_seconds"])
 }
 
@@ -277,7 +287,9 @@ func TestHandleValidationError(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, ErrCodeValidation, response.Code)
-		assert.Equal(t, "Invalid request format", response.Message)
+		// Message routes through the i18n seam (CONST-046); the default
+		// NoopTranslator returns the message ID verbatim.
+		assert.Equal(t, "api.error.invalid_request_format", response.Message)
 		assert.NotEmpty(t, response.Details["error"])
 	})
 }

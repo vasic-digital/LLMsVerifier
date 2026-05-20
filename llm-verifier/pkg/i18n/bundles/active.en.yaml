@@ -691,3 +691,167 @@ enterprise.message.tenant_created_successfully:
 
 enterprise.message.tenant_operations:
   other: "Tenant operations"
+
+# --- round-363: api package request-validation + REST error messages ---
+# Migrated from hardcoded literals in api/validation.go (GetValidationErrors,
+# the user-friendly field-error formatter) and api/errors.go (REST error
+# handlers). {{.param}} carries the validator tag parameter (min/max bound,
+# allowed length, comparison operand).
+api.validation.required:
+  other: "This field is required"
+
+api.validation.min:
+  other: "Value must be at least {{.param}}"
+
+api.validation.max:
+  other: "Value must be at most {{.param}}"
+
+api.validation.len:
+  other: "Value must be exactly {{.param}} characters"
+
+api.validation.email:
+  other: "Invalid email format"
+
+api.validation.url:
+  other: "Invalid URL format"
+
+api.validation.alphanumspace:
+  other: "Only alphanumeric characters, spaces, hyphens, underscores, and periods are allowed"
+
+api.validation.oneof:
+  other: "Invalid value. Must be one of the allowed values"
+
+api.validation.gt:
+  other: "Value must be greater than {{.param}}"
+
+api.validation.gte:
+  other: "Value must be greater than or equal to {{.param}}"
+
+api.validation.lt:
+  other: "Value must be less than {{.param}}"
+
+api.validation.lte:
+  other: "Value must be less than or equal to {{.param}}"
+
+api.validation.eq:
+  other: "Value must be equal to {{.param}}"
+
+api.validation.ne:
+  other: "Value must not be equal to {{.param}}"
+
+api.validation.invalid_value:
+  other: "Invalid value"
+
+api.error.validation_failed:
+  other: "Validation failed"
+
+api.error.invalid_request_format:
+  other: "Invalid request format"
+
+api.error.authentication_required:
+  other: "Authentication required"
+
+api.error.insufficient_permissions:
+  other: "Insufficient permissions"
+
+api.error.internal_server_error:
+  other: "Internal server error"
+
+api.error.database_operation_failed:
+  other: "Database operation failed"
+
+api.error.rate_limit_exceeded:
+  other: "Rate limit exceeded"
+
+# Predictive-analytics recommendation reasoning, trend descriptions, insights
+# and cost-optimization advice migrated from hardcoded English literals
+# (analytics/predictive.go) per CONST-046 round 16.
+analytics.recommendation.performance.groq:
+  other: "Highest throughput and lowest latency"
+
+analytics.recommendation.performance.together:
+  other: "Good performance for complex tasks"
+
+analytics.recommendation.performance.openai:
+  other: "Reliable performance with advanced features"
+
+analytics.recommendation.cost.google:
+  other: "Most cost-effective for large volumes"
+
+analytics.recommendation.cost.together:
+  other: "Competitive pricing with good performance"
+
+analytics.recommendation.cost.anthropic:
+  other: "Higher cost but excellent safety"
+
+analytics.recommendation.reliability.openai:
+  other: "Highest uptime and reliability"
+
+analytics.recommendation.reliability.anthropic:
+  other: "Excellent reliability and safety features"
+
+analytics.recommendation.reliability.google:
+  other: "Strong reliability with global infrastructure"
+
+analytics.recommendation.safety.anthropic:
+  other: "Industry-leading content safety and ethics"
+
+analytics.recommendation.safety.openai:
+  other: "Strong moderation and safety features"
+
+analytics.recommendation.safety.google:
+  other: "Good safety controls and filtering"
+
+analytics.recommendation.context.anthropic:
+  other: "Supports very long context windows"
+
+analytics.recommendation.context.google:
+  other: "Good context length support"
+
+analytics.recommendation.multimodal.openai:
+  other: "Excellent multi-modal capabilities (GPT-4V)"
+
+analytics.recommendation.multimodal.google:
+  other: "Strong vision and multi-modal support"
+
+analytics.recommendation.multimodal.anthropic:
+  other: "Limited multi-modal support currently"
+
+analytics.recommendation.history.past_usage:
+  other: "Based on your successful past usage"
+
+analytics.tradeoff.may_have_higher_costs:
+  other: "May have higher costs"
+
+analytics.tradeoff.premium_pricing:
+  other: "Premium pricing"
+
+analytics.tradeoff.multimodal_developing:
+  other: "Multi-modal features still developing"
+
+analytics.trend.latency_improved:
+  other: "Latency has improved by 15% over the past period"
+
+analytics.trend.success_rate_stable:
+  other: "Success rate has remained stable with slight improvements"
+
+analytics.trend.cost_increased:
+  other: "Costs have increased by 8%, consider optimization"
+
+analytics.insight.switch_groq:
+  other: "Consider switching to Groq for latency-sensitive workloads"
+
+analytics.insight.monitor_cost:
+  other: "Monitor cost increases and evaluate alternative providers"
+
+analytics.insight.success_rate_reliable:
+  other: "Success rate stability indicates good provider reliability"
+
+analytics.cost_rec.provider_switch:
+  other: "Switch from OpenAI to Google for 40% cost reduction on similar performance"
+
+analytics.cost_rec.model_optimization:
+  other: "Use smaller models for simple tasks to reduce costs by 25%"
+
+analytics.cost_rec.caching:
+  other: "Implement response caching to reduce API calls by 30%"

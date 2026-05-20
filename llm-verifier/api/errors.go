@@ -104,12 +104,12 @@ func SendPaginated(c *gin.Context, data interface{}, page, pageSize, totalItems 
 func HandleValidationError(c *gin.Context, err error) {
 	if _, ok := err.(validator.ValidationErrors); ok {
 		details := GetValidationErrors(err)
-		SendError(c, http.StatusBadRequest, ErrCodeValidation, "Validation failed", details)
+		SendError(c, http.StatusBadRequest, ErrCodeValidation, tr("api.error.validation_failed"), details)
 		return
 	}
 
 	// Generic binding error
-	SendError(c, http.StatusBadRequest, ErrCodeValidation, "Invalid request format", map[string]string{
+	SendError(c, http.StatusBadRequest, ErrCodeValidation, tr("api.error.invalid_request_format"), map[string]string{
 		"error": err.Error(),
 	})
 }
@@ -127,7 +127,7 @@ func HandleNotFoundError(c *gin.Context, resource string, id interface{}) {
 // HandleUnauthorizedError handles unauthorized access
 func HandleUnauthorizedError(c *gin.Context, message string) {
 	if message == "" {
-		message = "Authentication required"
+		message = tr("api.error.authentication_required")
 	}
 	SendError(c, http.StatusUnauthorized, ErrCodeUnauthorized, message, nil)
 }
@@ -135,7 +135,7 @@ func HandleUnauthorizedError(c *gin.Context, message string) {
 // HandleForbiddenError handles forbidden access
 func HandleForbiddenError(c *gin.Context, message string) {
 	if message == "" {
-		message = "Insufficient permissions"
+		message = tr("api.error.insufficient_permissions")
 	}
 	SendError(c, http.StatusForbidden, ErrCodeForbidden, message, nil)
 }
@@ -147,7 +147,7 @@ func HandleInternalError(c *gin.Context, err error) {
 
 	// Send generic error to client
 	SendError(c, http.StatusInternalServerError, ErrCodeInternal,
-		"Internal server error", nil)
+		tr("api.error.internal_server_error"), nil)
 }
 
 // HandleDatabaseError handles database errors
@@ -156,7 +156,7 @@ func HandleDatabaseError(c *gin.Context, err error) {
 	log.Printf("Database error: %v", err)
 
 	SendError(c, http.StatusInternalServerError, ErrCodeDatabase,
-		"Database operation failed", nil)
+		tr("api.error.database_operation_failed"), nil)
 }
 
 // HandleConflictError handles conflict errors (e.g., duplicate entries)
@@ -181,7 +181,7 @@ func HandleRateLimitError(c *gin.Context, retryAfter int) {
 	}
 
 	SendError(c, http.StatusTooManyRequests, ErrCodeRateLimit,
-		"Rate limit exceeded",
+		tr("api.error.rate_limit_exceeded"),
 		map[string]string{
 			"retry_after_seconds": fmt.Sprintf("%d", retryAfter),
 		})
