@@ -191,7 +191,7 @@ func (opt *LLMPolicyOptimizer) Apply(ctx context.Context, update *PolicyUpdate) 
 	update.AppliedAt = &now
 	opt.history = append(opt.history, update)
 
-	opt.logger.Printf("Applied policy update: %s", update.ID)
+	opt.logger.Print(trData("selfimprove.log.policy_update_applied", map[string]any{"id": update.ID}))
 	return nil
 }
 
@@ -204,11 +204,11 @@ func (opt *LLMPolicyOptimizer) Rollback(ctx context.Context, updateID string) er
 		if opt.history[i].ID == updateID {
 			opt.currentPolicy = opt.history[i].OldPolicy
 			opt.history = opt.history[:i]
-			opt.logger.Printf("Rolled back policy update: %s", updateID)
+			opt.logger.Print(trData("selfimprove.log.policy_update_rolled_back", map[string]any{"id": updateID}))
 			return nil
 		}
 	}
-	return fmt.Errorf("update not found: %s", updateID)
+	return fmt.Errorf("%s", trData("selfimprove.err.policy_update_not_found", map[string]any{"id": updateID}))
 }
 
 // GetHistory returns policy update history

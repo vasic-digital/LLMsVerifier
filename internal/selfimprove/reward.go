@@ -69,7 +69,7 @@ func (rm *AIRewardModel) scoreWithDebate(ctx context.Context, prompt, response s
 	topic := fmt.Sprintf(`Evaluate quality of: Prompt: %s Response: %s`, prompt, response)
 	result, err := rm.debateService.RunDebate(ctx, topic, nil)
 	if err != nil {
-		rm.logger.Printf("Debate failed, fallback to LLM: %v", err)
+		rm.logger.Print(trData("selfimprove.log.debate_failed_fallback", map[string]any{"error": err.Error()}))
 		return rm.scoreWithLLM(ctx, prompt, response)
 	}
 	return rm.parseScoreFromJSON(result.Consensus)
@@ -174,7 +174,7 @@ func (rm *AIRewardModel) Train(ctx context.Context, examples []*TrainingExample)
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
 	rm.cache = make(map[string]float64)
-	rm.logger.Printf("Training reward model with %d examples", len(examples))
+	rm.logger.Print(trData("selfimprove.log.training_reward_model", map[string]any{"count": len(examples)}))
 	return nil
 }
 

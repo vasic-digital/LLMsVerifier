@@ -181,7 +181,7 @@ func (r *StandardBenchmarkRunner) GetTasks(ctx context.Context, benchmarkID stri
 
 	tasks, ok := r.tasks[benchmarkID]
 	if !ok {
-		return nil, fmt.Errorf("benchmark not found: %s", benchmarkID)
+		return nil, fmt.Errorf("%s", trData("benchmark.err.benchmark_not_found", map[string]any{"id": benchmarkID}))
 	}
 
 	if config == nil {
@@ -227,7 +227,7 @@ func (r *StandardBenchmarkRunner) CreateRun(ctx context.Context, run *BenchmarkR
 	}
 
 	r.runs[run.ID] = run
-	r.logger.Printf("Created benchmark run: %s", run.ID)
+	r.logger.Print(trData("benchmark.log.run_created", map[string]any{"id": run.ID}))
 	return nil
 }
 
@@ -237,7 +237,7 @@ func (r *StandardBenchmarkRunner) StartRun(ctx context.Context, runID string) er
 	run, ok := r.runs[runID]
 	if !ok {
 		r.mu.Unlock()
-		return fmt.Errorf("run not found: %s", runID)
+		return fmt.Errorf("%s", trData("benchmark.err.run_not_found", map[string]any{"id": runID}))
 	}
 
 	benchmarkID := string(run.BenchmarkType)
@@ -293,7 +293,10 @@ func (r *StandardBenchmarkRunner) executeRun(ctx context.Context, run *Benchmark
 	run.EndedAt = &now
 	r.mu.Unlock()
 
-	r.logger.Printf("Completed benchmark run: %s, pass rate: %.2f", run.ID, run.Summary.PassRate)
+	r.logger.Print(trData("benchmark.log.run_completed", map[string]any{
+		"id":        run.ID,
+		"pass_rate": fmt.Sprintf("%.2f", run.Summary.PassRate),
+	}))
 }
 
 // executeTask executes a single task
@@ -427,7 +430,7 @@ func (r *StandardBenchmarkRunner) GetRun(ctx context.Context, runID string) (*Be
 
 	run, ok := r.runs[runID]
 	if !ok {
-		return nil, fmt.Errorf("run not found: %s", runID)
+		return nil, fmt.Errorf("%s", trData("benchmark.err.run_not_found", map[string]any{"id": runID}))
 	}
 	clone := *run
 	return &clone, nil
@@ -455,7 +458,7 @@ func (r *StandardBenchmarkRunner) CancelRun(ctx context.Context, runID string) e
 
 	run, ok := r.runs[runID]
 	if !ok {
-		return fmt.Errorf("run not found: %s", runID)
+		return fmt.Errorf("%s", trData("benchmark.err.run_not_found", map[string]any{"id": runID}))
 	}
 
 	if cancel, ok := r.runCancels[runID]; ok {
@@ -473,11 +476,11 @@ func (r *StandardBenchmarkRunner) CompareRuns(ctx context.Context, run1ID, run2I
 
 	run1, ok := r.runs[run1ID]
 	if !ok {
-		return nil, fmt.Errorf("run not found: %s", run1ID)
+		return nil, fmt.Errorf("%s", trData("benchmark.err.run_not_found", map[string]any{"id": run1ID}))
 	}
 	run2, ok := r.runs[run2ID]
 	if !ok {
-		return nil, fmt.Errorf("run not found: %s", run2ID)
+		return nil, fmt.Errorf("%s", trData("benchmark.err.run_not_found", map[string]any{"id": run2ID}))
 	}
 
 	comparison := &RunComparison{
@@ -489,7 +492,9 @@ func (r *StandardBenchmarkRunner) CompareRuns(ctx context.Context, run1ID, run2I
 	if run1.Summary != nil && run2.Summary != nil {
 		diff := run2.Summary.PassRate - run1.Summary.PassRate
 		comparison.Improvement = diff
-		comparison.Summary = fmt.Sprintf("Run 2 vs Run 1: %.2f%% improvement", diff*100)
+		comparison.Summary = trData("benchmark.summary.run_comparison", map[string]any{
+			"improvement_pct": fmt.Sprintf("%.2f", diff*100),
+		})
 	}
 
 	return comparison, nil

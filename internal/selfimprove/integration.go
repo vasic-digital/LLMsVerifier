@@ -53,7 +53,7 @@ func (s *SelfImprovementSystem) Initialize(provider LLMProvider, debateService D
 	}
 
 	s.initialized = true
-	s.logger.Println("Self-improvement system initialized")
+	s.logger.Print(tr("selfimprove.log.system_initialized"))
 	return nil
 }
 

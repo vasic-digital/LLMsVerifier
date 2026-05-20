@@ -56,7 +56,7 @@ func (s *BenchmarkSystem) Initialize(provider LLMProvider) error {
 	defer s.mu.Unlock()
 
 	s.runner = NewStandardBenchmarkRunner(provider, s.logger)
-	s.logger.Println("Benchmark system initialized")
+	s.logger.Print(tr("benchmark.log.system_initialized"))
 	return nil
 }
 
@@ -74,7 +74,7 @@ func (s *BenchmarkSystem) GenerateLeaderboard(ctx context.Context, benchmarkType
 	s.mu.RUnlock()
 
 	if runner == nil {
-		return nil, fmt.Errorf("system not initialized")
+		return nil, fmt.Errorf("%s", tr("benchmark.err.system_not_initialized"))
 	}
 
 	runs, err := runner.ListRuns(ctx, &RunFilter{
