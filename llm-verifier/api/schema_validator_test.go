@@ -73,7 +73,9 @@ func TestSchemaValidator_Validate_RequiredFields(t *testing.T) {
 		}
 		err := validator.Validate("user", data)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "required field is missing")
+		// Per CONST-046: message routes through the i18n seam; the
+		// production NoopTranslator returns the message ID verbatim.
+		assert.Contains(t, err.Error(), "api.schema.required_field_missing")
 	})
 }
 
@@ -148,6 +150,9 @@ func TestSchemaValidator_Validate_TypeValidation(t *testing.T) {
 		}
 		err := validator.Validate("full_types", data)
 		assert.Error(t, err)
+		// validateType emits a wrapped tech-string error ("expected
+		// object, got string"); this is the type-mismatch path, not
+		// the migrated ValidationError.Message — left unmigrated.
 		assert.Contains(t, err.Error(), "expected object")
 	})
 }
@@ -249,7 +254,8 @@ func TestSchemaValidator_ValidateRequest(t *testing.T) {
 		err := validator.ValidateRequest("person", req, &target)
 
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "required field is missing")
+		// Per CONST-046: message ID returned by NoopTranslator.
+		assert.Contains(t, err.Error(), "api.schema.required_field_missing")
 	})
 }
 
@@ -333,7 +339,8 @@ func TestSchemaValidator_ValidateModelRequest(t *testing.T) {
 		}
 		err := validator.Validate("model", data)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "required field is missing")
+		// Per CONST-046: message ID returned by NoopTranslator.
+		assert.Contains(t, err.Error(), "api.schema.required_field_missing")
 	})
 
 	t.Run("missing provider_id", func(t *testing.T) {
@@ -342,7 +349,8 @@ func TestSchemaValidator_ValidateModelRequest(t *testing.T) {
 		}
 		err := validator.Validate("model", data)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "required field is missing")
+		// Per CONST-046: message ID returned by NoopTranslator.
+		assert.Contains(t, err.Error(), "api.schema.required_field_missing")
 	})
 }
 

@@ -317,7 +317,7 @@ func (s *Server) VerifyModelHandler(w http.ResponseWriter, r *http.Request) {
 		"status":          "verification_started",
 		"model_id":        modelID,
 		"model_name":      model.Name,
-		"message":         "Verification process initiated",
+		"message":         tr("api.handler.verification_process_initiated"),
 		"job_id":          verificationResult.ID,
 		"verification_id": verificationResult.ID,
 		"started_at":      verificationResult.StartedAt,

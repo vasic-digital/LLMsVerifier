@@ -109,7 +109,7 @@ func (sv *SchemaValidator) ValidateWithResult(schema map[string]interface{}, dat
 		result.Valid = false
 		result.Errors = append(result.Errors, ValidationError{
 			Field:   path,
-			Message: "expected object",
+			Message: tr("api.schema.expected_object"),
 			Value:   data,
 		})
 		return result
@@ -163,7 +163,7 @@ func (sv *SchemaValidator) validateRequired(schema map[string]interface{}, data 
 					result.Valid = false
 					result.Errors = append(result.Errors, ValidationError{
 						Field:   sv.joinPath(path, field),
-						Message: "required field is missing",
+						Message: tr("api.schema.required_field_missing"),
 					})
 				}
 			}
@@ -180,7 +180,7 @@ func (sv *SchemaValidator) validateRequired(schema map[string]interface{}, data 
 			result.Valid = false
 			result.Errors = append(result.Errors, ValidationError{
 				Field:   sv.joinPath(path, fieldName),
-				Message: "required field is missing",
+				Message: tr("api.schema.required_field_missing"),
 			})
 		}
 	}
@@ -268,7 +268,7 @@ func (sv *SchemaValidator) validateStringConstraints(str string, schema map[stri
 			result.Valid = false
 			result.Errors = append(result.Errors, ValidationError{
 				Field:   path,
-				Message: fmt.Sprintf("string length %d is less than minimum %d", len(str), minLength),
+				Message: trData("api.schema.string_too_short", map[string]any{"length": len(str), "minimum": minLength}),
 				Value:   str,
 			})
 		}
@@ -279,7 +279,7 @@ func (sv *SchemaValidator) validateStringConstraints(str string, schema map[stri
 			result.Valid = false
 			result.Errors = append(result.Errors, ValidationError{
 				Field:   path,
-				Message: fmt.Sprintf("string length %d exceeds maximum %d", len(str), maxLength),
+				Message: trData("api.schema.string_too_long", map[string]any{"length": len(str), "maximum": maxLength}),
 				Value:   str,
 			})
 		}
@@ -309,14 +309,14 @@ func (sv *SchemaValidator) validateNumberConstraints(num float64, schema map[str
 			result.Valid = false
 			result.Errors = append(result.Errors, ValidationError{
 				Field:   path,
-				Message: fmt.Sprintf("value %v must be greater than %v", num, minimum),
+				Message: trData("api.schema.value_not_greater_than", map[string]any{"value": num, "minimum": minimum}),
 				Value:   num,
 			})
 		} else if !exclusive && num < minimum {
 			result.Valid = false
 			result.Errors = append(result.Errors, ValidationError{
 				Field:   path,
-				Message: fmt.Sprintf("value %v is less than minimum %v", num, minimum),
+				Message: trData("api.schema.value_below_minimum", map[string]any{"value": num, "minimum": minimum}),
 				Value:   num,
 			})
 		}
@@ -331,14 +331,14 @@ func (sv *SchemaValidator) validateNumberConstraints(num float64, schema map[str
 			result.Valid = false
 			result.Errors = append(result.Errors, ValidationError{
 				Field:   path,
-				Message: fmt.Sprintf("value %v must be less than %v", num, maximum),
+				Message: trData("api.schema.value_not_less_than", map[string]any{"value": num, "maximum": maximum}),
 				Value:   num,
 			})
 		} else if !exclusive && num > maximum {
 			result.Valid = false
 			result.Errors = append(result.Errors, ValidationError{
 				Field:   path,
-				Message: fmt.Sprintf("value %v exceeds maximum %v", num, maximum),
+				Message: trData("api.schema.value_above_maximum", map[string]any{"value": num, "maximum": maximum}),
 				Value:   num,
 			})
 		}
@@ -351,7 +351,7 @@ func (sv *SchemaValidator) validateNumberConstraints(num float64, schema map[str
 				result.Valid = false
 				result.Errors = append(result.Errors, ValidationError{
 					Field:   path,
-					Message: fmt.Sprintf("value %v is not a multiple of %v", num, multipleOf),
+					Message: trData("api.schema.value_not_multiple_of", map[string]any{"value": num, "multiple": multipleOf}),
 					Value:   num,
 				})
 			}
@@ -369,7 +369,7 @@ func (sv *SchemaValidator) validateEnum(value interface{}, enum []interface{}, p
 	result.Valid = false
 	result.Errors = append(result.Errors, ValidationError{
 		Field:   path,
-		Message: fmt.Sprintf("value must be one of: %v", enum),
+		Message: trData("api.schema.value_not_in_enum", map[string]any{"allowed": fmt.Sprintf("%v", enum)}),
 		Value:   value,
 	})
 }
@@ -381,7 +381,7 @@ func (sv *SchemaValidator) validatePattern(str, pattern, path string, result *Va
 		result.Valid = false
 		result.Errors = append(result.Errors, ValidationError{
 			Field:   path,
-			Message: fmt.Sprintf("invalid pattern: %v", err),
+			Message: trData("api.schema.invalid_pattern", map[string]any{"error": err.Error()}),
 		})
 		return
 	}
@@ -390,7 +390,7 @@ func (sv *SchemaValidator) validatePattern(str, pattern, path string, result *Va
 		result.Valid = false
 		result.Errors = append(result.Errors, ValidationError{
 			Field:   path,
-			Message: fmt.Sprintf("value does not match pattern: %s", pattern),
+			Message: trData("api.schema.value_pattern_mismatch", map[string]any{"pattern": pattern}),
 			Value:   str,
 		})
 	}
@@ -447,7 +447,7 @@ func (sv *SchemaValidator) validateArray(arr []interface{}, schema map[string]in
 			result.Valid = false
 			result.Errors = append(result.Errors, ValidationError{
 				Field:   path,
-				Message: fmt.Sprintf("array has %d items, minimum is %d", len(arr), minItems),
+				Message: trData("api.schema.array_too_few_items", map[string]any{"count": len(arr), "minimum": minItems}),
 			})
 		}
 	}
@@ -458,7 +458,7 @@ func (sv *SchemaValidator) validateArray(arr []interface{}, schema map[string]in
 			result.Valid = false
 			result.Errors = append(result.Errors, ValidationError{
 				Field:   path,
-				Message: fmt.Sprintf("array has %d items, maximum is %d", len(arr), maxItems),
+				Message: trData("api.schema.array_too_many_items", map[string]any{"count": len(arr), "maximum": maxItems}),
 			})
 		}
 	}
@@ -472,7 +472,7 @@ func (sv *SchemaValidator) validateArray(arr []interface{}, schema map[string]in
 				result.Valid = false
 				result.Errors = append(result.Errors, ValidationError{
 					Field:   fmt.Sprintf("%s[%d]", path, i),
-					Message: "duplicate item in array",
+					Message: tr("api.schema.duplicate_array_item"),
 					Value:   item,
 				})
 			}
@@ -529,7 +529,7 @@ func (sv *SchemaValidator) validateAdditionalProperties(schema map[string]interf
 			result.Valid = false
 			result.Errors = append(result.Errors, ValidationError{
 				Field:   sv.joinPath(path, key),
-				Message: "additional property not allowed",
+				Message: tr("api.schema.additional_property_not_allowed"),
 			})
 		}
 	}

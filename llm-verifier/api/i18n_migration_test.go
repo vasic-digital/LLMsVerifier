@@ -227,3 +227,135 @@ func TestErrorHandlers_RouteThroughTranslator(t *testing.T) {
 		}
 	})
 }
+
+// TestSchemaValidator_MessagesRouteThroughTranslator drives the JSON-schema
+// validator (api/schema_validator.go) through every migrated ValidationError
+// branch — type/required/string-length/number-bound/enum/pattern/array-size/
+// uniqueness/additional-property — and asserts each produced Message routes
+// through the i18n seam. Paired-mutation anti-bluff per CONST-035 / CONST-046:
+// if any branch regressed to a hardcoded English literal, the
+// "<TRANSLATED:...>" sentinel would be absent and the matching sub-assertion
+// fails. (err.Error() branches carry wrapped tech strings and are exempt.)
+func TestSchemaValidator_MessagesRouteThroughTranslator(t *testing.T) {
+	withFakeTranslator(t, func() {
+		sv := NewSchemaValidator()
+
+		assertRouted := func(label string, res *ValidationResult) {
+			t.Helper()
+			if len(res.Errors) == 0 {
+				t.Fatalf("%s: expected validation errors, got none", label)
+			}
+			sawSentinel := false
+			for _, e := range res.Errors {
+				if strings.HasPrefix(e.Message, "<TRANSLATED:") {
+					sawSentinel = true
+				}
+			}
+			if !sawSentinel {
+				msgs := make([]string, 0, len(res.Errors))
+				for _, e := range res.Errors {
+					msgs = append(msgs, e.Message)
+				}
+				t.Errorf("%s: no migrated Message routed through translator; got %v", label, msgs)
+			}
+		}
+
+		// expected_object — non-object data.
+		assertRouted("expected_object",
+			sv.ValidateWithResult(map[string]interface{}{"type": "object"}, "not-an-object", ""))
+
+		// required_field_missing.
+		assertRouted("required_field_missing",
+			sv.ValidateWithResult(map[string]interface{}{
+				"type": "object", "required": []interface{}{"name"},
+			}, map[string]interface{}{}, ""))
+
+		// string_too_short + string_too_long.
+		assertRouted("string_too_short",
+			sv.ValidateWithResult(map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"s": map[string]interface{}{"type": "string", "minLength": 5},
+				},
+			}, map[string]interface{}{"s": "ab"}, ""))
+		assertRouted("string_too_long",
+			sv.ValidateWithResult(map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"s": map[string]interface{}{"type": "string", "maxLength": 2},
+				},
+			}, map[string]interface{}{"s": "abcdef"}, ""))
+
+		// number bounds — below_minimum + above_maximum + not_multiple_of.
+		assertRouted("value_below_minimum",
+			sv.ValidateWithResult(map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"n": map[string]interface{}{"type": "number", "minimum": 10.0},
+				},
+			}, map[string]interface{}{"n": 1.0}, ""))
+		assertRouted("value_above_maximum",
+			sv.ValidateWithResult(map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"n": map[string]interface{}{"type": "number", "maximum": 5.0},
+				},
+			}, map[string]interface{}{"n": 99.0}, ""))
+		assertRouted("value_not_multiple_of",
+			sv.ValidateWithResult(map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"n": map[string]interface{}{"type": "number", "multipleOf": 3.0},
+				},
+			}, map[string]interface{}{"n": 7.0}, ""))
+
+		// enum mismatch.
+		assertRouted("value_not_in_enum",
+			sv.ValidateWithResult(map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"e": map[string]interface{}{"type": "string", "enum": []interface{}{"a", "b"}},
+				},
+			}, map[string]interface{}{"e": "z"}, ""))
+
+		// pattern mismatch.
+		assertRouted("value_pattern_mismatch",
+			sv.ValidateWithResult(map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"p": map[string]interface{}{"type": "string", "pattern": "^[0-9]+$"},
+				},
+			}, map[string]interface{}{"p": "abc"}, ""))
+
+		// array too few / too many items + duplicate item.
+		assertRouted("array_too_few_items",
+			sv.ValidateWithResult(map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"a": map[string]interface{}{"type": "array", "minItems": 3},
+				},
+			}, map[string]interface{}{"a": []interface{}{1}}, ""))
+		assertRouted("array_too_many_items",
+			sv.ValidateWithResult(map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"a": map[string]interface{}{"type": "array", "maxItems": 1},
+				},
+			}, map[string]interface{}{"a": []interface{}{1, 2, 3}}, ""))
+		assertRouted("duplicate_array_item",
+			sv.ValidateWithResult(map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"a": map[string]interface{}{"type": "array", "uniqueItems": true},
+				},
+			}, map[string]interface{}{"a": []interface{}{1, 1}}, ""))
+
+		// additional property not allowed.
+		assertRouted("additional_property_not_allowed",
+			sv.ValidateWithResult(map[string]interface{}{
+				"type":                 "object",
+				"properties":           map[string]interface{}{"known": map[string]interface{}{"type": "string"}},
+				"additionalProperties": false,
+			}, map[string]interface{}{"unknown": "x"}, ""))
+	})
+}
