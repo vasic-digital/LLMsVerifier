@@ -53,25 +53,25 @@ func (rbac *RBACManager) initializeDefaultRoles() {
 	// Define roles
 	rbac.roles["admin"] = &Role{
 		Name:        "admin",
-		Description: "Full system administrator",
+		Description: tr("llmsverifier_auth_role_desc_admin"),
 		Permissions: []string{"read:models", "write:models", "delete:models", "read:providers", "write:providers", "admin:system", "read:audit"},
 	}
 
 	rbac.roles["editor"] = &Role{
 		Name:        "editor",
-		Description: "Can read and modify models and providers",
+		Description: tr("llmsverifier_auth_role_desc_editor"),
 		Permissions: []string{"read:models", "write:models", "read:providers", "write:providers"},
 	}
 
 	rbac.roles["viewer"] = &Role{
 		Name:        "viewer",
-		Description: "Read-only access to models and providers",
+		Description: tr("llmsverifier_auth_role_desc_viewer"),
 		Permissions: []string{"read:models", "read:providers"},
 	}
 
 	rbac.roles["auditor"] = &Role{
 		Name:        "auditor",
-		Description: "Can view audit logs",
+		Description: tr("llmsverifier_auth_role_desc_auditor"),
 		Permissions: []string{"read:audit"},
 	}
 }

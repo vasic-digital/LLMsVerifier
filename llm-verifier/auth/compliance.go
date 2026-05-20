@@ -765,14 +765,14 @@ func GenerateComplianceReport(reportType, period string) (*ComplianceReport, err
 		report.Findings = append(report.Findings, ComplianceFinding{
 			Severity:    "info",
 			Category:    "data_processing",
-			Description: "All user data processing has valid consent",
+			Description: tr("llmsverifier_auth_compliance_finding_gdpr_consent_valid"),
 			Resource:    "consent_manager",
 		})
 	case "SOC2":
 		report.Findings = append(report.Findings, ComplianceFinding{
 			Severity:    "info",
 			Category:    "access_control",
-			Description: "Multi-factor authentication enabled for admin accounts",
+			Description: tr("llmsverifier_auth_compliance_finding_soc2_mfa_enabled"),
 			Resource:    "auth_system",
 		})
 	}

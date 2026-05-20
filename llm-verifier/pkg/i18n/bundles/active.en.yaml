@@ -1136,3 +1136,56 @@ enhanced.model_comparison.differentiator.context_window:
   other: "context window sizes"
 enhanced.model_comparison.differentiator.model_size:
   other: "model sizes"
+
+# --- Round-407 (Phase 4 round 27): auth package i18n seam ---
+# RBAC role descriptions (auth/rbac.go) + LDAP/SSO status messages
+# (auth/ldap.go, auth/auth_manager.go) + compliance findings
+# (auth/compliance.go). Migrated from hardcoded English literals.
+llmsverifier_auth_role_desc_admin:
+  other: "Full system administrator"
+llmsverifier_auth_role_desc_editor:
+  other: "Can read and modify models and providers"
+llmsverifier_auth_role_desc_viewer:
+  other: "Read-only access to models and providers"
+llmsverifier_auth_role_desc_auditor:
+  other: "Can view audit logs"
+llmsverifier_auth_ldap_ca_cert_load_failed:
+  other: "WARNING: Failed to load CA certificate from %s: %v\n"
+llmsverifier_auth_ldap_ca_cert_loaded:
+  other: "Loaded CA certificate from %s for LDAP TLS verification\n"
+llmsverifier_auth_ldap_insecure_skip_verify_warning:
+  other: "SECURITY WARNING: LDAP TLS certificate verification is disabled!"
+llmsverifier_auth_ldap_insecure_skip_verify_testing_only:
+  other: "This setting is insecure and should ONLY be used for testing."
+llmsverifier_auth_ldap_insecure_skip_verify_use_ca_cert:
+  other: "In production, configure a proper CA certificate using ca_cert_path."
+llmsverifier_auth_ldap_sync_callback_error:
+  other: "Warning: callback error for user %s: %v\n"
+llmsverifier_auth_compliance_finding_gdpr_consent_valid:
+  other: "All user data processing has valid consent"
+llmsverifier_auth_compliance_finding_soc2_mfa_enabled:
+  other: "Multi-factor authentication enabled for admin accounts"
+llmsverifier_auth_audit_ldap_auth_failed:
+  other: "LDAP authentication failed: %v"
+llmsverifier_auth_audit_ldap_auth_success:
+  other: "User authenticated via LDAP: %s"
+llmsverifier_auth_audit_sso_token_validation_failed:
+  other: "SSO token validation failed: %v"
+llmsverifier_auth_sso_client_description:
+  other: "Authenticated via %s SSO"
+llmsverifier_auth_audit_sso_auth_success:
+  other: "User authenticated via SSO: %s"
+
+# --- Round-407 (Phase 4 round 27): ai package i18n seam ---
+# Recommendation reasoning fragments (ai/simple_recommender.go) shown to
+# end users when a model recommendation is generated.
+llmsverifier_ai_rec_reason_excellent_for_task:
+  other: "Excellent for %s tasks"
+llmsverifier_ai_rec_reason_cost_effective:
+  other: "Cost-effective choice"
+llmsverifier_ai_rec_reason_fast_response:
+  other: "Fast response time"
+llmsverifier_ai_rec_reason_highly_reliable:
+  other: "Highly reliable"
+llmsverifier_ai_rec_reason_good_general_purpose:
+  other: "Good general-purpose model"

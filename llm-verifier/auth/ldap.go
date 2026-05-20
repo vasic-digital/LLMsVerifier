@@ -251,7 +251,7 @@ func (lm *LDAPManager) SyncUsersWithCallback(callback SyncCallback) ([]*LDAPUser
 		if callback != nil {
 			if err := callback(user); err != nil {
 				// Log error but continue syncing
-				fmt.Printf("Warning: callback error for user %s: %v\n", user.Username, err)
+				fmt.Printf(tr("llmsverifier_auth_ldap_sync_callback_error"), user.Username, err)
 			}
 		}
 
@@ -327,10 +327,10 @@ func (lm *LDAPManager) buildTLSConfig() *tls.Config {
 	// Load CA certificate if provided for proper certificate verification
 	if lm.config.CACertPath != "" {
 		if caCertPool, err := lm.loadCACertificate(); err != nil {
-			fmt.Printf("WARNING: Failed to load CA certificate from %s: %v\n", lm.config.CACertPath, err)
+			fmt.Printf(tr("llmsverifier_auth_ldap_ca_cert_load_failed"), lm.config.CACertPath, err)
 		} else {
 			tlsConfig.RootCAs = caCertPool
-			fmt.Printf("Loaded CA certificate from %s for LDAP TLS verification\n", lm.config.CACertPath)
+			fmt.Printf(tr("llmsverifier_auth_ldap_ca_cert_loaded"), lm.config.CACertPath)
 		}
 	}
 
@@ -339,9 +339,9 @@ func (lm *LDAPManager) buildTLSConfig() *tls.Config {
 	// SECURITY: This should NEVER be enabled in production environments
 	if lm.config.InsecureSkipVerify {
 		tlsConfig.InsecureSkipVerify = true
-		fmt.Println("SECURITY WARNING: LDAP TLS certificate verification is disabled!")
-		fmt.Println("This setting is insecure and should ONLY be used for testing.")
-		fmt.Println("In production, configure a proper CA certificate using ca_cert_path.")
+		fmt.Println(tr("llmsverifier_auth_ldap_insecure_skip_verify_warning"))
+		fmt.Println(tr("llmsverifier_auth_ldap_insecure_skip_verify_testing_only"))
+		fmt.Println(tr("llmsverifier_auth_ldap_insecure_skip_verify_use_ca_cert"))
 	}
 
 	return tlsConfig

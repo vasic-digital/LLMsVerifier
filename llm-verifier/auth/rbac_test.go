@@ -28,7 +28,10 @@ func TestRBACManager_DefaultRoles(t *testing.T) {
 	admin, err := rbac.GetRole("admin")
 	require.NoError(t, err)
 	assert.Equal(t, "admin", admin.Name)
-	assert.Equal(t, "Full system administrator", admin.Description)
+	// Description is i18n-routed per CONST-046 round-407: under the default
+	// NoopTranslator the messageID is returned verbatim, never the English
+	// literal. Asserting the English text here would be a CONST-046 anti-pattern.
+	assert.Equal(t, "llmsverifier_auth_role_desc_admin", admin.Description)
 	assert.Contains(t, admin.Permissions, "admin:system")
 
 	// Check editor role

@@ -189,29 +189,29 @@ func (sr *SimpleRecommender) generateReasoning(model ModelProfile, req RecReques
 
 	// Task suitability
 	if taskScore, exists := model.TaskScores[req.TaskType]; exists && taskScore > 0.7 {
-		reasons = append(reasons, fmt.Sprintf("Excellent for %s tasks", req.TaskType))
+		reasons = append(reasons, fmt.Sprintf(tr("llmsverifier_ai_rec_reason_excellent_for_task"), req.TaskType))
 	}
 
 	// Cost efficiency
 	if req.MaxCost > 0 {
 		estimatedCost := sr.estimateCost(model, req)
 		if estimatedCost <= req.MaxCost*0.5 {
-			reasons = append(reasons, "Cost-effective choice")
+			reasons = append(reasons, tr("llmsverifier_ai_rec_reason_cost_effective"))
 		}
 	}
 
 	// Speed
 	if model.ResponseTime < 3*time.Second {
-		reasons = append(reasons, "Fast response time")
+		reasons = append(reasons, tr("llmsverifier_ai_rec_reason_fast_response"))
 	}
 
 	// Reliability
 	if model.Reliability > 0.9 {
-		reasons = append(reasons, "Highly reliable")
+		reasons = append(reasons, tr("llmsverifier_ai_rec_reason_highly_reliable"))
 	}
 
 	if len(reasons) == 0 {
-		reasons = append(reasons, "Good general-purpose model")
+		reasons = append(reasons, tr("llmsverifier_ai_rec_reason_good_general_purpose"))
 	}
 
 	return strings.Join(reasons, ", ")

@@ -547,7 +547,7 @@ func (am *AuthManager) AuthenticateWithLDAP(username, password string) (*Client,
 	client, err := ldapManager.Authenticate(username, password)
 	if err != nil {
 		// Log the authentication attempt (without password)
-		am.AuditAuthEvent("LDAP_AUTH_FAILED", username, fmt.Sprintf("LDAP authentication failed: %v", err))
+		am.AuditAuthEvent("LDAP_AUTH_FAILED", username, fmt.Sprintf(tr("llmsverifier_auth_audit_ldap_auth_failed"), err))
 		return nil, fmt.Errorf("LDAP authentication failed: %w", err)
 	}
 
@@ -567,7 +567,7 @@ func (am *AuthManager) AuthenticateWithLDAP(username, password string) (*Client,
 	am.mu.Unlock()
 
 	// Log successful authentication
-	am.AuditAuthEvent("LDAP_AUTH_SUCCESS", username, fmt.Sprintf("User authenticated via LDAP: %s", client.Name))
+	am.AuditAuthEvent("LDAP_AUTH_SUCCESS", username, fmt.Sprintf(tr("llmsverifier_auth_audit_ldap_auth_success"), client.Name))
 
 	return client, nil
 }
@@ -856,7 +856,7 @@ func (am *AuthManager) AuthenticateWithSSO(provider, token string) (*Client, err
 	sm := GetSSOManager()
 	userInfo, err := sm.ValidateToken(provider, token)
 	if err != nil {
-		am.AuditAuthEvent("SSO_AUTH_FAILED", provider, fmt.Sprintf("SSO token validation failed: %v", err))
+		am.AuditAuthEvent("SSO_AUTH_FAILED", provider, fmt.Sprintf(tr("llmsverifier_auth_audit_sso_token_validation_failed"), err))
 		return nil, fmt.Errorf("SSO authentication failed: %w", err)
 	}
 
@@ -865,7 +865,7 @@ func (am *AuthManager) AuthenticateWithSSO(provider, token string) (*Client, err
 	client := &Client{
 		ID:          time.Now().UnixNano(),
 		Name:        userInfo.Name,
-		Description: fmt.Sprintf("Authenticated via %s SSO", provider),
+		Description: fmt.Sprintf(tr("llmsverifier_auth_sso_client_description"), provider),
 		Permissions: am.getDefaultSSOPermissions(userInfo),
 		IsActive:    true,
 		CreatedAt:   now,
@@ -878,7 +878,7 @@ func (am *AuthManager) AuthenticateWithSSO(provider, token string) (*Client, err
 	am.mu.Unlock()
 
 	// Log successful authentication
-	am.AuditAuthEvent("SSO_AUTH_SUCCESS", provider, fmt.Sprintf("User authenticated via SSO: %s", userInfo.Subject))
+	am.AuditAuthEvent("SSO_AUTH_SUCCESS", provider, fmt.Sprintf(tr("llmsverifier_auth_audit_sso_auth_success"), userInfo.Subject))
 
 	return client, nil
 }
