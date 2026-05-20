@@ -95,7 +95,11 @@ func (pm *PluginManager) RegisterPlugin(plugin Plugin) error {
 	pm.system.plugins[name] = plugin
 	pm.system.enabled[name] = true
 
-	pm.logger.Printf("Plugin %s v%s registered: %s", name, plugin.Version(), plugin.Description())
+	pm.logger.Print(trData("supervisor.plugin.registered", map[string]any{
+		"name":        name,
+		"version":     plugin.Version(),
+		"description": plugin.Description(),
+	}))
 	return nil
 }
 
@@ -116,7 +120,10 @@ func (pm *PluginManager) ExecutePlugin(ctx context.Context, pluginName string, i
 
 	result, err := plugin.Execute(ctx, input)
 	if err != nil {
-		pm.logger.Printf("Plugin %s execution failed: %v", pluginName, err)
+		pm.logger.Print(trData("supervisor.plugin.execution_failed", map[string]any{
+			"name":  pluginName,
+			"error": err.Error(),
+		}))
 		return nil, err
 	}
 
@@ -133,7 +140,7 @@ func (pm *PluginManager) EnablePlugin(name string) error {
 	}
 
 	pm.system.enabled[name] = true
-	pm.logger.Printf("Plugin %s enabled", name)
+	pm.logger.Print(trData("supervisor.plugin.enabled", map[string]any{"name": name}))
 	return nil
 }
 
@@ -147,7 +154,7 @@ func (pm *PluginManager) DisablePlugin(name string) error {
 	}
 
 	pm.system.enabled[name] = false
-	pm.logger.Printf("Plugin %s disabled", name)
+	pm.logger.Print(trData("supervisor.plugin.disabled", map[string]any{"name": name}))
 	return nil
 }
 
@@ -485,86 +492,21 @@ func (ai *AIAssistant) analyzeIntent(message string) string {
 
 // generateHelpResponse generates a helpful response
 func (ai *AIAssistant) generateHelpResponse() string {
-	return `🤖 **LLM Verifier Assistant**
-
-I can help you with:
-
-📊 **Status & Monitoring**
-- "What's the current status?"
-- "Show me system health"
-- "Check verification progress"
-
-💡 **Suggestions & Recommendations**
-- "Suggest the best model for my use case"
-- "What providers should I use?"
-- "Help me optimize my configuration"
-
-🔍 **Analysis & Insights**
-- "Analyze my verification results"
-- "Check for issues with my setup"
-- "Compare model performance"
-
-⚙️ **Configuration Help**
-- "Help me configure notifications"
-- "Set up scheduling"
-- "Optimize my settings"
-
-Just ask me anything about LLM verification!`
+	return tr("supervisor.assistant.help")
 }
 
 // generateStatusResponse generates a status update
 func (ai *AIAssistant) generateStatusResponse() string {
-	return `📊 **System Status**
-
-✅ **Core Services**: All running normally
-✅ **Database**: Connected and healthy
-✅ **Event System**: Processing events
-✅ **Scheduler**: Active with 3 jobs queued
-✅ **Monitoring**: All metrics within normal ranges
-
-**Recent Activity:**
-- Processed 127 verifications in the last hour
-- 98.5% success rate
-- Average response time: 2.3 seconds
-
-Everything looks great! 🚀`
+	return tr("supervisor.assistant.status")
 }
 
 // generateSuggestionResponse generates intelligent suggestions
 func (ai *AIAssistant) generateSuggestionResponse(message string) string {
 	if strings.Contains(strings.ToLower(message), "model") {
-		return `🎯 **Model Recommendations**
-
-Based on your usage patterns, I recommend:
-
-🏆 **Primary Model**: GPT-4 Turbo
-- Best overall performance
-- Excellent coding capabilities
-- Good value for money
-
-💪 **Secondary Model**: Claude 3.5 Sonnet
-- Superior reasoning capabilities
-- Better for complex analysis
-- Great for creative tasks
-
-⚡ **Fast Model**: GPT-3.5 Turbo
-- Quick responses for simple tasks
-- Cost-effective for bulk operations
-
-**Configuration Tip**: Use GPT-4 for critical tasks, Claude for analysis, and GPT-3.5 for speed.`
+		return tr("supervisor.assistant.model_recommendations")
 	}
 
-	return `💡 **Smart Suggestions**
-
-Here are some recommendations for your LLM setup:
-
-1. **Enable Notifications**: Set up Slack/Discord alerts for failed verifications
-2. **Use Scheduling**: Automate daily verification runs during off-peak hours
-3. **Monitor Costs**: Set up alerts for unusual spending patterns
-4. **Backup Regularly**: Enable automatic configuration backups
-5. **Load Balancing**: Distribute requests across multiple providers
-
-Would you like help implementing any of these?`
+	return tr("supervisor.assistant.smart_suggestions")
 }
 
 // generateAnalysisResponse generates analysis responses
@@ -578,7 +520,7 @@ func (ai *AIAssistant) generateAnalysisResponse(message string) (string, error) 
 	}
 
 	if len(results) == 0 {
-		return "📊 **Analysis Results**\n\nNo recent verification results found. Run some verifications first!", nil
+		return tr("supervisor.assistant.analysis_no_results"), nil
 	}
 
 	// Calculate statistics
@@ -598,73 +540,34 @@ func (ai *AIAssistant) generateAnalysisResponse(message string) (string, error) 
 
 	avgScore := totalScore / float64(passed)
 
-	return fmt.Sprintf(`📊 **Analysis Results**
-
-**Summary:**
-- Total verifications: %d
-- Successful: %d (%.1f%%)
-- Failed: %d (%.1f%%)
-- Average score: %.1f/100
-
-**Performance Insights:**
-• %s success rate indicates %s
-• Average score suggests %s model quality
-• %d failures may need attention
-
-**Recommendations:**
-%s`,
-		total, passed, float64(passed)/float64(total)*100,
-		failed, float64(failed)/float64(total)*100,
-		avgScore,
-		fmt.Sprintf("%.1f", float64(passed)/float64(total)*100),
-		ai.getSuccessRateMessage(float64(passed)/float64(total)),
-		ai.getScoreMessage(avgScore),
-		failed,
-		ai.getRecommendations(avgScore, failed)), nil
+	return trData("supervisor.assistant.analysis_results", map[string]any{
+		"total":           total,
+		"passed":          passed,
+		"passedPercent":   fmt.Sprintf("%.1f", float64(passed)/float64(total)*100),
+		"failed":          failed,
+		"failedPercent":   fmt.Sprintf("%.1f", float64(failed)/float64(total)*100),
+		"avgScore":        fmt.Sprintf("%.1f", avgScore),
+		"successRate":     fmt.Sprintf("%.1f", float64(passed)/float64(total)*100),
+		"successRateMsg":  ai.getSuccessRateMessage(float64(passed) / float64(total)),
+		"scoreMsg":        ai.getScoreMessage(avgScore),
+		"failureCount":    failed,
+		"recommendations": ai.getRecommendations(avgScore, failed),
+	}), nil
 }
 
 // generateConfigurationResponse generates configuration help
 func (ai *AIAssistant) generateConfigurationResponse(message string) string {
-	return `⚙️ **Configuration Assistant**
-
-Let's optimize your LLM Verifier setup:
-
-🔧 **Quick Wins:**
-1. Enable Notifications: Get alerts for failures and anomalies
-2. Set Up Scheduling: Automate verification runs
-3. Configure Backups: Never lose your settings
-4. Add Rate Limiting: Prevent API quota exhaustion
-
-📋 **Step-by-Step Guide:**
-
-1. For Notifications:
-   notifications:
-     slack:
-       enabled: true
-       webhook_url: "your-webhook-url"
-
-2. For Scheduling:
-   schedules:
-     - name: "daily-verification"
-       type: "cron"
-       expression: "0 2 * * *"  # Daily at 2 AM
-
-3. For Monitoring:
-   monitoring:
-     enabled: true
-     alert_threshold: 95.0
-
-Need help with a specific configuration? Just ask!`
+	return tr("supervisor.assistant.configuration")
 }
 
 // generateGeneralResponse generates a general conversational response
 func (ai *AIAssistant) generateGeneralResponse(message string) string {
 	responses := []string{
-		"That's an interesting question! Let me help you with that.",
-		"I understand you're asking about LLM verification. How can I assist?",
-		"Great question! Here's what I can tell you:",
-		"I'm here to help with all your LLM verification needs.",
-		"Let me provide some insights on that topic.",
+		tr("supervisor.assistant.general.interesting"),
+		tr("supervisor.assistant.general.understand"),
+		tr("supervisor.assistant.general.great_question"),
+		tr("supervisor.assistant.general.here_to_help"),
+		tr("supervisor.assistant.general.insights"),
 	}
 
 	// Simple response selection based on message length
@@ -712,19 +615,19 @@ func (ai *AIAssistant) getRecommendations(score float64, failures int) string {
 	var recs []string
 
 	if score < 85 {
-		recs = append(recs, "• Consider upgrading to higher-quality models")
+		recs = append(recs, tr("supervisor.recommendation.upgrade_models"))
 	}
 
 	if failures > 0 {
-		recs = append(recs, "• Investigate and resolve verification failures")
+		recs = append(recs, tr("supervisor.recommendation.investigate_failures"))
 	}
 
 	if len(recs) == 0 {
-		recs = append(recs, "• Your system is performing well! Keep monitoring.")
+		recs = append(recs, tr("supervisor.recommendation.system_performing_well"))
 	}
 
-	recs = append(recs, "• Regular maintenance checks recommended")
-	recs = append(recs, "• Consider enabling advanced analytics for deeper insights")
+	recs = append(recs, tr("supervisor.recommendation.regular_maintenance"))
+	recs = append(recs, tr("supervisor.recommendation.advanced_analytics"))
 
 	return strings.Join(recs, "\n")
 }
@@ -761,7 +664,7 @@ func (ai *AIAssistant) GetCacheStats() map[string]interface{} {
 	return map[string]interface{}{
 		"enabled": ai.cache.IsEnabled(),
 		"type":    "in_memory",
-		"note":    "Detailed statistics not available for in-memory cache",
+		"note":    tr("supervisor.cache.stats_unavailable"),
 	}
 }
 
@@ -776,7 +679,7 @@ func (p *SentimentAnalysisPlugin) Version() string { return "1.0.0" }
 
 // Description returns the plugin description
 func (p *SentimentAnalysisPlugin) Description() string {
-	return "Analyzes sentiment and emotional tone in text"
+	return tr("supervisor.plugin.sentiment.description")
 }
 
 // Initialize initializes the plugin
@@ -821,7 +724,7 @@ func (p *CodeReviewPlugin) Version() string { return "1.0.0" }
 
 // Description returns the plugin description
 func (p *CodeReviewPlugin) Description() string {
-	return "Automated code review and quality analysis"
+	return tr("supervisor.plugin.code_review.description")
 }
 
 // Initialize initializes the plugin
@@ -865,7 +768,7 @@ func (p *PerformanceAnalysisPlugin) Version() string { return "1.0.0" }
 
 // Description returns the plugin description
 func (p *PerformanceAnalysisPlugin) Description() string {
-	return "Analyzes system performance metrics and provides optimization recommendations"
+	return tr("supervisor.plugin.performance.description")
 }
 
 // Initialize initializes the plugin
@@ -953,7 +856,7 @@ func analyzeCode(code string) []map[string]interface{} {
 		if strings.Contains(strings.ToLower(line), "todo") {
 			issues = append(issues, map[string]interface{}{
 				"type":     "info",
-				"message":  "TODO comment found",
+				"message":  tr("supervisor.code_review.todo_found"),
 				"line":     lineNum,
 				"severity": "low",
 			})
@@ -963,7 +866,7 @@ func analyzeCode(code string) []map[string]interface{} {
 		if len(line) > 120 {
 			issues = append(issues, map[string]interface{}{
 				"type":     "style",
-				"message":  "Line too long (>120 characters)",
+				"message":  tr("supervisor.code_review.line_too_long"),
 				"line":     lineNum,
 				"severity": "low",
 			})
@@ -976,7 +879,7 @@ func analyzeCode(code string) []map[string]interface{} {
 			!strings.Contains(line, "config.get") {
 			issues = append(issues, map[string]interface{}{
 				"type":     "security",
-				"message":  "Potential hardcoded password",
+				"message":  tr("supervisor.code_review.hardcoded_password"),
 				"line":     lineNum,
 				"severity": "high",
 			})
@@ -1082,19 +985,19 @@ func generatePerformanceRecommendations(analysis map[string]interface{}) []strin
 		switch {
 		case strings.Contains(issue, "response time"):
 			recommendations = append(recommendations,
-				"Implement response caching to reduce latency",
-				"Optimize database queries and add indexing",
-				"Consider implementing request batching")
+				tr("supervisor.perf.recommend.response_caching"),
+				tr("supervisor.perf.recommend.optimize_queries"),
+				tr("supervisor.perf.recommend.request_batching"))
 		case strings.Contains(issue, "error rate"):
 			recommendations = append(recommendations,
-				"Add comprehensive error handling and retry logic",
-				"Implement circuit breaker pattern",
-				"Enhance input validation and sanitization")
+				tr("supervisor.perf.recommend.error_handling"),
+				tr("supervisor.perf.recommend.circuit_breaker"),
+				tr("supervisor.perf.recommend.input_validation"))
 		}
 	}
 
 	if health == "good" {
-		recommendations = append(recommendations, "System performance is optimal")
+		recommendations = append(recommendations, tr("supervisor.perf.optimal"))
 	}
 
 	return recommendations

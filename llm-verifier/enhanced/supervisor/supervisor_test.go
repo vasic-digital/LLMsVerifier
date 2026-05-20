@@ -451,7 +451,11 @@ func TestCodeReviewPlugin(t *testing.T) {
 
 	assert.Equal(t, "code_review", plugin.Name())
 	assert.Equal(t, "1.0.0", plugin.Version())
-	assert.Contains(t, plugin.Description(), "code review")
+	// Description routes through the i18n seam (CONST-046). Under the
+	// production-default NoopTranslator the bare message ID is returned —
+	// asserting the English literal would be a bluff test that passes even
+	// against a stub.
+	assert.Equal(t, "supervisor.plugin.code_review.description", plugin.Description())
 
 	err := plugin.Initialize(nil)
 	assert.NoError(t, err)
@@ -665,7 +669,9 @@ func TestGeneratePerformanceRecommendations(t *testing.T) {
 		"issues":         []string{},
 	}
 	recs := generatePerformanceRecommendations(goodAnalysis)
-	assert.Contains(t, recs, "System performance is optimal")
+	// Recommendation routes through the i18n seam (CONST-046): under the
+	// NoopTranslator default the bare message ID is returned.
+	assert.Contains(t, recs, "supervisor.perf.optimal")
 
 	// Response time issues
 	timeAnalysis := map[string]interface{}{
