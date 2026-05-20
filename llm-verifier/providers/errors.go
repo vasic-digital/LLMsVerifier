@@ -54,7 +54,7 @@ func (ec *ErrorClassifier) ClassifyError(resp *http.Response, body []byte) *Prov
 			Provider:  ec.provider,
 			Type:      ErrorTypeNetwork,
 			Code:      "NETWORK_ERROR",
-			Message:   "Network connection failed",
+			Message:   tr("llmsverifier_provider_err_network_connection_failed"),
 			Retryable: true,
 		}
 	}
@@ -104,19 +104,19 @@ func (ec *ErrorClassifier) ClassifyError(resp *http.Response, body []byte) *Prov
 func (ec *ErrorClassifier) classifyOpenAIError(statusCode int, body []byte) (string, string, bool) {
 	switch statusCode {
 	case 400:
-		return "INVALID_REQUEST", "Invalid request parameters", false
+		return "INVALID_REQUEST", tr("llmsverifier_provider_err_invalid_request_params"), false
 	case 401:
-		return "AUTHENTICATION_FAILED", "Invalid API key", false
+		return "AUTHENTICATION_FAILED", tr("llmsverifier_provider_err_invalid_api_key"), false
 	case 403:
-		return "PERMISSION_DENIED", "Access forbidden", false
+		return "PERMISSION_DENIED", tr("llmsverifier_provider_err_access_forbidden"), false
 	case 404:
-		return "NOT_FOUND", "Resource not found", false
+		return "NOT_FOUND", tr("llmsverifier_provider_err_resource_not_found"), false
 	case 429:
-		return "RATE_LIMIT_EXCEEDED", "Rate limit exceeded", true
+		return "RATE_LIMIT_EXCEEDED", tr("llmsverifier_provider_err_rate_limit_exceeded"), true
 	case 500, 502, 503, 504:
-		return "SERVER_ERROR", "Internal server error", true
+		return "SERVER_ERROR", tr("llmsverifier_provider_err_internal_server"), true
 	default:
-		return "UNKNOWN_ERROR", "Unknown error occurred", false
+		return "UNKNOWN_ERROR", tr("llmsverifier_provider_err_unknown_occurred"), false
 	}
 }
 
@@ -124,21 +124,21 @@ func (ec *ErrorClassifier) classifyOpenAIError(statusCode int, body []byte) (str
 func (ec *ErrorClassifier) classifyAnthropicError(statusCode int, body []byte) (string, string, bool) {
 	switch statusCode {
 	case 400:
-		return "INVALID_REQUEST", "Invalid request parameters", false
+		return "INVALID_REQUEST", tr("llmsverifier_provider_err_invalid_request_params"), false
 	case 401:
-		return "AUTHENTICATION_FAILED", "Invalid API key", false
+		return "AUTHENTICATION_FAILED", tr("llmsverifier_provider_err_invalid_api_key"), false
 	case 403:
-		return "PERMISSION_DENIED", "Access forbidden", false
+		return "PERMISSION_DENIED", tr("llmsverifier_provider_err_access_forbidden"), false
 	case 404:
-		return "NOT_FOUND", "Resource not found", false
+		return "NOT_FOUND", tr("llmsverifier_provider_err_resource_not_found"), false
 	case 429:
-		return "RATE_LIMIT_EXCEEDED", "Rate limit exceeded", true
+		return "RATE_LIMIT_EXCEEDED", tr("llmsverifier_provider_err_rate_limit_exceeded"), true
 	case 500, 502, 503, 504:
-		return "SERVER_ERROR", "Internal server error", true
+		return "SERVER_ERROR", tr("llmsverifier_provider_err_internal_server"), true
 	case 529:
-		return "OVERLOADED", "Service overloaded", true
+		return "OVERLOADED", tr("llmsverifier_provider_err_service_overloaded"), true
 	default:
-		return "UNKNOWN_ERROR", "Unknown error occurred", false
+		return "UNKNOWN_ERROR", tr("llmsverifier_provider_err_unknown_occurred"), false
 	}
 }
 
@@ -146,19 +146,19 @@ func (ec *ErrorClassifier) classifyAnthropicError(statusCode int, body []byte) (
 func (ec *ErrorClassifier) classifyDeepSeekError(statusCode int, body []byte) (string, string, bool) {
 	switch statusCode {
 	case 400:
-		return "INVALID_REQUEST", "Invalid request parameters", false
+		return "INVALID_REQUEST", tr("llmsverifier_provider_err_invalid_request_params"), false
 	case 401:
-		return "AUTHENTICATION_FAILED", "Invalid API key", false
+		return "AUTHENTICATION_FAILED", tr("llmsverifier_provider_err_invalid_api_key"), false
 	case 403:
-		return "PERMISSION_DENIED", "Access forbidden", false
+		return "PERMISSION_DENIED", tr("llmsverifier_provider_err_access_forbidden"), false
 	case 404:
-		return "NOT_FOUND", "Resource not found", false
+		return "NOT_FOUND", tr("llmsverifier_provider_err_resource_not_found"), false
 	case 429:
-		return "RATE_LIMIT_EXCEEDED", "Rate limit exceeded", true
+		return "RATE_LIMIT_EXCEEDED", tr("llmsverifier_provider_err_rate_limit_exceeded"), true
 	case 500, 502, 503, 504:
-		return "SERVER_ERROR", "Internal server error", true
+		return "SERVER_ERROR", tr("llmsverifier_provider_err_internal_server"), true
 	default:
-		return "UNKNOWN_ERROR", "Unknown error occurred", false
+		return "UNKNOWN_ERROR", tr("llmsverifier_provider_err_unknown_occurred"), false
 	}
 }
 
@@ -166,19 +166,19 @@ func (ec *ErrorClassifier) classifyDeepSeekError(statusCode int, body []byte) (s
 func (ec *ErrorClassifier) classifyGoogleError(statusCode int, body []byte) (string, string, bool) {
 	switch statusCode {
 	case 400:
-		return "INVALID_REQUEST", "Invalid request parameters", false
+		return "INVALID_REQUEST", tr("llmsverifier_provider_err_invalid_request_params"), false
 	case 401:
-		return "AUTHENTICATION_FAILED", "Invalid API key", false
+		return "AUTHENTICATION_FAILED", tr("llmsverifier_provider_err_invalid_api_key"), false
 	case 403:
-		return "PERMISSION_DENIED", "Access forbidden", false
+		return "PERMISSION_DENIED", tr("llmsverifier_provider_err_access_forbidden"), false
 	case 404:
-		return "NOT_FOUND", "Resource not found", false
+		return "NOT_FOUND", tr("llmsverifier_provider_err_resource_not_found"), false
 	case 429:
-		return "RATE_LIMIT_EXCEEDED", "Rate limit exceeded", true
+		return "RATE_LIMIT_EXCEEDED", tr("llmsverifier_provider_err_rate_limit_exceeded"), true
 	case 500, 502, 503, 504:
-		return "SERVER_ERROR", "Internal server error", true
+		return "SERVER_ERROR", tr("llmsverifier_provider_err_internal_server"), true
 	default:
-		return "UNKNOWN_ERROR", "Unknown error occurred", false
+		return "UNKNOWN_ERROR", tr("llmsverifier_provider_err_unknown_occurred"), false
 	}
 }
 
@@ -186,19 +186,19 @@ func (ec *ErrorClassifier) classifyGoogleError(statusCode int, body []byte) (str
 func (ec *ErrorClassifier) classifyGenericError(statusCode int, body []byte) (string, string, bool) {
 	switch statusCode {
 	case 400, 422:
-		return "INVALID_REQUEST", "Invalid request", false
+		return "INVALID_REQUEST", tr("llmsverifier_provider_err_invalid_request"), false
 	case 401, 403:
-		return "AUTHENTICATION_FAILED", "Authentication failed", false
+		return "AUTHENTICATION_FAILED", tr("llmsverifier_provider_err_authentication_failed"), false
 	case 404:
-		return "NOT_FOUND", "Resource not found", false
+		return "NOT_FOUND", tr("llmsverifier_provider_err_resource_not_found"), false
 	case 408:
-		return "TIMEOUT", "Request timeout", true
+		return "TIMEOUT", tr("llmsverifier_provider_err_request_timeout"), true
 	case 429:
-		return "RATE_LIMIT_EXCEEDED", "Rate limit exceeded", true
+		return "RATE_LIMIT_EXCEEDED", tr("llmsverifier_provider_err_rate_limit_exceeded"), true
 	case 500, 502, 503, 504:
-		return "SERVER_ERROR", "Server error", true
+		return "SERVER_ERROR", tr("llmsverifier_provider_err_server_error"), true
 	default:
-		return "UNKNOWN_ERROR", "Unknown error", false
+		return "UNKNOWN_ERROR", tr("llmsverifier_provider_err_unknown"), false
 	}
 }
 

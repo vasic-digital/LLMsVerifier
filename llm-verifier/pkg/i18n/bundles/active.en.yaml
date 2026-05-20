@@ -855,3 +855,35 @@ analytics.cost_rec.model_optimization:
 
 analytics.cost_rec.caching:
   other: "Implement response caching to reduce API calls by 30%"
+
+# CONST-046 round-364: providers package error-classification messages
+# (providers/errors.go ErrorClassifier.classify*Error). User-facing
+# ProviderError.Message values surfaced to operators via err.Error().
+llmsverifier_provider_err_network_connection_failed:
+  other: "Network connection failed"
+llmsverifier_provider_err_invalid_request_params:
+  other: "Invalid request parameters"
+llmsverifier_provider_err_invalid_api_key:
+  other: "Invalid API key"
+llmsverifier_provider_err_access_forbidden:
+  other: "Access forbidden"
+llmsverifier_provider_err_resource_not_found:
+  other: "Resource not found"
+llmsverifier_provider_err_rate_limit_exceeded:
+  other: "Rate limit exceeded"
+llmsverifier_provider_err_internal_server:
+  other: "Internal server error"
+llmsverifier_provider_err_unknown_occurred:
+  other: "Unknown error occurred"
+llmsverifier_provider_err_service_overloaded:
+  other: "Service overloaded"
+llmsverifier_provider_err_invalid_request:
+  other: "Invalid request"
+llmsverifier_provider_err_authentication_failed:
+  other: "Authentication failed"
+llmsverifier_provider_err_request_timeout:
+  other: "Request timeout"
+llmsverifier_provider_err_server_error:
+  other: "Server error"
+llmsverifier_provider_err_unknown:
+  other: "Unknown error"
