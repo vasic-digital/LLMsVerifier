@@ -169,16 +169,19 @@ func TestGetSuccessRateMessage(t *testing.T) {
 		context: make(map[string][]string),
 	}
 
+	// CONST-046 round-431: getSuccessRateMessage routes through the
+	// i18n seam. Under the default NoopTranslator the helper returns
+	// the stable message ID verbatim, which is what we assert here.
 	tests := []struct {
 		rate     float64
 		expected string
 	}{
-		{0.95, "excellent system reliability"},
-		{0.90, "good overall performance"},
-		{0.85, "good overall performance"},
-		{0.80, "acceptable but could be improved"},
-		{0.75, "acceptable but could be improved"},
-		{0.70, "needs attention"},
+		{0.95, "enhanced.supervisor.success_rate.excellent"},
+		{0.90, "enhanced.supervisor.success_rate.good"},
+		{0.85, "enhanced.supervisor.success_rate.good"},
+		{0.80, "enhanced.supervisor.success_rate.acceptable"},
+		{0.75, "enhanced.supervisor.success_rate.acceptable"},
+		{0.70, "enhanced.supervisor.success_rate.needs_attention"},
 	}
 
 	for _, tt := range tests {
@@ -192,17 +195,19 @@ func TestGetScoreMessage(t *testing.T) {
 		context: make(map[string][]string),
 	}
 
+	// CONST-046 round-431: getScoreMessage routes through the i18n
+	// seam; NoopTranslator returns the stable message ID verbatim.
 	tests := []struct {
 		score    float64
 		expected string
 	}{
-		{95, "high-quality"},
-		{90, "high-quality"},
-		{85, "good"},
-		{80, "good"},
-		{75, "moderate"},
-		{70, "moderate"},
-		{60, "variable"},
+		{95, "enhanced.supervisor.score_quality.high"},
+		{90, "enhanced.supervisor.score_quality.high"},
+		{85, "enhanced.supervisor.score_quality.good"},
+		{80, "enhanced.supervisor.score_quality.good"},
+		{75, "enhanced.supervisor.score_quality.moderate"},
+		{70, "enhanced.supervisor.score_quality.moderate"},
+		{60, "enhanced.supervisor.score_quality.variable"},
 	}
 
 	for _, tt := range tests {
@@ -216,14 +221,16 @@ func TestGetRecommendations(t *testing.T) {
 		context: make(map[string][]string),
 	}
 
-	// Test with low score and failures
+	// CONST-046 round-431: getRecommendations routes every line
+	// through the i18n seam; NoopTranslator returns message IDs.
+	// Test with low score and failures.
 	result := ai.getRecommendations(70, 5)
-	assert.Contains(t, result, "upgrading to higher-quality models")
-	assert.Contains(t, result, "Investigate and resolve")
+	assert.Contains(t, result, "enhanced.supervisor.recommendation.upgrade_models")
+	assert.Contains(t, result, "enhanced.supervisor.recommendation.investigate_failures")
 
-	// Test with good score and no failures
+	// Test with good score and no failures.
 	result = ai.getRecommendations(90, 0)
-	assert.Contains(t, result, "performing well")
+	assert.Contains(t, result, "enhanced.supervisor.recommendation.performing_well")
 }
 
 func TestAnalyzeIntent(t *testing.T) {
@@ -276,9 +283,9 @@ func TestGenerateHelpResponse(t *testing.T) {
 
 	response := ai.generateHelpResponse()
 
-	assert.Contains(t, response, "LLM Verifier Assistant")
-	assert.Contains(t, response, "Status")
-	assert.Contains(t, response, "Suggestions")
+	// CONST-046 round-431: help text routes through the i18n seam;
+	// NoopTranslator returns the stable message ID verbatim.
+	assert.Equal(t, "enhanced.supervisor.help.body", response)
 }
 
 func TestGenerateStatusResponse(t *testing.T) {
@@ -288,8 +295,8 @@ func TestGenerateStatusResponse(t *testing.T) {
 
 	response := ai.generateStatusResponse()
 
-	assert.Contains(t, response, "System Status")
-	assert.Contains(t, response, "Core Services")
+	// CONST-046 round-431: status block routes through the i18n seam.
+	assert.Equal(t, "enhanced.supervisor.status.body", response)
 }
 
 func TestGenerateSuggestionResponse(t *testing.T) {
@@ -297,13 +304,15 @@ func TestGenerateSuggestionResponse(t *testing.T) {
 		context: make(map[string][]string),
 	}
 
-	// Test with model keyword
+	// CONST-046 round-431: both suggestion branches route through the
+	// i18n seam; NoopTranslator returns the stable message IDs.
+	// Test with model keyword.
 	response := ai.generateSuggestionResponse("suggest a model")
-	assert.Contains(t, response, "Model Recommendations")
+	assert.Equal(t, "enhanced.supervisor.suggestion.model", response)
 
-	// Test without model keyword
+	// Test without model keyword.
 	response = ai.generateSuggestionResponse("suggest something")
-	assert.Contains(t, response, "Smart Suggestions")
+	assert.Equal(t, "enhanced.supervisor.suggestion.general", response)
 }
 
 func TestGenerateConfigurationResponse(t *testing.T) {
@@ -313,8 +322,8 @@ func TestGenerateConfigurationResponse(t *testing.T) {
 
 	response := ai.generateConfigurationResponse("configure something")
 
-	assert.Contains(t, response, "Configuration Assistant")
-	assert.Contains(t, response, "Quick Wins")
+	// CONST-046 round-431: configuration block routes through the i18n seam.
+	assert.Equal(t, "enhanced.supervisor.configuration.body", response)
 }
 
 func TestGenerateGeneralResponse(t *testing.T) {

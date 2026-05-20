@@ -1082,88 +1082,34 @@ func (ai *AIAssistant) analyzeIntent(message string) string {
 	return "general"
 }
 
-// generateHelpResponse generates a helpful response
+// generateHelpResponse generates a helpful response.
+//
+// CONST-046: the help text is a multi-line user-facing assistant reply;
+// it routes through the i18n seam so non-English operators receive a
+// localized capability summary. NoopTranslator returns the message ID
+// verbatim, which keeps the seam contract honest for tests.
 func (ai *AIAssistant) generateHelpResponse() string {
-	return `🤖 **LLM Verifier Assistant**
-
-I can help you with:
-
-📊 **Status & Monitoring**
-- "What's the current status?"
-- "Show me system health"
-- "Check verification progress"
-
-💡 **Suggestions & Recommendations**
-- "Suggest the best model for my use case"
-- "What providers should I use?"
-- "Help me optimize my configuration"
-
-🔍 **Analysis & Insights**
-- "Analyze my verification results"
-- "Check for issues with my setup"
-- "Compare model performance"
-
-⚙️ **Configuration Help**
-- "Help me configure notifications"
-- "Set up scheduling"
-- "Optimize my settings"
-
-Just ask me anything about LLM verification!`
+	return tr("enhanced.supervisor.help.body")
 }
 
-// generateStatusResponse generates a status update
+// generateStatusResponse generates a status update.
+//
+// CONST-046: the status block is user-facing assistant output and
+// routes through the i18n seam.
 func (ai *AIAssistant) generateStatusResponse() string {
-	return `📊 **System Status**
-
-✅ **Core Services**: All running normally
-✅ **Database**: Connected and healthy
-✅ **Event System**: Processing events
-✅ **Scheduler**: Active with 3 jobs queued
-✅ **Monitoring**: All metrics within normal ranges
-
-**Recent Activity:**
-- Processed 127 verifications in the last hour
-- 98.5% success rate
-- Average response time: 2.3 seconds
-
-Everything looks great! 🚀`
+	return tr("enhanced.supervisor.status.body")
 }
 
-// generateSuggestionResponse generates intelligent suggestions
+// generateSuggestionResponse generates intelligent suggestions.
+//
+// CONST-046: both the model-specific and the general suggestion blocks
+// are user-facing assistant replies and route through the i18n seam.
 func (ai *AIAssistant) generateSuggestionResponse(message string) string {
 	if strings.Contains(strings.ToLower(message), "model") {
-		return `🎯 **Model Recommendations**
-
-Based on your usage patterns, I recommend:
-
-🏆 **Primary Model**: GPT-4 Turbo
-- Best overall performance
-- Excellent coding capabilities
-- Good value for money
-
-💪 **Secondary Model**: Claude 3.5 Sonnet
-- Superior reasoning capabilities
-- Better for complex analysis
-- Great for creative tasks
-
-⚡ **Fast Model**: GPT-3.5 Turbo
-- Quick responses for simple tasks
-- Cost-effective for bulk operations
-
-**Configuration Tip**: Use GPT-4 for critical tasks, Claude for analysis, and GPT-3.5 for speed.`
+		return tr("enhanced.supervisor.suggestion.model")
 	}
 
-	return `💡 **Smart Suggestions**
-
-Here are some recommendations for your LLM setup:
-
-1. **Enable Notifications**: Set up Slack/Discord alerts for failed verifications
-2. **Use Scheduling**: Automate daily verification runs during off-peak hours
-3. **Monitor Costs**: Set up alerts for unusual spending patterns
-4. **Backup Regularly**: Enable automatic configuration backups
-5. **Load Balancing**: Distribute requests across multiple providers
-
-Would you like help implementing any of these?`
+	return tr("enhanced.supervisor.suggestion.general")
 }
 
 // generateAnalysisResponse generates analysis responses
@@ -1177,7 +1123,8 @@ func (ai *AIAssistant) generateAnalysisResponse(message string) (string, error) 
 	}
 
 	if len(results) == 0 {
-		return "📊 **Analysis Results**\n\nNo recent verification results found. Run some verifications first!", nil
+		// CONST-046: no-results assistant reply routes through the i18n seam.
+		return tr("enhanced.supervisor.analysis.no_results"), nil
 	}
 
 	// Calculate statistics
@@ -1197,74 +1144,47 @@ func (ai *AIAssistant) generateAnalysisResponse(message string) (string, error) 
 
 	avgScore := totalScore / float64(passed)
 
-	return fmt.Sprintf(`📊 **Analysis Results**
-
-**Summary:**
-- Total verifications: %d
-- Successful: %d (%.1f%%)
-- Failed: %d (%.1f%%)
-- Average score: %.1f/100
-
-**Performance Insights:**
-• %s success rate indicates %s
-• Average score suggests %s model quality
-• %d failures may need attention
-
-**Recommendations:**
-%s`,
-		total, passed, float64(passed)/float64(total)*100,
-		failed, float64(failed)/float64(total)*100,
-		avgScore,
-		fmt.Sprintf("%.1f", float64(passed)/float64(total)*100),
-		ai.getSuccessRateMessage(float64(passed)/float64(total)),
-		ai.getScoreMessage(avgScore),
-		failed,
-		ai.getRecommendations(avgScore, failed)), nil
+	// CONST-046: the analysis-results report is user-facing assistant
+	// output. The template body routes through trData so the i18n
+	// backend materialises the numeric placeholders against its own
+	// template syntax; NoopTranslator returns the message ID verbatim.
+	return trData("enhanced.supervisor.analysis.report", map[string]any{
+		"total":         total,
+		"passed":        passed,
+		"passed_pct":    float64(passed) / float64(total) * 100,
+		"failed":        failed,
+		"failed_pct":    float64(failed) / float64(total) * 100,
+		"avg_score":     avgScore,
+		"success_rate":  ai.getSuccessRateMessage(float64(passed) / float64(total)),
+		"score_quality": ai.getScoreMessage(avgScore),
+		"recommendations": ai.getRecommendations(avgScore, failed),
+	}), nil
 }
 
-// generateConfigurationResponse generates configuration help
+// generateConfigurationResponse generates configuration help.
+//
+// CONST-046: the configuration assistant block is user-facing reply
+// text and routes through the i18n seam.
 func (ai *AIAssistant) generateConfigurationResponse(message string) string {
-	return `⚙️ **Configuration Assistant**
-
-Let's optimize your LLM Verifier setup:
-
-🔧 **Quick Wins:**
-1. Enable Notifications: Get alerts for failures and anomalies
-2. Set Up Scheduling: Automate verification runs
-3. Configure Backups: Never lose your settings
-4. Add Rate Limiting: Prevent API quota exhaustion
-
-📋 **Step-by-Step Guide:**
-
-1. For Notifications:
-   notifications:
-     slack:
-       enabled: true
-       webhook_url: "your-webhook-url"
-
-2. For Scheduling:
-   schedules:
-     - name: "daily-verification"
-       type: "cron"
-       expression: "0 2 * * *"  # Daily at 2 AM
-
-3. For Monitoring:
-   monitoring:
-     enabled: true
-     alert_threshold: 95.0
-
-Need help with a specific configuration? Just ask!`
+	return tr("enhanced.supervisor.configuration.body")
 }
 
-// generateGeneralResponse generates a general conversational response
+// generateGeneralResponse generates a general conversational response.
+//
+// CONST-046: the conversational filler replies are user-facing and
+// route through the i18n seam. The message IDs are stable; the
+// translator backend supplies locale-appropriate text. Selection by
+// message length is preserved so the deterministic behaviour relied on
+// by callers is unchanged.
 func (ai *AIAssistant) generateGeneralResponse(message string) string {
-	responses := []string{
-		"That's an interesting question! Let me help you with that.",
-		"I understand you're asking about LLM verification. How can I assist?",
-		"Great question! Here's what I can tell you:",
-		"I'm here to help with all your LLM verification needs.",
-		"Let me provide some insights on that topic.",
+	responseIDs := []string{
+		"enhanced.supervisor.general.interesting",
+		"enhanced.supervisor.general.understand",
+		"enhanced.supervisor.general.great_question",
+		"enhanced.supervisor.general.here_to_help",
+		"enhanced.supervisor.general.insights",
 	}
+	responses := trList(responseIDs...)
 
 	// Simple response selection based on message length
 	index := len(message) % len(responses)
@@ -1285,45 +1205,52 @@ func (ai *AIAssistant) addToContext(userID, message string) {
 	}
 }
 
+// getSuccessRateMessage classifies a success rate into a user-facing
+// qualitative phrase. CONST-046: the phrases route through the i18n seam.
 func (ai *AIAssistant) getSuccessRateMessage(rate float64) string {
 	if rate >= 0.95 {
-		return "excellent system reliability"
+		return tr("enhanced.supervisor.success_rate.excellent")
 	} else if rate >= 0.85 {
-		return "good overall performance"
+		return tr("enhanced.supervisor.success_rate.good")
 	} else if rate >= 0.75 {
-		return "acceptable but could be improved"
+		return tr("enhanced.supervisor.success_rate.acceptable")
 	}
-	return "needs attention"
+	return tr("enhanced.supervisor.success_rate.needs_attention")
 }
 
+// getScoreMessage classifies an average score into a user-facing
+// qualitative phrase. CONST-046: the phrases route through the i18n seam.
 func (ai *AIAssistant) getScoreMessage(score float64) string {
 	if score >= 90 {
-		return "high-quality"
+		return tr("enhanced.supervisor.score_quality.high")
 	} else if score >= 80 {
-		return "good"
+		return tr("enhanced.supervisor.score_quality.good")
 	} else if score >= 70 {
-		return "moderate"
+		return tr("enhanced.supervisor.score_quality.moderate")
 	}
-	return "variable"
+	return tr("enhanced.supervisor.score_quality.variable")
 }
 
+// getRecommendations builds the user-facing recommendation list shown in
+// the analysis report. CONST-046: every recommendation line routes
+// through the i18n seam.
 func (ai *AIAssistant) getRecommendations(score float64, failures int) string {
 	var recs []string
 
 	if score < 85 {
-		recs = append(recs, "• Consider upgrading to higher-quality models")
+		recs = append(recs, tr("enhanced.supervisor.recommendation.upgrade_models"))
 	}
 
 	if failures > 0 {
-		recs = append(recs, "• Investigate and resolve verification failures")
+		recs = append(recs, tr("enhanced.supervisor.recommendation.investigate_failures"))
 	}
 
 	if len(recs) == 0 {
-		recs = append(recs, "• Your system is performing well! Keep monitoring.")
+		recs = append(recs, tr("enhanced.supervisor.recommendation.performing_well"))
 	}
 
-	recs = append(recs, "• Regular maintenance checks recommended")
-	recs = append(recs, "• Consider enabling advanced analytics for deeper insights")
+	recs = append(recs, tr("enhanced.supervisor.recommendation.regular_maintenance"))
+	recs = append(recs, tr("enhanced.supervisor.recommendation.advanced_analytics"))
 
 	return strings.Join(recs, "\n")
 }

@@ -252,3 +252,85 @@ func TestGenerateRecommendations_RoutesThroughTranslator(t *testing.T) {
 		}
 	})
 }
+
+// TestAIAssistant_StaticResponses_RouteThroughTranslator drives the
+// AIAssistant chat-reply generators (round-431, CONST-046 Phase 4
+// round 33) and asserts every user-facing assistant reply routes
+// through the i18n seam. Paired-mutation anti-bluff per §1.1: if any
+// generator regressed to a hardcoded English literal, the
+// "<TRANSLATED:...>" sentinel would be absent and this fails.
+func TestAIAssistant_StaticResponses_RouteThroughTranslator(t *testing.T) {
+	ai := &AIAssistant{context: map[string][]string{}}
+	withFakeTranslator(t, func() {
+		checks := map[string]string{
+			"help":                ai.generateHelpResponse(),
+			"status":              ai.generateStatusResponse(),
+			"suggestion-model":    ai.generateSuggestionResponse("which model is best"),
+			"suggestion-general":  ai.generateSuggestionResponse("give me tips"),
+			"configuration":       ai.generateConfigurationResponse("help config"),
+			"general":             ai.generateGeneralResponse("hello there"),
+		}
+		for name, got := range checks {
+			if !strings.HasPrefix(got, "<TRANSLATED:enhanced.supervisor.") {
+				t.Errorf("%s response not routed through i18n seam: %q", name, got)
+			}
+		}
+	})
+}
+
+// TestAIAssistant_SuggestionResponse_BranchesRouteDistinctIDs confirms
+// the model-specific and general suggestion branches resolve to
+// distinct message IDs — a regression that collapsed both branches to
+// one literal would produce identical sentinels and fail this.
+func TestAIAssistant_SuggestionResponse_BranchesRouteDistinctIDs(t *testing.T) {
+	ai := &AIAssistant{}
+	withFakeTranslator(t, func() {
+		model := ai.generateSuggestionResponse("recommend a model")
+		general := ai.generateSuggestionResponse("any advice")
+		if model == general {
+			t.Errorf("model and general suggestion branches collapsed to same ID: %q", model)
+		}
+		if model != "<TRANSLATED:enhanced.supervisor.suggestion.model>" {
+			t.Errorf("model branch routed unexpected ID: %q", model)
+		}
+		if general != "<TRANSLATED:enhanced.supervisor.suggestion.general>" {
+			t.Errorf("general branch routed unexpected ID: %q", general)
+		}
+	})
+}
+
+// TestAIAssistant_QualitativeHelpers_RouteThroughTranslator drives the
+// getSuccessRateMessage / getScoreMessage / getRecommendations helpers
+// across every threshold band and asserts each qualitative phrase
+// routes through the i18n seam.
+func TestAIAssistant_QualitativeHelpers_RouteThroughTranslator(t *testing.T) {
+	ai := &AIAssistant{}
+	withFakeTranslator(t, func() {
+		for _, rate := range []float64{0.99, 0.90, 0.78, 0.50} {
+			if got := ai.getSuccessRateMessage(rate); !strings.HasPrefix(got, "<TRANSLATED:enhanced.supervisor.success_rate.") {
+				t.Errorf("getSuccessRateMessage(%v) not routed: %q", rate, got)
+			}
+		}
+		for _, score := range []float64{95, 85, 75, 40} {
+			if got := ai.getScoreMessage(score); !strings.HasPrefix(got, "<TRANSLATED:enhanced.supervisor.score_quality.") {
+				t.Errorf("getScoreMessage(%v) not routed: %q", score, got)
+			}
+		}
+		// Low score + failures: exercises upgrade + investigate + maintenance branches.
+		recs := ai.getRecommendations(60, 3)
+		for _, want := range []string{
+			"<TRANSLATED:enhanced.supervisor.recommendation.upgrade_models",
+			"<TRANSLATED:enhanced.supervisor.recommendation.investigate_failures",
+			"<TRANSLATED:enhanced.supervisor.recommendation.regular_maintenance",
+		} {
+			if !strings.Contains(recs, want) {
+				t.Errorf("getRecommendations missing routed fragment %q:\n%s", want, recs)
+			}
+		}
+		// High score + zero failures: exercises the performing-well branch.
+		recsClean := ai.getRecommendations(95, 0)
+		if !strings.Contains(recsClean, "<TRANSLATED:enhanced.supervisor.recommendation.performing_well") {
+			t.Errorf("getRecommendations(clean) missing performing-well fragment:\n%s", recsClean)
+		}
+	})
+}
