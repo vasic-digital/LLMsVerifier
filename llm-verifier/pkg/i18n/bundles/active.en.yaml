@@ -1379,3 +1379,38 @@ llmsverifier_crushconv_brotli_supported_providers:
   other: "- Brotli-supported providers: %d\n"
 llmsverifier_crushconv_brotli_support_rate:
   other: "- Brotli support rate: %.2f%%\n"
+
+# --- round-427: enhanced/validation cross-provider + context-aware validator ---
+# Migrated from hardcoded literals in enhanced/validation/schema.go
+# (CrossProviderValidator.ValidateConsistency, ContextAwareValidator
+# SetupDefaultRules rule descriptions + actions) per CONST-046 Phase 4 round 32.
+validation.warning.cross_validation_needs_two_providers:
+  other: "Need at least 2 providers for cross-validation"
+validation.warning.could_not_extract_scores:
+  other: "Could not extract scores from provider results"
+validation.warning.large_score_variation:
+  other: "Large score variation across providers: {{.points}} points"
+validation.warning.scores_trending_downward:
+  other: "Validation scores trending downward"
+validation.warning.recurring_error_pattern:
+  other: "Recurring error pattern: {{.error}} ({{.count}} occurrences)"
+validation.warning.high_request_frequency:
+  other: "High request frequency detected - may indicate abuse"
+validation.warning.large_context_window:
+  other: "Large context window may impact response quality and latency"
+validation.warning.model_performance_drift:
+  other: "Significant model performance drift detected"
+validation.warning.high_error_rate_outage:
+  other: "High error rate may indicate provider outage or configuration issues"
+validation.error.prompt_suspicious_patterns:
+  other: "Prompt contains suspicious patterns that may violate usage policies"
+validation.rule.high_frequency_user.desc:
+  other: "Check for unusually high request frequency from user"
+validation.rule.large_context_window.desc:
+  other: "Check for very large context windows that may impact performance"
+validation.rule.suspicious_prompt_patterns.desc:
+  other: "Check for suspicious prompt patterns that may indicate jailbreak attempts"
+validation.rule.model_performance_drift.desc:
+  other: "Check for significant changes in model performance over time"
+validation.rule.provider_outage_pattern.desc:
+  other: "Check for patterns indicating provider outages"

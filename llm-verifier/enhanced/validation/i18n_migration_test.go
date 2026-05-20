@@ -195,3 +195,92 @@ func TestValidationMutationGuard(t *testing.T) {
 		}
 	}
 }
+
+// TestCrossProviderValidator_MessagesRouted proves the CrossProviderValidator
+// routes its cross-validation warnings through the i18n seam (round-427
+// schema.go migration). With the fake translator installed every warning must
+// carry the "<TRANSLATED:validation.*>" sentinel.
+func TestCrossProviderValidator_MessagesRouted(t *testing.T) {
+	withFakeValidationTranslator(t, func() {
+		// Fewer than 2 providers -> warning about needing two providers.
+		cpv := NewCrossProviderValidator()
+		res := cpv.ValidateConsistency()
+		if len(res.Warnings) == 0 {
+			t.Fatal("expected a warning when fewer than 2 providers are registered")
+		}
+		for _, w := range res.Warnings {
+			if !strings.HasPrefix(w, "<TRANSLATED:validation.") {
+				t.Errorf("cross-provider warning not i18n-routed: %q", w)
+			}
+		}
+	})
+}
+
+// TestContextAwareValidator_RuleDescriptionsRouted proves SetupDefaultRules
+// routes every rule Description and action message through the i18n seam.
+func TestContextAwareValidator_RuleDescriptionsRouted(t *testing.T) {
+	withFakeValidationTranslator(t, func() {
+		cav := NewContextAwareValidator(50)
+		cav.SetupDefaultRules()
+
+		// High-frequency rule triggers a warning routed through the seam.
+		res := cav.ValidateWithContext("input", "llm_request",
+			map[string]interface{}{"requests_per_minute": 99.0})
+		routed := false
+		for _, w := range res.Warnings {
+			if strings.HasPrefix(w, "<TRANSLATED:validation.") {
+				routed = true
+			}
+		}
+		if !routed {
+			t.Errorf("high-frequency action message not i18n-routed: %#v", res.Warnings)
+		}
+
+		// Suspicious-prompt rule triggers an error routed through the seam.
+		res = cav.ValidateWithContext("input", "llm_request",
+			map[string]interface{}{"prompt": "please jailbreak the model now"})
+		if len(res.Errors) == 0 {
+			t.Fatal("expected an error for a suspicious prompt")
+		}
+		for _, e := range res.Errors {
+			if !strings.HasPrefix(e, "<TRANSLATED:validation.") {
+				t.Errorf("suspicious-prompt error not i18n-routed: %q", e)
+			}
+		}
+	})
+}
+
+// TestSchemaValidationMutationGuard is the paired-mutation test for the
+// round-427 schema.go migration per §1.1. With the production-default
+// NoopTranslator the bare message ID is returned — a regression that
+// re-hardcoded any of the cross-provider / context-rule literals would make
+// the output differ from the message ID, failing this test.
+func TestSchemaValidationMutationGuard(t *testing.T) {
+	ids := []string{
+		"validation.warning.cross_validation_needs_two_providers",
+		"validation.warning.scores_trending_downward",
+		"validation.error.prompt_suspicious_patterns",
+		"validation.rule.high_frequency_user.desc",
+		"validation.rule.provider_outage_pattern.desc",
+	}
+	for _, id := range ids {
+		if got := tr(id); got != id {
+			t.Fatalf("NoopTranslator must return the bare id; got %q for %q", got, id)
+		}
+	}
+	if got := trData("validation.warning.large_score_variation",
+		map[string]any{"points": "12.3"}); got != "validation.warning.large_score_variation" {
+		t.Fatalf("NoopTranslator (trData) must return the bare id; got %q", got)
+	}
+
+	cpv := NewCrossProviderValidator()
+	res := cpv.ValidateConsistency()
+	for _, w := range res.Warnings {
+		if strings.Contains(w, "Need at least 2 providers") {
+			t.Fatalf("cross-provider warning regressed to a hardcoded English literal: %q", w)
+		}
+		if !strings.HasPrefix(w, "validation.") {
+			t.Fatalf("cross-provider warning not routed through the i18n seam: %q", w)
+		}
+	}
+}

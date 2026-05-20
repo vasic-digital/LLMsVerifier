@@ -426,7 +426,7 @@ func (cpv *CrossProviderValidator) ValidateConsistency() *ValidationResult {
 	}
 
 	if len(cpv.providerResults) < 2 {
-		result.Warnings = append(result.Warnings, "Need at least 2 providers for cross-validation")
+		result.Warnings = append(result.Warnings, tr("validation.warning.cross_validation_needs_two_providers"))
 		result.Score = 0.8
 		return result
 	}
@@ -441,7 +441,7 @@ func (cpv *CrossProviderValidator) ValidateConsistency() *ValidationResult {
 	}
 
 	if len(scores) < 2 {
-		result.Warnings = append(result.Warnings, "Could not extract scores from provider results")
+		result.Warnings = append(result.Warnings, tr("validation.warning.could_not_extract_scores"))
 		result.Score = 0.7
 		return result
 	}
@@ -451,7 +451,7 @@ func (cpv *CrossProviderValidator) ValidateConsistency() *ValidationResult {
 	maxDeviation := cpv.calculateMaxDeviation(scores, avgScore)
 
 	if maxDeviation > 20.0 { // More than 20 points difference
-		result.Warnings = append(result.Warnings, fmt.Sprintf("Large score variation across providers: %.1f points", maxDeviation))
+		result.Warnings = append(result.Warnings, trData("validation.warning.large_score_variation", map[string]any{"points": fmt.Sprintf("%.1f", maxDeviation)}))
 		result.Score -= 0.2
 	}
 
@@ -654,7 +654,7 @@ func (cav *ContextAwareValidator) addHistoricalContext(result *ValidationResult,
 	// Check for performance trends
 	performanceTrend := cav.analyzePerformanceTrend(recentResults)
 	if performanceTrend < 0 {
-		result.Warnings = append(result.Warnings, "Validation scores trending downward")
+		result.Warnings = append(result.Warnings, tr("validation.warning.scores_trending_downward"))
 		result.Score -= 0.05
 	}
 
@@ -676,7 +676,7 @@ func (cav *ContextAwareValidator) analyzeErrorPatterns(results []ValidationResul
 	var patterns []string
 	for errorMsg, count := range errorCounts {
 		if count >= 3 { // Error occurred 3+ times recently
-			patterns = append(patterns, fmt.Sprintf("Recurring error pattern: %s (%d occurrences)", errorMsg, count))
+			patterns = append(patterns, trData("validation.warning.recurring_error_pattern", map[string]any{"error": errorMsg, "count": count}))
 		}
 	}
 
@@ -731,7 +731,7 @@ func (cav *ContextAwareValidator) SetupDefaultRules() {
 	// LLM Request Context Rules
 	cav.AddRule("llm_request", ValidationRule{
 		Name:        "high_frequency_user",
-		Description: "Check for unusually high request frequency from user",
+		Description: tr("validation.rule.high_frequency_user.desc"),
 		Condition: func(context map[string]interface{}) bool {
 			if frequency, ok := context["requests_per_minute"].(float64); ok {
 				return frequency > 10.0 // More than 10 requests per minute
@@ -739,7 +739,7 @@ func (cav *ContextAwareValidator) SetupDefaultRules() {
 			return false
 		},
 		Action: func(result *ValidationResult, context map[string]interface{}) {
-			result.Warnings = append(result.Warnings, "High request frequency detected - may indicate abuse")
+			result.Warnings = append(result.Warnings, tr("validation.warning.high_request_frequency"))
 			result.Score -= 0.2
 			result.Metadata["high_frequency_detected"] = true
 		},
@@ -748,7 +748,7 @@ func (cav *ContextAwareValidator) SetupDefaultRules() {
 
 	cav.AddRule("llm_request", ValidationRule{
 		Name:        "large_context_window",
-		Description: "Check for very large context windows that may impact performance",
+		Description: tr("validation.rule.large_context_window.desc"),
 		Condition: func(context map[string]interface{}) bool {
 			if messages, ok := context["message_count"].(int); ok {
 				return messages > 20 // More than 20 messages
@@ -756,7 +756,7 @@ func (cav *ContextAwareValidator) SetupDefaultRules() {
 			return false
 		},
 		Action: func(result *ValidationResult, context map[string]interface{}) {
-			result.Warnings = append(result.Warnings, "Large context window may impact response quality and latency")
+			result.Warnings = append(result.Warnings, tr("validation.warning.large_context_window"))
 			result.Score -= 0.1
 			result.Metadata["large_context"] = true
 		},
@@ -765,7 +765,7 @@ func (cav *ContextAwareValidator) SetupDefaultRules() {
 
 	cav.AddRule("llm_request", ValidationRule{
 		Name:        "suspicious_prompt_patterns",
-		Description: "Check for suspicious prompt patterns that may indicate jailbreak attempts",
+		Description: tr("validation.rule.suspicious_prompt_patterns.desc"),
 		Condition: func(context map[string]interface{}) bool {
 			if prompt, ok := context["prompt"].(string); ok {
 				suspiciousPatterns := []string{
@@ -784,7 +784,7 @@ func (cav *ContextAwareValidator) SetupDefaultRules() {
 			return false
 		},
 		Action: func(result *ValidationResult, context map[string]interface{}) {
-			result.Errors = append(result.Errors, "Prompt contains suspicious patterns that may violate usage policies")
+			result.Errors = append(result.Errors, tr("validation.error.prompt_suspicious_patterns"))
 			result.Passed = false
 			result.Score = 0.0
 			result.Metadata["suspicious_content"] = true
@@ -795,7 +795,7 @@ func (cav *ContextAwareValidator) SetupDefaultRules() {
 	// Verification Context Rules
 	cav.AddRule("verification", ValidationRule{
 		Name:        "model_performance_drift",
-		Description: "Check for significant changes in model performance over time",
+		Description: tr("validation.rule.model_performance_drift.desc"),
 		Condition: func(context map[string]interface{}) bool {
 			if baselineScore, ok := context["baseline_score"].(float64); ok {
 				if currentScore, ok := context["current_score"].(float64); ok {
@@ -806,7 +806,7 @@ func (cav *ContextAwareValidator) SetupDefaultRules() {
 			return false
 		},
 		Action: func(result *ValidationResult, context map[string]interface{}) {
-			result.Warnings = append(result.Warnings, "Significant model performance drift detected")
+			result.Warnings = append(result.Warnings, tr("validation.warning.model_performance_drift"))
 			result.Score -= 0.3
 			result.Metadata["performance_drift"] = true
 		},
@@ -815,7 +815,7 @@ func (cav *ContextAwareValidator) SetupDefaultRules() {
 
 	cav.AddRule("verification", ValidationRule{
 		Name:        "provider_outage_pattern",
-		Description: "Check for patterns indicating provider outages",
+		Description: tr("validation.rule.provider_outage_pattern.desc"),
 		Condition: func(context map[string]interface{}) bool {
 			if recentErrors, ok := context["recent_errors"].(int); ok {
 				if totalRequests, ok := context["total_requests"].(int); ok {
@@ -826,7 +826,7 @@ func (cav *ContextAwareValidator) SetupDefaultRules() {
 			return false
 		},
 		Action: func(result *ValidationResult, context map[string]interface{}) {
-			result.Warnings = append(result.Warnings, "High error rate may indicate provider outage or configuration issues")
+			result.Warnings = append(result.Warnings, tr("validation.warning.high_error_rate_outage"))
 			result.Score -= 0.4
 			result.Metadata["potential_outage"] = true
 		},
