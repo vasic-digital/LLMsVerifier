@@ -109,7 +109,7 @@ func (cf *ContentFilter) FilterContent(content string) (*FilteredContent, error)
 			result.IsAllowed = false
 			result.Violations = append(result.Violations, ContentViolation{
 				Type:        "banned_word",
-				Description: fmt.Sprintf("Contains banned word: %s", cleanWord),
+				Description: trData("api.content_filter.banned_word", map[string]any{"word": cleanWord}),
 				Severity:    "high",
 			})
 		}
@@ -118,7 +118,7 @@ func (cf *ContentFilter) FilterContent(content string) (*FilteredContent, error)
 			result.IsAllowed = false
 			result.Violations = append(result.Violations, ContentViolation{
 				Type:        "toxicity",
-				Description: fmt.Sprintf("Contains potentially toxic content: %s", cleanWord),
+				Description: trData("api.content_filter.toxic_content", map[string]any{"word": cleanWord}),
 				Severity:    "medium",
 			})
 		}
@@ -130,7 +130,7 @@ func (cf *ContentFilter) FilterContent(content string) (*FilteredContent, error)
 			result.IsAllowed = false
 			result.Violations = append(result.Violations, ContentViolation{
 				Type:        "pattern_match",
-				Description: fmt.Sprintf("Matches banned pattern: %s", pattern.String()),
+				Description: trData("api.content_filter.pattern_match", map[string]any{"pattern": pattern.String()}),
 				Severity:    "high",
 			})
 		}

@@ -114,9 +114,9 @@ func (cc *ComplianceChecker) checkSensitiveFields(data map[string]interface{}, r
 		if cc.sensitiveFields[strings.ToLower(key)] {
 			result.Violations = append(result.Violations, ComplianceViolation{
 				Type:        "sensitive_field",
-				Description: fmt.Sprintf("Sensitive field detected: %s", key),
+				Description: trData("api.compliance.sensitive_field_detected", map[string]any{"field": key}),
 				Severity:    "high",
-				Remediation: "Ensure proper encryption and access controls",
+				Remediation: tr("api.compliance.sensitive_field_remediation"),
 			})
 		}
 	}
@@ -129,9 +129,9 @@ func (cc *ComplianceChecker) checkDataRetention(data map[string]interface{}, res
 		if cc.isDataExpired(createdAt) {
 			result.Violations = append(result.Violations, ComplianceViolation{
 				Type:        "retention_violation",
-				Description: "Data exceeds retention period",
+				Description: tr("api.compliance.retention_exceeded"),
 				Severity:    "medium",
-				Remediation: "Delete or archive expired data",
+				Remediation: tr("api.compliance.retention_remediation"),
 			})
 			result.RetentionCheck = false
 		}
@@ -145,9 +145,9 @@ func (cc *ComplianceChecker) checkGDPRCompliance(data map[string]interface{}, re
 		if result.PIIDetected {
 			result.Violations = append(result.Violations, ComplianceViolation{
 				Type:        "gdpr_violation",
-				Description: "PII data processed without GDPR consent",
+				Description: tr("api.compliance.gdpr_no_consent"),
 				Severity:    "critical",
-				Remediation: "Obtain explicit user consent before processing personal data",
+				Remediation: tr("api.compliance.gdpr_consent_remediation"),
 			})
 		}
 	}
@@ -157,9 +157,9 @@ func (cc *ComplianceChecker) checkGDPRCompliance(data map[string]interface{}, re
 	if fieldCount > 20 { // Arbitrary threshold
 		result.Violations = append(result.Violations, ComplianceViolation{
 			Type:        "gdpr_violation",
-			Description: "Excessive data collection (data minimization principle)",
+			Description: tr("api.compliance.excessive_collection"),
 			Severity:    "medium",
-			Remediation: "Collect only necessary data fields",
+			Remediation: tr("api.compliance.minimization_remediation"),
 		})
 	}
 }
@@ -210,9 +210,9 @@ func (cc *ComplianceChecker) CheckRequestCompliance(r *http.Request) *Compliance
 			result.PIIDetected = true
 			result.Violations = append(result.Violations, ComplianceViolation{
 				Type:        "pii_in_query",
-				Description: "PII detected in URL query parameters",
+				Description: tr("api.compliance.pii_in_query"),
 				Severity:    "high",
-				Remediation: "Avoid passing PII in URL parameters",
+				Remediation: tr("api.compliance.pii_in_query_remediation"),
 			})
 		}
 	}
@@ -222,9 +222,9 @@ func (cc *ComplianceChecker) CheckRequestCompliance(r *http.Request) *Compliance
 		if cc.sensitiveFields[strings.ToLower(header)] {
 			result.Violations = append(result.Violations, ComplianceViolation{
 				Type:        "sensitive_header",
-				Description: fmt.Sprintf("Sensitive header detected: %s", header),
+				Description: trData("api.compliance.sensitive_header_detected", map[string]any{"header": header}),
 				Severity:    "medium",
-				Remediation: "Avoid sending sensitive data in headers",
+				Remediation: tr("api.compliance.sensitive_header_remediation"),
 			})
 		}
 
@@ -235,9 +235,9 @@ func (cc *ComplianceChecker) CheckRequestCompliance(r *http.Request) *Compliance
 				result.PIIDetected = true
 				result.Violations = append(result.Violations, ComplianceViolation{
 					Type:        "pii_in_header",
-					Description: fmt.Sprintf("PII detected in header: %s", header),
+					Description: trData("api.compliance.pii_in_header", map[string]any{"header": header}),
 					Severity:    "high",
-					Remediation: "Avoid including PII in HTTP headers",
+					Remediation: tr("api.compliance.pii_in_header_remediation"),
 				})
 			}
 		}

@@ -577,3 +577,56 @@ monitoring.notifications.ready_no_messages:
 
 monitoring.notifications.operational:
   other: "Notification system operational (delivery rate: {{.percent}}%)"
+
+# --- round-349 (CONST-046 Phase 4 round 13): api package compliance + content-filter ---
+
+api.compliance.sensitive_field_detected:
+  other: "Sensitive field detected: {{.field}}"
+
+api.compliance.sensitive_field_remediation:
+  other: "Ensure proper encryption and access controls"
+
+api.compliance.retention_exceeded:
+  other: "Data exceeds retention period"
+
+api.compliance.retention_remediation:
+  other: "Delete or archive expired data"
+
+api.compliance.gdpr_no_consent:
+  other: "PII data processed without GDPR consent"
+
+api.compliance.gdpr_consent_remediation:
+  other: "Obtain explicit user consent before processing personal data"
+
+api.compliance.excessive_collection:
+  other: "Excessive data collection (data minimization principle)"
+
+api.compliance.minimization_remediation:
+  other: "Collect only necessary data fields"
+
+api.compliance.pii_in_query:
+  other: "PII detected in URL query parameters"
+
+api.compliance.pii_in_query_remediation:
+  other: "Avoid passing PII in URL parameters"
+
+api.compliance.sensitive_header_detected:
+  other: "Sensitive header detected: {{.header}}"
+
+api.compliance.sensitive_header_remediation:
+  other: "Avoid sending sensitive data in headers"
+
+api.compliance.pii_in_header:
+  other: "PII detected in header: {{.header}}"
+
+api.compliance.pii_in_header_remediation:
+  other: "Avoid including PII in HTTP headers"
+
+api.content_filter.banned_word:
+  other: "Contains banned word: {{.word}}"
+
+api.content_filter.toxic_content:
+  other: "Contains potentially toxic content: {{.word}}"
+
+api.content_filter.pattern_match:
+  other: "Matches banned pattern: {{.pattern}}"
