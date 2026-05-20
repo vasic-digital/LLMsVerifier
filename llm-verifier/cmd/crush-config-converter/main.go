@@ -78,7 +78,7 @@ type CrushConfig struct {
 
 func main() {
 	if len(os.Args) < 2 {
-		log.Fatal("Usage: go run converter.go <discovery_json_file> [--brotli-only]")
+		log.Fatal(tr("llmsverifier_crushconv_usage"))
 	}
 
 	discoveryFile := os.Args[1]
@@ -86,17 +86,17 @@ func main() {
 
 	if len(os.Args) > 2 && os.Args[2] == "--brotli-only" {
 		brotliOnly = true
-		fmt.Println("Generating Brotli-optimized configuration...")
+		fmt.Println(tr("llmsverifier_crushconv_generating_brotli"))
 	}
 
 	data, err := ioutil.ReadFile(discoveryFile)
 	if err != nil {
-		log.Fatalf("Failed to read discovery file: %v", err)
+		log.Fatalf(tr("llmsverifier_crushconv_err_read_discovery"), err)
 	}
 
 	var result DiscoveryResult
 	if err := json.Unmarshal(data, &result); err != nil {
-		log.Fatalf("Failed to parse JSON: %v", err)
+		log.Fatalf(tr("llmsverifier_crushconv_err_parse_json"), err)
 	}
 
 	// Filter for Brotli-only if requested
@@ -109,7 +109,7 @@ func main() {
 
 	output, err := json.MarshalIndent(crushConfig, "", "  ")
 	if err != nil {
-		log.Fatalf("Failed to marshal config: %v", err)
+		log.Fatalf(tr("llmsverifier_crushconv_err_marshal_config"), err)
 	}
 
 	// Write full config (with API keys)
@@ -120,31 +120,31 @@ func main() {
 
 	outputFile := baseName + "_crush_config.json"
 	if err := ioutil.WriteFile(outputFile, output, 0644); err != nil {
-		log.Fatalf("Failed to write config: %v", err)
+		log.Fatalf(tr("llmsverifier_crushconv_err_write_config"), err)
 	}
 
 	// Create redacted config (remove API keys)
 	redactedConfig := createRedactedCrushConfig(crushConfig)
 	redactedOutput, err := json.MarshalIndent(redactedConfig, "", "  ")
 	if err != nil {
-		log.Fatalf("Failed to marshal redacted config: %v", err)
+		log.Fatalf(tr("llmsverifier_crushconv_err_marshal_redacted"), err)
 	}
 
 	redactedOutputFile := baseName + "_crush_config_redacted.json"
 	if err := ioutil.WriteFile(redactedOutputFile, redactedOutput, 0644); err != nil {
-		log.Fatalf("Failed to write redacted config: %v", err)
+		log.Fatalf(tr("llmsverifier_crushconv_err_write_redacted"), err)
 	}
 
 	// Create OpenCode config
 	opencodeConfig := convertToOpenCodeConfig(result)
 	opencodeOutput, err := json.MarshalIndent(opencodeConfig, "", "  ")
 	if err != nil {
-		log.Fatalf("Failed to marshal OpenCode config: %v", err)
+		log.Fatalf(tr("llmsverifier_crushconv_err_marshal_opencode"), err)
 	}
 
 	opencodeOutputFile := baseName + "_opencode_config.json"
 	if err := ioutil.WriteFile(opencodeOutputFile, opencodeOutput, 0644); err != nil {
-		log.Fatalf("Failed to write OpenCode config: %v", err)
+		log.Fatalf(tr("llmsverifier_crushconv_err_write_opencode"), err)
 	}
 
 	// Generate Brotli statistics
@@ -153,16 +153,16 @@ func main() {
 	statsFile := baseName + "_brotli_stats.json"
 	ioutil.WriteFile(statsFile, statsOutput, 0644)
 
-	fmt.Printf("Crush config written to: %s\n", outputFile)
-	fmt.Printf("Redacted Crush config written to: %s\n", redactedOutputFile)
-	fmt.Printf("OpenCode config written to: %s\n", opencodeOutputFile)
-	fmt.Printf("Brotli statistics written to: %s\n", statsFile)
+	fmt.Printf(tr("llmsverifier_crushconv_written_crush"), outputFile)
+	fmt.Printf(tr("llmsverifier_crushconv_written_redacted"), redactedOutputFile)
+	fmt.Printf(tr("llmsverifier_crushconv_written_opencode"), opencodeOutputFile)
+	fmt.Printf(tr("llmsverifier_crushconv_written_stats"), statsFile)
 
 	if brotliOnly {
-		fmt.Printf("\nBrotli-optimized configuration generated:\n")
-		fmt.Printf("- Total providers: %d\n", brotliStats.TotalProviders)
-		fmt.Printf("- Brotli-supported providers: %d\n", brotliStats.BrotliSupportedProviders)
-		fmt.Printf("- Brotli support rate: %.2f%%\n", brotliStats.BrotliSupportRate)
+		fmt.Print(tr("llmsverifier_crushconv_brotli_summary_header"))
+		fmt.Printf(tr("llmsverifier_crushconv_brotli_total_providers"), brotliStats.TotalProviders)
+		fmt.Printf(tr("llmsverifier_crushconv_brotli_supported_providers"), brotliStats.BrotliSupportedProviders)
+		fmt.Printf(tr("llmsverifier_crushconv_brotli_support_rate"), brotliStats.BrotliSupportRate)
 	}
 }
 

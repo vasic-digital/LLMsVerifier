@@ -553,7 +553,11 @@ func TestDetector_Query_HTTP3Requirement(t *testing.T) {
 
 	assert.False(t, result.Matches, "No provider supports HTTP/3")
 	assert.Contains(t, result.MissingCaps, "http3")
-	assert.Contains(t, result.Recommendations[0], "HTTP/3 is not currently supported")
+	// CONST-046: the HTTP/3 recommendation is now i18n-routed through the
+	// package translator. With the default NoopTranslator the messageID is
+	// returned verbatim, so the recommendation carries the stable
+	// message-ID sentinel rather than a hardcoded English literal.
+	assert.Contains(t, result.Recommendations[0], "llmsverifier_capabilities_rec_http3_unsupported_any")
 }
 
 func TestDetector_Query_UnknownProvider(t *testing.T) {

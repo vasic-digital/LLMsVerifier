@@ -92,7 +92,7 @@ func (cg *ConfigGenerator) GenerateForAgent(agentName string, providerCaps *Prov
 	// Add recommendations for HTTP/3
 	if !agentCaps.Network.HTTP3Supported {
 		config.Recommendations = append(config.Recommendations,
-			"HTTP/3 is not supported by this CLI agent. Using HTTP/2 for optimal performance.")
+			tr("llmsverifier_capabilities_rec_http3_unsupported_agent"))
 	}
 
 	return config, nil
@@ -702,7 +702,7 @@ func (cg *ConfigGenerator) generateDeepSeekCLIConfig(config *GeneratedConfig, ag
 
 	// Note: DeepSeek CLI does not support streaming
 	config.Recommendations = append(config.Recommendations,
-		"DeepSeek CLI does not support streaming. Consider using a different CLI agent for streaming support.")
+		tr("llmsverifier_capabilities_rec_deepseek_no_streaming"))
 
 	config.Content = content
 }
@@ -778,7 +778,7 @@ func (cg *ConfigGenerator) GenerateAllConfigs(outputDir string, providerCaps *Pr
 		outputPath := filepath.Join(outputDir, fmt.Sprintf("%s-config.json", agent))
 		if err := cg.SaveConfig(config, outputPath); err != nil {
 			config.Recommendations = append(config.Recommendations,
-				fmt.Sprintf("Failed to save config: %v", err))
+				fmt.Sprintf(tr("llmsverifier_capabilities_rec_save_config_failed"), err))
 		}
 
 		configs = append(configs, config)

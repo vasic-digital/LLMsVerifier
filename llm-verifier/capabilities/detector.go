@@ -176,7 +176,7 @@ func (d *Detector) Query(ctx context.Context, query *CapabilityQuery) (*Capabili
 				matchCount++
 			} else {
 				result.MissingCaps = append(result.MissingCaps, "http3")
-				result.Recommendations = append(result.Recommendations, "HTTP/3 is not currently supported by any CLI agent. Consider using HTTP/2 instead.")
+				result.Recommendations = append(result.Recommendations, tr("llmsverifier_capabilities_rec_http3_unsupported_any"))
 			}
 		}
 

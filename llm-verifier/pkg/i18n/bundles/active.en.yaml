@@ -1329,3 +1329,53 @@ config.validation.log_max_size_positive:
   other: "max_size must be positive"
 config.validation.log_max_age_non_negative:
   other: "max_age must be non-negative"
+
+# CONST-046 round 31 (Phase 4) — capabilities package: config-generation
+# and capability-detection recommendations previously hardcoded English.
+llmsverifier_capabilities_rec_http3_unsupported_agent:
+  other: "HTTP/3 is not supported by this CLI agent. Using HTTP/2 for optimal performance."
+llmsverifier_capabilities_rec_http3_unsupported_any:
+  other: "HTTP/3 is not currently supported by any CLI agent. Consider using HTTP/2 instead."
+llmsverifier_capabilities_rec_deepseek_no_streaming:
+  other: "DeepSeek CLI does not support streaming. Consider using a different CLI agent for streaming support."
+llmsverifier_capabilities_rec_save_config_failed:
+  other: "Failed to save config: %v"
+
+# CONST-046 round 31 (Phase 4) — crush-config-converter CLI: user-facing
+# status lines and fatal error messages previously hardcoded English.
+llmsverifier_crushconv_usage:
+  other: "Usage: go run converter.go <discovery_json_file> [--brotli-only]"
+llmsverifier_crushconv_generating_brotli:
+  other: "Generating Brotli-optimized configuration..."
+llmsverifier_crushconv_err_read_discovery:
+  other: "Failed to read discovery file: %v"
+llmsverifier_crushconv_err_parse_json:
+  other: "Failed to parse JSON: %v"
+llmsverifier_crushconv_err_marshal_config:
+  other: "Failed to marshal config: %v"
+llmsverifier_crushconv_err_write_config:
+  other: "Failed to write config: %v"
+llmsverifier_crushconv_err_marshal_redacted:
+  other: "Failed to marshal redacted config: %v"
+llmsverifier_crushconv_err_write_redacted:
+  other: "Failed to write redacted config: %v"
+llmsverifier_crushconv_err_marshal_opencode:
+  other: "Failed to marshal OpenCode config: %v"
+llmsverifier_crushconv_err_write_opencode:
+  other: "Failed to write OpenCode config: %v"
+llmsverifier_crushconv_written_crush:
+  other: "Crush config written to: %s\n"
+llmsverifier_crushconv_written_redacted:
+  other: "Redacted Crush config written to: %s\n"
+llmsverifier_crushconv_written_opencode:
+  other: "OpenCode config written to: %s\n"
+llmsverifier_crushconv_written_stats:
+  other: "Brotli statistics written to: %s\n"
+llmsverifier_crushconv_brotli_summary_header:
+  other: "\nBrotli-optimized configuration generated:\n"
+llmsverifier_crushconv_brotli_total_providers:
+  other: "- Total providers: %d\n"
+llmsverifier_crushconv_brotli_supported_providers:
+  other: "- Brotli-supported providers: %d\n"
+llmsverifier_crushconv_brotli_support_rate:
+  other: "- Brotli support rate: %.2f%%\n"
