@@ -33,14 +33,14 @@ func main() {
 	case "templates":
 		handleTemplates()
 	default:
-		fmt.Printf("Unknown command: %s\n", command)
+		fmt.Println(trData("llmsverifier_testsuite_unknown_command", map[string]any{"command": command}))
 		printUsage()
 		os.Exit(1)
 	}
 }
 
 func printUsage() {
-	fmt.Println("LLM Test Suite Builder")
+	fmt.Println(tr("llmsverifier_testsuite_title"))
 	fmt.Println()
 	fmt.Println("Usage:")
 	fmt.Println("  testsuite create <name> <description> [options]  Create a new test suite")
@@ -58,7 +58,7 @@ func printUsage() {
 
 func handleCreate() {
 	if len(os.Args) < 4 {
-		fmt.Println("Error: create command requires name and description")
+		fmt.Println(tr("llmsverifier_testsuite_err_create_args"))
 		os.Exit(1)
 	}
 
@@ -104,9 +104,9 @@ func handleCreate() {
 	// Save to file (in-memory for demo)
 	_ = suite // In real implementation, save to persistent storage
 
-	fmt.Printf("Created test suite: %s (ID: %s)\n", suite.Name, suite.ID)
+	fmt.Println(trData("llmsverifier_testsuite_created", map[string]any{"name": suite.Name, "id": suite.ID}))
 	fmt.Printf("Providers: %v\n", suite.Configuration.Providers)
-	fmt.Printf("Test cases: %d\n", len(suite.TestCases))
+	fmt.Println(trData("llmsverifier_testsuite_test_cases_count", map[string]any{"count": len(suite.TestCases)}))
 }
 
 func handleList() {
@@ -114,14 +114,14 @@ func handleList() {
 	// For demo, show template suites
 	suites := testsuite.CreateTemplateSuites()
 
-	fmt.Println("Available Test Suites:")
+	fmt.Println(tr("llmsverifier_testsuite_available_heading"))
 	fmt.Println("======================")
 
 	for _, suite := range suites {
 		fmt.Printf("ID: %s\n", suite.ID)
 		fmt.Printf("Name: %s\n", suite.Name)
 		fmt.Printf("Description: %s\n", suite.Description)
-		fmt.Printf("Test Cases: %d\n", len(suite.TestCases))
+		fmt.Println(trData("llmsverifier_testsuite_test_cases_count", map[string]any{"count": len(suite.TestCases)}))
 		fmt.Printf("Tags: %v\n", suite.Tags)
 		fmt.Println()
 	}
@@ -129,7 +129,7 @@ func handleList() {
 
 func handleRun() {
 	if len(os.Args) < 3 {
-		fmt.Println("Error: run command requires suite ID")
+		fmt.Println(tr("llmsverifier_testsuite_err_run_args"))
 		os.Exit(1)
 	}
 
@@ -151,9 +151,9 @@ func handleRun() {
 		log.Fatalf("Test suite not found: %s", suiteID)
 	}
 
-	fmt.Printf("Running test suite: %s\n", targetSuite.Name)
+	fmt.Println(trData("llmsverifier_testsuite_running", map[string]any{"name": targetSuite.Name}))
 	fmt.Printf("Description: %s\n", targetSuite.Description)
-	fmt.Printf("Test cases: %d\n", len(targetSuite.TestCases))
+	fmt.Println(trData("llmsverifier_testsuite_test_cases_count", map[string]any{"count": len(targetSuite.TestCases)}))
 	fmt.Println()
 
 	// Create executor and run tests
@@ -164,21 +164,21 @@ func handleRun() {
 	}
 
 	// Print results
-	fmt.Println("Execution Results:")
+	fmt.Println(tr("llmsverifier_testsuite_execution_results_heading"))
 	fmt.Println("==================")
-	fmt.Printf("Total Tests: %d\n", report.Summary.TotalTests)
+	fmt.Println(trData("llmsverifier_testsuite_total_tests", map[string]any{"count": report.Summary.TotalTests}))
 	fmt.Printf("Passed: %d\n", report.Summary.PassedTests)
 	fmt.Printf("Failed: %d\n", report.Summary.FailedTests)
-	fmt.Printf("Average Score: %.2f\n", report.Summary.AvgScore)
-	fmt.Printf("Average Duration: %v\n", report.Summary.AvgDuration)
-	fmt.Printf("Total Duration: %v\n", report.Summary.TotalDuration)
+	fmt.Println(trData("llmsverifier_testsuite_average_score", map[string]any{"score": fmt.Sprintf("%.2f", report.Summary.AvgScore)}))
+	fmt.Println(trData("llmsverifier_testsuite_average_duration", map[string]any{"duration": report.Summary.AvgDuration}))
+	fmt.Println(trData("llmsverifier_testsuite_total_duration", map[string]any{"duration": report.Summary.TotalDuration}))
 
 	if report.Summary.P95Duration > 0 {
-		fmt.Printf("95th Percentile: %v\n", report.Summary.P95Duration)
+		fmt.Println(trData("llmsverifier_testsuite_p95_duration", map[string]any{"duration": report.Summary.P95Duration}))
 	}
 
 	fmt.Println()
-	fmt.Println("Individual Test Results:")
+	fmt.Println(tr("llmsverifier_testsuite_individual_results_heading"))
 	fmt.Println("========================")
 
 	for _, result := range report.TestResults {
@@ -192,7 +192,7 @@ func handleRun() {
 
 func handleExport() {
 	if len(os.Args) < 3 {
-		fmt.Println("Error: export command requires suite ID")
+		fmt.Println(tr("llmsverifier_testsuite_err_export_args"))
 		os.Exit(1)
 	}
 
@@ -237,12 +237,12 @@ func handleExport() {
 		log.Fatalf("Failed to write file: %v", err)
 	}
 
-	fmt.Printf("Test suite exported to: %s\n", outputFile)
+	fmt.Println(trData("llmsverifier_testsuite_exported_to", map[string]any{"file": outputFile}))
 }
 
 func handleImport() {
 	if len(os.Args) < 3 {
-		fmt.Println("Error: import command requires file path")
+		fmt.Println(tr("llmsverifier_testsuite_err_import_args"))
 		os.Exit(1)
 	}
 
@@ -261,11 +261,11 @@ func handleImport() {
 		log.Fatalf("Failed to import test suite: %v", err)
 	}
 
-	fmt.Printf("Test suite imported: %s (ID: %s)\n", suite.Name, suite.ID)
+	fmt.Println(trData("llmsverifier_testsuite_imported", map[string]any{"name": suite.Name, "id": suite.ID}))
 }
 
 func handleTemplates() {
-	fmt.Println("Creating template test suites...")
+	fmt.Println(tr("llmsverifier_testsuite_creating_templates"))
 
 	// Create template suites
 	suites := testsuite.CreateTemplateSuites()
@@ -278,9 +278,9 @@ func handleTemplates() {
 			log.Printf("Failed to save template %s: %v", suite.Name, err)
 			continue
 		}
-		fmt.Printf("Created template: %s (%d test cases)\n", suite.Name, len(suite.TestCases))
+		fmt.Println(trData("llmsverifier_testsuite_created_template", map[string]any{"name": suite.Name, "count": len(suite.TestCases)}))
 	}
 
 	fmt.Printf("\nCreated %d template test suites\n", len(suites))
-	fmt.Println("Use 'testsuite list' to see available suites")
+	fmt.Println(tr("llmsverifier_testsuite_use_list_hint"))
 }

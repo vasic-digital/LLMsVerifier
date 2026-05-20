@@ -1009,3 +1009,49 @@ report.field.logic_correctness_score:
   other: "Logic Correctness Score"
 report.field.runtime_efficiency_score:
   other: "Runtime Efficiency Score"
+
+# CONST-046 round-384: test-suite builder CLI (cmd/testsuite/main.go).
+llmsverifier_testsuite_unknown_command:
+  other: "Unknown command: {{.command}}"
+llmsverifier_testsuite_title:
+  other: "LLM Test Suite Builder"
+llmsverifier_testsuite_err_create_args:
+  other: "Error: create command requires name and description"
+llmsverifier_testsuite_err_run_args:
+  other: "Error: run command requires suite ID"
+llmsverifier_testsuite_err_export_args:
+  other: "Error: export command requires suite ID"
+llmsverifier_testsuite_err_import_args:
+  other: "Error: import command requires file path"
+llmsverifier_testsuite_created:
+  other: "Created test suite: {{.name}} (ID: {{.id}})"
+llmsverifier_testsuite_test_cases_count:
+  other: "Test cases: {{.count}}"
+llmsverifier_testsuite_available_heading:
+  other: "Available Test Suites:"
+llmsverifier_testsuite_running:
+  other: "Running test suite: {{.name}}"
+llmsverifier_testsuite_execution_results_heading:
+  other: "Execution Results:"
+llmsverifier_testsuite_total_tests:
+  other: "Total Tests: {{.count}}"
+llmsverifier_testsuite_average_score:
+  other: "Average Score: {{.score}}"
+llmsverifier_testsuite_average_duration:
+  other: "Average Duration: {{.duration}}"
+llmsverifier_testsuite_total_duration:
+  other: "Total Duration: {{.duration}}"
+llmsverifier_testsuite_p95_duration:
+  other: "95th Percentile: {{.duration}}"
+llmsverifier_testsuite_individual_results_heading:
+  other: "Individual Test Results:"
+llmsverifier_testsuite_exported_to:
+  other: "Test suite exported to: {{.file}}"
+llmsverifier_testsuite_imported:
+  other: "Test suite imported: {{.name}} (ID: {{.id}})"
+llmsverifier_testsuite_creating_templates:
+  other: "Creating template test suites..."
+llmsverifier_testsuite_created_template:
+  other: "Created template: {{.name}} ({{.count}} test cases)"
+llmsverifier_testsuite_use_list_hint:
+  other: "Use 'testsuite list' to see available suites"
