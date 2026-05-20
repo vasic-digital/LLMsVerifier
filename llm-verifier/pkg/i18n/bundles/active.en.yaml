@@ -630,3 +630,64 @@ api.content_filter.toxic_content:
 
 api.content_filter.pattern_match:
   other: "Matches banned pattern: {{.pattern}}"
+
+# enhanced/enterprise — round-356 CONST-046 i18n migration (api.go HTTP handlers)
+enterprise.error.missing_authorization_header:
+  other: "Missing authorization header"
+
+enterprise.error.invalid_authorization_header_format:
+  other: "Invalid authorization header format"
+
+enterprise.error.invalid_token:
+  other: "Invalid token"
+
+enterprise.error.user_not_authenticated:
+  other: "User not authenticated"
+
+enterprise.error.insufficient_permissions:
+  other: "Insufficient permissions"
+
+enterprise.error.method_not_allowed:
+  other: "Method not allowed"
+
+enterprise.error.invalid_json:
+  other: "Invalid JSON"
+
+enterprise.error.username_password_required:
+  other: "Username and password are required"
+
+enterprise.error.invalid_credentials:
+  other: "Invalid credentials"
+
+enterprise.error.token_generation_failed:
+  other: "Failed to generate authentication token"
+
+enterprise.error.token_refresh_failed:
+  other: "Failed to refresh token"
+
+enterprise.error.user_id_required:
+  other: "User ID required"
+
+enterprise.error.multi_tenancy_not_enabled:
+  other: "Multi-tenancy not enabled"
+
+enterprise.message.logged_out_successfully:
+  other: "Logged out successfully"
+
+enterprise.message.user_created_successfully:
+  other: "User created successfully"
+
+enterprise.message.user_updated_successfully:
+  other: "User updated successfully"
+
+enterprise.message.user_deleted_successfully:
+  other: "User deleted successfully"
+
+enterprise.message.role_operations:
+  other: "Role operations"
+
+enterprise.message.tenant_created_successfully:
+  other: "Tenant created successfully"
+
+enterprise.message.tenant_operations:
+  other: "Tenant operations"

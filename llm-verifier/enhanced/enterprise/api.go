@@ -245,14 +245,14 @@ func (api *EnterpriseAPI) authMiddleware(next http.Handler) http.Handler {
 		// Check for token in Authorization header
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			api.writeError(w, "Missing authorization header", http.StatusUnauthorized)
+			api.writeError(w, tr("enterprise.error.missing_authorization_header"), http.StatusUnauthorized)
 			return
 		}
 
 		// Parse Bearer token
 		parts := strings.SplitN(authHeader, " ", 2)
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			api.writeError(w, "Invalid authorization header format", http.StatusUnauthorized)
+			api.writeError(w, tr("enterprise.error.invalid_authorization_header_format"), http.StatusUnauthorized)
 			return
 		}
 
@@ -261,7 +261,7 @@ func (api *EnterpriseAPI) authMiddleware(next http.Handler) http.Handler {
 		// Validate token (in real implementation, you'd validate JWT)
 		user, err := api.validateToken(token)
 		if err != nil {
-			api.writeError(w, "Invalid token", http.StatusUnauthorized)
+			api.writeError(w, tr("enterprise.error.invalid_token"), http.StatusUnauthorized)
 			return
 		}
 
@@ -276,7 +276,7 @@ func (api *EnterpriseAPI) rbacMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := r.Context().Value("user")
 		if user == nil {
-			api.writeError(w, "User not authenticated", http.StatusUnauthorized)
+			api.writeError(w, tr("enterprise.error.user_not_authenticated"), http.StatusUnauthorized)
 			return
 		}
 
@@ -290,7 +290,7 @@ func (api *EnterpriseAPI) rbacMiddleware(next http.Handler) http.Handler {
 
 		// Check if user has required permission
 		if !api.manager.RBAC.HasPermission(user.(*User).ID, requiredPermission) {
-			api.writeError(w, "Insufficient permissions", http.StatusForbidden)
+			api.writeError(w, tr("enterprise.error.insufficient_permissions"), http.StatusForbidden)
 			return
 		}
 
@@ -365,7 +365,7 @@ func (api *EnterpriseAPI) corsMiddleware(next http.Handler) http.Handler {
 
 func (api *EnterpriseAPI) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		api.writeError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		api.writeError(w, tr("enterprise.error.method_not_allowed"), http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -376,13 +376,13 @@ func (api *EnterpriseAPI) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&loginReq); err != nil {
-		api.writeError(w, "Invalid JSON", http.StatusBadRequest)
+		api.writeError(w, tr("enterprise.error.invalid_json"), http.StatusBadRequest)
 		return
 	}
 
 	// Validate input
 	if loginReq.Username == "" || loginReq.Password == "" {
-		api.writeError(w, "Username and password are required", http.StatusBadRequest)
+		api.writeError(w, tr("enterprise.error.username_password_required"), http.StatusBadRequest)
 		return
 	}
 
@@ -394,7 +394,7 @@ func (api *EnterpriseAPI) handleLogin(w http.ResponseWriter, r *http.Request) {
 			"username": loginReq.Username,
 			"error":    err.Error(),
 		})
-		api.writeError(w, "Invalid credentials", http.StatusUnauthorized)
+		api.writeError(w, tr("enterprise.error.invalid_credentials"), http.StatusUnauthorized)
 		return
 	}
 
@@ -402,7 +402,7 @@ func (api *EnterpriseAPI) handleLogin(w http.ResponseWriter, r *http.Request) {
 	token, expiresAt, err := api.generateToken(user)
 	if err != nil {
 		log.Printf("Failed to generate token for user %s: %v", user.ID, err)
-		api.writeError(w, "Failed to generate authentication token", http.StatusInternalServerError)
+		api.writeError(w, tr("enterprise.error.token_generation_failed"), http.StatusInternalServerError)
 		return
 	}
 
@@ -425,7 +425,7 @@ func (api *EnterpriseAPI) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 func (api *EnterpriseAPI) handleLogout(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		api.writeError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		api.writeError(w, tr("enterprise.error.method_not_allowed"), http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -460,12 +460,12 @@ func (api *EnterpriseAPI) handleLogout(w http.ResponseWriter, r *http.Request) {
 	// Log audit entry
 	api.manager.RBAC.logAudit(user.ID, "user.logout", "auth", api.getClientIP(r), true, nil)
 
-	api.writeJSON(w, map[string]string{"message": "Logged out successfully"})
+	api.writeJSON(w, map[string]string{"message": tr("enterprise.message.logged_out_successfully")})
 }
 
 func (api *EnterpriseAPI) handleTokenRefresh(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		api.writeError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		api.writeError(w, tr("enterprise.error.method_not_allowed"), http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -487,7 +487,7 @@ func (api *EnterpriseAPI) handleTokenRefresh(w http.ResponseWriter, r *http.Requ
 	newToken, expiresAt, err := api.generateToken(user)
 	if err != nil {
 		log.Printf("Failed to refresh token for user %s: %v", user.ID, err)
-		api.writeError(w, "Failed to refresh token", http.StatusInternalServerError)
+		api.writeError(w, tr("enterprise.error.token_refresh_failed"), http.StatusInternalServerError)
 		return
 	}
 
@@ -513,7 +513,7 @@ func (api *EnterpriseAPI) handleUsers(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		var user User
 		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-			api.writeError(w, "Invalid JSON", http.StatusBadRequest)
+			api.writeError(w, tr("enterprise.error.invalid_json"), http.StatusBadRequest)
 			return
 		}
 
@@ -522,10 +522,10 @@ func (api *EnterpriseAPI) handleUsers(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		api.writeJSON(w, map[string]string{"message": "User created successfully"})
+		api.writeJSON(w, map[string]string{"message": tr("enterprise.message.user_created_successfully")})
 
 	default:
-		api.writeError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		api.writeError(w, tr("enterprise.error.method_not_allowed"), http.StatusMethodNotAllowed)
 	}
 }
 
@@ -533,7 +533,7 @@ func (api *EnterpriseAPI) handleUser(w http.ResponseWriter, r *http.Request) {
 	// Extract user ID from URL
 	userID := strings.TrimPrefix(r.URL.Path, "/api/enterprise/users/")
 	if userID == "" {
-		api.writeError(w, "User ID required", http.StatusBadRequest)
+		api.writeError(w, tr("enterprise.error.user_id_required"), http.StatusBadRequest)
 		return
 	}
 
@@ -550,19 +550,19 @@ func (api *EnterpriseAPI) handleUser(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPut:
 		var user User
 		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-			api.writeError(w, "Invalid JSON", http.StatusBadRequest)
+			api.writeError(w, tr("enterprise.error.invalid_json"), http.StatusBadRequest)
 			return
 		}
 
 		// Update user logic would go here
-		api.writeJSON(w, map[string]string{"message": "User updated successfully"})
+		api.writeJSON(w, map[string]string{"message": tr("enterprise.message.user_updated_successfully")})
 
 	case http.MethodDelete:
 		// Delete user logic would go here
-		api.writeJSON(w, map[string]string{"message": "User deleted successfully"})
+		api.writeJSON(w, map[string]string{"message": tr("enterprise.message.user_deleted_successfully")})
 
 	default:
-		api.writeError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		api.writeError(w, tr("enterprise.error.method_not_allowed"), http.StatusMethodNotAllowed)
 	}
 }
 
@@ -573,18 +573,18 @@ func (api *EnterpriseAPI) handleRoles(w http.ResponseWriter, r *http.Request) {
 		api.writeJSON(w, roles)
 
 	default:
-		api.writeError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		api.writeError(w, tr("enterprise.error.method_not_allowed"), http.StatusMethodNotAllowed)
 	}
 }
 
 func (api *EnterpriseAPI) handleRole(w http.ResponseWriter, r *http.Request) {
 	// Handle individual role operations
-	api.writeJSON(w, map[string]string{"message": "Role operations"})
+	api.writeJSON(w, map[string]string{"message": tr("enterprise.message.role_operations")})
 }
 
 func (api *EnterpriseAPI) handleTenants(w http.ResponseWriter, r *http.Request) {
 	if api.manager.MultiTenant == nil {
-		api.writeError(w, "Multi-tenancy not enabled", http.StatusServiceUnavailable)
+		api.writeError(w, tr("enterprise.error.multi_tenancy_not_enabled"), http.StatusServiceUnavailable)
 		return
 	}
 
@@ -596,7 +596,7 @@ func (api *EnterpriseAPI) handleTenants(w http.ResponseWriter, r *http.Request) 
 	case http.MethodPost:
 		var tenant Tenant
 		if err := json.NewDecoder(r.Body).Decode(&tenant); err != nil {
-			api.writeError(w, "Invalid JSON", http.StatusBadRequest)
+			api.writeError(w, tr("enterprise.error.invalid_json"), http.StatusBadRequest)
 			return
 		}
 
@@ -605,21 +605,21 @@ func (api *EnterpriseAPI) handleTenants(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 
-		api.writeJSON(w, map[string]string{"message": "Tenant created successfully"})
+		api.writeJSON(w, map[string]string{"message": tr("enterprise.message.tenant_created_successfully")})
 
 	default:
-		api.writeError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		api.writeError(w, tr("enterprise.error.method_not_allowed"), http.StatusMethodNotAllowed)
 	}
 }
 
 func (api *EnterpriseAPI) handleTenant(w http.ResponseWriter, r *http.Request) {
 	// Handle individual tenant operations
-	api.writeJSON(w, map[string]string{"message": "Tenant operations"})
+	api.writeJSON(w, map[string]string{"message": tr("enterprise.message.tenant_operations")})
 }
 
 func (api *EnterpriseAPI) handleAudit(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		api.writeError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		api.writeError(w, tr("enterprise.error.method_not_allowed"), http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -634,7 +634,7 @@ func (api *EnterpriseAPI) handleAudit(w http.ResponseWriter, r *http.Request) {
 
 func (api *EnterpriseAPI) handleMetrics(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		api.writeError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		api.writeError(w, tr("enterprise.error.method_not_allowed"), http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -656,7 +656,7 @@ func (api *EnterpriseAPI) handleMetrics(w http.ResponseWriter, r *http.Request) 
 
 func (api *EnterpriseAPI) handleHealth(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		api.writeError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		api.writeError(w, tr("enterprise.error.method_not_allowed"), http.StatusMethodNotAllowed)
 		return
 	}
 

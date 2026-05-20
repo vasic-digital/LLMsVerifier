@@ -52,7 +52,9 @@ func TestHandleLogout_Success(t *testing.T) {
 	var response map[string]string
 	err = json.NewDecoder(w.Body).Decode(&response)
 	require.NoError(t, err)
-	assert.Equal(t, "Logged out successfully", response["message"])
+	// Message routes through the i18n seam (CONST-046); assert against the
+	// translator-resolved value rather than a hardcoded English literal.
+	assert.Equal(t, tr("enterprise.message.logged_out_successfully"), response["message"])
 
 	// Token should now be blacklisted
 	assert.True(t, api.isTokenBlacklisted(token))
@@ -199,7 +201,9 @@ func TestHandleUsers_PostSuccess(t *testing.T) {
 	var response map[string]string
 	err := json.NewDecoder(w.Body).Decode(&response)
 	require.NoError(t, err)
-	assert.Equal(t, "User created successfully", response["message"])
+	// Message routes through the i18n seam (CONST-046); assert against the
+	// translator-resolved value rather than a hardcoded English literal.
+	assert.Equal(t, tr("enterprise.message.user_created_successfully"), response["message"])
 }
 
 func TestHandleUsers_PostInvalidJSON(t *testing.T) {
