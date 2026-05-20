@@ -1089,3 +1089,50 @@ issue.authentication.description:
   other: "Model has authentication or authorization issues"
 issue.event.detected_prefix:
   other: "Issue Detected:"
+
+# CONST-046 round-398: enhanced/model_comparison.go user-facing comparison
+# output (metric labels, recommendations, summary). Round 25 of Phase 4.
+enhanced.model_comparison.metric.context_window.name:
+  other: "Context Window"
+enhanced.model_comparison.metric.context_window.description:
+  other: "Maximum context length in tokens"
+enhanced.model_comparison.metric.parameters.name:
+  other: "Parameters"
+enhanced.model_comparison.metric.parameters.description:
+  other: "Number of model parameters"
+enhanced.model_comparison.metric.release_date.name:
+  other: "Release Date"
+enhanced.model_comparison.metric.release_date.description:
+  other: "Model release date (newer is better)"
+enhanced.model_comparison.metric.overall_score.name:
+  other: "Overall Score"
+enhanced.model_comparison.metric.overall_score.description:
+  other: "Comprehensive performance score"
+enhanced.model_comparison.metric.code_capability.name:
+  other: "Code Capability"
+enhanced.model_comparison.metric.code_capability.description:
+  other: "Ability to handle coding tasks"
+enhanced.model_comparison.metric.responsiveness.name:
+  other: "Responsiveness"
+enhanced.model_comparison.metric.responsiveness.description:
+  other: "Response time performance (lower is better)"
+enhanced.model_comparison.recommendation.best_overall:
+  other: "Best overall model: {{.model}} (Score: {{.score}})"
+enhanced.model_comparison.recommendation.long_conversations:
+  other: "For long conversations, consider {{.model}} (largest context window)"
+enhanced.model_comparison.recommendation.coding_tasks:
+  other: "For coding tasks, consider {{.model}} (best code capability)"
+enhanced.model_comparison.summary.no_models:
+  other: "No models to compare"
+enhanced.model_comparison.summary.count:
+  other: "Comparison of {{.count}} models"
+enhanced.model_comparison.summary.best_performer:
+  other: ". Best performer: {{.model}} with score {{.score}}"
+enhanced.model_comparison.summary.performance_range:
+  other: ". Performance range: {{.range}} points"
+enhanced.model_comparison.summary.differentiators_prefix:
+  other: ". Key differentiators: "
+enhanced.model_comparison.differentiator.context_window:
+  other: "context window sizes"
+enhanced.model_comparison.differentiator.model_size:
+  other: "model sizes"

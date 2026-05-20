@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"digital.vasic.llmsverifier/database"
 )
@@ -106,6 +107,131 @@ func TestNoopTranslatorReturnsMessageID(t *testing.T) {
 	if len(list) != 2 || list[0] != "a.b" || list[1] != "c.d" {
 		t.Errorf("trList() with NoopTranslator = %v, want verbatim ids", list)
 	}
+}
+
+// TestModelComparison_GenerateSummary_RoutesThroughTranslator drives
+// generateSummary with the fakeTranslator installed and asserts every
+// emitted summary fragment routes through the i18n seam (CONST-046
+// round-398). Paired-mutation anti-bluff: if generateSummary regressed
+// to a hardcoded English literal, the "<TRANSLATED:...>" sentinel would
+// be absent and this fails.
+func TestModelComparison_GenerateSummary_RoutesThroughTranslator(t *testing.T) {
+	db, err := database.New(":memory:")
+	if err != nil {
+		t.Fatalf("database.New: %v", err)
+	}
+	defer db.Close()
+	engine := NewModelComparisonEngine(db)
+
+	withFakeTranslator(t, func() {
+		// Empty model set: the no-models branch.
+		empty := engine.generateSummary(&ComparisonResult{Models: []*database.Model{}})
+		if !strings.HasPrefix(empty, "<TRANSLATED:enhanced.model_comparison.summary.no_models") {
+			t.Errorf("no-models summary not routed: %q", empty)
+		}
+
+		// Populated set: count + best-performer + range + differentiators.
+		full := engine.generateSummary(&ComparisonResult{
+			Models: []*database.Model{{ModelID: "m1"}, {ModelID: "m2"}},
+			Rankings: map[string][]ModelRanking{"composite": {
+				{ModelID: "m1", Score: 90.0, Rank: 1},
+				{ModelID: "m2", Score: 70.0, Rank: 2},
+			}},
+			Metrics: map[string]MetricComparison{
+				"context_window": {Values: map[string]float64{"m1": 8192, "m2": 32768}, BestValue: 32768, WorstValue: 8192},
+				"parameters":     {Values: map[string]float64{"m1": 7e9, "m2": 70e9}, BestValue: 70e9, WorstValue: 7e9},
+			},
+		})
+		for _, want := range []string{
+			"<TRANSLATED:enhanced.model_comparison.summary.count",
+			"<TRANSLATED:enhanced.model_comparison.summary.best_performer",
+			"<TRANSLATED:enhanced.model_comparison.summary.performance_range",
+			"<TRANSLATED:enhanced.model_comparison.differentiator.context_window",
+			"<TRANSLATED:enhanced.model_comparison.differentiator.model_size",
+		} {
+			if !strings.Contains(full, want) {
+				t.Errorf("summary missing routed fragment %q:\n%s", want, full)
+			}
+		}
+	})
+}
+
+// TestModelComparison_GenerateRecommendations_RoutesThroughTranslator
+// asserts the ModelComparisonEngine recommendation lines route through
+// the i18n seam (CONST-046 round-398).
+func TestModelComparison_GenerateRecommendations_RoutesThroughTranslator(t *testing.T) {
+	db, err := database.New(":memory:")
+	if err != nil {
+		t.Fatalf("database.New: %v", err)
+	}
+	defer db.Close()
+	engine := NewModelComparisonEngine(db)
+
+	withFakeTranslator(t, func() {
+		result := &ComparisonResult{
+			Rankings: map[string][]ModelRanking{"composite": {
+				{ModelID: "best", Score: 95.0, Rank: 1},
+				{ModelID: "other", Score: 80.0, Rank: 2},
+			}},
+			Metrics: map[string]MetricComparison{
+				"context_window":  {Ranking: []string{"other", "best"}},
+				"code_capability": {Ranking: []string{"other", "best"}},
+			},
+		}
+		engine.generateRecommendations(result)
+		joined := strings.Join(result.Recommendations, "\n")
+		for _, want := range []string{
+			"<TRANSLATED:enhanced.model_comparison.recommendation.best_overall",
+			"<TRANSLATED:enhanced.model_comparison.recommendation.long_conversations",
+			"<TRANSLATED:enhanced.model_comparison.recommendation.coding_tasks",
+		} {
+			if !strings.Contains(joined, want) {
+				t.Errorf("recommendations missing routed fragment %q:\n%s", want, joined)
+			}
+		}
+	})
+}
+
+// TestModelComparison_MetricLabels_RoutesThroughTranslator asserts the
+// metric name/description pairs emitted by compareBasicAttributes route
+// through the i18n seam (CONST-046 round-398).
+func TestModelComparison_MetricLabels_RoutesThroughTranslator(t *testing.T) {
+	db, err := database.New(":memory:")
+	if err != nil {
+		t.Fatalf("database.New: %v", err)
+	}
+	defer db.Close()
+	engine := NewModelComparisonEngine(db)
+
+	cw := 32768
+	pc := int64(7_000_000_000)
+	rd := time.Now()
+	models := []*database.Model{
+		{ModelID: "m1", ContextWindowTokens: &cw, ParameterCount: &pc, ReleaseDate: &rd},
+		{ModelID: "m2", ContextWindowTokens: &cw, ParameterCount: &pc, ReleaseDate: &rd},
+	}
+
+	withFakeTranslator(t, func() {
+		result := &ComparisonResult{Metrics: map[string]MetricComparison{}}
+		engine.compareBasicAttributes(result, models)
+		for key, prefix := range map[string]string{
+			"context_window": "enhanced.model_comparison.metric.context_window",
+			"parameters":     "enhanced.model_comparison.metric.parameters",
+			"release_date":   "enhanced.model_comparison.metric.release_date",
+		} {
+			m, ok := result.Metrics[key]
+			if !ok {
+				t.Errorf("metric %s not produced", key)
+				continue
+			}
+			if !strings.HasPrefix(m.MetricName, "<TRANSLATED:"+prefix+".name") {
+				t.Errorf("metric %s name not routed: %q", key, m.MetricName)
+			}
+			if !strings.HasPrefix(m.Description, "<TRANSLATED:"+prefix+".description") {
+				t.Errorf("metric %s description not routed: %q", key, m.Description)
+			}
+		}
+	})
 }
 
 // TestGenerateRecommendations_RoutesThroughTranslator drives

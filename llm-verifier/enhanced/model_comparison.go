@@ -114,7 +114,9 @@ func (mce *ModelComparisonEngine) compareBasicAttributes(result *ComparisonResul
 	}
 	if len(contextWindows) > 0 {
 		result.Metrics["context_window"] = mce.createMetricComparison(
-			"Context Window", "Maximum context length in tokens", contextWindows, true,
+			tr("enhanced.model_comparison.metric.context_window.name"),
+			tr("enhanced.model_comparison.metric.context_window.description"),
+			contextWindows, true,
 		)
 	}
 
@@ -127,7 +129,9 @@ func (mce *ModelComparisonEngine) compareBasicAttributes(result *ComparisonResul
 	}
 	if len(parameters) > 0 {
 		result.Metrics["parameters"] = mce.createMetricComparison(
-			"Parameters", "Number of model parameters", parameters, true,
+			tr("enhanced.model_comparison.metric.parameters.name"),
+			tr("enhanced.model_comparison.metric.parameters.description"),
+			parameters, true,
 		)
 	}
 
@@ -140,7 +144,9 @@ func (mce *ModelComparisonEngine) compareBasicAttributes(result *ComparisonResul
 	}
 	if len(releaseDates) > 0 {
 		result.Metrics["release_date"] = mce.createMetricComparison(
-			"Release Date", "Model release date (newer is better)", releaseDates, true,
+			tr("enhanced.model_comparison.metric.release_date.name"),
+			tr("enhanced.model_comparison.metric.release_date.description"),
+			releaseDates, true,
 		)
 	}
 }
@@ -181,7 +187,9 @@ func (mce *ModelComparisonEngine) comparePerformanceMetrics(result *ComparisonRe
 		overallScores[modelID] = result.OverallScore
 	}
 	result.Metrics["overall_score"] = mce.createMetricComparison(
-		"Overall Score", "Comprehensive performance score", overallScores, true,
+		tr("enhanced.model_comparison.metric.overall_score.name"),
+		tr("enhanced.model_comparison.metric.overall_score.description"),
+		overallScores, true,
 	)
 
 	// Code capability comparison
@@ -190,7 +198,9 @@ func (mce *ModelComparisonEngine) comparePerformanceMetrics(result *ComparisonRe
 		codeScores[modelID] = result.CodeCapabilityScore
 	}
 	result.Metrics["code_capability"] = mce.createMetricComparison(
-		"Code Capability", "Ability to handle coding tasks", codeScores, true,
+		tr("enhanced.model_comparison.metric.code_capability.name"),
+		tr("enhanced.model_comparison.metric.code_capability.description"),
+		codeScores, true,
 	)
 
 	// Response time comparison (lower is better)
@@ -202,7 +212,9 @@ func (mce *ModelComparisonEngine) comparePerformanceMetrics(result *ComparisonRe
 	}
 	if len(responseTimes) > 0 {
 		result.Metrics["responsiveness"] = mce.createMetricComparison(
-			"Responsiveness", "Response time performance (lower is better)", responseTimes, false,
+			tr("enhanced.model_comparison.metric.responsiveness.name"),
+			tr("enhanced.model_comparison.metric.responsiveness.description"),
+			responseTimes, false,
 		)
 	}
 }
@@ -359,7 +371,9 @@ func (mce *ModelComparisonEngine) generateRecommendations(result *ComparisonResu
 		bestModel := rankings[0]
 
 		result.Recommendations = append(result.Recommendations,
-			fmt.Sprintf("Best overall model: %s (Score: %.2f)", bestModel.ModelID, bestModel.Score))
+			trData("enhanced.model_comparison.recommendation.best_overall", map[string]any{
+				"model": bestModel.ModelID, "score": fmt.Sprintf("%.2f", bestModel.Score),
+			}))
 
 		// Check for specific strengths
 		if contextMetric, exists := result.Metrics["context_window"]; exists {
@@ -367,7 +381,9 @@ func (mce *ModelComparisonEngine) generateRecommendations(result *ComparisonResu
 				bestContext := contextMetric.Ranking[0]
 				if bestContext != bestModel.ModelID {
 					result.Recommendations = append(result.Recommendations,
-						fmt.Sprintf("For long conversations, consider %s (largest context window)", bestContext))
+						trData("enhanced.model_comparison.recommendation.long_conversations", map[string]any{
+							"model": bestContext,
+						}))
 				}
 			}
 		}
@@ -377,7 +393,9 @@ func (mce *ModelComparisonEngine) generateRecommendations(result *ComparisonResu
 				bestCode := codeMetric.Ranking[0]
 				if bestCode != bestModel.ModelID {
 					result.Recommendations = append(result.Recommendations,
-						fmt.Sprintf("For coding tasks, consider %s (best code capability)", bestCode))
+						trData("enhanced.model_comparison.recommendation.coding_tasks", map[string]any{
+							"model": bestCode,
+						}))
 				}
 			}
 		}
@@ -387,18 +405,24 @@ func (mce *ModelComparisonEngine) generateRecommendations(result *ComparisonResu
 // generateSummary generates a summary of the comparison
 func (mce *ModelComparisonEngine) generateSummary(result *ComparisonResult) string {
 	if len(result.Models) == 0 {
-		return "No models to compare"
+		return tr("enhanced.model_comparison.summary.no_models")
 	}
 
-	summary := fmt.Sprintf("Comparison of %d models", len(result.Models))
+	summary := trData("enhanced.model_comparison.summary.count", map[string]any{
+		"count": len(result.Models),
+	})
 
 	if rankings, exists := result.Rankings["composite"]; exists && len(rankings) > 0 {
 		best := rankings[0]
-		summary += fmt.Sprintf(". Best performer: %s with score %.2f", best.ModelID, best.Score)
+		summary += trData("enhanced.model_comparison.summary.best_performer", map[string]any{
+			"model": best.ModelID, "score": fmt.Sprintf("%.2f", best.Score),
+		})
 
 		if len(rankings) > 1 {
 			worst := rankings[len(rankings)-1]
-			summary += fmt.Sprintf(". Performance range: %.2f points", best.Score-worst.Score)
+			summary += trData("enhanced.model_comparison.summary.performance_range", map[string]any{
+				"range": fmt.Sprintf("%.2f", best.Score-worst.Score),
+			})
 		}
 	}
 
@@ -409,7 +433,7 @@ func (mce *ModelComparisonEngine) generateSummary(result *ComparisonResult) stri
 		maxContext := metric.BestValue
 		minContext := metric.WorstValue
 		if maxContext > minContext*1.5 { // Significant difference
-			differentiators = append(differentiators, "context window sizes")
+			differentiators = append(differentiators, tr("enhanced.model_comparison.differentiator.context_window"))
 		}
 	}
 
@@ -417,12 +441,12 @@ func (mce *ModelComparisonEngine) generateSummary(result *ComparisonResult) stri
 		maxParams := metric.BestValue
 		minParams := metric.WorstValue
 		if maxParams > minParams*2 { // Significant difference
-			differentiators = append(differentiators, "model sizes")
+			differentiators = append(differentiators, tr("enhanced.model_comparison.differentiator.model_size"))
 		}
 	}
 
 	if len(differentiators) > 0 {
-		summary += ". Key differentiators: " + strings.Join(differentiators, ", ")
+		summary += tr("enhanced.model_comparison.summary.differentiators_prefix") + strings.Join(differentiators, ", ")
 	}
 
 	return summary

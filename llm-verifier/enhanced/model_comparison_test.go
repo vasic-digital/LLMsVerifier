@@ -97,16 +97,17 @@ func TestModelComparisonEngine_CompareModels_Success(t *testing.T) {
 	assert.NotEmpty(t, result.Metrics)
 	assert.NotEmpty(t, result.Summary)
 
-	// Check context window metric
+	// Check context window metric. CONST-046 round-398: metric names now
+	// route through the i18n seam; NoopTranslator returns the message ID.
 	if contextMetric, exists := result.Metrics["context_window"]; exists {
-		assert.Equal(t, "Context Window", contextMetric.MetricName)
+		assert.Equal(t, "enhanced.model_comparison.metric.context_window.name", contextMetric.MetricName)
 		assert.Len(t, contextMetric.Values, 2)
 		assert.Equal(t, float64(contextWindow2), contextMetric.BestValue)
 	}
 
-	// Check parameters metric
+	// Check parameters metric.
 	if paramMetric, exists := result.Metrics["parameters"]; exists {
-		assert.Equal(t, "Parameters", paramMetric.MetricName)
+		assert.Equal(t, "enhanced.model_comparison.metric.parameters.name", paramMetric.MetricName)
 		assert.Len(t, paramMetric.Values, 2)
 	}
 }
@@ -274,8 +275,10 @@ func TestModelComparisonEngine_generateSummary(t *testing.T) {
 		result := &ComparisonResult{
 			Models: []*database.Model{},
 		}
+		// CONST-046 round-398: summary strings now route through the i18n
+		// seam; the default NoopTranslator returns the message ID verbatim.
 		summary := engine.generateSummary(result)
-		assert.Equal(t, "No models to compare", summary)
+		assert.Equal(t, "enhanced.model_comparison.summary.no_models", summary)
 	})
 
 	t.Run("with models and rankings", func(t *testing.T) {
@@ -292,9 +295,11 @@ func TestModelComparisonEngine_generateSummary(t *testing.T) {
 			},
 			Metrics: map[string]MetricComparison{},
 		}
+		// CONST-046 round-398: trData routes through the i18n seam; the
+		// NoopTranslator returns the message ID, so assert IDs not literals.
 		summary := engine.generateSummary(result)
-		assert.Contains(t, summary, "Comparison of 2 models")
-		assert.Contains(t, summary, "Best performer: model-1")
+		assert.Contains(t, summary, "enhanced.model_comparison.summary.count")
+		assert.Contains(t, summary, "enhanced.model_comparison.summary.best_performer")
 	})
 
 	t.Run("with significant differences", func(t *testing.T) {
@@ -321,9 +326,10 @@ func TestModelComparisonEngine_generateSummary(t *testing.T) {
 				},
 			},
 		}
+		// CONST-046 round-398: differentiator labels route through i18n.
 		summary := engine.generateSummary(result)
-		assert.Contains(t, summary, "context window sizes")
-		assert.Contains(t, summary, "model sizes")
+		assert.Contains(t, summary, "enhanced.model_comparison.differentiator.context_window")
+		assert.Contains(t, summary, "enhanced.model_comparison.differentiator.model_size")
 	})
 }
 
@@ -355,8 +361,10 @@ func TestModelComparisonEngine_generateRecommendations(t *testing.T) {
 
 		engine.generateRecommendations(result)
 
+		// CONST-046 round-398: recommendation strings route through the
+		// i18n seam; NoopTranslator returns the message ID verbatim.
 		assert.NotEmpty(t, result.Recommendations)
-		assert.Contains(t, result.Recommendations[0], "Best overall model: best-model")
+		assert.Contains(t, result.Recommendations[0], "enhanced.model_comparison.recommendation.best_overall")
 	})
 }
 
