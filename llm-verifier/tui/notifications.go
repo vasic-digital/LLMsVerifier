@@ -281,17 +281,17 @@ func (a *AppWithNotifications) NotifyError(message string) {
 }
 
 func (a *AppWithNotifications) NotifyModelVerified(modelName string) {
-	a.NotifySuccess(fmt.Sprintf("Model %s verified successfully", modelName))
+	a.NotifySuccess(trTUIData("tui.notification.model_verified", map[string]any{"model": modelName}))
 }
 
 func (a *AppWithNotifications) NotifyVerificationFailed(modelName string, err error) {
-	a.NotifyError(fmt.Sprintf("Failed to verify %s: %v", modelName, err))
+	a.NotifyError(trTUIData("tui.notification.verification_failed", map[string]any{"model": modelName, "error": err}))
 }
 
 func (a *AppWithNotifications) NotifyDataRefreshed() {
-	a.NotifyInfo("Data refreshed successfully")
+	a.NotifyInfo(trTUI("tui.notification.data_refreshed"))
 }
 
 func (a *AppWithNotifications) NotifyConnectionError() {
-	a.NotifyError("Connection to server failed")
+	a.NotifyError(trTUI("tui.notification.connection_error"))
 }

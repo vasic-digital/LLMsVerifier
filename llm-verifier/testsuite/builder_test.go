@@ -377,7 +377,8 @@ func TestTestSuiteExecutor_Execute_UnsupportedTestType(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, report.TestResults, 1)
 	assert.Equal(t, TestStatusError, report.TestResults[0].Status)
-	assert.Contains(t, report.TestResults[0].Error, "Unsupported test case type")
+	// Default NoopTranslator returns the message ID verbatim (CONST-046 seam).
+	assert.Contains(t, report.TestResults[0].Error, "testsuite.error.unsupported_case_type")
 }
 
 func TestTestSuiteExecutor_checkExpectations(t *testing.T) {

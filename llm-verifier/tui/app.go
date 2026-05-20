@@ -94,7 +94,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (a *App) View() string {
 	if a.width == 0 || a.height == 0 {
-		return "Initializing..."
+		return trTUI("tui.app.initializing")
 	}
 
 	header := a.renderHeader()
@@ -117,13 +117,13 @@ func (a *App) renderHeader() string {
 		Bold(true).
 		Foreground(lipgloss.Color("205")).
 		Padding(0, 1).
-		Render("LLM Verifier TUI")
+		Render(trTUI("tui.app.title"))
 
 	navItems := []string{
-		"1. Dashboard",
-		"2. Models",
-		"3. Providers",
-		"4. Verification",
+		trTUI("tui.app.nav.dashboard"),
+		trTUI("tui.app.nav.models"),
+		trTUI("tui.app.nav.providers"),
+		trTUI("tui.app.nav.verification"),
 	}
 
 	nav := ""
@@ -161,7 +161,7 @@ func (a *App) renderHeader() string {
 func (a *App) renderFooter() string {
 	help := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("241")).
-		Render("←/→/Tab: Navigate | 1-4/F1-F4: Jump to screen | ?: Help | r: Refresh | q: Quit")
+		Render(trTUI("tui.app.footer.help"))
 
 	footerStyle := lipgloss.NewStyle().
 		BorderStyle(lipgloss.RoundedBorder()).

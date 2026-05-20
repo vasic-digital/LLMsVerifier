@@ -213,9 +213,10 @@ func TestApp_View_BeforeInit(t *testing.T) {
 	c := &client.Client{}
 	app := NewApp(c)
 
-	// Before window size is set
+	// Before window size is set. The default NoopTranslator returns the
+	// message ID verbatim per the CONST-046 i18n seam (round-443).
 	view := app.View()
-	assert.Contains(t, view, "Initializing")
+	assert.Contains(t, view, "tui.app.initializing")
 }
 
 func TestApp_View_AfterInit(t *testing.T) {
@@ -226,7 +227,7 @@ func TestApp_View_AfterInit(t *testing.T) {
 
 	view := app.View()
 	assert.NotEmpty(t, view)
-	assert.Contains(t, view, "LLM Verifier TUI")
+	assert.Contains(t, view, "tui.app.title")
 }
 
 func TestApp_RenderHeader(t *testing.T) {
@@ -237,11 +238,12 @@ func TestApp_RenderHeader(t *testing.T) {
 
 	header := app.renderHeader()
 	assert.NotEmpty(t, header)
-	assert.Contains(t, header, "LLM Verifier TUI")
-	assert.Contains(t, header, "Dashboard")
-	assert.Contains(t, header, "Models")
-	assert.Contains(t, header, "Providers")
-	assert.Contains(t, header, "Verification")
+	// Default NoopTranslator returns message IDs verbatim (CONST-046 seam).
+	assert.Contains(t, header, "tui.app.title")
+	assert.Contains(t, header, "tui.app.nav.dashboard")
+	assert.Contains(t, header, "tui.app.nav.models")
+	assert.Contains(t, header, "tui.app.nav.providers")
+	assert.Contains(t, header, "tui.app.nav.verification")
 }
 
 func TestApp_RenderFooter(t *testing.T) {
@@ -252,8 +254,8 @@ func TestApp_RenderFooter(t *testing.T) {
 
 	footer := app.renderFooter()
 	assert.NotEmpty(t, footer)
-	assert.Contains(t, footer, "Navigate")
-	assert.Contains(t, footer, "Quit")
+	// Default NoopTranslator returns the message ID verbatim (CONST-046 seam).
+	assert.Contains(t, footer, "tui.app.footer.help")
 }
 
 // ==================== AppWithNotifications Tests ====================
@@ -408,8 +410,9 @@ func TestAppWithNotifications_NotifyModelVerified(t *testing.T) {
 
 	notifications := app.notificationManager.GetNotifications()
 	require.Len(t, notifications, 1)
-	assert.Contains(t, notifications[0].Message, "GPT-4")
-	assert.Contains(t, notifications[0].Message, "verified")
+	// Default NoopTranslator returns the message ID verbatim; the model name
+	// is interpolated by a real backend via templateData (CONST-046 seam).
+	assert.Contains(t, notifications[0].Message, "tui.notification.model_verified")
 }
 
 func TestAppWithNotifications_NotifyVerificationFailed(t *testing.T) {
@@ -420,8 +423,8 @@ func TestAppWithNotifications_NotifyVerificationFailed(t *testing.T) {
 
 	notifications := app.notificationManager.GetNotifications()
 	require.Len(t, notifications, 1)
-	assert.Contains(t, notifications[0].Message, "GPT-4")
-	assert.Contains(t, notifications[0].Message, "Failed")
+	// Default NoopTranslator returns the message ID verbatim (CONST-046 seam).
+	assert.Contains(t, notifications[0].Message, "tui.notification.verification_failed")
 }
 
 func TestAppWithNotifications_NotifyDataRefreshed(t *testing.T) {
@@ -432,7 +435,8 @@ func TestAppWithNotifications_NotifyDataRefreshed(t *testing.T) {
 
 	notifications := app.notificationManager.GetNotifications()
 	require.Len(t, notifications, 1)
-	assert.Contains(t, notifications[0].Message, "refreshed")
+	// Default NoopTranslator returns the message ID verbatim (CONST-046 seam).
+	assert.Contains(t, notifications[0].Message, "tui.notification.data_refreshed")
 }
 
 func TestAppWithNotifications_NotifyConnectionError(t *testing.T) {
@@ -443,6 +447,7 @@ func TestAppWithNotifications_NotifyConnectionError(t *testing.T) {
 
 	notifications := app.notificationManager.GetNotifications()
 	require.Len(t, notifications, 1)
-	assert.Contains(t, notifications[0].Message, "Connection")
+	// Default NoopTranslator returns the message ID verbatim (CONST-046 seam).
+	assert.Contains(t, notifications[0].Message, "tui.notification.connection_error")
 	assert.Equal(t, NotificationError, notifications[0].Type)
 }

@@ -253,7 +253,7 @@ func (tsb *TestSuiteBuilder) AddTestCase(testCase TestCase) *TestSuiteBuilder {
 func (tsb *TestSuiteBuilder) AddBasicTestCase(name, prompt string, expectedContains []string) *TestSuiteBuilder {
 	testCase := TestCase{
 		Name:        name,
-		Description: fmt.Sprintf("Basic test case: %s", name),
+		Description: trSuiteData("testsuite.case.basic.description", map[string]any{"name": name}),
 		Type:        TestCaseTypeBasic,
 		Priority:    TestPriorityMedium,
 		Category:    "basic",
@@ -280,7 +280,7 @@ func (tsb *TestSuiteBuilder) AddBasicTestCase(name, prompt string, expectedConta
 func (tsb *TestSuiteBuilder) AddComparisonTestCase(name, prompt string) *TestSuiteBuilder {
 	testCase := TestCase{
 		Name:        name,
-		Description: fmt.Sprintf("Provider comparison: %s", name),
+		Description: trSuiteData("testsuite.case.comparison.description", map[string]any{"name": name}),
 		Type:        TestCaseTypeComparison,
 		Priority:    TestPriorityHigh,
 		Category:    "comparison",
@@ -306,9 +306,12 @@ func (tsb *TestSuiteBuilder) AddComparisonTestCase(name, prompt string) *TestSui
 // AddLoadTestCase adds a load testing case
 func (tsb *TestSuiteBuilder) AddLoadTestCase(name string, concurrentUsers, duration int) *TestSuiteBuilder {
 	testCase := TestCase{
-		Name:        name,
-		Description: fmt.Sprintf("Load test: %d users for %d seconds", concurrentUsers, duration),
-		Type:        TestCaseTypeLoad,
+		Name: name,
+		Description: trSuiteData("testsuite.case.load.description", map[string]any{
+			"users":    concurrentUsers,
+			"duration": duration,
+		}),
+		Type: TestCaseTypeLoad,
 		Priority:    TestPriorityHigh,
 		Category:    "performance",
 		Configuration: TestConfig{
@@ -337,7 +340,7 @@ func (tsb *TestSuiteBuilder) AddLoadTestCase(name string, concurrentUsers, durat
 func (tsb *TestSuiteBuilder) AddMultiModalTestCase(name, prompt string, fileType string) *TestSuiteBuilder {
 	testCase := TestCase{
 		Name:        name,
-		Description: fmt.Sprintf("Multi-modal test: %s", name),
+		Description: trSuiteData("testsuite.case.multimodal.description", map[string]any{"name": name}),
 		Type:        TestCaseTypeMultiModal,
 		Priority:    TestPriorityMedium,
 		Category:    "multimodal",
@@ -549,7 +552,7 @@ func (tse *TestSuiteExecutor) executeTestCase(ctx context.Context, testCase Test
 		result = tse.executeMultiModalTest(ctx, testCase, result)
 	default:
 		result.Status = TestStatusError
-		result.Error = "Unsupported test case type"
+		result.Error = trSuite("testsuite.error.unsupported_case_type")
 	}
 
 	result.Duration = time.Since(startTime)
@@ -611,7 +614,7 @@ func (tse *TestSuiteExecutor) executeBasicTest(ctx context.Context, testCase Tes
 	} else {
 		// No LLM client - return error instead of mock data
 		result.Status = TestStatusError
-		result.Error = "LLM client not configured - cannot execute real test"
+		result.Error = trSuite("testsuite.error.no_client_basic")
 		return result
 	}
 
@@ -672,7 +675,7 @@ func (tse *TestSuiteExecutor) executeComparisonTest(ctx context.Context, testCas
 		}
 	} else {
 		result.Status = TestStatusError
-		result.Error = "LLM client not configured - cannot execute comparison test"
+		result.Error = trSuite("testsuite.error.no_client_comparison")
 		return result
 	}
 
@@ -691,7 +694,7 @@ func (tse *TestSuiteExecutor) executeComparisonTest(ctx context.Context, testCas
 func (tse *TestSuiteExecutor) executeLoadTest(ctx context.Context, testCase TestCase, result TestResult) TestResult {
 	if tse.llmClient == nil {
 		result.Status = TestStatusError
-		result.Error = "LLM client not configured - cannot execute load test"
+		result.Error = trSuite("testsuite.error.no_client_load")
 		return result
 	}
 
@@ -732,8 +735,10 @@ func (tse *TestSuiteExecutor) executeLoadTest(ctx context.Context, testCase Test
 	}
 
 	if len(resp.Choices) > 0 {
-		result.Response = fmt.Sprintf("Load test completed with %d concurrent users. Response: %s",
-			concurrentUsers, resp.Choices[0].Message.Content)
+		result.Response = trSuiteData("testsuite.load.completed", map[string]any{
+			"users":    concurrentUsers,
+			"response": resp.Choices[0].Message.Content,
+		})
 		result.Provider = testCase.Configuration.Provider
 		result.Model = resp.Model
 		result.Metrics["tokens_used"] = resp.Usage.TotalTokens
@@ -755,7 +760,7 @@ func (tse *TestSuiteExecutor) executeLoadTest(ctx context.Context, testCase Test
 func (tse *TestSuiteExecutor) executeMultiModalTest(ctx context.Context, testCase TestCase, result TestResult) TestResult {
 	if tse.llmClient == nil {
 		result.Status = TestStatusError
-		result.Error = "LLM client not configured - cannot execute multi-modal test"
+		result.Error = trSuite("testsuite.error.no_client_multimodal")
 		return result
 	}
 
