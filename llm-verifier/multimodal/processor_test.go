@@ -35,14 +35,16 @@ func TestMultiModalProcessor_validateContent(t *testing.T) {
 	t.Run("nil content", func(t *testing.T) {
 		err := processor.validateContent(nil)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "content is required")
+		// Post CONST-046 migration: validateContent routes through the i18n
+		// seam; the default NoopTranslator returns the message ID verbatim.
+		assert.Contains(t, err.Error(), "multimodal.validation.content_required")
 	})
 
 	t.Run("empty content type", func(t *testing.T) {
 		content := &MultiModalContent{}
 		err := processor.validateContent(content)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "content type is required")
+		assert.Contains(t, err.Error(), "multimodal.validation.content_type_required")
 	})
 
 	t.Run("valid image content", func(t *testing.T) {
@@ -62,7 +64,7 @@ func TestMultiModalProcessor_validateContent(t *testing.T) {
 		}
 		err := processor.validateContent(content)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "exceeds maximum")
+		assert.Contains(t, err.Error(), "multimodal.validation.content_size_exceeded")
 	})
 
 	t.Run("audio exceeds size limit", func(t *testing.T) {
@@ -91,7 +93,7 @@ func TestMultiModalProcessor_validateContent(t *testing.T) {
 		}
 		err := processor.validateContent(content)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "invalid MIME type")
+		assert.Contains(t, err.Error(), "multimodal.validation.invalid_mime_type")
 	})
 
 	t.Run("valid audio content", func(t *testing.T) {
@@ -162,9 +164,11 @@ func TestMultiModalProcessor_generateLLMResponse(t *testing.T) {
 		response, err := processor.generateLLMResponse(ctx, req, analysis)
 
 		require.NoError(t, err)
-		// Without a provider, returns formatted analysis summary
-		assert.Contains(t, response, "Analysis")
-		assert.Contains(t, response, analysis.Description)
+		// Without a provider, returns the i18n-routed analysis summary.
+		// Post CONST-046 migration the default NoopTranslator returns the
+		// message ID verbatim; a real backend materialises the contextInfo
+		// template (description, objects, etc.) into the bundle string.
+		assert.Contains(t, response, "multimodal.analysis.summary")
 	})
 
 	t.Run("with default prompt", func(t *testing.T) {

@@ -186,7 +186,7 @@ func (mmp *MultiModalProcessor) ProcessContent(ctx context.Context, req *MultiMo
 
 	// Validate content
 	if err := mmp.validateContent(req.Content); err != nil {
-		response.Error = fmt.Sprintf("content validation failed: %v", err)
+		response.Error = trData("multimodal.error.content_validation_failed", map[string]any{"error": err})
 		return response, err
 	}
 
@@ -194,7 +194,7 @@ func (mmp *MultiModalProcessor) ProcessContent(ctx context.Context, req *MultiMo
 	if req.SafetyCheck {
 		safetyResult, err := mmp.contentSafety.CheckContent(ctx, req.Content)
 		if err != nil {
-			response.Error = fmt.Sprintf("safety check failed: %v", err)
+			response.Error = trData("multimodal.error.safety_check_failed", map[string]any{"error": err})
 			return response, err
 		}
 
@@ -220,7 +220,7 @@ func (mmp *MultiModalProcessor) ProcessContent(ctx context.Context, req *MultiMo
 	}
 
 	if err != nil {
-		response.Error = fmt.Sprintf("content processing failed: %v", err)
+		response.Error = trData("multimodal.error.content_processing_failed", map[string]any{"error": err})
 		return response, err
 	}
 
@@ -230,7 +230,7 @@ func (mmp *MultiModalProcessor) ProcessContent(ctx context.Context, req *MultiMo
 	// Generate response using specified provider
 	llmResponse, err := mmp.generateLLMResponse(ctx, req, analysis)
 	if err != nil {
-		response.Error = fmt.Sprintf("LLM response generation failed: %v", err)
+		response.Error = trData("multimodal.error.llm_response_failed", map[string]any{"error": err})
 		return response, err
 	}
 
@@ -243,11 +243,11 @@ func (mmp *MultiModalProcessor) ProcessContent(ctx context.Context, req *MultiMo
 // validateContent validates multi-modal content
 func (mmp *MultiModalProcessor) validateContent(content *MultiModalContent) error {
 	if content == nil {
-		return fmt.Errorf("content is required")
+		return fmt.Errorf("%s", tr("multimodal.validation.content_required"))
 	}
 
 	if content.Type == "" {
-		return fmt.Errorf("content type is required")
+		return fmt.Errorf("%s", tr("multimodal.validation.content_type_required"))
 	}
 
 	// Check size limits
@@ -258,7 +258,9 @@ func (mmp *MultiModalProcessor) validateContent(content *MultiModalContent) erro
 	}
 
 	if maxSize, exists := maxSizes[content.Type]; exists && content.Size > maxSize {
-		return fmt.Errorf("content size %d exceeds maximum %d for type %s", content.Size, maxSize, content.Type)
+		return fmt.Errorf("%s", trData("multimodal.validation.content_size_exceeded", map[string]any{
+			"size": content.Size, "max": maxSize, "type": content.Type,
+		}))
 	}
 
 	// Validate MIME type
@@ -278,7 +280,9 @@ func (mmp *MultiModalProcessor) validateContent(content *MultiModalContent) erro
 				}
 			}
 			if !valid {
-				return fmt.Errorf("invalid MIME type %s for content type %s", content.MimeType, content.Type)
+				return fmt.Errorf("%s", trData("multimodal.validation.invalid_mime_type", map[string]any{
+					"mime": content.MimeType, "type": content.Type,
+				}))
 			}
 		}
 	}
@@ -294,25 +298,25 @@ func (mmp *MultiModalProcessor) generateLLMResponse(ctx context.Context, req *Mu
 		prompt = "Based on the content analysis provided, give a comprehensive summary and any relevant insights."
 	}
 
-	// Add analysis context
-	contextInfo := fmt.Sprintf("Content Analysis:\n- Description: %s\n", analysis.Description)
+	// Add analysis context — labels are user-facing and i18n-routed
+	contextInfo := trData("multimodal.analysis.description", map[string]any{"value": analysis.Description})
 	if analysis.Text != "" {
-		contextInfo += fmt.Sprintf("- Detected Text: %s\n", analysis.Text)
+		contextInfo += trData("multimodal.analysis.detected_text", map[string]any{"value": analysis.Text})
 	}
 	if analysis.Transcript != "" {
-		contextInfo += fmt.Sprintf("- Transcript: %s\n", analysis.Transcript)
+		contextInfo += trData("multimodal.analysis.transcript", map[string]any{"value": analysis.Transcript})
 	}
 	if len(analysis.Objects) > 0 {
-		contextInfo += fmt.Sprintf("- Detected Objects: %s\n", strings.Join(analysis.Objects, ", "))
+		contextInfo += trData("multimodal.analysis.detected_objects", map[string]any{"value": strings.Join(analysis.Objects, ", ")})
 	}
 	if len(analysis.Topics) > 0 {
-		contextInfo += fmt.Sprintf("- Topics: %s\n", strings.Join(analysis.Topics, ", "))
+		contextInfo += trData("multimodal.analysis.topics", map[string]any{"value": strings.Join(analysis.Topics, ", ")})
 	}
 	if analysis.Sentiment != "" {
-		contextInfo += fmt.Sprintf("- Sentiment: %s\n", analysis.Sentiment)
+		contextInfo += trData("multimodal.analysis.sentiment", map[string]any{"value": analysis.Sentiment})
 	}
 	if analysis.Language != "" {
-		contextInfo += fmt.Sprintf("- Language: %s\n", analysis.Language)
+		contextInfo += trData("multimodal.analysis.language", map[string]any{"value": analysis.Language})
 	}
 
 	fullPrompt := fmt.Sprintf("%s\n\nUser Request: %s", contextInfo, prompt)
@@ -331,7 +335,7 @@ func (mmp *MultiModalProcessor) generateLLMResponse(ctx context.Context, req *Mu
 	provider, ok := mmp.GetProvider(providerName)
 	if !ok {
 		// Return formatted analysis if no provider configured
-		return fmt.Sprintf("Analysis Summary:\n%s", contextInfo), nil
+		return trData("multimodal.analysis.summary", map[string]any{"context": contextInfo}), nil
 	}
 
 	// Build chat completion request
@@ -407,7 +411,7 @@ func (mmp *MultiModalProcessor) generateLLMResponse(ctx context.Context, req *Mu
 	}
 
 	if len(chatResp.Choices) == 0 {
-		return fmt.Sprintf("Analysis Summary:\n%s", contextInfo), nil
+		return trData("multimodal.analysis.summary", map[string]any{"context": contextInfo}), nil
 	}
 
 	return chatResp.Choices[0].Message.Content, nil
@@ -474,7 +478,7 @@ Describe:
 
 			frameAnalysis, err := mmp.imageProcessor.ProcessImage(ctx, frameContent, videoPrompt)
 			if err == nil {
-				analysis.Description = "Video Analysis (from keyframe): " + frameAnalysis.Description
+				analysis.Description = trData("multimodal.video.keyframe_analysis", map[string]any{"description": frameAnalysis.Description})
 				analysis.Objects = frameAnalysis.Objects
 				analysis.Topics = append(analysis.Topics, frameAnalysis.Topics...)
 				analysis.Sentiment = frameAnalysis.Sentiment
@@ -494,7 +498,9 @@ Describe:
 
 	// If no analysis was performed, provide metadata-based analysis
 	if analysis.Description == "" {
-		analysis.Description = fmt.Sprintf("Video file (%s, %d bytes)", content.MimeType, content.Size)
+		analysis.Description = trData("multimodal.video.file_metadata", map[string]any{
+			"mime": content.MimeType, "size": content.Size,
+		})
 		analysis.Confidence = 0.5
 
 		// Basic topic inference from MIME type
@@ -518,7 +524,7 @@ Describe:
 	}
 
 	// Note about production implementation
-	analysis.CustomFields["note"] = "For full video analysis, integrate with ffmpeg for frame extraction and audio separation"
+	analysis.CustomFields["note"] = tr("multimodal.video.ffmpeg_note")
 
 	return analysis, nil
 }
@@ -1215,7 +1221,9 @@ func (ap *AudioProcessor) processWithOpenAIWhisper(ctx context.Context, provider
 	analysis.Transcript = whisperResp.Text
 	analysis.Language = whisperResp.Language
 	analysis.Confidence = confidence
-	analysis.Description = fmt.Sprintf("Audio transcription (%s, %.1f seconds)", whisperResp.Language, whisperResp.Duration)
+	analysis.Description = trData("multimodal.audio.transcription_metadata", map[string]any{
+		"language": whisperResp.Language, "duration": whisperResp.Duration,
+	})
 
 	return analysis, nil
 }
@@ -1329,7 +1337,7 @@ func (ap *AudioProcessor) processWithGoogleSpeech(ctx context.Context, provider 
 	analysis.Transcript = transcript
 	analysis.Language = "en"
 	analysis.Confidence = avgConfidence
-	analysis.Description = "Audio transcription via Google Speech-to-Text"
+	analysis.Description = tr("multimodal.audio.transcription_via_google")
 
 	return analysis, nil
 }
@@ -1550,7 +1558,7 @@ func (csc *ContentSafetyChecker) checkWithOpenAIModeration(ctx context.Context, 
 				}
 				result.Issues = append(result.Issues, SafetyIssue{
 					Type:        category,
-					Description: fmt.Sprintf("Content flagged for %s", category),
+					Description: trData("multimodal.safety.content_flagged", map[string]any{"category": category}),
 					Severity:    severity,
 					Confidence:  score,
 				})
@@ -1641,7 +1649,7 @@ Respond with a JSON object in this exact format:
 			Safe:   false,
 			Issues: []SafetyIssue{{
 				Type:        "api_error",
-				Description: "No response from safety check API - content safety cannot be verified",
+				Description: tr("multimodal.safety.no_api_response"),
 				Severity:    "medium",
 				Confidence:  1.0,
 			}},
@@ -1716,7 +1724,7 @@ func (csc *ContentSafetyChecker) performBasicSafetyCheck(content *MultiModalCont
 	if maxSize, ok := maxSizes[content.Type]; ok && content.Size > maxSize {
 		result.Issues = append(result.Issues, SafetyIssue{
 			Type:        "file_size",
-			Description: fmt.Sprintf("File size exceeds maximum allowed (%d bytes)", maxSize),
+			Description: trData("multimodal.safety.file_size_exceeded", map[string]any{"max": maxSize}),
 			Severity:    "medium",
 			Confidence:  1.0,
 		})
@@ -1731,7 +1739,7 @@ func (csc *ContentSafetyChecker) performBasicSafetyCheck(content *MultiModalCont
 			baseScore = 0.0 // Zero score for malicious files
 			result.Issues = append(result.Issues, SafetyIssue{
 				Type:        "suspicious_file",
-				Description: "File type is potentially malicious",
+				Description: tr("multimodal.safety.suspicious_file"),
 				Severity:    "high",
 				Confidence:  1.0,
 			})
@@ -1752,7 +1760,7 @@ func (csc *ContentSafetyChecker) performBasicSafetyCheck(content *MultiModalCont
 		baseScore -= 0.1
 		result.Issues = append(result.Issues, SafetyIssue{
 			Type:        "unknown_mime_type",
-			Description: fmt.Sprintf("Unknown MIME type: %s", content.MimeType),
+			Description: trData("multimodal.safety.unknown_mime_type", map[string]any{"mime": content.MimeType}),
 			Severity:    "low",
 			Confidence:  0.5,
 		})
