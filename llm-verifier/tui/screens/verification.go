@@ -87,14 +87,14 @@ func (v *VerificationScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (v *VerificationScreen) View() string {
 	if v.width == 0 || v.height == 0 {
-		return "Loading..."
+		return trScreen("screens.verification.loading")
 	}
 
 	title := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color("205")).
 		Padding(0, 1).
-		Render("🔍 Verification")
+		Render("🔍 " + trScreen("screens.verification.title"))
 
 	content := lipgloss.JoinVertical(
 		lipgloss.Top,
@@ -127,7 +127,7 @@ func (v *VerificationScreen) renderVerificationsList() string {
 		return lipgloss.NewStyle().
 			Foreground(lipgloss.Color("241")).
 			Padding(1, 0).
-			Render("No verification history")
+			Render(trScreen("screens.verification.no_history"))
 	}
 
 	var rows []string
@@ -208,7 +208,7 @@ func (v *VerificationScreen) renderVerificationsList() string {
 		Render(
 			lipgloss.JoinVertical(
 				lipgloss.Top,
-				lipgloss.NewStyle().Bold(true).Render("Verification History:"),
+				lipgloss.NewStyle().Bold(true).Render(trScreen("screens.verification.history_heading")),
 				lipgloss.NewStyle().Height(1).Render(""),
 				lipgloss.JoinVertical(lipgloss.Top, rows...),
 			),
@@ -224,21 +224,21 @@ func (v *VerificationScreen) renderVerificationDetails() string {
 
 	details := lipgloss.JoinVertical(
 		lipgloss.Left,
-		lipgloss.NewStyle().Bold(true).Render("Selected Verification:"),
+		lipgloss.NewStyle().Bold(true).Render(trScreen("screens.verification.selected_heading")),
 		lipgloss.NewStyle().Height(1).Render(""),
 		lipgloss.JoinHorizontal(
 			lipgloss.Left,
-			lipgloss.NewStyle().Width(20).Render("Model:"),
+			lipgloss.NewStyle().Width(20).Render(trScreen("screens.verification.field.model")),
 			lipgloss.NewStyle().Bold(true).Render(verification.ModelName),
 		),
 		lipgloss.JoinHorizontal(
 			lipgloss.Left,
-			lipgloss.NewStyle().Width(20).Render("Provider:"),
+			lipgloss.NewStyle().Width(20).Render(trScreen("screens.verification.field.provider")),
 			lipgloss.NewStyle().Foreground(lipgloss.Color("99")).Render(verification.Provider),
 		),
 		lipgloss.JoinHorizontal(
 			lipgloss.Left,
-			lipgloss.NewStyle().Width(20).Render("Status:"),
+			lipgloss.NewStyle().Width(20).Render(trScreen("screens.verification.field.status")),
 			lipgloss.NewStyle().Foreground(lipgloss.Color(func() string {
 				switch verification.Status {
 				case "Completed":
@@ -254,17 +254,17 @@ func (v *VerificationScreen) renderVerificationDetails() string {
 		),
 		lipgloss.JoinHorizontal(
 			lipgloss.Left,
-			lipgloss.NewStyle().Width(20).Render("Score:"),
+			lipgloss.NewStyle().Width(20).Render(trScreen("screens.verification.field.score")),
 			lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(fmt.Sprintf("%.1f", verification.Score)),
 		),
 		lipgloss.JoinHorizontal(
 			lipgloss.Left,
-			lipgloss.NewStyle().Width(20).Render("Started:"),
+			lipgloss.NewStyle().Width(20).Render(trScreen("screens.verification.field.started")),
 			lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(verification.StartedAt.Format("2006-01-02 15:04:05")),
 		),
 		lipgloss.JoinHorizontal(
 			lipgloss.Left,
-			lipgloss.NewStyle().Width(20).Render("Duration:"),
+			lipgloss.NewStyle().Width(20).Render(trScreen("screens.verification.field.duration")),
 			lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(v.formatDuration(verification.Duration)),
 		),
 	)
@@ -280,17 +280,17 @@ func (v *VerificationScreen) renderVerificationDetails() string {
 func (v *VerificationScreen) renderActions() string {
 	actions := lipgloss.JoinVertical(
 		lipgloss.Left,
-		lipgloss.NewStyle().Bold(true).Render("Actions:"),
+		lipgloss.NewStyle().Bold(true).Render(trScreen("screens.verification.actions_heading")),
 		lipgloss.NewStyle().Height(1).Render(""),
 		lipgloss.JoinHorizontal(
 			lipgloss.Top,
-			v.renderActionButton("↑/↓", "Navigate", "Select verification"),
+			v.renderActionButton("↑/↓", trScreen("screens.verification.action.navigate"), trScreen("screens.verification.action.navigate.desc")),
 			lipgloss.NewStyle().Width(2).Render(""),
-			v.renderActionButton("n", "New", "Start new verification"),
+			v.renderActionButton("n", trScreen("screens.verification.action.new"), trScreen("screens.verification.action.new.desc")),
 			lipgloss.NewStyle().Width(2).Render(""),
-			v.renderActionButton("Enter", "Cancel", "Cancel selected"),
+			v.renderActionButton("Enter", trScreen("screens.verification.action.cancel"), trScreen("screens.verification.action.cancel.desc")),
 			lipgloss.NewStyle().Width(2).Render(""),
-			v.renderActionButton("r", "Refresh", "Update status"),
+			v.renderActionButton("r", trScreen("screens.verification.action.refresh"), trScreen("screens.verification.action.refresh.desc")),
 		),
 	)
 
@@ -326,27 +326,27 @@ func (v *VerificationScreen) renderNewVerificationForm() string {
 		lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color("39")).
-			Render("New Verification:"),
+			Render(trScreen("screens.verification.new_form.heading")),
 		lipgloss.NewStyle().Height(1).Render(""),
 		lipgloss.JoinHorizontal(
 			lipgloss.Left,
-			lipgloss.NewStyle().Width(15).Render("Model ID:"),
+			lipgloss.NewStyle().Width(15).Render(trScreen("screens.verification.new_form.model_id")),
 			lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(fmt.Sprintf("%d", v.newVerification.ModelID)),
 		),
 		lipgloss.JoinHorizontal(
 			lipgloss.Left,
-			lipgloss.NewStyle().Width(15).Render("Provider:"),
+			lipgloss.NewStyle().Width(15).Render(trScreen("screens.verification.new_form.provider")),
 			lipgloss.NewStyle().Foreground(lipgloss.Color("99")).Render(v.newVerification.Provider),
 		),
 		lipgloss.JoinHorizontal(
 			lipgloss.Left,
-			lipgloss.NewStyle().Width(15).Render("Test Types:"),
+			lipgloss.NewStyle().Width(15).Render(trScreen("screens.verification.new_form.test_types")),
 			lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(fmt.Sprintf("%v", v.newVerification.TestTypes)),
 		),
 		lipgloss.NewStyle().Height(1).Render(""),
 		lipgloss.NewStyle().
 			Foreground(lipgloss.Color("241")).
-			Render("Press Enter to start verification, 'n' to close"),
+			Render(trScreen("screens.verification.new_form.hint")),
 	)
 
 	return lipgloss.NewStyle().

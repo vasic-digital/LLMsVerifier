@@ -80,14 +80,14 @@ func (d *DashboardScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (d *DashboardScreen) View() string {
 	if d.width == 0 || d.height == 0 {
-		return "Loading..."
+		return trScreen("screens.dashboard.loading")
 	}
 
 	title := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color("205")).
 		Padding(0, 1).
-		Render("📊 Dashboard")
+		Render("📊 " + trScreen("screens.dashboard.title"))
 
 	content := lipgloss.JoinVertical(
 		lipgloss.Top,
@@ -133,22 +133,22 @@ func (d *DashboardScreen) renderStats() string {
 
 	stats := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		statBox("Total Models", d.stats.TotalModels, "39"),
+		statBox(trScreen("screens.dashboard.stat.total_models"), d.stats.TotalModels, "39"),
 		lipgloss.NewStyle().Width(2).Render(""),
-		statBox("Total Providers", d.stats.TotalProviders, "82"),
+		statBox(trScreen("screens.dashboard.stat.total_providers"), d.stats.TotalProviders, "82"),
 		lipgloss.NewStyle().Width(2).Render(""),
-		statBox("Verified", d.stats.VerifiedModels, "46"),
+		statBox(trScreen("screens.dashboard.stat.verified"), d.stats.VerifiedModels, "46"),
 		lipgloss.NewStyle().Width(2).Render(""),
-		statBox("Pending", d.stats.PendingModels, "214"),
+		statBox(trScreen("screens.dashboard.stat.pending"), d.stats.PendingModels, "214"),
 	)
 
 	additionalStats := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		statBox("Avg Score", fmt.Sprintf("%.1f%%", d.stats.AverageScore), "205"),
+		statBox(trScreen("screens.dashboard.stat.avg_score"), fmt.Sprintf("%.1f%%", d.stats.AverageScore), "205"),
 		lipgloss.NewStyle().Width(2).Render(""),
-		statBox("Last Verified", d.stats.LastVerification.Format("Jan 02 15:04"), "99"),
+		statBox(trScreen("screens.dashboard.stat.last_verified"), d.stats.LastVerification.Format("Jan 02 15:04"), "99"),
 		lipgloss.NewStyle().Width(2).Render(""),
-		statBox("Last Refresh", d.stats.LastRefresh.Format("15:04:05"), "39"),
+		statBox(trScreen("screens.dashboard.stat.last_refresh"), d.stats.LastRefresh.Format("15:04:05"), "39"),
 	)
 
 	// Add progress visualization
@@ -173,14 +173,14 @@ func (d *DashboardScreen) renderProgress() string {
 
 	// Verification progress
 	verifiedPercent := float64(d.stats.VerifiedModels) / float64(d.stats.TotalModels) * 100
-	progressBar := d.renderProgressBar("Verification Progress", verifiedPercent, 40)
+	progressBar := d.renderProgressBar(trScreen("screens.dashboard.verification_progress"), verifiedPercent, 40)
 
 	// Score visualization (simple text-based)
 	scoreIndicator := d.renderScoreIndicator()
 
 	return lipgloss.JoinVertical(
 		lipgloss.Top,
-		lipgloss.NewStyle().Bold(true).Render("📊 Progress Overview:"),
+		lipgloss.NewStyle().Bold(true).Render("📊 "+trScreen("screens.dashboard.progress_overview")),
 		lipgloss.NewStyle().Height(1).Render(""),
 		progressBar,
 		lipgloss.NewStyle().Height(1).Render(""),
@@ -221,16 +221,16 @@ func (d *DashboardScreen) renderScoreIndicator() string {
 
 	if score >= 90 {
 		color = "46" // Green
-		label = "Excellent"
+		label = trScreen("screens.dashboard.score.excellent")
 	} else if score >= 80 {
 		color = "226" // Yellow
-		label = "Good"
+		label = trScreen("screens.dashboard.score.good")
 	} else if score >= 70 {
 		color = "214" // Orange
-		label = "Fair"
+		label = trScreen("screens.dashboard.score.fair")
 	} else {
 		color = "196" // Red
-		label = "Needs Improvement"
+		label = trScreen("screens.dashboard.score.needs_improvement")
 	}
 
 	stars := ""
@@ -244,7 +244,7 @@ func (d *DashboardScreen) renderScoreIndicator() string {
 
 	return lipgloss.JoinHorizontal(
 		lipgloss.Left,
-		lipgloss.NewStyle().Width(20).Render("Average Score:"),
+		lipgloss.NewStyle().Width(20).Render(trScreen("screens.dashboard.average_score")+":"),
 		lipgloss.NewStyle().
 			Foreground(lipgloss.Color(color)).
 			Bold(true).
@@ -286,15 +286,15 @@ func (d *DashboardScreen) renderActions() string {
 
 	actions := lipgloss.JoinVertical(
 		lipgloss.Left,
-		lipgloss.NewStyle().Bold(true).Render("Quick Actions:"),
+		lipgloss.NewStyle().Bold(true).Render(trScreen("screens.dashboard.quick_actions")),
 		lipgloss.NewStyle().Height(1).Render(""),
 		lipgloss.JoinHorizontal(
 			lipgloss.Top,
-			actionButton("Refresh Stats", "r", "Update dashboard statistics (auto-refresh every 30s)"),
+			actionButton(trScreen("screens.dashboard.action.refresh_stats"), "r", trScreen("screens.dashboard.action.refresh_stats.desc")),
 			lipgloss.NewStyle().Width(2).Render(""),
-			actionButton("Run Verification", "v", "Start new verification"),
+			actionButton(trScreen("screens.dashboard.action.run_verification"), "v", trScreen("screens.dashboard.action.run_verification.desc")),
 			lipgloss.NewStyle().Width(2).Render(""),
-			actionButton("View Models", "m", "Browse all models"),
+			actionButton(trScreen("screens.dashboard.action.view_models"), "m", trScreen("screens.dashboard.action.view_models.desc")),
 		),
 	)
 
