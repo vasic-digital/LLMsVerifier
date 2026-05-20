@@ -373,8 +373,11 @@ func (p *Publisher) PublishVerificationStarted(ctx context.Context, modelCount, 
 	event := NewVerificationEvent(
 		EventVerificationStarted,
 		SeverityInfo,
-		"Model Verification Started",
-		fmt.Sprintf("Starting verification of %d models across %d providers", modelCount, providerCount),
+		tr("messaging.verification.started.title"),
+		trData("messaging.verification.started.message", map[string]any{
+			"model_count":    modelCount,
+			"provider_count": providerCount,
+		}),
 	).AddDetail("model_count", modelCount).
 		AddDetail("provider_count", providerCount).
 		AddDetail("start_time", time.Now().UTC())
@@ -387,9 +390,12 @@ func (p *Publisher) PublishVerificationCompleted(ctx context.Context, duration t
 	event := NewVerificationEvent(
 		EventVerificationCompleted,
 		SeverityInfo,
-		"Model Verification Completed",
-		fmt.Sprintf("Verification completed in %s. %d models verified successfully, %d failed",
-			duration, successCount, failureCount),
+		tr("messaging.verification.completed.title"),
+		trData("messaging.verification.completed.message", map[string]any{
+			"duration":      duration.String(),
+			"success_count": successCount,
+			"failure_count": failureCount,
+		}),
 	).AddDetail("duration_seconds", duration.Seconds()).
 		AddDetail("success_count", successCount).
 		AddDetail("failure_count", failureCount).
@@ -403,8 +409,10 @@ func (p *Publisher) PublishVerificationFailed(ctx context.Context, errorMsg stri
 	event := NewVerificationEvent(
 		EventVerificationFailed,
 		SeverityError,
-		"Model Verification Failed",
-		fmt.Sprintf("Verification failed with error: %s", errorMsg),
+		tr("messaging.verification.failed.title"),
+		trData("messaging.verification.failed.message", map[string]any{
+			"error": errorMsg,
+		}),
 	).AddDetail("error_message", errorMsg).
 		AddDetail("failure_time", time.Now().UTC())
 
@@ -416,8 +424,11 @@ func (p *Publisher) PublishProviderScored(ctx context.Context, scored *ProviderS
 	event := NewVerificationEvent(
 		EventProviderScored,
 		SeverityInfo,
-		"Provider Scored",
-		fmt.Sprintf("Provider %s scored %.2f", scored.ProviderName, scored.OverallScore),
+		tr("messaging.provider.scored.title"),
+		trData("messaging.provider.scored.message", map[string]any{
+			"provider": scored.ProviderName,
+			"score":    fmt.Sprintf("%.2f", scored.OverallScore),
+		}),
 	).WithProvider(scored.ProviderID).
 		WithScore(scored.OverallScore).
 		AddDetail("response_speed_score", scored.ResponseSpeed).
@@ -441,8 +452,11 @@ func (p *Publisher) PublishProviderHealthCheck(ctx context.Context, health *Prov
 	event := NewVerificationEvent(
 		EventProviderHealthCheck,
 		severity,
-		"Provider Health Check",
-		fmt.Sprintf("Provider %s health: %s", health.ProviderName, health.Status),
+		tr("messaging.provider.health.title"),
+		trData("messaging.provider.health.message", map[string]any{
+			"provider": health.ProviderName,
+			"status":   health.Status,
+		}),
 	).WithProvider(health.ProviderID).
 		AddDetail("status", health.Status).
 		AddDetail("latency_ms", health.Latency)
@@ -459,8 +473,12 @@ func (p *Publisher) PublishModelRanked(ctx context.Context, ranked *ModelRankedE
 	event := NewVerificationEvent(
 		EventModelRanked,
 		SeverityInfo,
-		"Model Ranked",
-		fmt.Sprintf("Model %s ranked #%d with score %.2f", ranked.ModelName, ranked.Rank, ranked.Score),
+		tr("messaging.model.ranked.title"),
+		trData("messaging.model.ranked.message", map[string]any{
+			"model": ranked.ModelName,
+			"rank":  ranked.Rank,
+			"score": fmt.Sprintf("%.2f", ranked.Score),
+		}),
 	).WithProvider(ranked.ProviderID).
 		WithModel(ranked.ModelID).
 		WithScore(ranked.Score).
@@ -476,8 +494,11 @@ func (p *Publisher) PublishTeamSelected(ctx context.Context, team *TeamSelectedE
 	event := NewVerificationEvent(
 		EventTeamSelected,
 		SeverityInfo,
-		"AI Debate Team Selected",
-		fmt.Sprintf("Selected %d team members using criteria: %s", team.TeamSize, team.SelectionCriteria),
+		tr("messaging.team.selected.title"),
+		trData("messaging.team.selected.message", map[string]any{
+			"team_size": team.TeamSize,
+			"criteria":  team.SelectionCriteria,
+		}),
 	).AddDetail("team_id", team.TeamID).
 		AddDetail("team_size", team.TeamSize).
 		AddDetail("primary_llms", team.PrimaryLLMs).

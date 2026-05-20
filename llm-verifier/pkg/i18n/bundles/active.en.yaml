@@ -930,3 +930,36 @@ llmsverifier_scoring_alert_subject_api_performance:
   other: "API Performance Alert: %s"
 llmsverifier_scoring_alert_subject_db_performance:
   other: "Database Performance Alert: %s"
+
+# CONST-046 round-372: messaging package verification-event titles + messages
+# (messaging/publisher.go Publish* methods). User-facing VerificationEvent
+# Title/Message values surfaced to operators via the message broker
+# (Kafka/RabbitMQ) and downstream notification consumers.
+messaging.verification.started.title:
+  other: "Model Verification Started"
+messaging.verification.started.message:
+  other: "Starting verification of {{.model_count}} models across {{.provider_count}} providers"
+messaging.verification.completed.title:
+  other: "Model Verification Completed"
+messaging.verification.completed.message:
+  other: "Verification completed in {{.duration}}. {{.success_count}} models verified successfully, {{.failure_count}} failed"
+messaging.verification.failed.title:
+  other: "Model Verification Failed"
+messaging.verification.failed.message:
+  other: "Verification failed with error: {{.error}}"
+messaging.provider.scored.title:
+  other: "Provider Scored"
+messaging.provider.scored.message:
+  other: "Provider {{.provider}} scored {{.score}}"
+messaging.provider.health.title:
+  other: "Provider Health Check"
+messaging.provider.health.message:
+  other: "Provider {{.provider}} health: {{.status}}"
+messaging.model.ranked.title:
+  other: "Model Ranked"
+messaging.model.ranked.message:
+  other: "Model {{.model}} ranked #{{.rank}} with score {{.score}}"
+messaging.team.selected.title:
+  other: "AI Debate Team Selected"
+messaging.team.selected.message:
+  other: "Selected {{.team_size}} team members using criteria: {{.criteria}}"
