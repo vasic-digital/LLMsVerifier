@@ -104,6 +104,58 @@ func TestReporter_ModelSectionRoutesThroughTranslator(t *testing.T) {
 	})
 }
 
+// TestReporter_Round381LabelsRouteThroughTranslator is the round-381 paired-
+// mutation guard (CONST-046 Phase 4 round 21). It drives a fully-populated
+// model report and asserts every feature-detection, code-capability and
+// complexity-handling label migrated this round routes through the i18n
+// seam. If any call-site regressed to a hardcoded English literal, its
+// sentinel would be absent and the test fails — anti-bluff per
+// CONST-035 / Article XI §11.9.
+func TestReporter_Round381LabelsRouteThroughTranslator(t *testing.T) {
+	results := []VerificationResult{
+		{ModelInfo: ModelInfo{ID: "round381-model", Endpoint: "http://localhost"}},
+	}
+	withFakeTranslator(t, func() {
+		out := generateReportText(t, results)
+		for _, want := range []string{
+			"<TRANSLATED:report.field.embeddings>",
+			"<TRANSLATED:report.field.reranking>",
+			"<TRANSLATED:report.field.mcps>",
+			"<TRANSLATED:report.field.lsps>",
+			"<TRANSLATED:report.field.acps>",
+			"<TRANSLATED:report.field.multimodal>",
+			"<TRANSLATED:report.field.streaming>",
+			"<TRANSLATED:report.field.code_debugging>",
+			"<TRANSLATED:report.field.code_optimization>",
+			"<TRANSLATED:report.field.test_generation>",
+			"<TRANSLATED:report.field.documentation>",
+			"<TRANSLATED:report.field.refactoring>",
+			"<TRANSLATED:report.field.error_resolution>",
+			"<TRANSLATED:report.field.architecture_understanding>",
+			"<TRANSLATED:report.field.security_assessment>",
+			"<TRANSLATED:report.field.pattern_recognition>",
+			"<TRANSLATED:report.field.complexity_level>",
+			"<TRANSLATED:report.field.code_quality_score>",
+			"<TRANSLATED:report.field.logic_correctness_score>",
+			"<TRANSLATED:report.field.runtime_efficiency_score>",
+		} {
+			if !strings.Contains(out, want) {
+				t.Errorf("report missing routed sentinel %q", want)
+			}
+		}
+		// Negative anti-bluff assertion: the pre-migration English literals
+		// must NOT survive verbatim in the report under the fake translator.
+		for _, gone := range []string{
+			"- **Embeddings**:", "- **Code Debugging**:",
+			"- **Complexity Level**:", "- **Runtime Efficiency Score**:",
+		} {
+			if strings.Contains(out, gone) {
+				t.Errorf("pre-migration literal %q still present — call-site bypassed translator", gone)
+			}
+		}
+	})
+}
+
 // TestReporter_NoopTranslatorReturnsMessageID confirms the default
 // NoopTranslator emits the messageID verbatim (the seam contract relied on
 // by every other consumer that does not install a real bundle).

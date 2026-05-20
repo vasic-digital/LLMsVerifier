@@ -963,3 +963,49 @@ messaging.team.selected.title:
   other: "AI Debate Team Selected"
 messaging.team.selected.message:
   other: "Selected {{.team_size}} team members using criteria: {{.criteria}}"
+
+# --- Round-381 (CONST-046 Phase 4 round 21): llmverifier/reporter.go ---
+# User-facing Markdown report labels left un-migrated by the round-7 pass:
+# feature-detection rows, code-capability rows and complexity-handling
+# score rows. Every label is rendered into the verification report a user
+# reads, so each must localise per CONST-046.
+report.field.embeddings:
+  other: "Embeddings"
+report.field.reranking:
+  other: "Reranking"
+report.field.mcps:
+  other: "MCPs"
+report.field.lsps:
+  other: "LSPs"
+report.field.acps:
+  other: "ACPs"
+report.field.multimodal:
+  other: "Multimodal"
+report.field.streaming:
+  other: "Streaming"
+report.field.code_debugging:
+  other: "Code Debugging"
+report.field.code_optimization:
+  other: "Code Optimization"
+report.field.test_generation:
+  other: "Test Generation"
+report.field.documentation:
+  other: "Documentation"
+report.field.refactoring:
+  other: "Refactoring"
+report.field.error_resolution:
+  other: "Error Resolution"
+report.field.architecture_understanding:
+  other: "Architecture Understanding"
+report.field.security_assessment:
+  other: "Security Assessment"
+report.field.pattern_recognition:
+  other: "Pattern Recognition"
+report.field.complexity_level:
+  other: "Complexity Level"
+report.field.code_quality_score:
+  other: "Code Quality Score"
+report.field.logic_correctness_score:
+  other: "Logic Correctness Score"
+report.field.runtime_efficiency_score:
+  other: "Runtime Efficiency Score"
