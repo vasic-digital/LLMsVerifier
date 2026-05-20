@@ -439,10 +439,13 @@ func TestRecommendationEngine_GetProviderRecommendation_WithUserHistory(t *testi
 	// Groq should get a boost from user history
 	for _, rec := range response.Recommendations {
 		if rec.Provider == "groq" {
-			// Should have reasoning mentioning past usage
+			// Should have reasoning mentioning past usage. The reasoning
+			// string is i18n-routed (CONST-046), so compare against the
+			// translator-resolved message rather than a hardcoded literal.
 			found := false
+			wantPastUsage := tr("analytics.recommendation.history.past_usage")
 			for _, reason := range rec.Reasoning {
-				if reason == "Based on your successful past usage" {
+				if reason == wantPastUsage {
 					found = true
 					break
 				}

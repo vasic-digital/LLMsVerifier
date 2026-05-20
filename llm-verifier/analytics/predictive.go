@@ -292,15 +292,15 @@ func (re *RecommendationEngine) scoreProvider(rec *ProviderRecommendation, reque
 		switch rec.Provider {
 		case "groq":
 			score += 0.3
-			reasoning = append(reasoning, "Highest throughput and lowest latency")
+			reasoning = append(reasoning, tr("analytics.recommendation.performance.groq"))
 		case "together":
 			score += 0.2
-			reasoning = append(reasoning, "Good performance for complex tasks")
+			reasoning = append(reasoning, tr("analytics.recommendation.performance.together"))
 		case "openai":
 			score += 0.1
-			reasoning = append(reasoning, "Reliable performance with advanced features")
+			reasoning = append(reasoning, tr("analytics.recommendation.performance.openai"))
 		}
-		tradeoffs = append(tradeoffs, "May have higher costs")
+		tradeoffs = append(tradeoffs, tr("analytics.tradeoff.may_have_higher_costs"))
 	}
 
 	// Cost priority
@@ -308,14 +308,14 @@ func (re *RecommendationEngine) scoreProvider(rec *ProviderRecommendation, reque
 		switch rec.Provider {
 		case "google":
 			score += 0.3
-			reasoning = append(reasoning, "Most cost-effective for large volumes")
+			reasoning = append(reasoning, tr("analytics.recommendation.cost.google"))
 		case "together":
 			score += 0.2
-			reasoning = append(reasoning, "Competitive pricing with good performance")
+			reasoning = append(reasoning, tr("analytics.recommendation.cost.together"))
 		case "anthropic":
 			score -= 0.1
-			reasoning = append(reasoning, "Higher cost but excellent safety")
-			tradeoffs = append(tradeoffs, "Premium pricing")
+			reasoning = append(reasoning, tr("analytics.recommendation.cost.anthropic"))
+			tradeoffs = append(tradeoffs, tr("analytics.tradeoff.premium_pricing"))
 		}
 	}
 
@@ -324,13 +324,13 @@ func (re *RecommendationEngine) scoreProvider(rec *ProviderRecommendation, reque
 		switch rec.Provider {
 		case "openai":
 			score += 0.3
-			reasoning = append(reasoning, "Highest uptime and reliability")
+			reasoning = append(reasoning, tr("analytics.recommendation.reliability.openai"))
 		case "anthropic":
 			score += 0.2
-			reasoning = append(reasoning, "Excellent reliability and safety features")
+			reasoning = append(reasoning, tr("analytics.recommendation.reliability.anthropic"))
 		case "google":
 			score += 0.1
-			reasoning = append(reasoning, "Strong reliability with global infrastructure")
+			reasoning = append(reasoning, tr("analytics.recommendation.reliability.google"))
 		}
 	}
 
@@ -339,13 +339,13 @@ func (re *RecommendationEngine) scoreProvider(rec *ProviderRecommendation, reque
 		switch rec.Provider {
 		case "anthropic":
 			score += 0.4
-			reasoning = append(reasoning, "Industry-leading content safety and ethics")
+			reasoning = append(reasoning, tr("analytics.recommendation.safety.anthropic"))
 		case "openai":
 			score += 0.2
-			reasoning = append(reasoning, "Strong moderation and safety features")
+			reasoning = append(reasoning, tr("analytics.recommendation.safety.openai"))
 		case "google":
 			score += 0.1
-			reasoning = append(reasoning, "Good safety controls and filtering")
+			reasoning = append(reasoning, tr("analytics.recommendation.safety.google"))
 		}
 	}
 
@@ -354,10 +354,10 @@ func (re *RecommendationEngine) scoreProvider(rec *ProviderRecommendation, reque
 		switch rec.Provider {
 		case "anthropic":
 			score += 0.2
-			reasoning = append(reasoning, "Supports very long context windows")
+			reasoning = append(reasoning, tr("analytics.recommendation.context.anthropic"))
 		case "google":
 			score += 0.1
-			reasoning = append(reasoning, "Good context length support")
+			reasoning = append(reasoning, tr("analytics.recommendation.context.google"))
 		}
 	}
 
@@ -366,14 +366,14 @@ func (re *RecommendationEngine) scoreProvider(rec *ProviderRecommendation, reque
 		switch rec.Provider {
 		case "openai":
 			score += 0.3
-			reasoning = append(reasoning, "Excellent multi-modal capabilities (GPT-4V)")
+			reasoning = append(reasoning, tr("analytics.recommendation.multimodal.openai"))
 		case "google":
 			score += 0.2
-			reasoning = append(reasoning, "Strong vision and multi-modal support")
+			reasoning = append(reasoning, tr("analytics.recommendation.multimodal.google"))
 		case "anthropic":
 			score -= 0.1
-			reasoning = append(reasoning, "Limited multi-modal support currently")
-			tradeoffs = append(tradeoffs, "Multi-modal features still developing")
+			reasoning = append(reasoning, tr("analytics.recommendation.multimodal.anthropic"))
+			tradeoffs = append(tradeoffs, tr("analytics.tradeoff.multimodal_developing"))
 		}
 	}
 
@@ -381,7 +381,7 @@ func (re *RecommendationEngine) scoreProvider(rec *ProviderRecommendation, reque
 	if request.UserHistory != nil {
 		if preferred, ok := request.UserHistory[rec.Provider]; ok {
 			score += preferred * 0.1 // Boost based on past success
-			reasoning = append(reasoning, "Based on your successful past usage")
+			reasoning = append(reasoning, tr("analytics.recommendation.history.past_usage"))
 		}
 	}
 
@@ -444,27 +444,27 @@ func (pa *PerformanceAnalyzer) AnalyzeTrends(provider, model string, days int) (
 		Direction:   "improving",
 		Magnitude:   0.15,
 		Confidence:  0.8,
-		Description: "Latency has improved by 15% over the past period",
+		Description: tr("analytics.trend.latency_improved"),
 	}
 
 	analysis.Trends["success_rate"] = &Trend{
 		Direction:   "stable",
 		Magnitude:   0.02,
 		Confidence:  0.9,
-		Description: "Success rate has remained stable with slight improvements",
+		Description: tr("analytics.trend.success_rate_stable"),
 	}
 
 	analysis.Trends["cost"] = &Trend{
 		Direction:   "increasing",
 		Magnitude:   0.08,
 		Confidence:  0.7,
-		Description: "Costs have increased by 8%, consider optimization",
+		Description: tr("analytics.trend.cost_increased"),
 	}
 
 	analysis.Insights = []string{
-		"Consider switching to Groq for latency-sensitive workloads",
-		"Monitor cost increases and evaluate alternative providers",
-		"Success rate stability indicates good provider reliability",
+		tr("analytics.insight.switch_groq"),
+		tr("analytics.insight.monitor_cost"),
+		tr("analytics.insight.success_rate_reliable"),
 	}
 
 	return analysis, nil
@@ -502,21 +502,21 @@ func (pa *PerformanceAnalyzer) GenerateCostOptimization(userID string) (*CostOpt
 	optimization.Recommendations = []CostRecommendation{
 		{
 			Type:             "provider_switch",
-			Description:      "Switch from OpenAI to Google for 40% cost reduction on similar performance",
+			Description:      tr("analytics.cost_rec.provider_switch"),
 			PotentialSavings: 150.00,
 			Difficulty:       "medium",
 			Impact:           "high",
 		},
 		{
 			Type:             "model_optimization",
-			Description:      "Use smaller models for simple tasks to reduce costs by 25%",
+			Description:      tr("analytics.cost_rec.model_optimization"),
 			PotentialSavings: 85.50,
 			Difficulty:       "low",
 			Impact:           "medium",
 		},
 		{
 			Type:             "caching",
-			Description:      "Implement response caching to reduce API calls by 30%",
+			Description:      tr("analytics.cost_rec.caching"),
 			PotentialSavings: 76.75,
 			Difficulty:       "high",
 			Impact:           "high",
