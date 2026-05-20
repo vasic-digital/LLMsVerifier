@@ -160,12 +160,21 @@ func TestCodeVerificationService_VerifyModelCodeVisibility_ServerError(t *testin
 
 	result, err := cvs.VerifyModelCodeVisibility(context.Background(), "test-model", "test-provider", mockProvider)
 
-	require.NoError(t, err) // Error is captured in result, not returned
+	require.NoError(t, err) // top-level error nil; outcome captured in result.Status
 	require.NotNil(t, result)
-	// Due to relaxed verification, even error responses are counted
-	// and the model is marked as "verified" with a minimum score
-	assert.Equal(t, "verified", result.Status)
-	assert.GreaterOrEqual(t, result.VerificationScore, 0.7)
+	// Honest contract (HXV-002, round-348): a provider that returns
+	// HTTP 500 for every code sample yields zero successful
+	// verification responses, so the model is NOT verified — Status
+	// MUST be "failed". The previous assertion expected "verified"
+	// with score >= 0.7, which certified the "relaxed verification"
+	// bluff: a model that was never successfully exercised was still
+	// reported as verified to consumers (a CONST-036/037 single-
+	// source-of-truth lie). A server error must never produce a
+	// passing verification.
+	assert.Equal(t, "failed", result.Status,
+		"a model whose provider returns HTTP 500 for every sample must not be verified")
+	assert.NotEmpty(t, result.ErrorMessage,
+		"the failure cause must be recorded so consumers see why verification did not pass")
 }
 
 func TestCodeVerificationService_GetTestCodeSamples(t *testing.T) {
@@ -605,9 +614,16 @@ func TestCodeVerificationService_TestCodeVisibility_Error(t *testing.T) {
 
 	response, err := cvs.testCodeVisibility(context.Background(), "test-provider", "test-model", mockProvider, sample)
 
-	// Error is returned in response, not as error
-	require.NoError(t, err)
-	require.NotNil(t, response)
-	assert.False(t, response.Verified)
-	assert.NotEmpty(t, response.Error)
+	// Honest contract (HXV-002, round-348): an API failure (HTTP 503)
+	// is propagated as a real error so the caller can distinguish an
+	// API failure from a genuine negative verification. The previous
+	// assertion expected require.NoError, which certified the bluff
+	// where API failures were silently swallowed and a model could
+	// still be scored as if it had been tested. The response is still
+	// returned alongside the error with Verified=false and Error set.
+	require.Error(t, err, "API failure must be propagated, never swallowed")
+	assert.Contains(t, err.Error(), "503", "propagated error must name the real HTTP status")
+	require.NotNil(t, response, "response must still be returned alongside the error")
+	assert.False(t, response.Verified, "an API failure must never count as verified")
+	assert.NotEmpty(t, response.Error, "the failure cause must be recorded in the response")
 }

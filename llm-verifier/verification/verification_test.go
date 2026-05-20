@@ -2,6 +2,7 @@ package verification
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -53,7 +54,17 @@ func TestVerifier_Verify_EmptyPrompt(t *testing.T) {
 	assert.Contains(t, err.Error(), "prompt is required")
 }
 
-func TestVerifier_Verify_Success(t *testing.T) {
+// TestVerifier_Verify_NotWiredContract certifies the honest round-17
+// contract: a valid Request (non-nil, ModelID + Prompt populated) does
+// NOT silently succeed with fabricated capabilities. The previous
+// implementation returned a hardcoded VerificationResult with every
+// capability flag true and every score 8.5 regardless of the model —
+// a CONST-036/037 PASS-bluff at the single-source-of-truth layer.
+// Until llmverifier.Verifier is plumbed into VerificationService, the
+// entrypoint MUST surface the gap loudly via ErrVerificationNotWired.
+// Closing this test by asserting fabricated success would re-introduce
+// the bluff (HXV-002, round-348).
+func TestVerifier_Verify_NotWiredContract(t *testing.T) {
 	v := NewVerifier(nil)
 	req := &Request{
 		ModelID: "test-model",
@@ -62,29 +73,19 @@ func TestVerifier_Verify_Success(t *testing.T) {
 
 	result, err := v.Verify(context.Background(), req)
 
-	require.NoError(t, err)
-	require.NotNil(t, result)
-
-	// Verify result fields
-	assert.Equal(t, "completed", result.Status)
-	assert.Equal(t, "model_verification", result.VerificationType)
-	assert.NotZero(t, result.ID)
-	assert.NotNil(t, result.StartedAt)
-	assert.NotNil(t, result.CompletedAt)
-
-	// Verify capability flags
-	assert.True(t, result.SupportsToolUse)
-	assert.True(t, result.SupportsFunctionCalling)
-	assert.True(t, result.SupportsCodeGeneration)
-	assert.True(t, result.SupportsStreaming)
-	assert.True(t, result.SupportsJSONMode)
-
-	// Verify scores
-	assert.Greater(t, result.OverallScore, float64(0))
-	assert.Greater(t, result.CodeCapabilityScore, float64(0))
-	assert.Greater(t, result.ResponsivenessScore, float64(0))
+	require.Error(t, err, "valid request must surface the not-wired gap, never fabricate success")
+	assert.Nil(t, result, "no VerificationResult may be returned while dispatch is un-wired")
+	assert.True(t, errors.Is(err, ErrVerificationNotWired),
+		"error must be the honest ErrVerificationNotWired sentinel, got: %v", err)
+	assert.Contains(t, err.Error(), "PASS-bluff",
+		"error message must name the removed bluff so the gap stays visible")
 }
 
+// TestVerifier_Verify_ResultScores certifies that the verifier never
+// fabricates scores. The pre-honesty implementation returned an 8.5
+// score for every dimension on every model; round-17 removed that
+// fabrication. A valid request MUST return ErrVerificationNotWired
+// rather than any score at all.
 func TestVerifier_Verify_ResultScores(t *testing.T) {
 	v := NewVerifier(nil)
 	req := &Request{
@@ -94,20 +95,16 @@ func TestVerifier_Verify_ResultScores(t *testing.T) {
 
 	result, err := v.Verify(context.Background(), req)
 
-	require.NoError(t, err)
-	require.NotNil(t, result)
-
-	// All scores should be valid (0-10 range)
-	assert.GreaterOrEqual(t, result.OverallScore, float64(0))
-	assert.LessOrEqual(t, result.OverallScore, float64(10))
-
-	assert.GreaterOrEqual(t, result.CodeCapabilityScore, float64(0))
-	assert.LessOrEqual(t, result.CodeCapabilityScore, float64(10))
-
-	assert.GreaterOrEqual(t, result.ReliabilityScore, float64(0))
-	assert.LessOrEqual(t, result.ReliabilityScore, float64(10))
+	require.Error(t, err, "scores must never be fabricated; un-wired dispatch must error")
+	assert.Nil(t, result, "no result (and therefore no score) may be returned un-wired")
+	assert.True(t, errors.Is(err, ErrVerificationNotWired),
+		"error must be ErrVerificationNotWired, got: %v", err)
 }
 
+// TestVerifier_Verify_LatencyMetrics certifies that latency metrics
+// are never fabricated. The pre-honesty implementation populated
+// AvgLatencyMs/P95LatencyMs with constant fabricated values without
+// ever making a real API call. Un-wired dispatch MUST error.
 func TestVerifier_Verify_LatencyMetrics(t *testing.T) {
 	v := NewVerifier(nil)
 	req := &Request{
@@ -117,17 +114,16 @@ func TestVerifier_Verify_LatencyMetrics(t *testing.T) {
 
 	result, err := v.Verify(context.Background(), req)
 
-	require.NoError(t, err)
-	require.NotNil(t, result)
-
-	// Latency metrics should be populated
-	assert.NotNil(t, result.LatencyMs)
-	assert.Greater(t, result.AvgLatencyMs, 0)
-	assert.Greater(t, result.P95LatencyMs, 0)
-	assert.GreaterOrEqual(t, result.MaxLatencyMs, result.MinLatencyMs)
-	assert.GreaterOrEqual(t, result.P95LatencyMs, result.AvgLatencyMs)
+	require.Error(t, err, "latency metrics must come from a real call, never be fabricated")
+	assert.Nil(t, result, "no result (and therefore no latency metrics) may be returned un-wired")
+	assert.True(t, errors.Is(err, ErrVerificationNotWired),
+		"error must be ErrVerificationNotWired, got: %v", err)
 }
 
+// TestVerifier_Verify_CodeLanguageSupport certifies that
+// per-language support flags are never fabricated. The pre-honesty
+// implementation claimed python/go/javascript support for every
+// model unconditionally. Un-wired dispatch MUST error.
 func TestVerifier_Verify_CodeLanguageSupport(t *testing.T) {
 	v := NewVerifier(nil)
 	req := &Request{
@@ -137,16 +133,16 @@ func TestVerifier_Verify_CodeLanguageSupport(t *testing.T) {
 
 	result, err := v.Verify(context.Background(), req)
 
-	require.NoError(t, err)
-	require.NotNil(t, result)
-
-	// Should support multiple languages
-	assert.NotEmpty(t, result.CodeLanguageSupport)
-	assert.Contains(t, result.CodeLanguageSupport, "python")
-	assert.Contains(t, result.CodeLanguageSupport, "go")
-	assert.Contains(t, result.CodeLanguageSupport, "javascript")
+	require.Error(t, err, "language support must be measured, never fabricated")
+	assert.Nil(t, result, "no result (and therefore no language list) may be returned un-wired")
+	assert.True(t, errors.Is(err, ErrVerificationNotWired),
+		"error must be ErrVerificationNotWired, got: %v", err)
 }
 
+// TestVerifier_Verify_CodeCapabilities certifies that code-capability
+// flags (debugging, optimization, test generation, etc.) are never
+// fabricated. The pre-honesty implementation set every flag true for
+// every model. Un-wired dispatch MUST error.
 func TestVerifier_Verify_CodeCapabilities(t *testing.T) {
 	v := NewVerifier(nil)
 	req := &Request{
@@ -156,18 +152,17 @@ func TestVerifier_Verify_CodeCapabilities(t *testing.T) {
 
 	result, err := v.Verify(context.Background(), req)
 
-	require.NoError(t, err)
-	require.NotNil(t, result)
-
-	// Code-related capabilities
-	assert.True(t, result.CodeDebugging)
-	assert.True(t, result.CodeOptimization)
-	assert.True(t, result.TestGeneration)
-	assert.True(t, result.DocumentationGeneration)
-	assert.True(t, result.Refactoring)
-	assert.True(t, result.ErrorResolution)
+	require.Error(t, err, "code-capability flags must be tested, never fabricated all-true")
+	assert.Nil(t, result, "no result (and therefore no capability flags) may be returned un-wired")
+	assert.True(t, errors.Is(err, ErrVerificationNotWired),
+		"error must be ErrVerificationNotWired, got: %v", err)
 }
 
+// TestVerifier_Verify_ModelStatusFlags certifies that model status
+// flags (ModelExists, Responsive, Overloaded) are never fabricated.
+// The pre-honesty implementation reported every model as existing and
+// responsive without ever contacting the provider. Un-wired dispatch
+// MUST error.
 func TestVerifier_Verify_ModelStatusFlags(t *testing.T) {
 	v := NewVerifier(nil)
 	req := &Request{
@@ -177,18 +172,10 @@ func TestVerifier_Verify_ModelStatusFlags(t *testing.T) {
 
 	result, err := v.Verify(context.Background(), req)
 
-	require.NoError(t, err)
-	require.NotNil(t, result)
-
-	// Model should exist and be responsive
-	assert.NotNil(t, result.ModelExists)
-	assert.True(t, *result.ModelExists)
-
-	assert.NotNil(t, result.Responsive)
-	assert.True(t, *result.Responsive)
-
-	assert.NotNil(t, result.Overloaded)
-	assert.False(t, *result.Overloaded)
+	require.Error(t, err, "status flags must reflect a real probe, never be fabricated")
+	assert.Nil(t, result, "no result (and therefore no status flags) may be returned un-wired")
+	assert.True(t, errors.Is(err, ErrVerificationNotWired),
+		"error must be ErrVerificationNotWired, got: %v", err)
 }
 
 func TestRequest_Struct(t *testing.T) {
@@ -227,6 +214,11 @@ func TestIntPtr(t *testing.T) {
 	assert.Equal(t, -100, *ptrNeg)
 }
 
+// TestVerifier_Verify_ContextCancellation certifies that even with a
+// cancelled context the verifier surfaces the honest not-wired gap
+// rather than fabricating a completed result. (Once dispatch is
+// wired, a cancelled context must produce a context error — never a
+// fabricated success either way.)
 func TestVerifier_Verify_ContextCancellation(t *testing.T) {
 	v := NewVerifier(nil)
 	req := &Request{
@@ -237,15 +229,17 @@ func TestVerifier_Verify_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	// Should still work since current implementation doesn't check context
 	result, err := v.Verify(ctx, req)
 
-	// Note: Current implementation doesn't actually check context
-	// This test documents expected behavior
-	require.NoError(t, err)
-	require.NotNil(t, result)
+	require.Error(t, err, "un-wired dispatch must error regardless of context state")
+	assert.Nil(t, result, "no fabricated result may be returned for a cancelled context")
+	assert.True(t, errors.Is(err, ErrVerificationNotWired),
+		"error must be ErrVerificationNotWired, got: %v", err)
 }
 
+// TestVerifier_Verify_MultipleRequests certifies that the honest
+// not-wired contract holds across repeated invocations — no request
+// in a batch silently succeeds with fabricated capabilities.
 func TestVerifier_Verify_MultipleRequests(t *testing.T) {
 	v := NewVerifier(nil)
 
@@ -256,10 +250,12 @@ func TestVerifier_Verify_MultipleRequests(t *testing.T) {
 	}
 
 	for _, req := range requests {
+		req := req
 		result, err := v.Verify(context.Background(), &req)
 
-		require.NoError(t, err)
-		require.NotNil(t, result)
-		assert.Equal(t, "completed", result.Status)
+		require.Error(t, err, "every request must surface the not-wired gap, got nil err for %s", req.ModelID)
+		assert.Nil(t, result, "no fabricated result may be returned for %s", req.ModelID)
+		assert.True(t, errors.Is(err, ErrVerificationNotWired),
+			"error must be ErrVerificationNotWired for %s, got: %v", req.ModelID, err)
 	}
 }
