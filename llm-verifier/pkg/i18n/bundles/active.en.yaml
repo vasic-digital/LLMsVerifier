@@ -1268,3 +1268,64 @@ llmsverifier_partners_field_error:
   other: "Error: {{.error}}"
 llmsverifier_partners_field_capabilities:
   other: "Capabilities: {{.capabilities}}"
+
+# --- config package validation messages (round-415, CONST-046 Phase 4 round 29) ---
+# Migrated from llm-verifier/config/validation.go — configuration validation
+# error messages and auto-fix notices surfaced to the operator on startup.
+
+config.validation.error_for_field:
+  other: "validation error for field '{{.field}}': {{.message}}"
+config.validation.invalid_url_format:
+  other: "invalid URL format"
+config.validation.url_scheme_required:
+  other: "URL must use http or https scheme"
+config.validation.default_model_empty:
+  other: "default model cannot be empty"
+config.validation.timeout_positive:
+  other: "timeout must be greater than 0"
+config.validation.llm_name_empty:
+  other: "LLM name cannot be empty"
+config.validation.endpoint_empty:
+  other: "endpoint cannot be empty"
+config.validation.endpoint_scheme_required:
+  other: "endpoint must use http or https scheme"
+config.validation.api_key_required:
+  other: "API key is required for custom endpoints"
+config.validation.database_path_empty:
+  other: "database path cannot be empty"
+config.validation.api_port_empty:
+  other: "API port cannot be empty"
+config.validation.port_not_a_number:
+  other: "port must be a valid number"
+config.validation.port_out_of_range:
+  other: "port must be between 1 and 65535"
+config.validation.jwt_secret_empty:
+  other: "JWT secret cannot be empty"
+config.validation.jwt_secret_too_short:
+  other: "jwt_secret must be at least 16 characters"
+config.validation.rate_limit_negative:
+  other: "rate_limit must be non-negative"
+config.validation.metrics_port_required:
+  other: "metrics port required when metrics are enabled"
+config.validation.health_port_required:
+  other: "health port required when health checks are enabled"
+config.validation.failed_summary:
+  other: "configuration validation failed:\n{{.messages}}"
+config.validation.fixed_default_model:
+  other: "Fixed: Set default model to '{{.value}}'"
+config.validation.fixed_api_port:
+  other: "Fixed: Set API port to '{{.value}}'"
+config.validation.fixed_database_path:
+  other: "Fixed: Set database path to '{{.value}}'"
+config.validation.log_level_invalid:
+  other: "level must be one of: debug, info, warn, error"
+config.validation.log_format_invalid:
+  other: "format must be one of: json, text"
+config.validation.log_output_invalid:
+  other: "output must be one of: stdout, stderr, file"
+config.validation.log_file_path_required:
+  other: "file_path is required when output is file"
+config.validation.log_max_size_positive:
+  other: "max_size must be positive"
+config.validation.log_max_age_non_negative:
+  other: "max_age must be non-negative"

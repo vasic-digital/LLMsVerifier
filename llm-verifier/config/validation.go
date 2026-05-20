@@ -17,7 +17,10 @@ type ValidationError struct {
 }
 
 func (ve ValidationError) Error() string {
-	return fmt.Sprintf("validation error for field '%s': %s", ve.Field, ve.Message)
+	return trData("config.validation.error_for_field", map[string]any{
+		"field":   ve.Field,
+		"message": ve.Message,
+	})
 }
 
 // generateSecureJWTSecret generates a cryptographically secure JWT secret
@@ -157,20 +160,20 @@ func validateGlobalConfig(global *GlobalConfig) *ValidationResult {
 	// Validate BaseURL
 	if global.BaseURL != "" {
 		if parsedURL, err := url.Parse(global.BaseURL); err != nil {
-			result.addError("global.base_url", "invalid URL format")
+			result.addError("global.base_url", tr("config.validation.invalid_url_format"))
 		} else if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
-			result.addError("global.base_url", "URL must use http or https scheme")
+			result.addError("global.base_url", tr("config.validation.url_scheme_required"))
 		}
 	}
 
 	// Validate DefaultModel
 	if global.DefaultModel == "" {
-		result.addError("global.default_model", "default model cannot be empty")
+		result.addError("global.default_model", tr("config.validation.default_model_empty"))
 	}
 
 	// Validate timeout
 	if global.Timeout <= 0 {
-		result.addError("global.timeout", "timeout must be greater than 0")
+		result.addError("global.timeout", tr("config.validation.timeout_positive"))
 	}
 
 	return result
@@ -183,23 +186,23 @@ func validateLLMConfig(llm LLMConfig, index int) *ValidationResult {
 
 	// Validate name
 	if llm.Name == "" {
-		result.addError(fieldPrefix+".name", "LLM name cannot be empty")
+		result.addError(fieldPrefix+".name", tr("config.validation.llm_name_empty"))
 	}
 
 	// Validate endpoint
 	if llm.Endpoint == "" {
-		result.addError(fieldPrefix+".endpoint", "endpoint cannot be empty")
+		result.addError(fieldPrefix+".endpoint", tr("config.validation.endpoint_empty"))
 	} else {
 		if parsedURL, err := url.Parse(llm.Endpoint); err != nil {
-			result.addError(fieldPrefix+".endpoint", "invalid URL format")
+			result.addError(fieldPrefix+".endpoint", tr("config.validation.invalid_url_format"))
 		} else if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
-			result.addError(fieldPrefix+".endpoint", "endpoint must use http or https scheme")
+			result.addError(fieldPrefix+".endpoint", tr("config.validation.endpoint_scheme_required"))
 		}
 	}
 
 	// Validate API key (optional but should be present for most providers)
 	if llm.APIKey == "" && !isWellKnownProvider(llm.Endpoint) {
-		result.addError(fieldPrefix+".api_key", "API key is required for custom endpoints")
+		result.addError(fieldPrefix+".api_key", tr("config.validation.api_key_required"))
 	}
 
 	return result
@@ -211,7 +214,7 @@ func validateDatabaseConfig(db *DatabaseConfig) *ValidationResult {
 
 	// Validate path
 	if db.Path == "" {
-		result.addError("database.path", "database path cannot be empty")
+		result.addError("database.path", tr("config.validation.database_path_empty"))
 	}
 
 	return result
@@ -223,27 +226,27 @@ func validateAPIConfig(api *APIConfig) *ValidationResult {
 
 	// Validate port
 	if api.Port == "" {
-		result.addError("api.port", "API port cannot be empty")
+		result.addError("api.port", tr("config.validation.api_port_empty"))
 	} else {
 		// Parse and validate port number
 		portNum, err := strconv.Atoi(api.Port)
 		if err != nil {
-			result.addError("api.port", "port must be a valid number")
+			result.addError("api.port", tr("config.validation.port_not_a_number"))
 		} else if portNum < 1 || portNum > 65535 {
-			result.addError("api.port", "port must be between 1 and 65535")
+			result.addError("api.port", tr("config.validation.port_out_of_range"))
 		}
 	}
 
 	// Validate JWT secret
 	if api.JWTSecret == "" {
-		result.addError("api.jwt_secret", "JWT secret cannot be empty")
+		result.addError("api.jwt_secret", tr("config.validation.jwt_secret_empty"))
 	} else if len(api.JWTSecret) < 16 {
-		result.addError("api.jwt_secret", "jwt_secret must be at least 16 characters")
+		result.addError("api.jwt_secret", tr("config.validation.jwt_secret_too_short"))
 	}
 
 	// Validate rate limits
 	if api.RateLimit < 0 {
-		result.addError("api.rate_limit", "rate_limit must be non-negative")
+		result.addError("api.rate_limit", tr("config.validation.rate_limit_negative"))
 	}
 
 	return result
@@ -255,12 +258,12 @@ func validateMonitoringConfig(monitoring *MonitoringConfig) *ValidationResult {
 
 	// Validate Prometheus port
 	if monitoring.EnableMetrics && monitoring.MetricsPort == "" {
-		result.addError("monitoring.metrics_port", "metrics port required when metrics are enabled")
+		result.addError("monitoring.metrics_port", tr("config.validation.metrics_port_required"))
 	}
 
 	// Validate health port
 	if monitoring.EnableHealth && monitoring.HealthPort == "" {
-		result.addError("monitoring.health_port", "health port required when health checks are enabled")
+		result.addError("monitoring.health_port", tr("config.validation.health_port_required"))
 	}
 
 	return result
@@ -318,7 +321,9 @@ func (vr *ValidationResult) Error() string {
 		messages = append(messages, err.Error())
 	}
 
-	return fmt.Sprintf("configuration validation failed:\n%s", strings.Join(messages, "\n"))
+	return trData("config.validation.failed_summary", map[string]any{
+		"messages": strings.Join(messages, "\n"),
+	})
 }
 
 // ValidateAndFixConfig validates the configuration and attempts to fix common issues
@@ -331,17 +336,17 @@ func ValidateAndFixConfig(cfg *Config) *ValidationResult {
 		case "global.default_model":
 			if cfg.Global.DefaultModel == "" {
 				cfg.Global.DefaultModel = "gpt-3.5-turbo"
-				fmt.Printf("Fixed: Set default model to 'gpt-3.5-turbo'\n")
+				fmt.Println(trData("config.validation.fixed_default_model", map[string]any{"value": "gpt-3.5-turbo"}))
 			}
 		case "api.port":
 			if cfg.API.Port == "" {
 				cfg.API.Port = "8080"
-				fmt.Printf("Fixed: Set API port to '8080'\n")
+				fmt.Println(trData("config.validation.fixed_api_port", map[string]any{"value": "8080"}))
 			}
 		case "database.path":
 			if cfg.Database.Path == "" {
 				cfg.Database.Path = "./llm-verifier.db"
-				fmt.Printf("Fixed: Set database path to './llm-verifier.db'\n")
+				fmt.Println(trData("config.validation.fixed_database_path", map[string]any{"value": "./llm-verifier.db"}))
 			}
 		}
 	}
@@ -363,34 +368,34 @@ func validateLoggingConfig(logging *LoggingConfig) *ValidationResult {
 	if logging.Level != "" {
 		validLevels := []string{"debug", "info", "warn", "error"}
 		if !contains(validLevels, logging.Level) {
-			result.addError("logging.level", "level must be one of: debug, info, warn, error")
+			result.addError("logging.level", tr("config.validation.log_level_invalid"))
 		}
 	}
-	
+
 	if logging.Format != "" {
 		validFormats := []string{"json", "text"}
 		if !contains(validFormats, logging.Format) {
-			result.addError("logging.format", "format must be one of: json, text")
+			result.addError("logging.format", tr("config.validation.log_format_invalid"))
 		}
 	}
-	
+
 	if logging.Output != "" {
 		validOutputs := []string{"stdout", "stderr", "file"}
 		if !contains(validOutputs, logging.Output) {
-			result.addError("logging.output", "output must be one of: stdout, stderr, file")
+			result.addError("logging.output", tr("config.validation.log_output_invalid"))
 		}
 	}
-	
+
 	if logging.Output == "file" && logging.FilePath == "" {
-		result.addError("logging.file_path", "file_path is required when output is file")
+		result.addError("logging.file_path", tr("config.validation.log_file_path_required"))
 	}
-	
+
 	if logging.MaxSize < 0 {
-		result.addError("logging.max_size", "max_size must be positive")
+		result.addError("logging.max_size", tr("config.validation.log_max_size_positive"))
 	}
-	
+
 	if logging.MaxAge < 0 {
-		result.addError("logging.max_age", "max_age must be non-negative")
+		result.addError("logging.max_age", tr("config.validation.log_max_age_non_negative"))
 	}
 	
 	return result

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -735,14 +736,25 @@ func TestConfigMerge(t *testing.T) {
 
 // Test ValidationError
 func TestValidationError(t *testing.T) {
+	// Per CONST-046 (round-415): ValidationError.Error() routes through the
+	// i18n seam. Production-default NoopTranslator returns the bare message
+	// ID; with the fake translator it carries the "<TRANSLATED:...>" sentinel.
 	ve := ValidationError{
 		Field:   "api.port",
 		Message: "port is required",
 	}
 
-	errStr := ve.Error()
-	assert.Contains(t, errStr, "api.port")
-	assert.Contains(t, errStr, "port is required")
+	// Default (NoopTranslator) path — returns the bare message ID.
+	if got := ve.Error(); got != "config.validation.error_for_field" {
+		t.Fatalf("ValidationError.Error() not i18n-routed: %q", got)
+	}
+
+	// Fake-translator path — proves the call site goes through translator.
+	withFakeConfigTranslator(t, func() {
+		errStr := ve.Error()
+		assert.True(t, strings.HasPrefix(errStr, "<TRANSLATED:config.validation.error_for_field>"),
+			"ValidationError.Error() not i18n-routed: %q", errStr)
+	})
 }
 
 // Test ValidateConfig (the function that takes *Config)
@@ -992,13 +1004,22 @@ func TestValidationResult(t *testing.T) {
 	})
 
 	t.Run("Error string", func(t *testing.T) {
+		// Per CONST-046 (round-415): ValidationResult.Error() routes the
+		// failure summary through the i18n seam.
 		result := &ValidationResult{Valid: true}
 		assert.Empty(t, result.Error())
 
 		result.addError("field1", "error1")
-		errStr := result.Error()
-		assert.Contains(t, errStr, "validation failed")
-		assert.Contains(t, errStr, "field1")
+
+		// Default (NoopTranslator) path — bare message ID.
+		assert.Equal(t, "config.validation.failed_summary", result.Error())
+
+		// Fake-translator path — proves routing through translator.
+		withFakeConfigTranslator(t, func() {
+			errStr := result.Error()
+			assert.True(t, strings.HasPrefix(errStr, "<TRANSLATED:config.validation.failed_summary>"),
+				"ValidationResult.Error() not i18n-routed: %q", errStr)
+		})
 	})
 }
 
