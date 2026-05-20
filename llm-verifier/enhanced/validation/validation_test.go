@@ -145,10 +145,11 @@ func TestSyntaxValidator_ValidateJSON(t *testing.T) {
 	result := sv.Validate(ctx, validJSON)
 	assert.True(t, result.Passed)
 
-	// Unsupported type
+	// Unsupported type — message is i18n-routed (CONST-046). Under the
+	// production-default NoopTranslator the bare message ID is returned.
 	result = sv.Validate(ctx, 12345)
 	assert.False(t, result.Passed)
-	assert.Contains(t, result.Errors[0], "Unsupported input type")
+	assert.Contains(t, result.Errors[0], "validation.error.unsupported_input_type_syntax")
 }
 
 func TestSyntaxValidator_HasBalancedBrackets(t *testing.T) {

@@ -3,7 +3,6 @@ package validation
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -79,7 +78,7 @@ func (sv *SyntaxValidator) Validate(ctx context.Context, input interface{}) *Val
 		result = sv.validateJSON(v)
 	default:
 		result.Passed = false
-		result.Errors = append(result.Errors, "Unsupported input type for syntax validation")
+		result.Errors = append(result.Errors, tr("validation.error.unsupported_input_type_syntax"))
 		result.Score = 0.0
 	}
 
@@ -100,14 +99,14 @@ func (sv *SyntaxValidator) validatePrompt(prompt string) *ValidationResult {
 	// Check for empty prompt
 	if strings.TrimSpace(prompt) == "" {
 		result.Passed = false
-		result.Errors = append(result.Errors, "Prompt cannot be empty")
+		result.Errors = append(result.Errors, tr("validation.error.prompt_empty"))
 		result.Score = 0.0
 		return result
 	}
 
 	// Check prompt length
 	if len(prompt) > 10000 {
-		result.Warnings = append(result.Warnings, "Prompt is very long (>10k characters)")
+		result.Warnings = append(result.Warnings, tr("validation.warning.prompt_very_long"))
 		result.Score -= 0.1
 	}
 
@@ -122,7 +121,7 @@ func (sv *SyntaxValidator) validatePrompt(prompt string) *ValidationResult {
 		matched, _ := regexp.MatchString(pattern, prompt)
 		if matched {
 			result.Passed = false
-			result.Errors = append(result.Errors, "Prompt contains potentially harmful content")
+			result.Errors = append(result.Errors, tr("validation.error.prompt_harmful_content"))
 			result.Score = 0.0
 			break
 		}
@@ -130,7 +129,7 @@ func (sv *SyntaxValidator) validatePrompt(prompt string) *ValidationResult {
 
 	// Check for balanced brackets/quotes
 	if !sv.hasBalancedBrackets(prompt) {
-		result.Warnings = append(result.Warnings, "Unbalanced brackets or quotes detected")
+		result.Warnings = append(result.Warnings, tr("validation.warning.unbalanced_brackets"))
 		result.Score -= 0.2
 	}
 
@@ -159,13 +158,13 @@ func (sv *SyntaxValidator) validateLLMRequest(req *LLMRequest) *ValidationResult
 	if req.Messages != nil {
 		for i, msg := range req.Messages {
 			if strings.TrimSpace(msg.Content) == "" {
-				result.Errors = append(result.Errors, fmt.Sprintf("Message %d has empty content", i))
+				result.Errors = append(result.Errors, trData("validation.error.message_empty_content", map[string]any{"index": i}))
 				result.Passed = false
 				result.Score -= 0.5
 			}
 
 			if msg.Role != "user" && msg.Role != "assistant" && msg.Role != "system" {
-				result.Errors = append(result.Errors, fmt.Sprintf("Message %d has invalid role: %s", i, msg.Role))
+				result.Errors = append(result.Errors, trData("validation.error.message_invalid_role", map[string]any{"index": i, "role": msg.Role}))
 				result.Passed = false
 				result.Score -= 0.3
 			}
@@ -176,7 +175,7 @@ func (sv *SyntaxValidator) validateLLMRequest(req *LLMRequest) *ValidationResult
 	if req.Temperature != nil {
 		temp := *req.Temperature
 		if temp < 0 || temp > 2 {
-			result.Warnings = append(result.Warnings, "Temperature outside recommended range [0,2]")
+			result.Warnings = append(result.Warnings, tr("validation.warning.temperature_out_of_range"))
 			result.Score -= 0.1
 		}
 	}
@@ -184,7 +183,7 @@ func (sv *SyntaxValidator) validateLLMRequest(req *LLMRequest) *ValidationResult
 	// Validate max tokens
 	if req.MaxTokens != nil {
 		if *req.MaxTokens <= 0 {
-			result.Errors = append(result.Errors, "Max tokens must be positive")
+			result.Errors = append(result.Errors, tr("validation.error.max_tokens_not_positive"))
 			result.Passed = false
 			result.Score -= 0.5
 		}
@@ -212,7 +211,7 @@ func (sv *SyntaxValidator) validateJSON(data map[string]interface{}) *Validation
 	_, err := json.Marshal(data)
 	if err != nil {
 		result.Passed = false
-		result.Errors = append(result.Errors, fmt.Sprintf("Invalid JSON structure: %v", err))
+		result.Errors = append(result.Errors, trData("validation.error.invalid_json_structure", map[string]any{"error": err.Error()}))
 		result.Score = 0.0
 	}
 
@@ -294,7 +293,7 @@ func (sv *SemanticValidator) Validate(ctx context.Context, input interface{}) *V
 		result = sv.validateRequestSemantics(v)
 	default:
 		result.Passed = false
-		result.Errors = append(result.Errors, "Unsupported input type for semantic validation")
+		result.Errors = append(result.Errors, tr("validation.error.unsupported_input_type_semantic"))
 		result.Score = 0.0
 	}
 
@@ -318,13 +317,13 @@ func (sv *SemanticValidator) validatePromptSemantics(prompt string) *ValidationR
 
 	// Very short prompts might lack context
 	if len(words) < 3 && sentenceCount == 0 {
-		result.Warnings = append(result.Warnings, "Prompt is very brief and may lack sufficient context")
+		result.Warnings = append(result.Warnings, tr("validation.warning.prompt_too_brief"))
 		result.Score -= 0.1
 	}
 
 	// Check for excessive repetition
 	if sv.hasExcessiveRepetition(prompt) {
-		result.Warnings = append(result.Warnings, "Prompt contains excessive repetition")
+		result.Warnings = append(result.Warnings, tr("validation.warning.prompt_excessive_repetition"))
 		result.Score -= 0.2
 	}
 
@@ -338,7 +337,7 @@ func (sv *SemanticValidator) validatePromptSemantics(prompt string) *ValidationR
 	}
 
 	if ambiguousCount > 3 {
-		result.Warnings = append(result.Warnings, "Prompt contains many ambiguous pronouns")
+		result.Warnings = append(result.Warnings, tr("validation.warning.prompt_ambiguous_pronouns"))
 		result.Score -= 0.15
 	}
 
@@ -402,7 +401,7 @@ func (sv *SemanticValidator) analyzeConversationFlow(messages []Message) Convers
 			consecutiveSameRole++
 			if consecutiveSameRole > 2 {
 				analysis.Warnings = append(analysis.Warnings,
-					fmt.Sprintf("Multiple consecutive messages from %s at position %d", msg.Role, i))
+					trData("validation.warning.consecutive_messages", map[string]any{"role": msg.Role, "position": i}))
 			}
 		} else {
 			consecutiveSameRole = 1
@@ -414,7 +413,7 @@ func (sv *SemanticValidator) analyzeConversationFlow(messages []Message) Convers
 	for i, msg := range messages {
 		if len(msg.Content) > 5000 {
 			analysis.Warnings = append(analysis.Warnings,
-				fmt.Sprintf("Very long message from %s at position %d", msg.Role, i))
+				trData("validation.warning.very_long_message", map[string]any{"role": msg.Role, "position": i}))
 		}
 	}
 
