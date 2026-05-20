@@ -2,6 +2,10 @@ package benchmark
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -18,12 +22,51 @@ func TestProviderAdapterForBenchmark_GetName(t *testing.T) {
 	assert.Equal(t, "my-provider", adapter.GetName())
 }
 
-func TestProviderAdapterForBenchmark_Complete(t *testing.T) {
+// TestProviderAdapterForBenchmark_Complete_NotWired proves the un-wired
+// adapter surfaces ErrProviderAdapterNotWired instead of fabricating the
+// old hardcoded ("Response", 50) result — §11.4 / CONST-035 anti-bluff
+// regression guard. round-396 HXV-003.
+func TestProviderAdapterForBenchmark_Complete_NotWired(t *testing.T) {
 	adapter := NewProviderAdapterForBenchmark(nil, "p", "m", nil)
 	resp, tokens, err := adapter.Complete(context.Background(), "hello", "system")
+	require.Error(t, err)
+	require.ErrorIs(t, err, ErrProviderAdapterNotWired)
+	assert.Empty(t, resp, "un-wired adapter must NOT fabricate a response")
+	assert.Zero(t, tokens, "un-wired adapter must NOT fabricate a token count")
+	assert.NotEqual(t, "Response", resp, "the round-396 fixed mock-bluff must not return")
+}
+
+// TestProviderAdapterForBenchmark_Complete_RealDispatch proves the wired
+// adapter performs a REAL dispatch through its underlying LLMProvider: the
+// returned text + token count reflect the real HTTP response from an
+// httptest server the adapter must actually hit. round-396 HXV-003.
+func TestProviderAdapterForBenchmark_Complete_RealDispatch(t *testing.T) {
+	var hits int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&hits, 1)
+		var req map[string]interface{}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Errorf("server failed to decode request body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"role":"assistant","content":"4 is the real answer"}}],"usage":{"prompt_tokens":7,"completion_tokens":12,"total_tokens":19}}`))
+	}))
+	defer srv.Close()
+
+	httpProvider, err := NewHTTPBenchmarkProvider(HTTPBenchmarkProviderConfig{
+		Endpoint: srv.URL + "/v1",
+		Model:    "test-model",
+	})
 	require.NoError(t, err)
-	assert.NotEmpty(t, resp)
-	assert.Greater(t, tokens, 0)
+
+	adapter := NewProviderAdapterForBenchmark(httpProvider, "openai-shim", "test-model", nil)
+	resp, tokens, err := adapter.Complete(context.Background(), "what is 2+2?", "you are a calculator")
+	require.NoError(t, err)
+	assert.Equal(t, int32(1), atomic.LoadInt32(&hits), "adapter must have actually dispatched to the server")
+	assert.Equal(t, "4 is the real answer", resp, "response must be the real server payload, not a fabricated constant")
+	assert.Equal(t, 19, tokens, "token count must be the server-reported usage.total_tokens, not the old hardcoded 50")
+	assert.NotEqual(t, "Response", resp)
+	assert.NotEqual(t, 50, tokens)
 }
 
 // ============================================================================

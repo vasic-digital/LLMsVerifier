@@ -3,6 +3,7 @@ package benchmark
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -222,31 +223,62 @@ func (a *VerifierAdapterForBenchmark) SelectBestProvider() (string, float64) {
 	return best, bestScore
 }
 
-// ProviderAdapterForBenchmark adapts LLM providers for benchmarks
+// ErrProviderAdapterNotWired fires from ProviderAdapterForBenchmark.Complete
+// when the adapter holds no real underlying LLMProvider. Previously the
+// Complete method fabricated a hardcoded ("Response", 50, nil) result
+// regardless of input — a §11.4 / CONST-035 PASS-bluff (BLUFF-001 pattern)
+// in production code: the adapter claimed "calls the underlying provider"
+// but dispatched nothing. The sentinel makes the absence of a wired provider
+// an honest, surfaced failure instead of a silent fabricated completion.
+var ErrProviderAdapterNotWired = errors.New(
+	"llmsverifier benchmark: ProviderAdapterForBenchmark has no underlying LLMProvider wired — pass a non-nil value implementing benchmark.LLMProvider (e.g. *HTTPBenchmarkProvider) to NewProviderAdapterForBenchmark; the previous nil-provider branch fabricated a hardcoded (\"Response\", 50) completion regardless of input — §11.4 / CONST-035 PASS-bluff removed",
+)
+
+// ProviderAdapterForBenchmark adapts a real LLMProvider for use as the
+// benchmark runner's provider. The underlying provider field MUST hold a
+// value implementing the benchmark.LLMProvider contract (Complete + GetName);
+// Complete dispatches directly to it. Construct the underlying provider with
+// NewHTTPBenchmarkProvider (OpenAI-compatible HTTP dispatch) or any other
+// concrete LLMProvider implementation. NO completion value is ever
+// fabricated — every response, token count, and error returned by Complete
+// originates from the real underlying provider.
 type ProviderAdapterForBenchmark struct {
-	provider     interface{}
+	provider     LLMProvider
 	providerName string
 	modelName    string
 	logger       *log.Logger
 }
 
-// NewProviderAdapterForBenchmark creates a new adapter
+// NewProviderAdapterForBenchmark creates a new adapter wrapping a real
+// LLMProvider. The provider argument is accepted as interface{} for caller
+// convenience but MUST satisfy the benchmark.LLMProvider interface for
+// Complete to dispatch; a nil provider (or a non-LLMProvider value) leaves
+// the adapter un-wired and Complete returns ErrProviderAdapterNotWired
+// rather than fabricating a result.
 func NewProviderAdapterForBenchmark(provider interface{}, name, model string, logger *log.Logger) *ProviderAdapterForBenchmark {
 	if logger == nil {
 		logger = log.Default()
 	}
-	return &ProviderAdapterForBenchmark{
-		provider:     provider,
+	a := &ProviderAdapterForBenchmark{
 		providerName: name,
 		modelName:    model,
 		logger:       logger,
 	}
+	if lp, ok := provider.(LLMProvider); ok && lp != nil {
+		a.provider = lp
+	}
+	return a
 }
 
-// Complete calls the underlying provider
+// Complete dispatches the prompt to the real underlying LLMProvider and
+// returns its genuine response text, token count, and error verbatim. When
+// no underlying provider is wired, it returns ErrProviderAdapterNotWired —
+// it NEVER fabricates a completion.
 func (a *ProviderAdapterForBenchmark) Complete(ctx context.Context, prompt, systemPrompt string) (string, int, error) {
-	// Mock implementation - actual would call real provider
-	return "Response", 50, nil
+	if a.provider == nil {
+		return "", 0, fmt.Errorf("%w (provider=%q model=%q)", ErrProviderAdapterNotWired, a.providerName, a.modelName)
+	}
+	return a.provider.Complete(ctx, prompt, systemPrompt)
 }
 
 // GetName returns provider name
