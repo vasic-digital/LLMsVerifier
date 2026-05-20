@@ -131,3 +131,94 @@ func TestAnalyticsMutationGuard(t *testing.T) {
 		}
 	}
 }
+
+// TestUsagePatternRecommendations_Routed (round-439, CONST-046) proves the
+// UsagePatternAnalyzer recommendation list routes every string through the
+// i18n seam. With the fake translator installed, every entry must carry the
+// "<TRANSLATED:analytics.usage_rec.*>" sentinel — a regression that re-pinned
+// an English literal would fail the prefix assertion.
+func TestUsagePatternRecommendations_Routed(t *testing.T) {
+	withFakeAnalyticsTranslator(t, func() {
+		upa := &UsagePatternAnalyzer{}
+		recs := upa.generateUsageRecommendations()
+		if len(recs) != 7 {
+			t.Fatalf("expected 7 usage recommendations, got %d", len(recs))
+		}
+		for _, r := range recs {
+			if !strings.HasPrefix(r, "<TRANSLATED:analytics.usage_rec.") {
+				t.Errorf("usage recommendation not i18n-routed: %q", r)
+			}
+		}
+	})
+}
+
+// TestCostRecommendations_Routed (round-439, CONST-046) proves the
+// CostOptimizationAnalyzer recommendation list routes every string through
+// the i18n seam.
+func TestCostRecommendations_Routed(t *testing.T) {
+	withFakeAnalyticsTranslator(t, func() {
+		coa := &CostOptimizationAnalyzer{}
+		recs := coa.generateCostRecommendations(SpendingBreakdown{})
+		if len(recs) != 7 {
+			t.Fatalf("expected 7 cost recommendations, got %d", len(recs))
+		}
+		for _, r := range recs {
+			if !strings.HasPrefix(r, "<TRANSLATED:analytics.cost_rec.") {
+				t.Errorf("cost recommendation not i18n-routed: %q", r)
+			}
+		}
+	})
+}
+
+// TestRound439MutationGuard is the paired-mutation test (§1.1) for the
+// round-439 migration. Under the production-default NoopTranslator every
+// migrated id returns verbatim — a regression that re-hardcoded an English
+// literal would make the returned string differ from the id, failing here.
+func TestRound439MutationGuard(t *testing.T) {
+	ids := []string{
+		"analytics.usage_rec.rate_limiting",
+		"analytics.usage_rec.model_selection",
+		"analytics.usage_rec.caching",
+		"analytics.usage_rec.smaller_models_peak",
+		"analytics.usage_rec.batch_off_peak",
+		"analytics.usage_rec.error_retry",
+		"analytics.usage_rec.load_balancing",
+		"analytics.cost_rec.tier_models",
+		"analytics.cost_rec.response_caching",
+		"analytics.cost_rec.open_source",
+		"analytics.cost_rec.prompt_engineering",
+		"analytics.cost_rec.batch_discounts",
+		"analytics.cost_rec.draft_refine",
+		"analytics.cost_rec.reserved_capacity",
+		"analytics.insight.gpt4_routing",
+		"analytics.insight.codellama_underused",
+		"analytics.insight.task_complexity_logic",
+		"analytics.insight.token_usage_monitor",
+	}
+	for _, id := range ids {
+		if got := tr(id); got != id {
+			t.Fatalf("NoopTranslator must return the bare id %q; got %q", id, got)
+		}
+	}
+
+	upa := &UsagePatternAnalyzer{}
+	for _, r := range upa.generateUsageRecommendations() {
+		if strings.Contains(r, "Consider") || strings.Contains(r, "Implement") ||
+			strings.Contains(r, "Optimize") || strings.Contains(r, "Schedule") {
+			t.Fatalf("usage recommendation regressed to a hardcoded English literal: %q", r)
+		}
+		if !strings.HasPrefix(r, "analytics.usage_rec.") {
+			t.Fatalf("usage recommendation not routed through the i18n seam: %q", r)
+		}
+	}
+	coa := &CostOptimizationAnalyzer{}
+	for _, r := range coa.generateCostRecommendations(SpendingBreakdown{}) {
+		if strings.Contains(r, "GPT") || strings.Contains(r, "Implement") ||
+			strings.Contains(r, "Consider") || strings.Contains(r, "Optimize") {
+			t.Fatalf("cost recommendation regressed to a hardcoded English literal: %q", r)
+		}
+		if !strings.HasPrefix(r, "analytics.cost_rec.") {
+			t.Fatalf("cost recommendation not routed through the i18n seam: %q", r)
+		}
+	}
+}

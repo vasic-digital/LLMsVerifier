@@ -463,10 +463,10 @@ func (mr *ModelRecommender) GetUsageInsights(timeRange TimeRange) (*UsageInsight
 
 	// Generate insights
 	insights.Insights = []string{
-		"GPT-4 is heavily used for complex tasks but expensive - consider task routing",
-		"CodeLlama models are underutilized for coding tasks - good cost-saving opportunity",
-		"Consider implementing model selection logic based on task complexity",
-		"Monitor token usage patterns to optimize context window usage",
+		tr("analytics.insight.gpt4_routing"),
+		tr("analytics.insight.codellama_underused"),
+		tr("analytics.insight.task_complexity_logic"),
+		tr("analytics.insight.token_usage_monitor"),
 	}
 
 	return insights, nil

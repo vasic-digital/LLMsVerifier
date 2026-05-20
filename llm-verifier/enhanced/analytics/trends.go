@@ -394,13 +394,13 @@ func (upa *UsagePatternAnalyzer) analyzeErrorPatterns(timeRange TimeRange) map[s
 // generateUsageRecommendations generates recommendations based on usage patterns
 func (upa *UsagePatternAnalyzer) generateUsageRecommendations() []string {
 	return []string{
-		"Consider implementing rate limiting during peak hours (9 AM - 5 PM)",
-		"Optimize model selection based on task complexity to reduce costs",
-		"Implement caching for frequently repeated requests",
-		"Consider using smaller models for simple tasks during peak hours",
-		"Schedule batch processing during off-peak hours (10 PM - 6 AM)",
-		"Implement error retry logic for transient failures",
-		"Consider load balancing across multiple providers",
+		tr("analytics.usage_rec.rate_limiting"),
+		tr("analytics.usage_rec.model_selection"),
+		tr("analytics.usage_rec.caching"),
+		tr("analytics.usage_rec.smaller_models_peak"),
+		tr("analytics.usage_rec.batch_off_peak"),
+		tr("analytics.usage_rec.error_retry"),
+		tr("analytics.usage_rec.load_balancing"),
 	}
 }
 
@@ -455,12 +455,12 @@ func (coa *CostOptimizationAnalyzer) analyzeCurrentSpending(timeRange TimeRange)
 // generateCostRecommendations generates cost optimization recommendations
 func (coa *CostOptimizationAnalyzer) generateCostRecommendations(spending SpendingBreakdown) []string {
 	return []string{
-		"Use GPT-3.5-turbo for simple tasks, save GPT-4 for complex reasoning",
-		"Implement response caching to reduce API calls",
-		"Consider using open-source models for non-critical tasks",
-		"Optimize prompt engineering to reduce token usage",
-		"Implement batch processing to take advantage of volume discounts",
-		"Use smaller models for initial drafts, larger models for refinement",
-		"Consider spot instances or reserved capacity for predictable workloads",
+		tr("analytics.cost_rec.tier_models"),
+		tr("analytics.cost_rec.response_caching"),
+		tr("analytics.cost_rec.open_source"),
+		tr("analytics.cost_rec.prompt_engineering"),
+		tr("analytics.cost_rec.batch_discounts"),
+		tr("analytics.cost_rec.draft_refine"),
+		tr("analytics.cost_rec.reserved_capacity"),
 	}
 }
