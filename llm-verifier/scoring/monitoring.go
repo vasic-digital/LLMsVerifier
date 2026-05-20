@@ -189,12 +189,12 @@ func (sm *ScoringMonitor) GetSystemHealth() SystemHealth {
 		health.OverallStatus = "degraded"
 		health.Components["scoring_engine"] = ComponentHealth{
 			Status:  "unhealthy",
-			Message: fmt.Sprintf("High error rate: %d errors", metrics.ScoreCalculationErrors),
+			Message: fmt.Sprintf(tr("llmsverifier_scoring_health_high_error_rate"), metrics.ScoreCalculationErrors),
 		}
 	} else {
 		health.Components["scoring_engine"] = ComponentHealth{
-			Status: "healthy",
-			Message: "Operating normally",
+			Status:  "healthy",
+			Message: tr("llmsverifier_scoring_health_operating_normally"),
 		}
 	}
 
@@ -203,12 +203,12 @@ func (sm *ScoringMonitor) GetSystemHealth() SystemHealth {
 		health.OverallStatus = "degraded"
 		health.Components["external_apis"] = ComponentHealth{
 			Status:  "degraded",
-			Message: fmt.Sprintf("API response time: %v (threshold: %v)", metrics.AverageAPIResponseTime, sm.config.APIResponseTimeThreshold),
+			Message: fmt.Sprintf(tr("llmsverifier_scoring_health_api_response_time_threshold"), metrics.AverageAPIResponseTime, sm.config.APIResponseTimeThreshold),
 		}
 	} else {
 		health.Components["external_apis"] = ComponentHealth{
-			Status: "healthy",
-			Message: fmt.Sprintf("API response time: %v", metrics.AverageAPIResponseTime),
+			Status:  "healthy",
+			Message: fmt.Sprintf(tr("llmsverifier_scoring_health_api_response_time"), metrics.AverageAPIResponseTime),
 		}
 	}
 
@@ -217,12 +217,12 @@ func (sm *ScoringMonitor) GetSystemHealth() SystemHealth {
 		health.OverallStatus = "degraded"
 		health.Components["database"] = ComponentHealth{
 			Status:  "degraded",
-			Message: fmt.Sprintf("Database latency: %v (threshold: %v)", metrics.AverageDatabaseLatency, sm.config.DatabaseLatencyThreshold),
+			Message: fmt.Sprintf(tr("llmsverifier_scoring_health_db_latency_threshold"), metrics.AverageDatabaseLatency, sm.config.DatabaseLatencyThreshold),
 		}
 	} else {
 		health.Components["database"] = ComponentHealth{
-			Status: "healthy",
-			Message: fmt.Sprintf("Database latency: %v", metrics.AverageDatabaseLatency),
+			Status:  "healthy",
+			Message: fmt.Sprintf(tr("llmsverifier_scoring_health_db_latency"), metrics.AverageDatabaseLatency),
 		}
 	}
 

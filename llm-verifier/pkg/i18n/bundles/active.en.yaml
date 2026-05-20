@@ -887,3 +887,46 @@ llmsverifier_provider_err_server_error:
   other: "Server error"
 llmsverifier_provider_err_unknown:
   other: "Unknown error"
+
+# --- scoring package (CONST-046 round 368 / Phase 4 round 18) ---
+# Replaces previously hardcoded English literals in scoring/api_handlers.go
+# (HTTP handler error/success messages), scoring/monitoring.go (component
+# health status text) and scoring/alert_manager.go (email alert subjects).
+llmsverifier_scoring_err_invalid_request_body:
+  other: "Invalid request body"
+llmsverifier_scoring_err_calculate_score_failed:
+  other: "Failed to calculate model score"
+llmsverifier_scoring_err_recalculate_score_failed:
+  other: "Failed to recalculate model score"
+llmsverifier_scoring_err_min_two_models:
+  other: "At least 2 models are required for comparison"
+llmsverifier_scoring_msg_score_calculated:
+  other: "Score calculated successfully"
+llmsverifier_scoring_msg_score_recalculated:
+  other: "Score recalculated successfully"
+llmsverifier_scoring_msg_batch_started:
+  other: "Batch score calculation started"
+llmsverifier_scoring_msg_batch_completed:
+  other: "Batch score calculation completed"
+llmsverifier_scoring_msg_model_names_updated:
+  other: "Model names updated successfully"
+llmsverifier_scoring_msg_validation_completed:
+  other: "Score validation completed successfully"
+llmsverifier_scoring_health_high_error_rate:
+  other: "High error rate: %d errors"
+llmsverifier_scoring_health_operating_normally:
+  other: "Operating normally"
+llmsverifier_scoring_health_api_response_time_threshold:
+  other: "API response time: %v (threshold: %v)"
+llmsverifier_scoring_health_api_response_time:
+  other: "API response time: %v"
+llmsverifier_scoring_health_db_latency_threshold:
+  other: "Database latency: %v (threshold: %v)"
+llmsverifier_scoring_health_db_latency:
+  other: "Database latency: %v"
+llmsverifier_scoring_alert_subject_score_change:
+  other: "LLM Score Change Alert: %s"
+llmsverifier_scoring_alert_subject_api_performance:
+  other: "API Performance Alert: %s"
+llmsverifier_scoring_alert_subject_db_performance:
+  other: "Database Performance Alert: %s"

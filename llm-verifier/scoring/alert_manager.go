@@ -172,13 +172,13 @@ func (am *AlertManagerFixed) sendEmailAlert(alert interface{}) error {
 
 	switch a := alert.(type) {
 	case ScoreChangeAlert:
-		subject = fmt.Sprintf("LLM Score Change Alert: %s", a.ModelID)
+		subject = fmt.Sprintf(tr("llmsverifier_scoring_alert_subject_score_change"), a.ModelID)
 		body = am.formatScoreChangeEmail(a)
 	case APIPerformanceAlert:
-		subject = fmt.Sprintf("API Performance Alert: %s", a.APIName)
+		subject = fmt.Sprintf(tr("llmsverifier_scoring_alert_subject_api_performance"), a.APIName)
 		body = am.formatAPIPerformanceEmail(a)
 	case DatabasePerformanceAlert:
-		subject = fmt.Sprintf("Database Performance Alert: %s", a.Operation)
+		subject = fmt.Sprintf(tr("llmsverifier_scoring_alert_subject_db_performance"), a.Operation)
 		body = am.formatDatabasePerformanceEmail(a)
 	default:
 		return fmt.Errorf("unknown alert type: %T", alert)

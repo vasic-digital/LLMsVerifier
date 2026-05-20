@@ -78,7 +78,7 @@ func (sah *ScoringAPIHandlers) CalculateModelScore(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request body",
+			"error": tr("llmsverifier_scoring_err_invalid_request_body"),
 		})
 		return
 	}
@@ -100,7 +100,7 @@ func (sah *ScoringAPIHandlers) CalculateModelScore(c *gin.Context) {
 			"error":    err.Error(),
 		})
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to calculate model score",
+			"error": tr("llmsverifier_scoring_err_calculate_score_failed"),
 		})
 		return
 	}
@@ -109,7 +109,7 @@ func (sah *ScoringAPIHandlers) CalculateModelScore(c *gin.Context) {
 	formattedName := sah.modelNaming.AddScoreSuffix(score.ModelName, score.OverallScore)
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":          "Score calculated successfully",
+		"message":          tr("llmsverifier_scoring_msg_score_calculated"),
 		"model_id":         modelID,
 		"model_name":       score.ModelName,
 		"formatted_name":   formattedName,
@@ -131,7 +131,7 @@ func (sah *ScoringAPIHandlers) RecalculateModelScore(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request body",
+			"error": tr("llmsverifier_scoring_err_invalid_request_body"),
 		})
 		return
 	}
@@ -153,7 +153,7 @@ func (sah *ScoringAPIHandlers) RecalculateModelScore(c *gin.Context) {
 			"error":    err.Error(),
 		})
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to recalculate model score",
+			"error": tr("llmsverifier_scoring_err_recalculate_score_failed"),
 		})
 		return
 	}
@@ -168,7 +168,7 @@ func (sah *ScoringAPIHandlers) RecalculateModelScore(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":          "Score recalculated successfully",
+		"message":          tr("llmsverifier_scoring_msg_score_recalculated"),
 		"model_id":         modelID,
 		"overall_score":    score.OverallScore,
 		"score_suffix":     score.ScoreSuffix,
@@ -202,7 +202,7 @@ func (sah *ScoringAPIHandlers) BatchCalculateScores(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request body",
+			"error": tr("llmsverifier_scoring_err_invalid_request_body"),
 		})
 		return
 	}
@@ -214,13 +214,13 @@ func (sah *ScoringAPIHandlers) BatchCalculateScores(c *gin.Context) {
 	}
 
 	batchID := generateBatchID()
-	
+
 	if request.Async {
 		// Start async processing
 		go sah.processBatchScoresAsync(batchID, request.ModelIDs, *request.Configuration)
-		
+
 		c.JSON(http.StatusAccepted, gin.H{
-			"message":   "Batch score calculation started",
+			"message":   tr("llmsverifier_scoring_msg_batch_started"),
 			"batch_id":  batchID,
 			"status":    "processing",
 			"model_count": len(request.ModelIDs),
@@ -230,9 +230,9 @@ func (sah *ScoringAPIHandlers) BatchCalculateScores(c *gin.Context) {
 
 	// Process synchronously
 	results := sah.processBatchScoresSync(request.ModelIDs, *request.Configuration)
-	
+
 	c.JSON(http.StatusOK, gin.H{
-		"message":      "Batch score calculation completed",
+		"message":      tr("llmsverifier_scoring_msg_batch_completed"),
 		"batch_id":     batchID,
 		"status":       "completed",
 		"results":      results,
@@ -247,7 +247,7 @@ func (sah *ScoringAPIHandlers) CompareModels(c *gin.Context) {
 	modelIDs := c.QueryArray("models")
 	if len(modelIDs) < 2 {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "At least 2 models are required for comparison",
+			"error": tr("llmsverifier_scoring_err_min_two_models"),
 		})
 		return
 	}
@@ -315,7 +315,7 @@ func (sah *ScoringAPIHandlers) AddScoreSuffixToModelName(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request body",
+			"error": tr("llmsverifier_scoring_err_invalid_request_body"),
 		})
 		return
 	}
@@ -338,7 +338,7 @@ func (sah *ScoringAPIHandlers) BatchUpdateModelNamesWithScores(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request body",
+			"error": tr("llmsverifier_scoring_err_invalid_request_body"),
 		})
 		return
 	}
@@ -346,7 +346,7 @@ func (sah *ScoringAPIHandlers) BatchUpdateModelNamesWithScores(c *gin.Context) {
 	results := sah.modelNaming.BatchUpdateModelNames(request.ModelScores)
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Model names updated successfully",
+		"message": tr("llmsverifier_scoring_msg_model_names_updated"),
 		"results": results,
 		"count":   len(results),
 	})
@@ -362,19 +362,18 @@ func (sah *ScoringAPIHandlers) ValidateScoreCalculation(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request body",
+			"error": tr("llmsverifier_scoring_err_invalid_request_body"),
 		})
 		return
 	}
 
-	// Simulate validation
 	isValid := true
 	validationResult := map[string]interface{}{
 		"model_id": request.ModelID,
 		"score":    request.Score,
 		"method":   request.Method,
 		"is_valid": isValid,
-		"message":  "Score validation completed successfully",
+		"message":  tr("llmsverifier_scoring_msg_validation_completed"),
 	}
 
 	c.JSON(http.StatusOK, gin.H{
