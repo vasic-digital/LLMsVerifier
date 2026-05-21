@@ -3,5 +3,11 @@
   "version": "1.0.0",
   "description": "LLM Verifier - Automated LLM testing and verification platform",
   "private": false,
-  "repository": "https://github.com/your-org/llm-verifier"
+  "repository": "https://github.com/your-org/llm-verifier",
+  "scripts": {
+    "test": "node --test 'Website/js/*.test.js'"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  }
 }
