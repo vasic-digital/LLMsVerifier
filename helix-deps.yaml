@@ -1,0 +1,49 @@
+# helix-deps.yaml — LLMsVerifier submodule Submodule-Dependency Manifest
+# Per HelixConstitution §11.4.31 (Submodule-Dependency-Manifest Mandate) /
+# CONST-054 (cascaded into this submodule's CONSTITUTION.md).
+#
+# LLMsVerifier (Go module `llmsverifier`) is the single source of truth for
+# LLM model / provider / verification metadata. It composes own-org Go
+# modules via two go.mod `replace` blocks:
+#   - root go.mod:        digital.vasic.challenges   => ../../../challenges
+#   - llm-verifier/go.mod: digital.vasic.llmprovider => ../../LLMProvider
+# Per §11.4.31 / CONST-051(C), nested own-org submodule chains are FORBIDDEN;
+# this manifest declares the two own-org deps so a consuming project can add
+# them at its root and expose them, rather than nesting them under this
+# submodule.
+#
+# ssh_url + org derived from the consuming project's .gitmodules
+# (authoritative source): Challenges is under vasic-digital; LLMProvider is
+# under HelixDevelopment.
+#
+# Schema reference: <constitution-submodule>/Constitution.md §11.4.31.
+# Layout: flat — each dep lands at <parent-project>/<dep-name>/ per
+# CONST-051(C).
+#
+# Last updated: 2026-05-28 (§11.4.31 manifest created — LLMsVerifier had no
+# helix-deps.yaml).
+
+schema_version: 1
+
+deps:
+  - name: Challenges
+    ssh_url: git@github.com:vasic-digital/Challenges.git
+    ref: main
+    why: "Anti-bluff Challenge Test infrastructure — root go.mod replace digital.vasic.challenges => ../../../challenges (must be reachable from the consuming project root per §11.4.31)"
+    layout: flat
+  - name: LLMProvider
+    ssh_url: git@github.com:HelixDevelopment/LLMProvider.git
+    ref: main
+    why: "LLM provider abstraction consumed by the llm-verifier Go module — llm-verifier/go.mod replace digital.vasic.llmprovider => ../../LLMProvider"
+    layout: flat
+
+transitive_handling:
+  recursive: true
+  conflict_resolution: operator-required
+
+# LLMsVerifier's primary Go module lives in the `llm-verifier/` subdir
+# (root module is `llmsverifier`, the inner module is the verifier app).
+# language_specific_subtree is false because the whole submodule is the Go
+# subtree (no inner non-Go subtrees requiring §11.4.29 / CONST-052
+# snake_case exemption).
+language_specific_subtree: false
