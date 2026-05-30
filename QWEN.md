@@ -104,6 +104,16 @@ a unit test that does. Both must produce positive end-user evidence.
 
 ---
 
+
+## Anti-bluff-manner clause (verbatim operator mandate — HRD-158 covenant cascade)
+
+**Forensic anchor — verbatim operator mandate:**
+
+> "IMPORTANT: Make sure that all existing tests and Challenges do work in anti-bluff manner — they MUST confirm that all tested codebase really works as expected! execution of tests and Challenges MUST guarantee the quality, the completition and full usability by end users of the product! This MUST BE part of Constitution of our project, its CLAUDE.MD and AGENTS.MD if it is not there already, and to be applied to all Submodules's Constitution, CLAUDE.MD and AGENTS.MD as well."
+
+This clause is the leading verbatim operator anti-bluff mandate, restated here for cross-file consistency with this module's CLAUDE.md / AGENTS.md / CONSTITUTION.md. It does NOT weaken any inherited rule. Canonical authority: constitution submodule `Constitution.md` §11.4. Tests AND HelixQA Challenges are bound equally.
+
+
 ## Constitutional anchors (cascaded from `CONSTITUTION.md`)
 
 - **CONST-035 — Zero-Bluff / End-User Usability Mandate.** Every PASS
