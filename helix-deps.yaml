@@ -2,39 +2,41 @@
 # Per HelixConstitution §11.4.31 (Submodule-Dependency-Manifest Mandate) /
 # CONST-054 (cascaded into this submodule's CONSTITUTION.md).
 #
-# LLMsVerifier (Go module `llmsverifier`) is the single source of truth for
-# LLM model / provider / verification metadata. It composes own-org Go
-# modules via two go.mod `replace` blocks:
-#   - root go.mod:        digital.vasic.challenges   => ../../../challenges
-#   - llm-verifier/go.mod: digital.vasic.llmprovider => ../../LLMProvider
+# LLMsVerifier (root go.mod module `llmsverifier`) is the single source of
+# truth for LLM model / provider / verification metadata. It composes ONE
+# EXTERNAL own-org Go module via its root go.mod `replace` block:
+#   digital.vasic.challenges => ../challenges  (Challenges).
+# The other own-org require — digital.vasic.llmsverifier => ./llm-verifier —
+# is an INNER subtree of THIS submodule (the verifier app's Go module lives
+# in the llm-verifier/ subdir), NOT an external own-org dependency, so it is
+# NOT a helix-deps entry. The inner llm-verifier/go.mod carries no own-org
+# `replace` directive. The remaining go.mod requires are third-party.
 # Per §11.4.31 / CONST-051(C), nested own-org submodule chains are FORBIDDEN;
-# this manifest declares the two own-org deps so a consuming project can add
-# them at its root and expose them, rather than nesting them under this
+# this manifest declares the one external own-org dep so a consuming project
+# can add it at its root and expose it, rather than nesting it under this
 # submodule.
 #
-# ssh_url + org derived from the consuming project's .gitmodules
-# (authoritative source): Challenges is under vasic-digital; LLMProvider is
-# under HelixDevelopment.
+# ssh_url + org per dep derived from the dependency submodule's authoritative
+# git remote: Challenges is under vasic-digital
+# (git@github.com:vasic-digital/challenges.git). This submodule's own remote
+# is vasic-digital/LLMsVerifier.
 #
 # Schema reference: <constitution-submodule>/Constitution.md §11.4.31.
 # Layout: flat — each dep lands at <parent-project>/<dep-name>/ per
 # CONST-051(C).
 #
-# Last updated: 2026-05-28 (§11.4.31 manifest created — LLMsVerifier had no
-# helix-deps.yaml).
+# Last updated: 2026-06-08 (§11.4.31 manifest corrected to match the actual
+# go.mod replace blocks — dropped the LLMProvider dep, which no current
+# go.mod replace directive backs; corrected the Challenges replace path
+# (../challenges, not ../../../challenges) and org (vasic-digital)).
 
 schema_version: 1
 
 deps:
   - name: Challenges
-    ssh_url: git@github.com:vasic-digital/Challenges.git
+    ssh_url: git@github.com:vasic-digital/challenges.git
     ref: main
-    why: "Anti-bluff Challenge Test infrastructure — root go.mod replace digital.vasic.challenges => ../../../challenges (must be reachable from the consuming project root per §11.4.31)"
-    layout: flat
-  - name: LLMProvider
-    ssh_url: git@github.com:HelixDevelopment/LLMProvider.git
-    ref: main
-    why: "LLM provider abstraction consumed by the llm-verifier Go module — llm-verifier/go.mod replace digital.vasic.llmprovider => ../../LLMProvider"
+    why: "Anti-bluff Challenge Test infrastructure used by the LLMsVerifier test suites — root go.mod require digital.vasic.challenges + replace => ../challenges (must be reachable from the consuming project root per §11.4.31)"
     layout: flat
 
 transitive_handling:
@@ -43,7 +45,7 @@ transitive_handling:
 
 # LLMsVerifier's primary Go module lives in the `llm-verifier/` subdir
 # (root module is `llmsverifier`, the inner module is the verifier app).
-# language_specific_subtree is false because the whole submodule is the Go
-# subtree (no inner non-Go subtrees requiring §11.4.29 / CONST-052
-# snake_case exemption).
-language_specific_subtree: false
+# language_specific_subtree is true to flag that the §11.4.31 dep graph is
+# rooted at the inner Go subtree while the submodule root carries additional
+# non-Go content.
+language_specific_subtree: true
