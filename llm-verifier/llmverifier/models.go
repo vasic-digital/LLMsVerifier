@@ -1,6 +1,10 @@
 package llmverifier
 
-import "time"
+import (
+	"bytes"
+	"encoding/json"
+	"time"
+)
 
 // VerificationResult stores the results of verifying a single LLM
 type VerificationResult struct {
@@ -94,6 +98,41 @@ type ContextWindow struct {
 	MaxInputTokens  int `json:"max_input_tokens"`
 	MaxOutputTokens int `json:"max_output_tokens"`
 	TotalMaxTokens  int `json:"total_max_tokens"`
+}
+
+// UnmarshalJSON accepts both the structured object form
+// ({"max_input_tokens":...}) and the bare-integer form some providers
+// (e.g. Groq) emit for "context_window": <number>. A bare number is
+// mapped to TotalMaxTokens so a single integer never aborts the whole
+// model-list decode.
+func (c *ContextWindow) UnmarshalJSON(data []byte) error {
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) == 0 || string(trimmed) == "null" {
+		return nil
+	}
+	if trimmed[0] != '{' {
+		var n json.Number
+		if err := json.Unmarshal(trimmed, &n); err != nil {
+			return err
+		}
+		i, err := n.Int64()
+		if err != nil {
+			f, ferr := n.Float64()
+			if ferr != nil {
+				return err
+			}
+			i = int64(f)
+		}
+		c.TotalMaxTokens = int(i)
+		return nil
+	}
+	type ctxAlias ContextWindow
+	var a ctxAlias
+	if err := json.Unmarshal(trimmed, &a); err != nil {
+		return err
+	}
+	*c = ContextWindow(a)
+	return nil
 }
 
 type InputPrices struct {
