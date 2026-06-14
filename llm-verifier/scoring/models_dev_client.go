@@ -192,8 +192,12 @@ func (c *ModelsDevClient) makeRequest(ctx context.Context, endpoint string) (*Mo
 		}
 	}
 
-	// Fallback to HTTP/2 if HTTP/3 failed or not enabled
-	if resp == nil && err != nil {
+	// Fallback to HTTP/2 if HTTP/3 failed or was not enabled.
+	// Trigger on resp == nil (not on err != nil): when HTTP/3 is disabled the
+	// first branch is skipped entirely, leaving resp == nil AND err == nil, so a
+	// guard requiring err != nil would never run the fallback and the subsequent
+	// resp.Body.Close() would dereference a nil response.
+	if resp == nil {
 		resp, err = c.doRequest(ctx, c.httpClient, endpoint)
 		if err != nil {
 			return nil, fmt.Errorf("HTTP request failed: %w", err)

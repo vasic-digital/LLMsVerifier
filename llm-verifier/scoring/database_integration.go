@@ -116,16 +116,33 @@ func (di *DatabaseIntegration) GetLatestVerificationScore(modelID int64) (*datab
 	return di.db.GetLatestVerificationScore(modelID, "comprehensive_scoring")
 }
 
-// ListModelsByScore gets models filtered by score range
+// ListModelsByScore gets models filtered by score range [minScore, maxScore].
+// db.ListModels only supports a min_score filter, so the maxScore upper bound is
+// applied here as a post-filter. The limit is applied AFTER the max-score filter
+// so it counts only in-range models (pushing the limit to the DB would apply it
+// before the upper bound and under-return).
 func (di *DatabaseIntegration) ListModelsByScore(minScore, maxScore float64, limit int) ([]*database.Model, error) {
 	filters := map[string]interface{}{
 		"min_score": minScore,
 	}
-	if limit > 0 {
-		filters["limit"] = limit
+
+	models, err := di.db.ListModels(filters)
+	if err != nil {
+		return nil, err
 	}
-	
-	return di.db.ListModels(filters)
+
+	filtered := make([]*database.Model, 0, len(models))
+	for _, m := range models {
+		if m.OverallScore > maxScore {
+			continue
+		}
+		filtered = append(filtered, m)
+		if limit > 0 && len(filtered) >= limit {
+			break
+		}
+	}
+
+	return filtered, nil
 }
 
 // GetTopScoringModels gets the top scoring models
