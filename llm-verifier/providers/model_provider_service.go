@@ -605,12 +605,17 @@ func (mps *ModelProviderService) sortModels(models []Model) {
 
 // Cache operations
 
-// getFromCache retrieves models from cache if not expired
+// getFromCache retrieves models from cache if not expired.
+//
+// The read path holds only an RLock and MUST NOT mutate the map. Expired
+// entries are reported as a miss (returning nil) and left to be overwritten by
+// the next saveToCache or removed by evictExpired/ClearCache under a write lock
+// — deleting here under the read lock is a concurrent map write (data race +
+// possible fatal "concurrent map writes").
 func (mps *ModelProviderService) getFromCache(providerID string) []Model {
 	mps.cacheMutex.RLock()
-	defer mps.cacheMutex.RUnlock()
-
 	entry, exists := mps.cache[providerID]
+	mps.cacheMutex.RUnlock()
 	if !exists {
 		return nil
 	}
@@ -621,12 +626,23 @@ func (mps *ModelProviderService) getFromCache(providerID string) []Model {
 
 	if cacheAge > cacheDuration {
 		mps.logDebug(fmt.Sprintf("Cache expired for %s (age: %v, TTL: %v)", providerID, cacheAge.Round(time.Minute), cacheDuration))
-		delete(mps.cache, providerID)
+		mps.evictExpired(providerID, entry.timestamp)
 		return nil
 	}
 
 	mps.logDebug(fmt.Sprintf("Cache hit for %s (age: %v)", providerID, cacheAge.Round(time.Minute)))
 	return entry.models
+}
+
+// evictExpired removes an expired entry under a write lock, but only if the
+// entry has not been refreshed in the meantime (timestamp unchanged). This keeps
+// the read path (getFromCache) read-only while still reclaiming stale entries.
+func (mps *ModelProviderService) evictExpired(providerID string, seenTimestamp time.Time) {
+	mps.cacheMutex.Lock()
+	defer mps.cacheMutex.Unlock()
+	if entry, exists := mps.cache[providerID]; exists && entry.timestamp.Equal(seenTimestamp) {
+		delete(mps.cache, providerID)
+	}
 }
 
 // saveToCache stores models in cache

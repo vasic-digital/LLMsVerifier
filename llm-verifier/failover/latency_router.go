@@ -159,7 +159,9 @@ func (lbr *LatencyBasedRouter) RouteRequest(modelID int64) (string, error) {
 	// Filter to only healthy providers
 	var healthyProviders []string
 	for _, providerID := range providers {
-		if lbr.healthChecker.GetCircuitBreaker(providerID).IsAvailable() {
+		// A provider with no registered circuit breaker is unknown to the
+		// health checker and must be treated as unavailable, not dereferenced.
+		if cb := lbr.healthChecker.GetCircuitBreaker(providerID); cb != nil && cb.IsAvailable() {
 			healthyProviders = append(healthyProviders, providerID)
 		}
 	}
@@ -219,8 +221,10 @@ func (wr *WeightedRouter) RouteRequest(modelID int64, db *database.Database) (st
 
 	providerID := fmt.Sprintf("%d", model.ProviderID)
 
-	// Check if provider is healthy
-	if !wr.healthChecker.GetCircuitBreaker(providerID).IsAvailable() {
+	// Check if provider is healthy. An unregistered provider has no circuit
+	// breaker (nil) and is therefore unavailable, not a nil-deref panic.
+	cb := wr.healthChecker.GetCircuitBreaker(providerID)
+	if cb == nil || !cb.IsAvailable() {
 		return "", ErrNoHealthyProviders
 	}
 
@@ -240,9 +244,10 @@ func (wr *WeightedRouter) CalculateProviderScore(providerID string, db *database
 		latencyScore = 1.0 / math.Max(normalizedLatency, 0.1) // Avoid division by zero
 	}
 
-	// Get health score
+	// Get health score. An unregistered provider has no circuit breaker (nil)
+	// and is therefore unavailable, not a nil-deref panic.
 	healthScore := 1.0
-	if !wr.healthChecker.GetCircuitBreaker(providerID).IsAvailable() {
+	if cb := wr.healthChecker.GetCircuitBreaker(providerID); cb == nil || !cb.IsAvailable() {
 		healthScore = 0.0
 	}
 
