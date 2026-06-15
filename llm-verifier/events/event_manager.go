@@ -182,10 +182,22 @@ type NotificationSubscriber struct {
 	IsEnabled      bool
 }
 
+// newNotificationSubscriberID builds a unique notification-subscriber ID.
+// The pre-fix form `fmt.Sprintf("notify_%s_%d", serviceType, time.Now().Unix())`
+// used second-resolution time, so two subscribers of the same serviceType
+// registered within the same second collided — and the ID keys the subscriber
+// registry, so a collision silently overwrites/aliases a subscriber and
+// misroutes notifications. The crypto/rand suffix (shared events-package
+// randomIDSuffix) guarantees uniqueness. Kept as a named helper so its
+// uniqueness is directly testable (§11.4.50 / §11.4.115).
+func newNotificationSubscriberID(serviceType string) string {
+	return fmt.Sprintf("notify_%s_%d_%s", serviceType, time.Now().UnixNano(), randomIDSuffix())
+}
+
 // NewNotificationSubscriber creates a new notification subscriber
 func NewNotificationSubscriber(serviceType string, supportedTypes []EventType, minSeverity Severity, config map[string]interface{}) *NotificationSubscriber {
 	return &NotificationSubscriber{
-		ID:             fmt.Sprintf("notify_%s_%d", serviceType, time.Now().Unix()),
+		ID:             newNotificationSubscriberID(serviceType),
 		ServiceType:    serviceType,
 		SupportedTypes: supportedTypes,
 		MinSeverity:    minSeverity,

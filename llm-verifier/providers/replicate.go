@@ -11,6 +11,17 @@ import (
 	"time"
 )
 
+// newReplicateResponseID builds a unique OpenAI-compatible response ID for the
+// Replicate provider. The pre-fix form `"replicate-" + time.Now().Unix()` used
+// second-resolution time, so two responses produced within the same second
+// (concurrent requests, or stream-chunk + final response) shared a response ID
+// — a wire-format identity callers may key on. The crypto/rand suffix (shared
+// providers-package randomIDSuffix) guarantees uniqueness. Named helper so its
+// uniqueness is directly testable (§11.4.50 / §11.4.115).
+func newReplicateResponseID() string {
+	return fmt.Sprintf("replicate-%d-%s", time.Now().UnixNano(), randomIDSuffix())
+}
+
 // ReplicateAdapter provides Replicate-specific functionality
 type ReplicateAdapter struct {
 	BaseAdapter
@@ -138,7 +149,7 @@ func (r *ReplicateAdapter) StreamChatCompletion(ctx context.Context, request Ope
 					// Convert to OpenAI format and send
 					finishReason := "stop"
 					streamResp := OpenAIStreamResponse{
-						ID:      "replicate-" + fmt.Sprintf("%d", time.Now().Unix()),
+						ID:      newReplicateResponseID(),
 						Object:  "chat.completion.chunk",
 						Created: time.Now().Unix(),
 						Model:   request.Model,
@@ -196,7 +207,7 @@ func (r *ReplicateAdapter) ChatCompletion(ctx context.Context, request OpenAICha
 	}
 
 	return &OpenAIChatResponse{
-		ID:      "replicate-" + fmt.Sprintf("%d", time.Now().Unix()),
+		ID:      newReplicateResponseID(),
 		Object:  "chat.completion",
 		Created: time.Now().Unix(),
 		Model:   request.Model,

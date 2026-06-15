@@ -2,6 +2,8 @@ package verification
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -10,6 +12,29 @@ import (
 	"digital.vasic.llmsverifier/client"
 	"digital.vasic.llmsverifier/logging"
 )
+
+// randomIDSuffix returns a short, collision-resistant suffix for verification
+// IDs. 8 bytes from crypto/rand (base64url ~11 chars); on RNG failure falls back
+// to a doubled-nanosecond value so the suffix is non-empty and varies.
+func randomIDSuffix() string {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Sprintf("%d", time.Now().UnixNano()*2654435761)
+	}
+	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+// newVerificationID builds a unique verification-run ID. The pre-fix form
+// `fmt.Sprintf("<prefix>_%s_%s_%d", providerID, modelID, time.Now().Unix())`
+// used second-resolution time, so re-verifying the SAME model within the same
+// second (retries, back-to-back runs, or concurrent VerifyAll) produced a
+// duplicate verification_id — and that ID is persisted into the result record
+// + `model.Features["verification_id"]`, so a collision aliases two distinct
+// runs. The crypto/rand suffix guarantees uniqueness. Named helper so its
+// uniqueness is directly testable (§11.4.50 / §11.4.115).
+func newVerificationID(prefix, providerID, modelID string) string {
+	return fmt.Sprintf("%s_%s_%s_%d_%s", prefix, providerID, modelID, time.Now().UnixNano(), randomIDSuffix())
+}
 
 // CodeVerificationService handles mandatory code visibility verification for models
 type CodeVerificationService struct {
@@ -75,7 +100,7 @@ func NewCodeVerificationService(httpClient *client.HTTPClient, logger *logging.L
 
 // VerifyModelCodeVisibility performs mandatory code visibility verification for a specific model
 func (cvs *CodeVerificationService) VerifyModelCodeVisibility(ctx context.Context, modelID, providerID string, providerClient ProviderClientInterface) (*CodeVerificationResult, error) {
-	verificationID := fmt.Sprintf("code_verify_%s_%s_%d", providerID, modelID, time.Now().Unix())
+	verificationID := newVerificationID("code_verify", providerID, modelID)
 
 	result := &CodeVerificationResult{
 		VerificationID: verificationID,
@@ -583,7 +608,7 @@ type MeaningfulResponseVerificationResult struct {
 // 4. Not contain common error indicators
 // Implements retry logic for timeouts to distinguish temporary vs persistent issues
 func (cvs *CodeVerificationService) VerifyMeaningfulResponse(ctx context.Context, modelID, providerID string, providerClient ProviderClientInterface) (*MeaningfulResponseVerificationResult, error) {
-	verificationID := fmt.Sprintf("meaningful_verify_%s_%s_%d", providerID, modelID, time.Now().Unix())
+	verificationID := newVerificationID("meaningful_verify", providerID, modelID)
 
 	result := &MeaningfulResponseVerificationResult{
 		VerificationID: verificationID,
@@ -825,7 +850,7 @@ func truncateString(s string, maxLength int) string {
 // This uses a longer, more complex prompt similar to actual debate usage
 // CRITICAL: This catches slow providers that pass simple "hello!" tests but timeout on real prompts
 func (cvs *CodeVerificationService) VerifyRealisticDebatePrompt(ctx context.Context, modelID, providerID string, providerClient ProviderClientInterface) (*MeaningfulResponseVerificationResult, error) {
-	verificationID := fmt.Sprintf("debate_verify_%s_%s_%d", providerID, modelID, time.Now().Unix())
+	verificationID := newVerificationID("debate_verify", providerID, modelID)
 
 	result := &MeaningfulResponseVerificationResult{
 		VerificationID: verificationID,

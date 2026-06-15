@@ -1,10 +1,36 @@
 package monitoring
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"sync"
 	"time"
 )
+
+// randomIDSuffix returns a short, collision-resistant suffix for IDs in the
+// monitoring package. 8 bytes from crypto/rand (base64url ~11 chars); on RNG
+// failure falls back to a doubled-nanosecond value so the suffix is non-empty
+// and varies. §11.4.50: two alerts raised within the same second must not share
+// an alert ID.
+func randomIDSuffix() string {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Sprintf("%d", time.Now().UnixNano()*2654435761)
+	}
+	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+// newAlertID builds a unique monitoring-alert ID. The pre-fix form
+// `fmt.Sprintf("%s-%d", metric, time.Now().Unix())` used second-resolution
+// time, so the same metric crossing its threshold more than once within the
+// same second produced duplicate alert IDs (the ID is the alert's identity in
+// the alert log + any downstream de-dup/ack keyed on it). The crypto/rand
+// suffix guarantees uniqueness. Named helper for direct testability
+// (§11.4.50 / §11.4.115).
+func newAlertID(metric string) string {
+	return fmt.Sprintf("%s-%d-%s", metric, time.Now().UnixNano(), randomIDSuffix())
+}
 
 // AdvancedMonitor provides advanced monitoring and alerting capabilities
 type AdvancedMonitor struct {
@@ -100,7 +126,7 @@ func (am *AdvancedMonitor) checkThreshold(metric string, value float64, threshol
 	}
 
 	alert := MonitorAlert{
-		ID:        fmt.Sprintf("%s-%d", metric, time.Now().Unix()),
+		ID:        newAlertID(metric),
 		Type:      "threshold_exceeded",
 		Message:   message,
 		Severity:  severity,

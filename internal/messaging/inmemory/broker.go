@@ -3,6 +3,8 @@ package inmemory
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"sync"
 	"time"
@@ -10,6 +12,27 @@ import (
 	"github.com/sirupsen/logrus"
 	"llmsverifier/internal/messaging"
 )
+
+// randomIDSuffix returns a short, collision-resistant suffix for IDs in the
+// inmemory broker. 8 bytes from crypto/rand (base64url ~11 chars); on RNG
+// failure falls back to a doubled-nanosecond value so the suffix is non-empty
+// and varies. §11.4.50: two subscriptions on the same target created within the
+// same nanosecond must not share a subscription ID.
+func randomIDSuffix() string {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Sprintf("%d", time.Now().UnixNano()*2654435761)
+	}
+	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+// newSubscriptionID builds a unique subscription ID. The pre-fix form
+// `fmt.Sprintf("sub-%s-%d", target, time.Now().UnixNano())` collided for two
+// subscriptions registered against the same target within the same nanosecond.
+// Named helper for direct testability (§11.4.50 / §11.4.115).
+func newSubscriptionID(target string) string {
+	return fmt.Sprintf("sub-%s-%d-%s", target, time.Now().UnixNano(), randomIDSuffix())
+}
 
 // Broker implements MessageBroker using in-memory data structures.
 type Broker struct {
@@ -209,7 +232,7 @@ func (b *Broker) Subscribe(ctx context.Context, target string, handler messaging
 	options := messaging.ApplySubscribeOptions(opts...)
 
 	sub := &subscription{
-		id:       fmt.Sprintf("sub-%s-%d", target, time.Now().UnixNano()),
+		id:       newSubscriptionID(target),
 		topic:    target,
 		handler:  handler,
 		options:  options,

@@ -82,7 +82,7 @@ func NewCodingCapabilityVerificationService(httpClient *client.HTTPClient, logge
 
 // VerifyModelCodingCapabilities performs comprehensive coding capability verification
 func (cvs *CodingCapabilityVerificationService) VerifyModelCodingCapabilities(ctx context.Context, modelID, providerID string, providerClient ProviderClientInterface) (*CodingCapabilityResult, error) {
-	verificationID := fmt.Sprintf("coding_cap_%s_%s_%d", providerID, modelID, time.Now().Unix())
+	verificationID := newVerificationID("coding_cap", providerID, modelID)
 
 	result := &CodingCapabilityResult{
 		VerificationID: verificationID,
