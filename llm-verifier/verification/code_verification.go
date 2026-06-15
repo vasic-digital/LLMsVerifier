@@ -146,15 +146,22 @@ func (cvs *CodeVerificationService) VerifyModelCodeVisibility(ctx context.Contex
 		}
 	}
 
-	// RELAXED STATUS DETERMINATION: Be more permissive
+	// STATUS DETERMINATION: a model is "verified" ONLY when its code
+	// visibility was actually established. A model that returned responses
+	// but did NOT demonstrate code visibility (CodeVisibility == false —
+	// e.g. it answered "No, I cannot see your code" to every sample) is the
+	// canonical negative case this gate exists to catch and MUST be "failed".
+	// Certifying such a model as "verified" is a §11.4 / §11.4.1 PASS-bluff:
+	// the gate's non-strict IsModelVerified treats any non-"error" status as
+	// verified, so a code-blind model would silently pass the gate.
 	if len(verificationResponses) == 0 {
 		result.Status = "failed"
 		result.ErrorMessage = "No successful verification responses"
-	} else if result.VerificationScore > 0.3 { // Lower threshold for verification
+	} else if result.CodeVisibility {
 		result.Status = "verified"
 	} else {
-		result.Status = "verified"     // Still mark as verified since model responded
-		result.VerificationScore = 0.8 // Give a good score for responding
+		result.Status = "failed"
+		result.ErrorMessage = "Model responded but did not demonstrate code visibility"
 	}
 
 	completedAt := time.Now()

@@ -141,8 +141,16 @@ func TestCodeVerificationService_VerifyModelCodeVisibility_NegativeResponse(t *t
 
 	require.NoError(t, err)
 	require.NotNil(t, result)
-	// Due to relaxed verification, should still be verified with score adjustment
-	assert.Equal(t, "verified", result.Status)
+	// HXV-status-bluff reconciliation (§11.4.120): the previous assertion
+	// expected Status == "verified" for a model that answers "No, I cannot see
+	// your code" to every sample — that certified a code-blind model as
+	// verified (a §11.4 / §11.4.1 PASS-bluff in the source-of-truth gate). A
+	// model that does NOT establish code visibility MUST be "failed", never
+	// "verified".
+	assert.False(t, result.CodeVisibility,
+		"a model that denies code visibility must have CodeVisibility=false")
+	assert.NotEqual(t, "verified", result.Status,
+		"a model that cannot see the code must not be certified verified")
 }
 
 func TestCodeVerificationService_VerifyModelCodeVisibility_ServerError(t *testing.T) {
