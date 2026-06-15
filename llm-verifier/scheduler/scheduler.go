@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"io"
 	"log"
 	"sort"
 	"strconv"
@@ -651,31 +650,23 @@ func (s *Scheduler) loadSchedules() error {
 
 // Helper functions
 
-func generateScheduleID() string {
-	// §11.4.115: time.Now().UnixNano() alone is NOT a uniqueness guarantee —
-	// two calls within the same clock tick collide, producing duplicate schedule
-	// IDs that silently overwrite/confuse schedule records. Append a
-	// cryptographically-random suffix so the ID is unique regardless of clock
-	// resolution; fall back to a doubled nanosecond suffix only if the RNG fails.
-	suffix := make([]byte, 8)
-	if _, err := io.ReadFull(rand.Reader, suffix); err != nil {
-		return fmt.Sprintf("sched_%d_%d", time.Now().UnixNano(), time.Now().UnixNano())
+// randomIDSuffix returns a short, collision-resistant suffix for IDs.
+// 8 bytes from crypto/rand (base64url ~11 chars); on RNG failure falls back to
+// a doubled-nanosecond value so the suffix is non-empty and varies. §11.4.50.
+func randomIDSuffix() string {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Sprintf("%d", time.Now().UnixNano()*2654435761)
 	}
-	return fmt.Sprintf("sched_%d_%s", time.Now().UnixNano(), base64.RawURLEncoding.EncodeToString(suffix))
+	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+func generateScheduleID() string {
+	return fmt.Sprintf("sched_%d_%s", time.Now().UnixNano(), randomIDSuffix())
 }
 
 func generateRunID() string {
-	// §11.4.115: time.Now().UnixNano() alone is NOT a uniqueness guarantee —
-	// two calls within the same clock tick (coarse-resolution clocks, fast
-	// successive scheduled runs) collide, producing duplicate run IDs that
-	// silently overwrite/confuse run records. Append a cryptographically-random
-	// suffix so the ID is unique regardless of clock resolution; fall back to a
-	// doubled nanosecond suffix only if the RNG is unavailable.
-	suffix := make([]byte, 8)
-	if _, err := io.ReadFull(rand.Reader, suffix); err != nil {
-		return fmt.Sprintf("run_%d_%d", time.Now().UnixNano(), time.Now().UnixNano())
-	}
-	return fmt.Sprintf("run_%d_%s", time.Now().UnixNano(), base64.RawURLEncoding.EncodeToString(suffix))
+	return fmt.Sprintf("run_%d_%s", time.Now().UnixNano(), randomIDSuffix())
 }
 
 // Predefined schedule templates

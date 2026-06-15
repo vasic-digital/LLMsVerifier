@@ -2,6 +2,8 @@ package enhanced
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"sort"
@@ -12,6 +14,35 @@ import (
 	"digital.vasic.llmsverifier/database"
 	llmverifier "digital.vasic.llmsverifier/llmverifier"
 )
+
+// randomIDSuffix returns a short, collision-resistant suffix for IDs in the
+// enhanced package. 8 bytes from crypto/rand (base64url ~11 chars); on RNG
+// failure falls back to a doubled-nanosecond value so the suffix is non-empty
+// and varies. §11.4.50: DecomposeTask creates a primary task + two subtasks in
+// immediate succession (no I/O between them), and back-to-back DecomposeTask
+// calls would otherwise collide on the same UnixNano timestamp.
+func randomIDSuffix() string {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Sprintf("%d", time.Now().UnixNano()*2654435761)
+	}
+	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+// newTaskID builds a unique task ID with an optional role part (e.g. "sub1").
+// Kept as a named helper so its uniqueness is directly testable (§11.4.115).
+func newTaskID(part string) string {
+	if part == "" {
+		return fmt.Sprintf("task_%d_%s", time.Now().UnixNano(), randomIDSuffix())
+	}
+	return fmt.Sprintf("task_%d_%s_%s", time.Now().UnixNano(), randomIDSuffix(), part)
+}
+
+// newMessageID builds a unique message ID for the enhanced context manager.
+// Kept as a named helper so its uniqueness is directly testable (§11.4.115).
+func newMessageID() string {
+	return fmt.Sprintf("msg_%d_%s", time.Now().UnixNano(), randomIDSuffix())
+}
 
 // SupervisorConfig holds configuration for the supervisor
 type SupervisorConfig struct {
@@ -455,7 +486,7 @@ func (s *Supervisor) DecomposeTask(taskDescription string, context map[string]in
 
 	// Create a primary analysis task
 	task := &Task{
-		ID:         fmt.Sprintf("task_%d", time.Now().UnixNano()),
+		ID:         newTaskID(""),
 		Type:       "analysis",
 		Priority:   5,
 		Data:       map[string]any{"description": taskDescription, "context": context},
@@ -471,7 +502,7 @@ func (s *Supervisor) DecomposeTask(taskDescription string, context map[string]in
 
 	if strings.Contains(description, "code") || strings.Contains(description, "review") {
 		subtask := &Task{
-			ID:         fmt.Sprintf("task_%d_sub1", time.Now().UnixNano()),
+			ID:         newTaskID("sub1"),
 			Type:       "generation",
 			Priority:   4,
 			Data:       map[string]any{"description": "Code analysis subtask", "context": context},
@@ -484,7 +515,7 @@ func (s *Supervisor) DecomposeTask(taskDescription string, context map[string]in
 
 	if strings.Contains(description, "test") || strings.Contains(description, "validate") {
 		subtask := &Task{
-			ID:         fmt.Sprintf("task_%d_sub2", time.Now().UnixNano()),
+			ID:         newTaskID("sub2"),
 			Type:       "testing",
 			Priority:   3,
 			Data:       map[string]any{"description": "Testing subtask", "context": context},

@@ -515,7 +515,7 @@ func (am *AlertManagerFixed) createWebhookPayload(alert interface{}) (map[string
 	}
 
 	// Add common fields
-	payload["alert_id"] = fmt.Sprintf("alert_%d", time.Now().UnixNano())
+	payload["alert_id"] = newAlertID()
 	payload["version"] = "1.0"
 	
 	return payload, nil

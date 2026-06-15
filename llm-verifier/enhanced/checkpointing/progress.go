@@ -1,6 +1,8 @@
 package checkpointing
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -118,13 +120,32 @@ func NewCheckpointManager(storagePath string, maxCheckpoints int) *CheckpointMan
 	}
 }
 
+// randomIDSuffix returns a short, collision-resistant suffix for IDs.
+// 8 bytes from crypto/rand (base64url ~11 chars); on RNG failure falls back to
+// a doubled-nanosecond value so the suffix is non-empty and varies. §11.4.50:
+// two checkpoints created for the same agent within the same nanosecond must
+// not share an ID (the ID is the on-disk checkpoint filename + map key).
+func randomIDSuffix() string {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Sprintf("%d", time.Now().UnixNano()*2654435761)
+	}
+	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+// newCheckpointID builds a unique checkpoint ID for the given agent. Kept as a
+// named helper so its uniqueness is directly testable (§11.4.115).
+func newCheckpointID(agentID string) string {
+	return fmt.Sprintf("chk_%s_%d_%s", agentID, time.Now().UnixNano(), randomIDSuffix())
+}
+
 // CreateCheckpoint creates a new checkpoint for an agent
 func (cm *CheckpointManager) CreateCheckpoint(agentID string, progress AgentProgress, memoryState MemoryState, openFiles []OpenFile) (*Checkpoint, error) {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
 	checkpoint := &Checkpoint{
-		ID:          fmt.Sprintf("chk_%s_%d", agentID, time.Now().UnixNano()),
+		ID:          newCheckpointID(agentID),
 		AgentID:     agentID,
 		Timestamp:   time.Now(),
 		Progress:    progress,

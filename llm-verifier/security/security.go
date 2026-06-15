@@ -444,18 +444,22 @@ func (rbac *RBACManager) checkConditions(requestConditions map[string]interface{
 }
 
 // Helper functions
-func generateAuditID() string {
-	// §11.4.115: time.Now().UnixNano() alone is NOT a uniqueness guarantee —
-	// two calls within the same clock tick (coarse-resolution clocks, fast
-	// successive calls) collide, producing duplicate audit IDs that silently
-	// corrupt the audit trail. Append a cryptographically-random suffix so the
-	// ID is unique regardless of clock resolution; fall back to a nanosecond-
-	// derived suffix only if the RNG is unavailable (still better than nothing).
-	suffix := make([]byte, 8)
-	if _, err := io.ReadFull(rand.Reader, suffix); err != nil {
-		return fmt.Sprintf("audit_%d_%d", time.Now().UnixNano(), time.Now().UnixNano())
+
+// randomIDSuffix returns a short, collision-resistant suffix for IDs.
+// It draws 8 bytes from crypto/rand (base64url-encoded, ~11 chars). On RNG
+// failure it falls back to a doubled-nanosecond value so the suffix is still
+// non-empty and varies — never returning a constant. §11.4.50: makes IDs that
+// would otherwise collide under same-nanosecond bursts unique.
+func randomIDSuffix() string {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Sprintf("%d", time.Now().UnixNano()*2654435761)
 	}
-	return fmt.Sprintf("audit_%d_%s", time.Now().UnixNano(), base64.RawURLEncoding.EncodeToString(suffix))
+	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+func generateAuditID() string {
+	return fmt.Sprintf("audit_%d_%s", time.Now().UnixNano(), randomIDSuffix())
 }
 
 func extractSessionID(r *http.Request) string {

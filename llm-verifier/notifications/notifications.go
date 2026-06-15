@@ -4,6 +4,8 @@ package notifications
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"sync"
 	"time"
@@ -11,6 +13,24 @@ import (
 	"digital.vasic.llmsverifier/config"
 	"digital.vasic.llmsverifier/events"
 )
+
+// randomIDSuffix returns a short, collision-resistant suffix for IDs.
+// 8 bytes from crypto/rand (base64url ~11 chars); on RNG failure falls back to
+// a doubled-nanosecond value so the suffix is non-empty and varies. §11.4.50:
+// two notifications queued within the same nanosecond must not share an ID.
+func randomIDSuffix() string {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Sprintf("%d", time.Now().UnixNano()*2654435761)
+	}
+	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+// newNotificationID builds a unique notification ID. Kept as a named helper so
+// its uniqueness is directly testable (§11.4.115).
+func newNotificationID() string {
+	return fmt.Sprintf("notify_%d_%s", time.Now().UnixNano(), randomIDSuffix())
+}
 
 // NotificationType represents the type of notification channel
 type NotificationType string
@@ -331,7 +351,7 @@ func (nm *NotificationManager) SendNotification(notification interface{}) error 
 // queueNotification adds a notification to the processing queue
 func (nm *NotificationManager) queueNotification(notification *Notification) error {
 	if notification.ID == "" {
-		notification.ID = fmt.Sprintf("notify_%d", time.Now().UnixNano())
+		notification.ID = newNotificationID()
 	}
 	if notification.CreatedAt.IsZero() {
 		notification.CreatedAt = time.Now()
@@ -350,7 +370,7 @@ func (nm *NotificationManager) queueNotification(notification *Notification) err
 // queueFromMap creates a notification from a map and queues it
 func (nm *NotificationManager) queueFromMap(data map[string]interface{}) error {
 	notification := &Notification{
-		ID:        fmt.Sprintf("notify_%d", time.Now().UnixNano()),
+		ID:        newNotificationID(),
 		CreatedAt: time.Now(),
 	}
 

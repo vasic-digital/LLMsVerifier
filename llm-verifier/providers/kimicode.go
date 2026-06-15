@@ -2,6 +2,8 @@ package providers
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +14,26 @@ import (
 	"sync"
 	"time"
 )
+
+// randomIDSuffix returns a short, collision-resistant suffix for IDs in the
+// providers package. 8 bytes from crypto/rand (base64url ~11 chars); on RNG
+// failure falls back to a doubled-nanosecond value so the suffix is non-empty
+// and varies. §11.4.50: two Kimi-Code responses produced within the same
+// nanosecond must not share an OpenAI-compatible response ID.
+func randomIDSuffix() string {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Sprintf("%d", time.Now().UnixNano()*2654435761)
+	}
+	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+// newKimiResponseID builds a unique OpenAI-compatible response ID for the
+// Kimi-Code provider. Kept as a named helper so its uniqueness is directly
+// testable (§11.4.115).
+func newKimiResponseID() string {
+	return fmt.Sprintf("kimi-code-cli-%d-%s", time.Now().UnixNano(), randomIDSuffix())
+}
 
 const (
 	KimiCodeDefaultModel   = "kimi-for-coding"
@@ -192,7 +214,7 @@ func (p *KimiCodeCLIAdapter) ChatCompletion(ctx context.Context, request OpenAIC
 	}
 
 	response := &OpenAIChatResponse{
-		ID:      fmt.Sprintf("kimi-code-cli-%d", time.Now().UnixNano()),
+		ID:      newKimiResponseID(),
 		Object:  "chat.completion",
 		Created: time.Now().Unix(),
 		Model:   model,

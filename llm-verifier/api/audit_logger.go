@@ -1,6 +1,8 @@
 package api
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -275,9 +277,21 @@ func (al *AuditLogger) Stop() {
 	close(al.stopCh)
 }
 
+// randomIDSuffix returns a short, collision-resistant suffix for IDs in the api
+// package. 8 bytes from crypto/rand (base64url ~11 chars); on RNG failure falls
+// back to a doubled-nanosecond value so the suffix is non-empty and varies.
+// §11.4.50: prevents same-nanosecond ID collisions for audit IDs + request IDs.
+func randomIDSuffix() string {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Sprintf("%d", time.Now().UnixNano()*2654435761)
+	}
+	return base64.RawURLEncoding.EncodeToString(b)
+}
+
 // generateAuditID generates a unique audit event ID
 func generateAuditID() string {
-	return fmt.Sprintf("audit_%d", time.Now().UnixNano())
+	return fmt.Sprintf("audit_%d_%s", time.Now().UnixNano(), randomIDSuffix())
 }
 
 // AuditMiddleware creates middleware for audit logging

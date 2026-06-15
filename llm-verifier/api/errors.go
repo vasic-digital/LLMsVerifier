@@ -200,7 +200,10 @@ func RequestIDMiddleware() gin.HandlerFunc {
 	}
 }
 
-// Helper function to generate UUID (simplified version)
+// Helper function to generate a unique request identifier.
+// Combines the nanosecond timestamp (ordering) with a crypto/rand suffix
+// (uniqueness) via randomIDSuffix — §11.4.50: two requests served within the
+// same nanosecond must not share an X-Request-ID.
 func generateUUID() string {
-	return fmt.Sprintf("%x", time.Now().UnixNano())
+	return fmt.Sprintf("%x_%s", time.Now().UnixNano(), randomIDSuffix())
 }

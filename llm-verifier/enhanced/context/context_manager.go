@@ -102,7 +102,7 @@ func (cm *ContextManager) AddMessage(role, content string, metadata map[string]i
 
 	// Add to short-term memory
 	newMsg := &Message{
-		ID:        fmt.Sprintf("msg_%d", time.Now().UnixNano()),
+		ID:        newMessageID(),
 		Role:      role,
 		Content:   content,
 		Timestamp: time.Now(),

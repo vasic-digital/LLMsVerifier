@@ -2,9 +2,24 @@
 package messaging
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"time"
 )
+
+// randomIDSuffix returns a short, collision-resistant suffix for IDs.
+// 8 bytes from crypto/rand (base64url ~11 chars); on RNG failure falls back to
+// a doubled-nanosecond value so the suffix is non-empty and varies. §11.4.50:
+// the prior millisecond+nanosecond%1000 scheme collided for events emitted in
+// the same millisecond — this guarantees a unique event ID.
+func randomIDSuffix() string {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Sprintf("%d", time.Now().UnixNano()*2654435761)
+	}
+	return base64.RawURLEncoding.EncodeToString(b)
+}
 
 // EventType defines the type of verification event.
 type EventType string
@@ -205,5 +220,5 @@ type TeamMember struct {
 
 // generateEventID generates a unique event ID.
 func generateEventID() string {
-	return fmt.Sprintf("evt-%d-%d", time.Now().UnixNano()/1e6, time.Now().Nanosecond()%1000)
+	return fmt.Sprintf("evt-%d-%s", time.Now().UnixNano(), randomIDSuffix())
 }

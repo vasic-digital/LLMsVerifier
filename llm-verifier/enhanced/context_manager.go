@@ -78,7 +78,7 @@ func (cm *ContextManager) AddMessage(conversationID string, role, content string
 
 	// Create message
 	msg := &ctxt.Message{
-		ID:        fmt.Sprintf("msg_%d", time.Now().UnixNano()),
+		ID:        newMessageID(),
 		Role:      role,
 		Content:   content,
 		Timestamp: time.Now(),

@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
+	"encoding/binary"
 	"fmt"
 	"strings"
 	"sync"
@@ -342,6 +343,19 @@ func (am *AuthManager) ValidateJWTToken(tokenString string) (*JWTClaims, error) 
 	return nil, fmt.Errorf("invalid token")
 }
 
+// generateClientID returns a collision-resistant positive int64 client ID.
+// It draws 8 bytes from crypto/rand and masks the sign bit. On RNG failure it
+// falls back to a doubled-nanosecond value so the result is still non-zero and
+// varies. §11.4.50: two clients created (LDAP/SSO) within the same nanosecond
+// must not share an ID — the ID keys per-client rate-limit + usage attribution.
+func generateClientID() int64 {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return (time.Now().UnixNano() * 2654435761) & 0x7fffffffffffffff
+	}
+	return int64(binary.BigEndian.Uint64(b) & 0x7fffffffffffffff)
+}
+
 // generateSecureAPIKey generates a cryptographically secure API key
 func (am *AuthManager) generateSecureAPIKey() (string, error) {
 	bytes := make([]byte, 32)
@@ -553,7 +567,7 @@ func (am *AuthManager) AuthenticateWithLDAP(username, password string) (*Client,
 
 	// Assign a unique ID if not set
 	if client.ID == 0 {
-		client.ID = time.Now().UnixNano()
+		client.ID = generateClientID()
 	}
 
 	// Set timestamps
@@ -863,7 +877,7 @@ func (am *AuthManager) AuthenticateWithSSO(provider, token string) (*Client, err
 	// Create client from SSO user info
 	now := time.Now()
 	client := &Client{
-		ID:          time.Now().UnixNano(),
+		ID:          generateClientID(),
 		Name:        userInfo.Name,
 		Description: fmt.Sprintf(tr("llmsverifier_auth_sso_client_description"), provider),
 		Permissions: am.getDefaultSSOPermissions(userInfo),

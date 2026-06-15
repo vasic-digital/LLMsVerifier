@@ -2,6 +2,7 @@ package enterprise
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/xml"
@@ -14,6 +15,25 @@ import (
 	"sync"
 	"time"
 )
+
+// randomIDSuffix returns a short, collision-resistant suffix for IDs in the
+// enterprise package. 8 bytes from crypto/rand (base64url ~11 chars); on RNG
+// failure falls back to a doubled-nanosecond value so the suffix is non-empty
+// and varies. §11.4.50: two RBAC audit entries written within the same
+// nanosecond must not share an ID.
+func randomIDSuffix() string {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Sprintf("%d", time.Now().UnixNano()*2654435761)
+	}
+	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+// newAuditID builds a unique RBAC audit-entry ID. Kept as a named helper so its
+// uniqueness is directly testable (§11.4.115).
+func newAuditID() string {
+	return fmt.Sprintf("audit_%d_%s", time.Now().UnixNano(), randomIDSuffix())
+}
 
 // RBACRole represents role-based access control roles
 type RBACRole string
@@ -386,7 +406,7 @@ func (rbac *RBACManager) logAudit(userID, action, resource, ipAddress string, su
 	}
 
 	entry := AuditEntry{
-		ID:        fmt.Sprintf("audit_%d", time.Now().UnixNano()),
+		ID:        newAuditID(),
 		UserID:    userID,
 		Action:    action,
 		Resource:  resource,

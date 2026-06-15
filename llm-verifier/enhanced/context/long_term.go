@@ -1,6 +1,8 @@
 package context
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -9,6 +11,29 @@ import (
 
 	llmverifier "digital.vasic.llmsverifier/llmverifier"
 )
+
+// randomIDSuffix returns a short, collision-resistant suffix for IDs in the
+// context package. 8 bytes from crypto/rand (base64url ~11 chars); on RNG
+// failure falls back to a doubled-nanosecond value so the suffix is non-empty
+// and varies. §11.4.50: summaries + messages created within the same
+// nanosecond must not share an ID.
+func randomIDSuffix() string {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Sprintf("%d", time.Now().UnixNano()*2654435761)
+	}
+	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+// newSummaryID + newMessageID build unique IDs for the context package. Kept as
+// named helpers so their uniqueness is directly testable (§11.4.115).
+func newSummaryID() string {
+	return fmt.Sprintf("summary_%d_%s", time.Now().UnixNano(), randomIDSuffix())
+}
+
+func newMessageID() string {
+	return fmt.Sprintf("msg_%d_%s", time.Now().UnixNano(), randomIDSuffix())
+}
 
 // Summary represents a compressed summary of conversation content
 type Summary struct {
@@ -106,7 +131,7 @@ func (ltm *LongTermMemory) createSummary(messages []*Message) (*Summary, error) 
 
 	// Create summary with LLM-generated content
 	summary := &Summary{
-		ID:           fmt.Sprintf("summary_%d", time.Now().UnixNano()),
+		ID:           newSummaryID(),
 		Content:      llmSummary.Summary,
 		Topics:       llmSummary.Topics,
 		KeyPoints:    llmSummary.KeyPoints,
