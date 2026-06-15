@@ -11,45 +11,51 @@ import (
 )
 
 func TestTestBrotliSupport(t *testing.T) {
-	// Test case 1: Server supports Brotli compression
+	// §11.4.50 determinism / §11.4.1 anti-FAIL-bluff: the previous version of
+	// this test spun up an httptest server but never pointed the client at it,
+	// so every subtest dialed the hardcoded LIVE huggingface host. It "passed"
+	// only when the network + DNS + the real endpoint happened to cooperate and
+	// returned no brotli header — an environment accident, not a product-behaviour
+	// assertion. Each subtest below now redirects the client to its controllable
+	// httptest server via SetEndpointResolver and asserts the REAL outcome of the
+	// brotli-detection logic (Content-Encoding "br" OR Accept-Encoding "br").
+
+	// Test case 1: Server compresses the response with Brotli → supported.
 	t.Run("supports_brotli", func(t *testing.T) {
+		var gotAcceptEncoding string
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Check if Accept-Encoding header includes br
-			if r.Header.Get("Accept-Encoding") == "br" {
-				// Server accepts Brotli requests
-				w.Header().Set("Accept-Encoding", "gzip, deflate, br")
-				w.Header().Set("Content-Encoding", "br")
-			}
+			gotAcceptEncoding = r.Header.Get("Accept-Encoding")
+			w.Header().Set("Content-Encoding", "br")
 			w.WriteHeader(http.StatusOK)
 		}))
 		defer server.Close()
 
-		// Create HTTP client
 		client := NewHTTPClient(30 * time.Second)
+		client.SetEndpointResolver(func(_, _ string) string { return server.URL })
 
-		// Test with a provider that uses a customizable endpoint
 		supportsBrotli, err := client.TestBrotliSupport(context.Background(), "huggingface", "test-key", "test-model")
 		assert.NoError(t, err)
-		assert.False(t, supportsBrotli) // Default response since we can't mock the endpoint
+		assert.Equal(t, "br", gotAcceptEncoding, "client must request Brotli via Accept-Encoding")
+		assert.True(t, supportsBrotli, "Content-Encoding: br must be detected as Brotli support")
 	})
 
-	// Test case 2: Server accepts Brotli but doesn't compress response
+	// Test case 2: Server advertises Brotli acceptance but does not compress → still supported.
 	t.Run("accepts_brotli", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Server accepts Brotli but doesn't compress
 			w.Header().Set("Accept-Encoding", "gzip, deflate, br")
 			w.WriteHeader(http.StatusOK)
 		}))
 		defer server.Close()
 
 		client := NewHTTPClient(30 * time.Second)
+		client.SetEndpointResolver(func(_, _ string) string { return server.URL })
 
 		supportsBrotli, err := client.TestBrotliSupport(context.Background(), "huggingface", "test-key", "test-model")
 		assert.NoError(t, err)
-		assert.False(t, supportsBrotli) // Default response since we can't mock the endpoint
+		assert.True(t, supportsBrotli, "Accept-Encoding containing br must be detected as Brotli support")
 	})
 
-	// Test case 3: Server doesn't support Brotli
+	// Test case 3: Server neither compresses with nor accepts Brotli → not supported.
 	t.Run("no_brotli_support", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Accept-Encoding", "gzip, deflate")
@@ -59,17 +65,20 @@ func TestTestBrotliSupport(t *testing.T) {
 		defer server.Close()
 
 		client := NewHTTPClient(30 * time.Second)
+		client.SetEndpointResolver(func(_, _ string) string { return server.URL })
 
 		supportsBrotli, err := client.TestBrotliSupport(context.Background(), "huggingface", "test-key", "test-model")
 		assert.NoError(t, err)
-		assert.False(t, supportsBrotli) // Default response since we can't mock the endpoint
+		assert.False(t, supportsBrotli, "no br in Content-Encoding/Accept-Encoding must be detected as no Brotli support")
 	})
 
-	// Test case 4: Network error
+	// Test case 4: Network error → error surfaced, support false.
 	t.Run("network_error", func(t *testing.T) {
 		client := NewHTTPClient(100 * time.Millisecond)
+		// Resolve to a closed/unroutable port to force a deterministic dial error
+		// (no live-DNS dependence).
+		client.SetEndpointResolver(func(_, _ string) string { return "http://127.0.0.1:1" })
 
-		// Use invalid endpoint to cause network error
 		supportsBrotli, err := client.TestBrotliSupport(context.Background(), "unknown", "test-key", "invalid-model")
 		assert.Error(t, err)
 		assert.False(t, supportsBrotli)

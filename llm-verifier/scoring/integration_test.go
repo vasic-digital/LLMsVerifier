@@ -37,9 +37,16 @@ func TestScoringSystemIntegration(t *testing.T) {
 		ParameterCount:      int64Ptr(5000000000), // 5B parameters
 		ContextWindowTokens: intPtr(64000),
 		MaxOutputTokens:     intPtr(4096),
-		ReleaseDate:         timePtr(time.Date(2024, 6, 15, 0, 0, 0, 0, time.UTC)),
-		TrainingDataCutoff:  timePtr(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
-		IsMultimodal:        true,
+		// §11.4.50 determinism: calculateRecencyScore uses time.Since(ReleaseDate),
+		// so absolute fixture dates drift across bracket boundaries as wall-clock
+		// advances (a 2024-06-15 release crossed the <730-day boundary on
+		// 2026-06-15 and dropped Recency from 8.5 to 5.5, failing the [6.0,9.0]
+		// assertion). Anchor the fixture dates RELATIVE to now so the model is
+		// always ~6 months old (<365d → +3.0) with a ~12-month cutoff (<730d →
+		// +1.0), keeping Recency deterministically at 9.0 regardless of run date.
+		ReleaseDate:        timePtr(time.Now().AddDate(0, -6, 0)),
+		TrainingDataCutoff: timePtr(time.Now().AddDate(-1, 0, 0)),
+		IsMultimodal:       true,
 		SupportsVision:      true,
 		SupportsReasoning:   true,
 		OpenSource:          false,

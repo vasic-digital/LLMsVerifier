@@ -445,7 +445,17 @@ func (rbac *RBACManager) checkConditions(requestConditions map[string]interface{
 
 // Helper functions
 func generateAuditID() string {
-	return fmt.Sprintf("audit_%d", time.Now().UnixNano())
+	// §11.4.115: time.Now().UnixNano() alone is NOT a uniqueness guarantee —
+	// two calls within the same clock tick (coarse-resolution clocks, fast
+	// successive calls) collide, producing duplicate audit IDs that silently
+	// corrupt the audit trail. Append a cryptographically-random suffix so the
+	// ID is unique regardless of clock resolution; fall back to a nanosecond-
+	// derived suffix only if the RNG is unavailable (still better than nothing).
+	suffix := make([]byte, 8)
+	if _, err := io.ReadFull(rand.Reader, suffix); err != nil {
+		return fmt.Sprintf("audit_%d_%d", time.Now().UnixNano(), time.Now().UnixNano())
+	}
+	return fmt.Sprintf("audit_%d_%s", time.Now().UnixNano(), base64.RawURLEncoding.EncodeToString(suffix))
 }
 
 func extractSessionID(r *http.Request) string {

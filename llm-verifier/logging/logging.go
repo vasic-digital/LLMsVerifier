@@ -1,8 +1,11 @@
 package logging
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -644,7 +647,15 @@ func getLevelPriority(level LogLevel) int {
 }
 
 func generateLogID() string {
-	return fmt.Sprintf("log_%d", time.Now().UnixNano())
+	// §11.4.115: time.Now().UnixNano() alone is NOT a uniqueness guarantee —
+	// two calls within the same clock tick collide, producing duplicate log IDs.
+	// Append a cryptographically-random suffix so the ID is unique regardless of
+	// clock resolution; fall back to a doubled nanosecond suffix if the RNG fails.
+	suffix := make([]byte, 8)
+	if _, err := io.ReadFull(rand.Reader, suffix); err != nil {
+		return fmt.Sprintf("log_%d_%d", time.Now().UnixNano(), time.Now().UnixNano())
+	}
+	return fmt.Sprintf("log_%d_%s", time.Now().UnixNano(), base64.RawURLEncoding.EncodeToString(suffix))
 }
 
 // ContextLogger provides logging with pre-set context fields

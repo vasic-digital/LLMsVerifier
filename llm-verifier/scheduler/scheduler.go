@@ -1,7 +1,10 @@
 package scheduler
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
+	"io"
 	"log"
 	"sort"
 	"strconv"
@@ -649,11 +652,30 @@ func (s *Scheduler) loadSchedules() error {
 // Helper functions
 
 func generateScheduleID() string {
-	return fmt.Sprintf("sched_%d", time.Now().UnixNano())
+	// §11.4.115: time.Now().UnixNano() alone is NOT a uniqueness guarantee —
+	// two calls within the same clock tick collide, producing duplicate schedule
+	// IDs that silently overwrite/confuse schedule records. Append a
+	// cryptographically-random suffix so the ID is unique regardless of clock
+	// resolution; fall back to a doubled nanosecond suffix only if the RNG fails.
+	suffix := make([]byte, 8)
+	if _, err := io.ReadFull(rand.Reader, suffix); err != nil {
+		return fmt.Sprintf("sched_%d_%d", time.Now().UnixNano(), time.Now().UnixNano())
+	}
+	return fmt.Sprintf("sched_%d_%s", time.Now().UnixNano(), base64.RawURLEncoding.EncodeToString(suffix))
 }
 
 func generateRunID() string {
-	return fmt.Sprintf("run_%d", time.Now().UnixNano())
+	// §11.4.115: time.Now().UnixNano() alone is NOT a uniqueness guarantee —
+	// two calls within the same clock tick (coarse-resolution clocks, fast
+	// successive scheduled runs) collide, producing duplicate run IDs that
+	// silently overwrite/confuse run records. Append a cryptographically-random
+	// suffix so the ID is unique regardless of clock resolution; fall back to a
+	// doubled nanosecond suffix only if the RNG is unavailable.
+	suffix := make([]byte, 8)
+	if _, err := io.ReadFull(rand.Reader, suffix); err != nil {
+		return fmt.Sprintf("run_%d_%d", time.Now().UnixNano(), time.Now().UnixNano())
+	}
+	return fmt.Sprintf("run_%d_%s", time.Now().UnixNano(), base64.RawURLEncoding.EncodeToString(suffix))
 }
 
 // Predefined schedule templates

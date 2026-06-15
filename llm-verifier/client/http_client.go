@@ -20,6 +20,12 @@ type HTTPClient struct {
 	brotliCache      map[string]BrotliCacheEntry
 	brotliCacheMutex sync.RWMutex
 	metricsTracker   *monitoring.MetricsTracker
+	// endpointResolver resolves a (provider, modelID) pair to a request URL.
+	// Defaults to getModelEndpoint (the production provider→URL table). It is a
+	// seam so callers/tests can redirect requests to a controllable endpoint
+	// (e.g. an httptest server) instead of dialing the hardcoded live provider
+	// host — keeping brotli-detection tests hermetic + deterministic (§11.4.50).
+	endpointResolver func(provider, modelID string) string
 }
 
 type BrotliCacheEntry struct {
@@ -39,14 +45,22 @@ func NewHTTPClient(timeout time.Duration) *HTTPClient {
 		client: &http.Client{
 			Timeout: timeout,
 		},
-		brotliCache:    make(map[string]BrotliCacheEntry),
-		metricsTracker: nil, // Default to nil - can be set later
+		brotliCache:      make(map[string]BrotliCacheEntry),
+		metricsTracker:   nil, // Default to nil - can be set later
+		endpointResolver: getModelEndpoint,
 	}
 }
 
 // SetMetricsTracker sets the metrics tracker for the HTTP client
 func (c *HTTPClient) SetMetricsTracker(tracker *monitoring.MetricsTracker) {
 	c.metricsTracker = tracker
+}
+
+// SetEndpointResolver overrides how (provider, modelID) is mapped to a request
+// URL. Used to point requests at a controllable endpoint (e.g. an httptest
+// server) instead of the hardcoded live provider host.
+func (c *HTTPClient) SetEndpointResolver(resolver func(provider, modelID string) string) {
+	c.endpointResolver = resolver
 }
 
 // TestModelExists checks if a model is available on provider's API
@@ -373,7 +387,11 @@ func (c *HTTPClient) TestBrotliSupport(ctx context.Context, provider, apiKey, mo
 	}
 
 	startTime := time.Now()
-	endpoint := getModelEndpoint(provider, modelID)
+	resolver := c.endpointResolver
+	if resolver == nil {
+		resolver = getModelEndpoint
+	}
+	endpoint := resolver(provider, modelID)
 
 	// Create a minimal request body
 	requestBody := map[string]interface{}{
