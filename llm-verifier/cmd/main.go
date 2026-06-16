@@ -14,6 +14,7 @@ import (
 	"digital.vasic.llmsverifier/client"
 	"digital.vasic.llmsverifier/database"
 	"digital.vasic.llmsverifier/llmverifier"
+	"digital.vasic.llmsverifier/seed"
 	"digital.vasic.llmsverifier/tui"
 )
 
@@ -159,6 +160,16 @@ func runServer(port string) error {
 		return fmt.Errorf("failed to initialize database: %w", err)
 	}
 	defer db.Close()
+
+	// Seed the model DB from config.yaml `llms:` at boot so a fresh deployment
+	// exposes verified-able models via /api/models (idempotent — skips existing
+	// rows). Non-fatal: a seed hiccup must never prevent the server from serving.
+	if res, serr := seed.FromConfig(cfg, db); serr != nil {
+		log.Printf("seed: non-fatal — failed to seed models from config: %v", serr)
+	} else if res != nil {
+		log.Printf("seed: providers +%d (reused %d) models +%d (reused %d) skipped-entries %d",
+			res.ProvidersCreated, res.ProvidersReused, res.ModelsCreated, res.ModelsReused, len(res.Skipped))
+	}
 
 	server := api.NewServer(cfg, db)
 
