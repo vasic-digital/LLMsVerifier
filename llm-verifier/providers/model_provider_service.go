@@ -210,7 +210,7 @@ func (mps *ModelProviderService) getAllProviderConfigs() map[string]providerConf
 		"sarvam":      {BaseURL: "https://api.sarvam.ai/v1", APIKey: os.Getenv("SARVAM_API_KEY")},
 		"vulavula":    {BaseURL: "https://api.vulavula.com/v1", APIKey: os.Getenv("VULAVULA_API_KEY")},
 		"vercel":      {BaseURL: "https://api.vercel.com/v1", APIKey: os.Getenv("VERCEL_API_KEY")},
-		"cohere":      {BaseURL: "https://api.cohere.com/v2", APIKey: os.Getenv("COHERE_API_KEY")},
+		"cohere":      {BaseURL: "https://api.cohere.ai/compatibility/v1", APIKey: os.Getenv("COHERE_API_KEY")},
 		"ai21":        {BaseURL: "https://api.ai21.com/studio/v1", APIKey: os.Getenv("AI21_API_KEY")},
 		"aleph-alpha": {BaseURL: "https://api.aleph-alpha.com", APIKey: os.Getenv("ALEPH_ALPHA_API_KEY")},
 		"writer":      {BaseURL: "https://api.writer.com/v1", APIKey: os.Getenv("WRITER_API_KEY")},

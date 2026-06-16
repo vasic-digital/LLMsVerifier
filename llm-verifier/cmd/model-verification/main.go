@@ -133,8 +133,14 @@ func verifySpecificModel(ctx context.Context, service *providers.EnhancedModelPr
 	}
 	
 	if targetModel == nil {
-		fmt.Println(trData("llmsverifier_modelverify_model_not_found", map[string]any{"model": modelID, "provider": providerID}))
-		return
+		// Not in the provider's discovered model list — verify the requested
+		// id DIRECTLY rather than silently skipping. The live verification call
+		// is the source of truth: a genuinely invalid id surfaces as a real API
+		// error (404/400) instead of a premature model_not_found that hides
+		// whether the model actually works.
+		fmt.Printf("%s\n", trData("llmsverifier_modelverify_model_not_found", map[string]any{"model": modelID, "provider": providerID}))
+		fmt.Printf("→ verifying requested id directly against the provider API\n")
+		targetModel = &providers.Model{ID: modelID, ProviderID: providerID}
 	}
 
 	// Get provider client
