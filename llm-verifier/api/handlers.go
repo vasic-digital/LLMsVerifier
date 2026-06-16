@@ -297,30 +297,65 @@ func (s *Server) VerifyModelHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create a new verification result record
+	// Resolve the provider so the verifier can reach the model's live API.
+	provider, err := s.database.GetProvider(model.ProviderID)
+	if err != nil {
+		http.Error(w, "Failed to retrieve provider: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Record the verification run for audit/history.
 	verificationResult := &database.VerificationResult{
 		ModelID:          modelID,
 		VerificationType: "comprehensive",
 		StartedAt:        time.Now(),
 		Status:           "running",
 	}
-
-	err = s.database.CreateVerificationResult(verificationResult)
-	if err != nil {
+	if err := s.database.CreateVerificationResult(verificationResult); err != nil {
 		http.Error(w, "Failed to create verification job: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Run the REAL verification synchronously, then persist the honest outcome
+	// onto the model so /api/models reflects the verified status + score.
+	// A model that runs but does not pass is persisted as "failed"/"error" —
+	// the handler NEVER marks a model "verified" unless the verifier says so.
+	status, score, verr := s.verifier.Verify(r.Context(), model, provider)
+
+	completedAt := time.Now()
+	verificationResult.CompletedAt = &completedAt
+	if verr != nil {
+		status = "error"
+		msg := verr.Error()
+		verificationResult.ErrorMessage = &msg
+	}
+	// Persist the run record outcome (best-effort — the model-side persistence
+	// below is the authoritative source of truth surfaced to /api/models).
+	verificationResult.Status = status
+	_ = s.database.UpdateVerificationResult(verificationResult)
+
+	// Persist the verification status + score onto the model itself.
+	model.VerificationStatus = status
+	model.OverallScore = score
+	model.LastVerified = &completedAt
+	if err := s.database.UpdateModel(model); err != nil {
+		http.Error(w, "Failed to persist verification result: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 
 	json.NewEncoder(w).Encode(map[string]any{
-		"status":          "verification_started",
-		"model_id":        modelID,
-		"model_name":      model.Name,
-		"message":         tr("api.handler.verification_process_initiated"),
-		"job_id":          verificationResult.ID,
-		"verification_id": verificationResult.ID,
-		"started_at":      verificationResult.StartedAt,
+		"status":              status,
+		"model_id":            modelID,
+		"model_name":          model.Name,
+		"verification_status": status,
+		"score":               score,
+		"message":             tr("api.handler.verification_process_initiated"),
+		"job_id":              verificationResult.ID,
+		"verification_id":     verificationResult.ID,
+		"started_at":          verificationResult.StartedAt,
+		"completed_at":        completedAt,
 	})
 }
 

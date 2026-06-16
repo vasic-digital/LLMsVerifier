@@ -2,7 +2,9 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -576,6 +578,29 @@ func TestAddProviderHandler_WithApiUrl(t *testing.T) {
 
 // ==================== VerifyModel Tests ====================
 
+// stubModelVerifier is a test seam returning a fixed verification outcome so
+// VerifyModelHandler can be exercised end-to-end without any network call.
+type stubModelVerifier struct {
+	status string
+	score  float64
+	err    error
+	called bool
+}
+
+func (s *stubModelVerifier) Verify(
+	_ context.Context,
+	_ *database.Model,
+	_ *database.Provider,
+) (string, float64, error) {
+	s.called = true
+	return s.status, s.score, s.err
+}
+
+// §11.4.120 reconciliation: the previous TestVerifyModelHandler_Success asserted
+// the OLD bluff behaviour (status "verification_started", model never verified).
+// VerifyModelHandler now runs real verification and persists the result, so the
+// test asserts the persisted "verified" status + score flow through the handler
+// AND onto the model row surfaced by /api/models.
 func TestVerifyModelHandler_Success(t *testing.T) {
 	db, cleanup := setupIntegrationTestDB(t)
 	defer cleanup()
@@ -589,14 +614,17 @@ func TestVerifyModelHandler_Success(t *testing.T) {
 	require.NoError(t, err)
 
 	model := &database.Model{
-		ProviderID: provider.ID,
-		ModelID:    "test-model",
-		Name:       "Test Model",
+		ProviderID:         provider.ID,
+		ModelID:            "test-model",
+		Name:               "Test Model",
+		VerificationStatus: "pending",
 	}
 	err = db.CreateModel(model)
 	require.NoError(t, err)
 
 	server := createTestServerWithDB(t, db)
+	stub := &stubModelVerifier{status: "verified", score: 0.91}
+	server.verifier = stub
 
 	req := httptest.NewRequest(http.MethodPost, "/api/models/1/verify", nil)
 	w := httptest.NewRecorder()
@@ -604,17 +632,81 @@ func TestVerifyModelHandler_Success(t *testing.T) {
 	server.VerifyModelHandler(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
+	assert.True(t, stub.called, "verifier must actually be invoked")
 
 	var response map[string]interface{}
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
 
-	assert.Equal(t, "verification_started", response["status"])
+	assert.Equal(t, "verified", response["status"])
+	assert.Equal(t, "verified", response["verification_status"])
+	assert.InDelta(t, 0.91, response["score"], 1e-9)
 	assert.Equal(t, float64(1), response["model_id"])
 	assert.Equal(t, "Test Model", response["model_name"])
 	assert.NotNil(t, response["verification_id"])
-	assert.NotNil(t, response["job_id"])
-	assert.NotNil(t, response["started_at"])
+	assert.NotNil(t, response["completed_at"])
+
+	// The model row MUST now be persisted as verified with the real score —
+	// this is what /api/models serves. Mutation proof: dropping the
+	// UpdateModel call in the handler makes these assertions FAIL.
+	persisted, gerr := db.GetModel(1)
+	require.NoError(t, gerr)
+	assert.Equal(t, "verified", persisted.VerificationStatus)
+	assert.InDelta(t, 0.91, persisted.OverallScore, 1e-9)
+	require.NotNil(t, persisted.LastVerified)
+}
+
+// Negative case: a verifier that reports the model did NOT pass MUST persist the
+// honest non-"verified" status — the handler must never bluff a "verified".
+func TestVerifyModelHandler_FailedVerificationPersistsHonestly(t *testing.T) {
+	db, cleanup := setupIntegrationTestDB(t)
+	defer cleanup()
+
+	provider := &database.Provider{Name: "TestProvider", Endpoint: "https://api.test.com/v1", IsActive: true}
+	require.NoError(t, db.CreateProvider(provider))
+
+	model := &database.Model{ProviderID: provider.ID, ModelID: "bad-model", Name: "Bad Model", VerificationStatus: "pending"}
+	require.NoError(t, db.CreateModel(model))
+
+	server := createTestServerWithDB(t, db)
+	server.verifier = &stubModelVerifier{status: "failed", score: 0.0}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/models/1/verify", nil)
+	w := httptest.NewRecorder()
+	server.VerifyModelHandler(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	persisted, gerr := db.GetModel(1)
+	require.NoError(t, gerr)
+	assert.Equal(t, "failed", persisted.VerificationStatus)
+	assert.NotEqual(t, "verified", persisted.VerificationStatus, "a non-passing model must NEVER be marked verified")
+	assert.InDelta(t, 0.0, persisted.OverallScore, 1e-9)
+}
+
+// Error case: an internal verification error is persisted as "error", not verified.
+func TestVerifyModelHandler_VerifierErrorPersistsError(t *testing.T) {
+	db, cleanup := setupIntegrationTestDB(t)
+	defer cleanup()
+
+	provider := &database.Provider{Name: "TestProvider", Endpoint: "https://api.test.com/v1", IsActive: true}
+	require.NoError(t, db.CreateProvider(provider))
+
+	model := &database.Model{ProviderID: provider.ID, ModelID: "err-model", Name: "Err Model", VerificationStatus: "pending"}
+	require.NoError(t, db.CreateModel(model))
+
+	server := createTestServerWithDB(t, db)
+	server.verifier = &stubModelVerifier{status: "verified", score: 0.99, err: errors.New("provider unreachable")}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/models/1/verify", nil)
+	w := httptest.NewRecorder()
+	server.VerifyModelHandler(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	persisted, gerr := db.GetModel(1)
+	require.NoError(t, gerr)
+	assert.Equal(t, "error", persisted.VerificationStatus, "an internal error must persist 'error', never the stubbed 'verified'")
 }
 
 func TestVerifyModelHandler_ModelNotFound(t *testing.T) {

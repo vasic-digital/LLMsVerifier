@@ -14,6 +14,10 @@ type Server struct {
 	config   *config.Config
 	database *database.Database
 	server   *http.Server
+	// verifier runs real model verification for the POST verify endpoint. It is
+	// a seam (default: liveModelVerifier against the real provider API) that
+	// tests substitute to drive VerifyModelHandler without network access.
+	verifier ModelVerifier
 }
 
 // NewServer creates a new API server
@@ -21,6 +25,7 @@ func NewServer(cfg *config.Config, db *database.Database) *Server {
 	return &Server{
 		config:   cfg,
 		database: db,
+		verifier: newLiveModelVerifier(cfg, nil),
 	}
 }
 

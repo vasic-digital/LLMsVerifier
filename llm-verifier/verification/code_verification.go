@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -284,12 +285,23 @@ func (cvs *CodeVerificationService) makeVerificationRequest(ctx context.Context,
 		return "", fmt.Errorf("failed to marshal request payload: %w", err)
 	}
 
-	// Make HTTP request
-	resp, err := providerClient.GetHTTPClient().Post(
+	// Make HTTP request with the provider Authorization header. Without the
+	// Bearer key the provider rejects the call (401), so verification could
+	// never pass even with a valid key — the auth header is mandatory.
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
 		fmt.Sprintf("%s/chat/completions", providerClient.GetBaseURL()),
-		"application/json",
 		strings.NewReader(string(jsonPayload)),
 	)
+	if err != nil {
+		return "", fmt.Errorf("failed to build API request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if key := providerClient.GetAPIKey(); key != "" {
+		req.Header.Set("Authorization", "Bearer "+key)
+	}
+	resp, err := providerClient.GetHTTPClient().Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to make API request: %w", err)
 	}
