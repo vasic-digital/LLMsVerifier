@@ -207,6 +207,7 @@ func (mps *ModelProviderService) getAllProviderConfigs() map[string]providerConf
 		"twelvelabs":  {BaseURL: "https://api.twelvelabs.io/v1", APIKey: os.Getenv("TWELVELABS_API_KEY")},
 		"chutes":      {BaseURL: "https://llm.chutes.ai/v1", APIKey: os.Getenv("CHUTES_API_KEY")},
 		"kimi":        {BaseURL: "https://api.moonshot.cn/v1", APIKey: os.Getenv("KIMI_API_KEY")},
+		"xiaomi":      {BaseURL: "https://api.xiaomimimo.com/v1", APIKey: os.Getenv("XIAOMI_MIMO_API_KEY")},
 		"sarvam":      {BaseURL: "https://api.sarvam.ai/v1", APIKey: os.Getenv("SARVAM_API_KEY")},
 		"vulavula":    {BaseURL: "https://api.vulavula.com/v1", APIKey: os.Getenv("VULAVULA_API_KEY")},
 		"vercel":      {BaseURL: "https://api.vercel.com/v1", APIKey: os.Getenv("VERCEL_API_KEY")},
@@ -743,6 +744,9 @@ func (mps *ModelProviderService) fetchFromProviderAPIEnhanced(providerID string)
 		models, err = mps.fetchModelsFromAdapter(adapter, providerID)
 	case "xai":
 		adapter := NewxAIAdapter(client.HTTPClient, client.BaseURL, client.APIKey)
+		models, err = mps.fetchModelsFromAdapter(adapter, providerID)
+	case "xiaomi":
+		adapter := NewXiaomiMiMoAdapter(client.HTTPClient, client.BaseURL, client.APIKey)
 		models, err = mps.fetchModelsFromAdapter(adapter, providerID)
 	default:
 		// Fall back to generic OpenAI-compatible approach

@@ -1024,6 +1024,47 @@ func (pr *ProviderRegistry) registerDefaultProviders() {
 		},
 	}
 
+	// Xiaomi MiMo configuration
+	pr.providers["xiaomi"] = &ProviderConfig{
+		Name:            "xiaomi",
+		Endpoint:        "https://api.xiaomimimo.com/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "mimo-v2.5-pro",
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 60,
+			RequestsPerHour:   1000,
+			BurstLimit:        10,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 120 * time.Second,
+			StreamTimeout:  600 * time.Second,
+			ConnectTimeout: 15 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": true,
+			"supports_vision":    true,
+			"supports_acp":       true,
+			"max_context_length": 1048576,
+			"max_output_tokens":  131072,
+			"supported_models": []string{
+				"mimo-v2.5-pro",   // 1M ctx, 128K out — text generation, code, reasoning, tool calling
+				"mimo-v2.5",       // 1M ctx, 128K out — multimodal (text + vision)
+				"mimo-v2-flash",   // 256K ctx, 64K out — fast inference
+				"mimo-v2.5-asr",   // 8K ctx, 2K out — automatic speech recognition
+				"mimo-v2.5-tts",   // 8K ctx, 8K out — text-to-speech
+			},
+		},
+	}
+
 	// Generic configuration for unknown providers
 	pr.providers["generic"] = &ProviderConfig{
 		Name:            "generic",

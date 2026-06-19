@@ -74,6 +74,7 @@ func GetProviderAPIKeyName(providerID string) string {
 		"opencode":    "OPENCODE_API_KEY",
 		"claude-code": "CLAUDE_CODE_API_KEY",
 		"qwen":        "QWEN_API_KEY",
+		"xiaomi":      "XIAOMI_MIMO_API_KEY",
 		"mcp":         "MCP_API_KEY",
 		"lsp":         "LSP_API_KEY",
 	}

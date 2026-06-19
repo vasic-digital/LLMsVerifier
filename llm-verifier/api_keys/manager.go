@@ -242,6 +242,7 @@ func GetKnownProviderEnvVars() map[string]string {
 		"TWELVELABS_API_KEY":  "twelvelabs",
 		"CHUTES_API_KEY":      "chutes",
 		"KIMI_API_KEY":        "kimi",
+		"XIAOMI_MIMO_API_KEY": "xiaomi",
 		"SARVAM_API_KEY":      "sarvam",
 		"VULAVULA_API_KEY":    "vulavula",
 		"VERCEL_API_KEY":      "vercel",
