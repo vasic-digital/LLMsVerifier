@@ -4,13 +4,17 @@ metadata:
   name: llm-verifier-config
   namespace: default
 data:
+  # KSV-0109: secret-like keys (jwt_secret, smtp password, telegram bot_token)
+  # have been moved OUT of this ConfigMap into the llm-verifier-secrets Secret
+  # below. They are injected at runtime as env vars (LLM_VERIFIER_API_JWT_SECRET,
+  # LLM_VERIFIER_NOTIFICATIONS_EMAIL_PASSWORD,
+  # LLM_VERIFIER_NOTIFICATIONS_TELEGRAM_BOT_TOKEN) — never stored in the ConfigMap.
   config.yaml: |
     database:
       path: "/app/data/llm-verifier.db"
     api:
       port: 8080
       enable_cors: true
-      jwt_secret: "your-jwt-secret-change-in-production"
       rate_limit: 100
       burst_limit: 200
       rate_limit_window: 60
@@ -26,15 +30,30 @@ data:
         smtp_host: ""
         smtp_port: 587
         username: ""
-        password: ""
       telegram:
         enabled: false
-        bot_token: ""
         chat_id: ""
     monitoring:
       health_check_interval: "30s"
     exports:
       default_path: "/app/exports"
+---
+# KSV-0109 fix: secret-like values live in a Secret, NOT a ConfigMap. Replace the
+# placeholder values out-of-band (kubectl create secret / sealed-secrets / vault)
+# — these stringData defaults are empty placeholders, never real credentials
+# (CONST-042 no-secret-leak). The app reads them from the env vars wired below.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: llm-verifier-secrets
+  namespace: default
+  labels:
+    app: llm-verifier
+type: Opaque
+stringData:
+  jwt_secret: ""
+  email_password: ""
+  telegram_bot_token: ""
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -66,6 +85,14 @@ spec:
       labels:
         app: llm-verifier
     spec:
+      # KSV-0118: explicit non-root + RuntimeDefault seccomp at the pod level.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: llm-verifier
         image: llm-verifier:latest
@@ -75,6 +102,31 @@ spec:
         env:
         - name: LLM_DB_PATH
           value: "/app/data/llm-verifier.db"
+        # KSV-0109: secret-like config injected from the Secret, never the ConfigMap.
+        - name: LLM_VERIFIER_API_JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: llm-verifier-secrets
+              key: jwt_secret
+        - name: LLM_VERIFIER_NOTIFICATIONS_EMAIL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: llm-verifier-secrets
+              key: email_password
+        - name: LLM_VERIFIER_NOTIFICATIONS_TELEGRAM_BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: llm-verifier-secrets
+              key: telegram_bot_token
+        # KSV-0014 + KSV-0118: container-level hardening. Root FS is read-only;
+        # the app writes only to the mounted data + exports volumes below.
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          capabilities:
+            drop:
+              - ALL
         volumeMounts:
         - name: data
           mountPath: /app/data

@@ -36,6 +36,9 @@ spec:
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 1000
+        # KSV-0118: filter syscalls to the runtime default profile.
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: llm-verifier
         image: llm-verifier:latest
@@ -132,7 +135,9 @@ spec:
           successThreshold: 1
         securityContext:
           allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: false
+          # KSV-0014: root FS read-only. The app writes only to the mounted
+          # logs + data volumes (declared below), never to its own rootfs.
+          readOnlyRootFilesystem: true
           capabilities:
             drop:
             - ALL

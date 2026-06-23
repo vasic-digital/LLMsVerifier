@@ -15,6 +15,14 @@ spec:
       labels:
         app: llm-verifier
     spec:
+      # KSV-0118: explicit non-root + RuntimeDefault seccomp at the pod level.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: llm-verifier
         image: ghcr.io/vasic-digital/llm-verifier:latest
@@ -51,6 +59,15 @@ spec:
             port: 8080
           initialDelaySeconds: 5
           periodSeconds: 5
+        # KSV-0014 + KSV-0118: container-level hardening. Root FS read-only; the
+        # app writes only to the mounted /data PVC volume below.
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          capabilities:
+            drop:
+              - ALL
         volumeMounts:
         - name: data
           mountPath: /data
