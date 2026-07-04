@@ -208,17 +208,43 @@ func (cvi *CodeVerificationIntegration) storeVerificationResult(result *CodeVeri
 		return nil, nil
 	}
 
-	// Find the model in the database
+	// The verification layer keys providers/models by STRING id ("siliconflow"),
+	// but the models table keys on the integer provider FK. Resolve the provider
+	// name to its FK (get-or-create) so runtime-discovered models (from models.dev)
+	// are persisted instead of dropped with "model not found in database".
+	prov, perr := cvi.db.GetProviderByName(result.ProviderID)
+	if perr != nil || prov == nil {
+		prov = &database.Provider{Name: result.ProviderID}
+		if cerr := cvi.db.CreateProvider(prov); cerr != nil {
+			return nil, fmt.Errorf("failed to resolve/register provider %q: %w", result.ProviderID, cerr)
+		}
+	}
+
+	// Find (or auto-register) the model under the resolved provider FK.
 	models, err := cvi.db.ListModels(map[string]interface{}{
 		"model_id":    result.ModelID,
-		"provider_id": result.ProviderID,
+		"provider_id": prov.ID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to find model in database: %w", err)
 	}
 
 	if len(models) == 0 {
-		return nil, fmt.Errorf("model not found in database")
+		newModel := &database.Model{
+			ProviderID: prov.ID,
+			ModelID:    result.ModelID,
+			Name:       result.ModelID,
+		}
+		if cerr := cvi.db.CreateModel(newModel); cerr != nil {
+			return nil, fmt.Errorf("failed to auto-register model %q: %w", result.ModelID, cerr)
+		}
+		models, err = cvi.db.ListModels(map[string]interface{}{
+			"model_id":    result.ModelID,
+			"provider_id": prov.ID,
+		})
+		if err != nil || len(models) == 0 {
+			return nil, fmt.Errorf("model %q auto-registered but not retrievable: %w", result.ModelID, err)
+		}
 	}
 
 	model := models[0]
