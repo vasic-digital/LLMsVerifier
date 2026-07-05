@@ -2,7 +2,7 @@
 #
 # install_upstreams.sh - Configure git remotes for all upstream repositories
 #
-# This script reads UPSTREAMABLE_REPOSITORY from each .sh file in the Upstreams/
+# This script reads UPSTREAMABLE_REPOSITORY from each .sh file in the upstreams/
 # directory and adds them as git remotes. Existing remotes with the same name
 # are updated.
 #
@@ -18,8 +18,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 UPSTREAMS_DIR="${SCRIPT_DIR}/upstreams"
 
 if [[ ! -d "${UPSTREAMS_DIR}" ]]; then
-    echo "Error: Upstreams directory not found at ${UPSTREAMS_DIR}" >&2
-    echo "Create upstreams/ with GitHub.sh, GitLab.sh, GitFlic.sh, GitVerse.sh" >&2
+    echo "Error: upstreams directory not found at ${UPSTREAMS_DIR}" >&2
+    echo "Create upstreams/ with github.sh, gitlab.sh, gitflic.sh, gitverse.sh" >&2
     exit 1
 fi
 
@@ -45,7 +45,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo "=== Configuring upstream git remotes ==="
-echo "Upstreams directory: ${UPSTREAMS_DIR}"
+echo "upstreams directory: ${UPSTREAMS_DIR}"
 echo
 
 for script in "${UPSTREAMS_DIR}"/*.sh; do
