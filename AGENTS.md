@@ -1,7 +1,7 @@
 ## INHERITED FROM Helix Constitution
 
 This module is a submodule of a Helix-family project (e.g.
-HelixCode, HelixAgent, ATMOSphere) that includes the Helix
+any consuming project) that includes the Helix
 Constitution submodule at the parent's `constitution/` path. All
 rules in `constitution/CLAUDE.md` and the
 `constitution/Constitution.md` it references (universal anti-bluff
@@ -19,144 +19,95 @@ Canonical reference: <https://github.com/HelixDevelopment/HelixConstitution>
 
 ---
 
-# AGENTS.md — HelixCode Authoritative Agent Guide
+# AGENTS.md — LLMsVerifier Authoritative Agent Guide
 > **Base agent rules:** `HelixConstitution/AGENTS.md` — READ IT FIRST.
 > All rules in `HelixConstitution/AGENTS.md` apply unconditionally.
 > Rules below extend them and MUST NOT weaken any inherited clause.
 
 
 
-## HelixCode Agent Guidelines
+## LLMsVerifier Agent Guidelines
 
-**Version**: 3.0.0 (Updated with full architecture audit)
+**Version**: 3.0.0
 **Date**: 2026-04-30
-**Scope**: All AI agents, human contributors, and automated processes working on HelixCode
-**Authority**: Derived from HelixAgent AGENTS.md with HelixCode-specific enhancements
+**Scope**: All AI agents, human contributors, and automated processes working on LLMsVerifier
+**Authority**: Derived from the Helix Constitution with LLMsVerifier-specific enhancements
 
 ---
 
 ## Project Overview
 
-HelixCode is an enterprise-grade distributed AI development platform built in Go. It enables intelligent task division, work preservation, cross-platform development workflows, and multi-provider LLM integration through a unified REST API, CLI, Terminal UI, Desktop, and Mobile client architecture.
+LLMsVerifier ("LLM Verifier") is an enterprise-grade platform, written in Go, for verifying, monitoring, and optimizing Large Language Model (LLM) performance across multiple providers. Consuming Helix-family projects treat it as their single source of truth for provider/model metadata, verification status, and scoring data.
 
-**Current Status**: The `internal/` foundation is largely solid (auth, database, server, worker, task, workflow, tools, editor, notification, MCP, **verifier** are real implementations). Critical bluff and stub areas remain in select entry points and peripheral packages. All agents MUST prioritize zero-bluff implementation.
-
-**LLMsVerifier Integration Status**: `internal/verifier/` package is now implemented with REST API client, two-tier cache, circuit breaker health monitor, background poller, score adapter, and event publisher. BLUFF-002 (hardcoded CLI models) and BLUFF-004 (hardcoded external models) are FIXED. BLUFF-005 (scoring ignores verifier data) is FIXED in `ModelManager.SelectOptimalModel()`.
-
-**Key Features**:
-- **Distributed Computing**: SSH-based worker pools with health monitoring, auto-installation, and consensus
-- **Multi-Provider LLM Integration**: 15+ providers (OpenAI, Anthropic, Gemini, Ollama, Azure, Bedrock, Groq, Mistral, Cohere, xAI, DeepSeek, Qwen, OpenRouter, HuggingFace, Llama.cpp)
-- **Development Workflows**: Automated planning, building, testing, refactoring with real shell execution
-- **Task Management**: Intelligent task division with priorities, dependencies, checkpointing, and Redis caching
-- **MCP Protocol**: Full Model Context Protocol server over WebSocket with tool dispatch
-- **Multi-Client Architecture**: REST API (Gin), Cobra CLI, Terminal UI (tview), Desktop (Fyne), Mobile (gomobile), WebSocket
-- **Memory Systems**: In-memory, filesystem, Redis, Memcached, Cognee, ChromaDB, Qdrant, Weaviate integrations
-- **Advanced Editor**: Multi-format code editing (diff, whole-file, search/replace, line-based) with backups
-- **Tools Ecosystem**: 40+ tools across filesystem, shell, web, browser, mapping, multiedit, confirmation, notebook, git
-- **Notifications**: Multi-channel support (Slack, Email, Telegram, Discord, Yandex Messenger, Max)
+**Key Features** (per `README.md` — ground truth):
+- **Mandatory Model Verification**: models must pass a "Do you see my code?" verification check before use.
+- **12 Provider Adapters**: OpenAI, Anthropic, Cohere, Groq, Together AI, Mistral, xAI, Replicate, DeepSeek, Cerebras, Cloudflare Workers AI, SiliconFlow.
+- **Real-Time Monitoring**: health checking with intelligent failover (circuit breaker pattern).
+- **Enterprise Features**: LDAP/SSO (SAML/OIDC), SQLCipher database-level encryption, Splunk/DataDog/New Relic/ELK monitoring integrations.
+- **Multi-Platform Clients**: CLI, TUI, Web, Desktop, Mobile.
+- **`(llmsvd)` Branding Suffix**: every LLMsVerifier-generated provider/model config carries this mandatory suffix; only verified models are exported.
+- **SDKs**: Python and JavaScript, full API coverage.
 
 ---
 
 ## Technology Stack
 
 **Core Technologies**:
-- **Language**: Go 1.24.0 with toolchain go1.24.9
-- **Module**: `dev.helix.code`
-- **HTTP Framework**: Gin v1.11.0
-- **Authentication**: JWT v4.5.2, bcrypt + argon2
-- **Database**: PostgreSQL 15+ via pgx/v5 (optional)
-- **Cache**: Redis 7+ via go-redis/v9 (optional)
-- **Configuration**: Viper v1.21.0
-- **CLI Framework**: Cobra v1.8.0
-- **Testing**: Testify v1.11.1
+- **Language**: Go — root module `llmsverifier` on `go 1.25.3`; the real application lives in `llm-verifier/` (module `digital.vasic.llmsverifier`).
+- **HTTP Framework**: Gin
+- **Messaging**: RabbitMQ (`amqp091-go`), Kafka (`segmentio/kafka-go`)
+- **Authentication**: `golang-jwt/jwt/v5`, LDAP (`go-ldap/ldap/v3`), NTLM (`Azure/go-ntlmssp`)
+- **Database**: SQLite / SQLCipher via `mattn/go-sqlite3` (encryption key optional, per `config.yaml`'s `database.encryption_key`)
+- **Configuration**: Viper
+- **Compression**: Brotli, gzip
+- **Testing**: `stretchr/testify`
 
-**UI Technologies**:
-- **Desktop**: Fyne v2.7.0
-- **Terminal UI**: tview v0.42.0
-- **Mobile**: gomobile bindings
-
-**External Integrations**:
-- **Browser Automation**: chromedp v0.14.2
-- **Web Scraping**: goquery v1.10.3
-- **Tree-sitter**: go-tree-sitter
-- **Identity**: Azure SDK, AWS SDK v2
-- **Vector/Memory**: Cognee, ChromaDB, Qdrant, Weaviate clients
-- **Container Orchestration**: digital.vasic.containers (vasic-digital/Containers submodule)
+**Sibling dependency**:
+- `digital.vasic.challenges`, resolved via `replace ... => ../challenges` in `go.mod` — this submodule expects the Challenges submodule checked out as a sibling directory.
 
 ---
 
 ## Working Directory & Build System
 
-**CRITICAL**: All build and test commands must be run from the `helix_code/` subdirectory, not the repository root.
+**CRITICAL**: All build and test commands must be run from the `llm-verifier/` subdirectory (the actual Go application), not the repository root.
 
 ```bash
-cd HelixCode
+cd llm-verifier
 ```
 
 ### Build Commands
-| Command | Purpose |
-|---------|---------|
-| `make build` | Build server binary to `bin/helixcode` |
-| `make test` | Run `go test -v ./...` |
-| `make test-all` | Run tests + coverage + benchmarks + docs |
-| `make test-coverage` | Generate coverage report |
-| `make test-benchmark` | Run Go benchmarks |
-| `make logo-assets` | Generate logo assets (required before first build) |
-| `make setup-deps` | Run `go mod tidy` |
-| `make fmt` | Run `go fmt ./...` |
-| `make lint` | Run `golangci-lint run ./...` |
-| `make clean` | Clean build artifacts |
-| `make dev` | Start development server |
-| `make prod` | Cross-platform production build |
-| `make mobile` | Build iOS + Android targets |
-| `make aurora-os` | Build Aurora OS target |
-| `make harmony-os` | Build Harmony OS target |
+```bash
+cd llm-verifier
+go mod download
+go build -o llm-verifier cmd/main.go
+go run cmd/main.go
+```
 
-### Full Infrastructure Test Commands
-| Command | Purpose |
-|---------|---------|
-| `make test-infra-up` | Start full Docker test infrastructure |
-| `make test-infra-down` | Stop full Docker test infrastructure |
-| `make test-full` | ALL tests with real infrastructure (zero skips) |
-| `make test-unit-full` | Unit tests with real services |
-| `make test-integration-full` | Integration tests with `-tags=integration` |
-| `make test-e2e-full` | E2E challenge tests via runner |
-| `make test-security-full` | Security test suite |
-| `make test-load-full` | Load tests |
-| `make test-complete` | Sequential run of all full test types |
-| `make coverage-full` | Coverage with full infrastructure |
+### Test Commands
+```bash
+go test ./...                              # unit tests
+go test ./providers -v -run TestModelVerification
+go test ./scoring -v -run TestLLMSVDSuffix
+go test ./tests -v -run TestIntegration
+./run_comprehensive_tests.sh               # full suite (repo root)
+```
 
-### Containerized Builds (NO Host Dependencies)
-| Command | Purpose |
-|---------|---------|
-| `make container-builder-image` | Build the builder container image |
-| `make container-build` | Build application inside container |
-| `make container-test` | Run tests inside container |
-| `make container-lint` | Run linter inside container |
-| `make container-shell` | Interactive shell in builder container |
-| `make container-dev-up` | Start containerized dev environment |
-| `make container-dev-down` | Stop containerized dev environment |
-| `make container-release` | Full release build in container |
-| `./scripts/containers/build-in-container.sh` | Convenience wrapper script |
+### Model Verification
+```bash
+./llm-verifier/cmd/model-verification/model-verification --verify-all
+./llm-verifier/cmd/model-verification/model-verification --provider openai
+```
 
-The builder container includes: Go 1.24, gcc, postgresql-client, redis, docker-cli, golangci-lint, and all build tools. The only host requirement is Docker/Podman.
-
-### Standalone Test Scripts
-| Script | Purpose |
-|--------|---------|
-| `./run_tests.sh --unit` | Unit tests |
-| `./run_tests.sh --integration` | Integration tests |
-| `./run_tests.sh --e2e` | E2E tests |
-| `./run_tests.sh --coverage` | Coverage analysis |
-| `./run_tests.sh --security` | Security tests |
-| `./run_all_tests.sh` | Orchestrates ALL suites sequentially |
-| `./run_integration_tests.sh` | DB integration tests with Docker |
+### This Submodule's Own Challenge Bank
+```bash
+bash challenges/llmsverifier_describe_challenge.sh normal    # exit 0
+bash challenges/llmsverifier_describe_challenge.sh mutate    # paired §1.1 mutation — exit 99
+```
 
 ### Single Test Execution
 ```bash
 go test -v -run TestName ./path/to/package
-go test -v -tags=integration ./internal/database
-cd tests/e2e/challenges && go run cmd/runner/main.go -challenge ascii-art-generator-001 -providers ollama
+cd llm-verifier && go test -v -tags=integration ./...
 ```
 
 ---
@@ -164,415 +115,108 @@ cd tests/e2e/challenges && go run cmd/runner/main.go -challenge ascii-art-genera
 ## Architecture & Code Organization
 
 ```
-helix_code/
-├── cmd/                          # Application entry points
-│   ├── server/main.go            # HTTP server entry point
-│   ├── cli/main.go               # Legacy flag-based CLI client
-│   ├── root.go                   # Cobra root command (`helix`)
-│   ├── main_commands.go          # `helix start`, `helix auto`
-│   ├── other_commands.go         # `helix server`, `helix version`, etc.
-│   ├── local-llm.go              # `helix local-llm` command tree
-│   ├── local-llm-advanced.go     # Advanced local-llm commands
-│   ├── helix-config/main.go      # Dedicated config management CLI
-│   ├── security-test/main.go     # Simulated security test runner
-│   ├── security-fix/main.go      # Security fix wrapper
-│   ├── security-fix-standalone/main.go  # Standalone security scanner
-│   ├── performance-optimization/main.go # Performance optimizer
-│   ├── performance-optimization-standalone/main.go # Standalone perf simulator
-│   └── config-test/main.go       # Config hot-reload test utility
-│
-├── internal/                     # Internal packages (~40 packages)
-│   ├── auth/                     # JWT authentication, bcrypt/argon2, sessions
-│   ├── llm/                      # LLM provider implementations (15+ providers)
-│   │   ├── providers/            # Per-provider HTTP clients
-│   │   ├── compression/          # Context compression
-│   │   └── vision/               # Vision/multimodal support
-│   ├── provider/                 # Provider abstractions
-│   ├── providers/                # Provider management
-│   ├── worker/                   # SSH-based worker pool, health checks
-│   ├── task/                     # Task queues, dependencies, checkpoints
-│   ├── server/                   # Gin HTTP server, routes, middleware
-│   ├── database/                 # PostgreSQL pgx pool, schema initialization
-│   ├── redis/                    # go-redis wrapper with graceful degradation
-│   ├── tools/                    # 40+ tool ecosystem registry
-│   │   ├── filesystem/           # fs_read, fs_write, fs_edit, glob, grep
-│   │   ├── shell/                # shell, shell_background with sandbox
-│   │   ├── web/                  # web_fetch, web_search
-│   │   ├── browser/              # browser_launch, browser_navigate, browser_screenshot
-│   │   ├── multiedit/            # Transactional multi-file editing
-│   │   └── git/                  # Git automation
-│   ├── editor/                   # Multi-format code editing with backups
-│   ├── memory/                   # Memory providers (in-mem, filesystem, Redis, etc.)
-│   ├── cognee/                   # Cognee.ai memory integration
-│   ├── context/                  # Hierarchical context management with TTL
-│   ├── notification/             # Multi-channel notification engine
-│   ├── mcp/                      # Model Context Protocol WebSocket server
-│   ├── workflow/                 # Development workflow execution
-│   ├── config/                   # Viper-based configuration management
-│   ├── event/                    # Pub/sub event bus
-│   ├── logging/                  # Structured logging wrapper
-│   ├── monitoring/               # Metric collection framework
-│   ├── security/                 # Security scanning (stubbed)
-│   ├── session/                  # Development session management
-│   ├── agent/                    # Agent orchestration
-│   ├── project/                  # Project management
-│   ├── rules/                    # Rules engine
-│   ├── hooks/                    # Hook system
-│   ├── focus/                    # Focus chain management
-│   ├── template/                 # Template system
-│   ├── persistence/              # State persistence
-│   ├── deployment/               # Deployment management
-│   ├── discovery/                # Service/model discovery
-│   ├── hardware/                 # Hardware abstraction
-│   ├── repomap/                  # Repository mapping
-│   ├── version/                  # Version management
-│   ├── fix/                      # Security fix engine
-│   ├── performance/              # Performance optimization
-│   ├── testutil/                 # Test utilities
-│   └── mocks/                    # Shared mocks
-│
-├── applications/                 # Platform-specific applications
-│   ├── desktop/                  # Fyne desktop app
-│   ├── terminal-ui/              # tview terminal UI
-│   ├── android/                  # Android app
-│   ├── ios/                      # iOS app
-│   ├── aurora-os/                # Aurora OS client
-│   └── harmony-os/               # Harmony OS client
-│
-├── api/                          # OpenAPI specification
-│   └── openapi.yaml              # Full REST API spec (OpenAPI 3.0.3)
-│
-├── config/                       # Configuration files
-│   ├── config.yaml               # Primary application config
-│   ├── production-config.yaml    # Enterprise production config
-│   ├── minimal-config.yaml       # Minimal test config (DB/Redis disabled)
-│   ├── test-config.yaml          # Test-specific config
-│   ├── working-config.yaml       # Working variant
-│   ├── azure_example.yaml        # Azure-specific example
-│   └── model-aliases.example.yaml# Model alias examples
-│
-├── tests/                        # New test framework
-│   ├── e2e/challenges/           # Challenge-based E2E tests
-│   └── automation/               # Hardware automation tests
-│
-├── test/                         # Legacy/parallel test suites
-│   ├── integration/              # Integration tests
-│   ├── e2e/                      # Legacy E2E tests
-│   ├── automation/               # Provider automation tests
-│   └── load/                     # Load tests
-│
-├── benchmarks/                   # Performance benchmarks
-├── security/                     # Security tests
-├── standalone_tests/             # Standalone CLI tests
-├── docker/                       # Docker assets and extended compose
-├── scripts/                      # Build and deployment scripts
-└── assets/                       # Logo and image assets
+llms_verifier/                            # ← repo root (this submodule)
+├── go.mod                                # module llmsverifier, go 1.25.3
+├── llm-verifier/                         # ← the real Go application (module digital.vasic.llmsverifier)
+│   ├── cmd/                              # model-verification, crush-config-converter, tui,
+│   │                                     #   full-verify, quick-verify, testsuite, ultimate-challenge, …
+│   ├── internal/                         # api, cliagents, crush, helixqa, i18n, opencode
+│   ├── pkg/                              # provider adapters, scoring, verification logic
+│   ├── config/  config.yaml(.example)  config_full.yaml
+│   ├── mobile/  desktop/                 # client surfaces
+│   ├── k8s/  helm/                       # Kubernetes/Helm deployment manifests
+│   └── docs/                             # COMPLETE_USER_MANUAL.md, API_DOCUMENTATION.md,
+│                                         #   ENVIRONMENT_VARIABLES.md, DEPLOYMENT_GUIDE.md, …
+├── docs/                                 # ARCHITECTURE_OVERVIEW.md, MODEL_VERIFICATION_GUIDE.md,
+│                                         #   LLMSVD_SUFFIX_GUIDE.md, CONFIGURATION_MIGRATION_GUIDE.md,
+│                                         #   CAPABILITY_DETECTION.md, TEST_SUITE_USER_GUIDE.md, …
+├── challenges/                           # this submodule's own Challenge bank
+│   ├── runner/main.go                    # in-process Go binary exercising real crush_config surfaces
+│   ├── fixtures/{de,en,es,ja,sr}.yaml    # 5-locale fixtures
+│   └── llmsverifier_describe_challenge.sh
+├── configs/  Assets/  sdk/  mobile/  monitoring/  helm/  k8s/  website/
+└── scripts/                              # create_complete_*.py, build_and_test_fixed.sh, …
 ```
 
 ---
 
-## Verified Real Implementations
+## Verified Real Capabilities (per `README.md` — ground truth)
 
-### AUTH-001: Authentication System (VERIFIED REAL)
-**File**: `internal/auth/auth.go` (~470 lines)
-**Assessment**: Production-ready
-- User registration with validation
-- Password hashing with bcrypt + argon2 fallback
-- JWT token generation and verification (JWT v4)
-- Session management with crypto-random tokens
-- Constant-time comparison for timing attack prevention
-- Full test coverage in `internal/auth/auth_test.go` (~777 lines)
+- **Mandatory Model Verification**: models MUST pass a "Do you see my code?" verification test before use.
+- **12 Provider Adapters**: OpenAI, Anthropic, Cohere, Groq, Together AI, Mistral, xAI, Replicate, DeepSeek, Cerebras, Cloudflare Workers AI, SiliconFlow.
+- **Enterprise Features**: LDAP/SSO, SQLCipher database encryption, Splunk/DataDog/New Relic/ELK integration.
+- **Multi-Platform Clients**: CLI, TUI, Web, Desktop, Mobile.
+- **`(llmsvd)` Suffix System**: every LLMsVerifier-generated provider/model config carries this mandatory branding suffix; only verified models are exported.
+- **SDKs**: Python and JavaScript, full API coverage.
 
-### DB-001: Database Layer (VERIFIED REAL)
-**File**: `internal/database/database.go`
-**Assessment**: Production-ready
-- PostgreSQL connection pool via pgx/v5
-- Full schema initialization (users, workers, tasks, projects, sessions, LLM providers, MCP servers, notifications, audit logs)
-- `DatabaseInterface` for testability
-- Graceful degradation when host is empty
+Every agent working in this submodule MUST verify claims against the real `llm-verifier/` package tree and `README.md` before stating a capability is "implemented" — do not restate unverified line-count or file-path claims from historical audit documents without re-checking them against the current tree.
 
-### SRV-001: HTTP Server (VERIFIED REAL)
-**File**: `internal/server/server.go`
-**Assessment**: Production-ready
-- Gin-based server with 50+ routes across `/api/v1/`
-- JWT auth middleware, CORS, security headers
-- WebSocket endpoint for MCP
-- Health check with DB + Redis validation
-- Graceful shutdown (30s timeout)
+## Anti-Bluff Areas To Watch
 
-### LLM-001: LLM Providers (VERIFIED REAL)
-**File**: `internal/llm/` (~5000+ lines across providers)
-**Assessment**: Real HTTP clients
-- `AnthropicProvider` (~752 lines): Full SSE streaming, prompt caching, extended thinking, tool calls
-- `OpenAIProvider` (~431+ lines): Full HTTP API client
-- `ModelManager`: Multi-provider orchestration, selection strategy, fallback chain
-- 16 provider subdirectories with real HTTP implementations
-- **Note**: The `internal/llm/` package is genuine. Bluff areas are at `cmd/cli/main.go` only.
-
-### WRK-001: Worker Pool (VERIFIED REAL)
-**File**: `internal/worker/` (~800+ lines)
-**Assessment**: Real distributed worker management
-- `WorkerManager`: Register, heartbeat, assign tasks, complete tasks
-- SSH config parsing, capability matching, resource tracking
-- Health checks with TTL
-
-### TSK-001: Task Management (VERIFIED REAL)
-**File**: `internal/task/` (~1000+ lines)
-**Assessment**: Real task lifecycle
-- Priority queues, dependency validation, checkpointing
-- Redis caching with graceful degradation
-- Retry logic and cleanup
-
-### WFL-001: Workflow Engine (VERIFIED REAL)
-**File**: `internal/workflow/` (~1100+ lines)
-**Assessment**: Real shell execution
-- `Executor` dispatches to real `exec.CommandContext()` calls
-- Security filtering via `isDangerousCommand()` (rm, dd, mkfs, fork bombs, etc.)
-- LLM integration with real `LLMRequest`
-- Supports Go, Node, Python, Rust project types
-
-### TOO-001: Tools Ecosystem (VERIFIED REAL)
-**File**: `internal/tools/` (~2000+ lines)
-**Assessment**: Real tool registry
-- 8 categories: filesystem, shell, web, browser, mapping, multiedit, confirmation, notebook
-- Real chromedp browser automation
-- Transactional multi-file editing
-
-### EDT-001: Code Editor (VERIFIED REAL)
-**File**: `internal/editor/` (~600+ lines)
-**Assessment**: Real file I/O
-- Diff, whole-file, search/replace, line-based editors
-- Automatic file backup with `io.Copy`
-- `EditApplier` / `EditValidator` interfaces
-
-### NOT-001: Notification Engine (VERIFIED REAL)
-**File**: `internal/notification/` (~800+ lines)
-**Assessment**: Real HTTP/SMTP calls
-- Slack (webhook HTTP POST), Email (SMTP via `net/smtp`), Telegram (Bot API), Discord (webhook)
-- Yandex Messenger (OAuth API), Max (enterprise API)
-- Rate limiting, retry, queue, metrics
-
-### MCP-001: MCP Protocol Server (VERIFIED REAL)
-**File**: `internal/mcp/` (~400+ lines)
-**Assessment**: Real WebSocket server
-- gorilla/websocket concurrent session handling
-- JSON-RPC-like message format
-- Tool execution dispatch
-
-### CFG-001: Configuration Management (VERIFIED REAL)
-**File**: `internal/config/` (~1700+ lines)
-**Assessment**: Full Viper integration
-- Environment variable binding (`HELIX_*`)
-- Config file search (`.`, `$HOME/.helixcode`, `/etc/helixcode`)
-- Validation rules, default config creation
-- `ConfigManager` for load/save/merge
-
-### QA-001: HelixQA Integration (VERIFIED REAL)
-**Files**: `internal/helixqa/`, `internal/server/qa_handlers.go`, `applications/terminal-ui/main.go`
-**Assessment**: Full embedded QA engine with real session lifecycle
-- `Engine` struct manages QA sessions with map + sync.RWMutex
-- `StartSession()`, `CancelSession()`, `GetSession()`, `ListSessions()` with real state tracking
-- REST API: `POST /api/v1/qa/session`, `GET /api/v1/qa/session/:id/status`, `GET /api/v1/qa/session/:id/report`, `GET /api/v1/qa/session/:id/screenshot/:name`, `DELETE /api/v1/qa/session/:id`
-- CLI flags: `--qa-run`, `--qa-list`, `--qa-report`, `--qa-screenshot`, `--qa-cancel`
-- TUI dashboard with session table, stats panel, refresh/cancel actions
-- Screenshot pipeline: 8 platform engines (Linux, Web, iOS, Android, CLI, TUI, macOS, Windows)
-- Tests: `internal/helixqa/wrapper_test.go`, `internal/server/qa_handlers_test.go`, `pkg/screenshot/*_test.go`
-
----
-
-## Verified Bluff & Stub Areas (MUST FIX)
-
-### BLUFF-001: LLM Generation is Simulated in Legacy CLI (CRITICAL) — FIXED
-**File**: `cmd/cli/main.go` lines ~236-284
-**Evidence**: Previously returned `fmt.Sprintf("Generated response for: %s...", prompt)` without calling any provider.
-**Fix**: `handleGenerate()` now constructs a real `llm.LLMRequest` with user messages and calls `provider.Generate()` / `provider.GenerateStream()`. Errors are propagated to the user if the provider is unavailable.
-**Verification**: `go build -tags nogui ./cmd/cli/` compiles; provider call is real (returns error if Ollama/etc. is not running).
-**Fix Priority**: P0 — RESOLVED
-
-### BLUFF-002: Model Listing is Hardcoded in Legacy CLI (CRITICAL) — FIXED
-**File**: `cmd/cli/main.go` lines ~101-128
-**Evidence**: Previously only 3 hardcoded models. No dynamic discovery.
-**Fix**: Replaced with verifier-aware `handleListModels()` that queries LLMsVerifier adapter first, falls back to provider discovery, then to constitutional `FallbackModels` (7 models with scores and verification status).
-**Verification**: `go test -v ./internal/verifier/...` passes; `go build ./cmd/cli/...` compiles.
-**Fix Priority**: P0 — RESOLVED
-
-### BLUFF-003: Command Execution is Simulated in Legacy CLI (HIGH) — FIXED
-**File**: `cmd/cli/main.go` lines ~310-324
-**Evidence**: Previously printed the command and slept for 1 second without executing anything.
-**Fix**: `handleCommand()` uses `exec.CommandContext(ctx, "sh", "-c", command)` with real `os.Stdout`/`os.Stderr` redirection. Exit codes are reported.
-**Verification**: `go build -tags nogui ./cmd/cli/` compiles.
-**Fix Priority**: P0 — RESOLVED
-
-### STUB-001: Security Scanning is Simulated
-**File**: `internal/security/security.go` (~132 lines)
-**Evidence**: `ScanFeature()` contains explicit "Simulate security scanning logic" comment. Always returns `Success=true, Score=95` with empty issues.
-**Fix Priority**: P1
-
-### STUB-002: Memory Redis/Memcached Providers Store Locally
-**File**: `internal/memory/` (~1800+ lines)
-**Evidence**: `RedisMemoryProvider` and `MemcachedMemoryProvider` store data in local maps with comments like "Redis client would be used in production." Connection config is parsed but not used.
-**Fix Priority**: P2
-
-### STUB-003: Security-Test Entry Point is Entirely Simulated
-**File**: `cmd/security-test/main.go`
-**Evidence**: Hardcoded list of 12 simulated security tests. `simulateSecurityScan()` returns pre-canned issue lists per category.
-**Fix Priority**: P2
-
-### STUB-004: Several `helix` Subcommands are Print-Only
-**File**: `cmd/other_commands.go`
-**Evidence**: `server`, `generate`, `test`, `worker`, `notify` commands are stubbed (print placeholder messages).
-**Fix Priority**: P2
-
-### STUB-005: Several `helix-config` Subcommands are Placeholders
-**File**: `cmd/helix-config/main.go`
-**Evidence**: Many template/history/schema subcommands print placeholder messages.
-**Fix Priority**: P3
-
-### BLUFF-004: LLMsVerifier Integration is Stubbed or Bypassed (CRITICAL)
-**File Pattern**: `internal/verifier/*.go` containing empty structs, `// TODO`, or methods that return hardcoded data instead of calling the verifier.
-**Evidence**:
-- `VerificationService` methods return hardcoded `VerificationResult{OverallScore: 8.5}` instead of querying the verifier database
-- `ModelDiscoveryService` returns an empty slice instead of calling provider APIs
-- The verifier client returns fallback models without attempting a real HTTP call
-**Fix Priority**: P0 - Immediate
-**Verification Command**:
-```bash
-make test-verifier-integration
-# This MUST pass with real verifier data, not mocked scores
-```
-
-### BLUFF-005: Provider Discovery Uses Hardcoded Env Var Names (HIGH)
-**File Pattern**: `internal/verifier/startup.go` or provider adapter files containing hardcoded strings like `"OPENAI_API_KEY"` without checking `SupportedProviders[provider].EnvVars`.
-**Fix Priority**: P1 - High
-
-### BLUFF-006: Model Capabilities Are Hardcoded (HIGH)
-**File Pattern**: `internal/llm/*.go` containing `SupportsToolUse: true` as a struct literal for specific models, or `Provider.GetCapabilities()` returning a static slice.
-**Fix Priority**: P1 - High
-**Constitutional Impact**: Violates CONST-041 (MCP/LSP/ACP/Embedding/RAG/Skills/Plugins Integration Mandate).
-
-### BLUFF-007: Test Claims Integration But Uses Mocked Verifier (CRITICAL)
-**File Pattern**: `*_test.go` files with `testify/mock` or `testMode: true` in non-unit test files.
-**Fix Priority**: P0 - Immediate
-**Constitutional Impact**: Violates CONST-038 (Model Provider Anti-Bluff Guarantee) and CONST-035 (Zero-Bluff Testing).
-
-### BLUFF-008: Scoring Weights Do Not Sum to 1.0 (MEDIUM)
-**File Pattern**: `configs/verifier.yaml` or `internal/verifier/config.go` where scoring weights are misconfigured.
-**Fix Priority**: P2 - Medium
-
-### BLUFF-009: `/metrics` Endpoint Returns Hardcoded Zeros (CRITICAL) — FIXED
-**File**: `internal/server/handlers.go` lines ~834-855
-**Evidence**: All dynamic metrics (goroutines, memory, database connections) were hardcoded to `0`.
-**Fix**: `getMetrics()` now calls `runtime.ReadMemStats()`, `runtime.NumGoroutine()`, and `s.db.Pool.Stat()` to return real values.
-**Fix Priority**: P0 — RESOLVED
-
-### BLUFF-010: Multi-Edit Conflict Detection is a No-Op (HIGH) — FIXED
-**File**: `internal/tools/multiedit/transaction.go` lines ~352-369
-**Evidence**: `detectFileConflict()` always returned `nil, nil` with comment "For now, we'll assume no conflicts."
-**Fix**: Implemented real conflict detection — reads the file from disk, computes SHA-256, and compares against the `Checksum` field. Returns `ConflictModified` or `ConflictDeleted` when appropriate.
-**Fix Priority**: P1 — RESOLVED
+The same anti-bluff discipline that applies to any LLM-integration codebase applies here:
+- Model listings and verification results MUST come from real provider HTTP calls / real database rows — never a hardcoded array.
+- Scoring and `(llmsvd)` suffix assignment MUST be computed from real verification data, never a static literal.
+- Any `TODO` / `for now` / `simulate` / placeholder pattern found in `llm-verifier/internal` or `llm-verifier/cmd` outside `*_test.go` is a bluff and MUST be fixed before the change is considered done (see the anti-bluff smoke check in `CLAUDE.md` §3.4).
 
 ---
 
 ## Configuration Management
 
 ### Primary Configuration
-Main config at `config/config.yaml`:
+Canonical template is `llm-verifier/config.yaml.example`; copy to `config.yaml` and edit:
 
 ```yaml
-server:
-  address: "0.0.0.0"
-  port: 8080
-  read_timeout: 30
-  write_timeout: 30
-  idle_timeout: 300
-  shutdown_timeout: 30
+global:
+  base_url: "https://api.openai.com/v1"
+  api_key: "${OPENAI_API_KEY}"
+  max_retries: 3
+  request_delay: 1s
+  timeout: 30s
 
 database:
-  host: ""          # Empty string disables PostgreSQL
-  port: 5432
-  user: "helix"
-  password: "${HELIX_DATABASE_PASSWORD}"
-  dbname: "helixcode_prod"
-  sslmode: "disable"
+  path: "./llm-verifier.db"     # SQLite; SQLCipher when encryption_key is set
+  encryption_key: ""            # leave empty for no encryption
 
-redis:
-  host: "redis"
-  port: 6379
-  password: "${HELIX_REDIS_PASSWORD}"
-  db: 0
+api:
+  port: "8080"
+  jwt_secret: "your-secret-key-change-in-production"
+  rate_limit: 100                # requests per minute
+  enable_cors: true
+
+# If no LLMs are specified, the tool auto-discovers all available models
+llms:
+  - name: "OpenAI GPT-4"
+    endpoint: "https://api.openai.com/v1"
+    api_key: "${OPENAI_API_KEY}"
+    model: "gpt-4-turbo"
+    features:
+      tool_calling: true
+      embeddings: false
+
+concurrency: 5
+timeout: 60s
+
+# Model Verification Configuration
+model_verification:
   enabled: true
-
-auth:
-  jwt_secret: "${HELIX_AUTH_JWT_SECRET}"
-  token_expiry: 86400
-  session_expiry: 604800
-  bcrypt_cost: 12
-
-workers:
-  health_check_interval: 30
-  health_ttl: 120
-  max_concurrent_tasks: 10
-
-tasks:
+  strict_mode: true
+  require_affirmative: true
   max_retries: 3
-  checkpoint_interval: 300
-  cleanup_interval: 3600
+  timeout_seconds: 30
+  min_verification_score: 0.7
 
-llm:
-  default_provider: "local"
-  max_tokens: 4096
-  temperature: 0.7
-  timeout: 30
-  max_retries: 3
-  providers:
-    <name>:
-      type: <provider-type>
-      endpoint: <url>
-      enabled: true
-      parameters:
-        timeout: 30.0
-        max_retries: 3
-        streaming_support: true
-        api_key: ""
-  selection:
-    strategy: "performance"
-    fallback_enabled: true
-    health_check_interval: 30
-
-logging:
-  level: "info"
-  format: "text"
-  output: "stdout"
-
-notifications:
+# LLMSVD Suffix Configuration
+branding:
   enabled: true
-  rules:
-    - name: "..."
-      condition: "type==error"
-      channels: ["slack", "email"]
-      priority: urgent
-      enabled: true
-  channels:
-    slack: { enabled, webhook_url, channel, username, timeout }
-    telegram: { enabled, bot_token, chat_id, timeout }
-    email: { enabled, smtp: { server, port, username, password, tls }, recipients, timeout }
-    discord: { enabled, webhook_url, timeout }
+  suffix: "(llmsvd)"
+  position: "final"
 ```
 
 ### Environment Variables
-**Required for Production**:
-- `HELIX_DATABASE_PASSWORD`
-- `HELIX_AUTH_JWT_SECRET`
-- `HELIX_REDIS_PASSWORD`
+**Provider keys** (as needed by the providers under test — see `docs/CAPABILITY_DETECTION.md`):
+- `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `COHERE_API_KEY`, `GROQ_API_KEY`, `TOGETHER_API_KEY`, `MISTRAL_API_KEY`, `XAI_API_KEY`, `REPLICATE_API_KEY`, `DEEPSEEK_API_KEY`, `CEREBRAS_API_KEY`, `CLOUDFLARE_API_KEY`, `SILICONFLOW_API_KEY`
 
-**LLM Provider Keys** (as needed):
-- `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `XAI_API_KEY`, `DEEPSEEK_API_KEY`, `GROQ_API_KEY`, `MISTRAL_API_KEY`, `COHERE_API_KEY`, `AZURE_OPENAI_API_KEY`, `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`
-
-**Notification Integrations**:
-- `HELIX_SLACK_WEBHOOK_URL`
-- `HELIX_TELEGRAM_BOT_TOKEN`, `HELIX_TELEGRAM_CHAT_ID`
-- `HELIX_EMAIL_SMTP_SERVER`, `HELIX_EMAIL_USERNAME`, `HELIX_EMAIL_PASSWORD`
-- `HELIX_DISCORD_WEBHOOK_URL`
+**Full list**: see `llm-verifier/docs/ENVIRONMENT_VARIABLES.md`.
 
 ---
 
@@ -601,7 +245,7 @@ notifications:
 - `docker-compose.full-test.yml`: Complete stack with mock-LLM server, Selenium, ChromeDP, SSH server + 3 workers, Cognee, Weaviate, mock-Slack, multicast router
 
 ### Challenge Framework (`tests/e2e/challenges/`)
-The most rigorous test system validates HelixCode by having it **generate real projects** and testing them:
+The most rigorous test system validates LLMsVerifier by having it **generate real projects** and testing them:
 - **Challenge Definitions**: JSON specs (ASCII art generator, CLI task manager, JSON validator, notes API, tic-tac-toe TUI, URL shortener)
 - **Execution Flow**: Load spec → Call real LLM API → Parse generated code → Compile → Test → Runtime validation
 - **Validation Layers**: Directory structure, code quality, compilation, testing, functionality, runtime validation with diverse data
@@ -610,7 +254,7 @@ The most rigorous test system validates HelixCode by having it **generate real p
 ### Test Scripts Summary
 ```bash
 # Basic
-cd HelixCode && make test
+cd llms_verifier && make test
 
 # Full infrastructure (recommended for validation)
 make test-infra-up
@@ -635,11 +279,11 @@ make test-load-full
 ## Docker Deployment
 
 ### Production (`docker-compose.yml`)
-Services: helixcode-server (8080, 2222), postgres:15, redis:7, nginx (80, 443), prometheus (9090), grafana (3000)
+Services (`docker-compose.prod.yml`): llm-verifier (8080), postgres:15, redis:7, nginx (80, 443), prometheus (9090), grafana (3000)
 
 ### Quick Start
 ```bash
-cd HelixCode
+cd LLMsVerifier
 cp .env.example .env
 # Edit .env with secure passwords
 docker compose up -d
@@ -757,7 +401,7 @@ A change is NOT done because code compiles. "Done" requires:
 
 A test or Challenge that PASSES is a CLAIM that the tested behavior **works for the end user of the product**.
 
-The HelixAgent project has repeatedly hit the failure mode where every test ran green AND every Challenge reported PASS, yet most product features did not actually work — buggy challenge wrappers masked failed assertions, scripts checked file existence without executing the file, "reachability" tests tolerated timeouts, contracts were honest in advertising but broken in dispatch. **This MUST NOT recur in HelixCode.**
+Projects in this class have repeatedly hit the failure mode where every test ran green AND every Challenge reported PASS, yet most product features did not actually work — buggy challenge wrappers masked failed assertions, scripts checked file existence without executing the file, "reachability" tests tolerated timeouts, contracts were honest in advertising but broken in dispatch. **This MUST NOT recur in LLMsVerifier.**
 
 Every PASS result MUST guarantee:
 a. **Quality** — correct behavior under real inputs, edge cases, concurrency
@@ -834,7 +478,7 @@ The meta-repo's `docs/CONTINUATION.md` MUST be maintained in sync with actual pr
 
 ## CONST-039: All Providers and Models Integration Mandate
 
-**Rule**: HelixCode MUST integrate with ALL providers that LLMsVerifier supports, subject only to:
+**Rule**: This project MUST integrate with ALL providers it supports, subject only to:
 1. The provider being explicitly disabled in configuration (`enabled: false`)
 2. The API key being absent and the provider requiring one
 3. The provider being marked `deprecated` in the verifier database
@@ -893,8 +537,6 @@ test, CLI suggestion, snippet, or example you emit.
 
 - **Constitution**: `CONSTITUTION.md`
 - **CLAUDE.md**: `CLAUDE.md`
-- **Gap Analysis**: `HELIXCODE_GAP_ANALYSIS.md`
-- **Zero-Bluff Plan**: `HELIXCODE_ZERO_BLUFF_PLAN.md`
 - **Testing Strategy**: `ANTI_BLUFF_TESTING_STRATEGY.md`
 - **OpenAPI Spec**: `helix_code/api/openapi.yaml`
 - **Docker Guide**: `helix_code/DOCKER_DEPLOYMENT.md`
@@ -1049,7 +691,7 @@ CONST-055 is the **enforcement engine** for every other §11.4.x and CONST-NNN r
 
 > Verbatim user mandate (2026-05-15): *"Every Submodule or Git repository we add or clone MUST BE upstreams installed using Upstreamable utility which MUST BE available through exported paths of the host system (in .bashrc or .zhrc) using install_upstreams command executed from the root of the cloned (added) repository - only if in it is Upstreams or upstreams directory present with bash script files (recipes) for all repository's upstreams!"*
 
-Every clone / add of a Git repository under HelixCode MUST be followed by `install_upstreams` invocation from the repository's root IF its tree contains `upstreams/` (or legacy `Upstreams/` per CONST-052 transition) populated with `*.sh` recipe files. The utility (installed on operator's `PATH` via `.bashrc`/`.zshrc`; implementation in the constitution submodule's `install_upstreams.sh` — already supports BOTH directory names since constitution commit `45d3678`) reads the recipe files, configures every declared upstream as a named git remote, and fans out `origin` push URLs.
+Every clone / add of a Git repository under this project MUST be followed by `install_upstreams` invocation from the repository's root IF its tree contains `upstreams/` (or legacy `Upstreams/` per CONST-052 transition) populated with `*.sh` recipe files. The utility (installed on operator's `PATH` via `.bashrc`/`.zshrc`; implementation in the constitution submodule's `install_upstreams.sh` — already supports BOTH directory names since constitution commit `45d3678`) reads the recipe files, configures every declared upstream as a named git remote, and fans out `origin` push URLs.
 
 Skipping the invocation when `upstreams/` is present silently breaks §2.1 (multi-upstream push is the norm) — the next push lands on only one upstream. Gate `CM-INSTALL-UPSTREAMS-ON-CLONE` + paired mutation. Automation: the future `incorporate-submodule` per CONST-054 auto-invokes; manual invocation supported. Pre-commit check: `git remote -v | grep -c push` reports expected count.
 
@@ -1502,7 +1144,7 @@ What counts as a removal (non-exhaustive): deleting an app/APK/binary from the b
 
 Classification: universal (§11.4.17) — a platform-neutral discipline reusable by ANY project that ships a set of user-facing capabilities; the consuming project supplies its concrete capability-manifest paths per §11.4.35. Composes §11.4.66 / §11.4.101 / §11.4.90 / §11.4.112 / §11.4.6 / §11.4.40 / §11.4.42. Propagation gate `CM-COVENANT-114-122-PROPAGATION` (literal `11.4.122`) + recommended gate `CM-NO-SILENT-COMPONENT-REMOVAL` + paired §1.1 meta-test mutation (gate-code = separate work item).
 
-**Canonical authority:** constitution submodule [`Constitution.md`](Constitution.md) §11.4.122. Non-compliance is a release blocker. No escape hatch — no `--remove-without-asking`, `--silent-removal`, `--autonomous-removal-OK`, `--dedup-removal-exempt`, `--it-was-broken-anyway` flag.
+**Canonical authority:** constitution submodule [`CONSTITUTION.md`](CONSTITUTION.md) §11.4.122. Non-compliance is a release blocker. No escape hatch — no `--remove-without-asking`, `--silent-removal`, `--autonomous-removal-OK`, `--dedup-removal-exempt`, `--it-was-broken-anyway` flag.
 
 ### §11.4.123 — Rock-solid-proof-or-deep-research mandate (User mandate, 2026-06-03)
 
@@ -1518,7 +1160,7 @@ The research-or-don't-bluff rule (the operative addition): when the agent is UNS
 
 Classification: universal (§11.4.17) — a platform-neutral discipline reusable by ANY project; the consuming project supplies its concrete capture mechanisms + research corpora per §11.4.35. Composes §11.4.5 / §11.4.6 / §11.4.8 / §11.4.52 / §11.4.69 / §11.4.99 / §11.4.107 / §11.4.118 / §11.4.21 / §11.4.112. Propagation gate `CM-COVENANT-114-123-PROPAGATION` (literal `11.4.123`) + recommended gate `CM-ROCK-SOLID-PROOF-OR-RESEARCH` + paired §1.1 meta-test mutation (gate-code = separate work item).
 
-**Canonical authority:** constitution submodule [`Constitution.md`](Constitution.md) §11.4.123. Non-compliance is a release blocker. No escape hatch — no `--metadata-pass-suffices`, `--skip-proof`, `--untestable-without-research`, `--config-only-closure-OK`, `--bluff-when-unsure` flag.
+**Canonical authority:** constitution submodule [`CONSTITUTION.md`](CONSTITUTION.md) §11.4.123. Non-compliance is a release blocker. No escape hatch — no `--metadata-pass-suffices`, `--skip-proof`, `--untestable-without-research`, `--config-only-closure-OK`, `--bluff-when-unsure` flag.
 
 ### §11.4.124 — Dead/unwired-code investigate-before-remove mandate (User mandate, 2026-06-04)
 
@@ -1528,7 +1170,7 @@ Classification: universal (§11.4.17) — a platform-neutral discipline reusable
 
 "Zero importers / never called / unwired ⇒ dead ⇒ delete" is a GUESS (§11.4.6), never a finding — a "no references" result proves only *current* non-reference, not genuinely-unneeded. Before removing ANY seemingly-dead element (zero-importer / never-called / unwired function / method / type / file / module / package / asset / config / build target) the agent MUST FIRST investigate via git history (`git log --follow`, `git log -S`/`-G` pickaxe across all history, blame on the deleted call-site) and capture as FACT: (1) WHERE/HOW it was originally wired in, (2) WHEN/HOW it became dead — call-site deleted deliberately / by mistake (regression) / never-completed / refactored-unreachable, (3) whether "no references" is real OR a hidden reference the static tool cannot see (reflection / dynamic dispatch / build-tags / codegen / DI / plugin registry / FFI / config-driven wiring). The investigation output (cited commits + determination) is the captured evidence. **Removal is conditional:** permitted ONLY with captured PROOF the element is genuinely no longer needed; that removal MUST be its OWN SEPARATE COMMIT (independently reviewable + revertible, composes §11.4.84 quiescence + §11.4.92 multi-pass) with a descriptive message citing the git-history evidence — plus §11.4.122 operator-confirmation when the element is an end-user capability; the §11.4.90 tracked path marks it `Obsolete (→ Fixed.md)`. **No proof ⇒ do NOT delete:** investigate WHERE/HOW to wire it in properly (restore a mistakenly-deleted call-site per §11.4.114; finish never-completed wiring) AND add any missing / unwired tests (§11.4.27 / §11.4.43 / §11.4.115 — the missing test is part of why it drifted into apparent-deadness). **Extra-caution default:** when uncertain whether removal-proof is sufficient, default to NOT removing (investigate + wire + test) per §11.4.6 + §11.4.101 + §11.4.122; "probably dead" is never sufficient — the bar is captured proof. Classification: universal (§11.4.17) — the consuming project supplies its static-analysis / importer-graph tooling + hidden-reference mechanisms per §11.4.35. Composes §11.4.6 / §11.4.8 / §11.4.84 / §11.4.90 / §11.4.92 / §11.4.101 / §11.4.114 / §11.4.122 / §11.4.27 / §11.4.43 / §11.4.115. Propagation gate `CM-COVENANT-114-124-PROPAGATION` (literal `11.4.124`) + recommended gate `CM-DEAD-CODE-INVESTIGATE-BEFORE-REMOVE` (a net-deletion commit must be removal-only + cite the git-history investigation OR be part of a tracked Obsolete item) + paired §1.1 meta-test mutation (gate-code = separate work item).
 
-**Canonical authority:** constitution submodule [`Constitution.md`](Constitution.md) §11.4.124. Non-compliance is a release blocker. No escape hatch — no `--zero-importers-means-dead`, `--delete-unwired-on-sight`, `--skip-git-history-investigation`, `--remove-without-proof`, `--bundle-removal-with-other-work` flag.
+**Canonical authority:** constitution submodule [`CONSTITUTION.md`](CONSTITUTION.md) §11.4.124. Non-compliance is a release blocker. No escape hatch — no `--zero-importers-means-dead`, `--delete-unwired-on-sight`, `--skip-git-history-investigation`, `--remove-without-proof`, `--bundle-removal-with-other-work` flag.
 
 ### §11.4.125 — Code-review-agent gate before pre-build + main build (mandatory multi-layer review) (User mandate, 2026-06-04)
 
@@ -1538,7 +1180,7 @@ Classification: universal (§11.4.17) — a platform-neutral discipline reusable
 
 After all fixes / changes / implementations in a batch are done, and BEFORE running the pre-build test sweep AND the main (artifact) build (for ANY project), the agent MUST dispatch one or more dedicated code-review agent(s) (subagent-driven by default per §11.4.70/§11.4.20) performing a multi-layer review that: (1) analyzes ALL work done in the batch (every fix/change + its source diff + stated intent); (2) analyzes ALL existing data + facts (captured evidence per §11.4.5/§11.4.69/§11.4.107, tracker entries, prior findings, the §11.4.108 runtime-signature registry); (3) analyzes the existing codebase (blast radius per §11.4.92, cross-feature interaction, contract integrity of every dependency); (4) analyzes current git history (what each change touched, how it composes with concurrent/recent work, whether it reproduces a known-broken pattern per §11.4.114/§11.4.124); (5) determines quality + safety + will-it-REALLY-work (robust + not error-prone — no solve-A-create-B; no host/data/security regression; genuinely delivers the end-user-visible behaviour per §11.4/§107); (6) validates + verifies the tests covering the work — every covering test genuinely exercises the work-under-test and catches its negation, with ZERO chance of a false result or bluff (a test that PASSes on broken-for-the-user work, a metadata-only/config-only/absence-of-error/grep-without-runtime assertion, or a gate whose paired §1.1 mutation does not make it FAIL is a finding). Any finding (defect / error-prone change / safety risk / will-not-really-work / bluff-or-false-result-capable test / missing-coverage gap) MUST be fixed, polished, improved, and covered with additional tests (four-layer per §11.4.4(b), TDD-RED-first per §11.4.43/§11.4.115) BEFORE the pre-build sweep + main build proceed; the review iterates (re-review after each remediation) until no blocking findings remain. The review is itself anti-bluff (its conclusions are captured evidence per §11.4.5/§11.4.69; a rubber-stamp review of a defective batch = PASS-bluff). It is one of MULTIPLE STRONG LAYERS — complementing, never replacing, the §1 pre-build sweep, §11.4.92 multi-pass (author-side self-review; §11.4.125 adds the structurally-separated reviewer seam per §11.4.70), §11.4.108 four-layer fix-verification, §11.4.110 build-readiness verdict, and the post-build / runtime-on-clean-target / user-visible layers. Composes §11.4 / §11.4.1 / §11.4.4 / §11.4.6 / §11.4.40 / §11.4.43 / §11.4.50 / §11.4.70 / §11.4.20 / §11.4.92 / §11.4.102 / §11.4.107 / §11.4.108 / §11.4.110. Classification: universal (§11.4.17). Propagation gate `CM-COVENANT-114-125-PROPAGATION` (literal `11.4.125`) + recommended gate `CM-CODE-REVIEW-GATE-BEFORE-BUILD` (build starts only with a fresh code-review-completed marker for the current batch, produced after the last fix + before the pre-build sweep + main build) + paired §1.1 mutation (gate-code = separate work item).
 
-**Canonical authority:** constitution submodule [`Constitution.md`](Constitution.md) §11.4.125. Non-compliance is a release blocker. No escape hatch — no `--skip-code-review`, `--build-without-review`, `--no-review-gate`, `--review-optional`, `--trust-the-author` flag.
+**Canonical authority:** constitution submodule [`CONSTITUTION.md`](CONSTITUTION.md) §11.4.125. Non-compliance is a release blocker. No escape hatch — no `--skip-code-review`, `--build-without-review`, `--no-review-gate`, `--review-optional`, `--trust-the-author` flag.
 
 ### §11.4.126 — Default autonomous-loop working mode from first prompt (User mandate, 2026-06-04)
 
@@ -1548,7 +1190,7 @@ After all fixes / changes / implementations in a batch are done, and BEFORE runn
 
 The endless fully-autonomous loop is the **DEFAULT working mode**, engaged automatically the moment the operator sends the FIRST request / prompt of a session — the operator MUST NOT have to ask for it, request it, restate it, or re-enable it per session. §11.4.87 framed the endless-loop covenant as an explicit-instruction opt-in ("continue in endless loop fully autonomously" or a semantically-equivalent phrasing); §11.4.126 is the **capstone** that promotes the same covenant to always-on: from the first prompt onward, every agent operates in the §11.4.87 loop discipline as the standing default, with §11.4.94 zero-idle, §11.4.97 maximum-idle-use, §11.4.101 autonomous-decision-over-blocking, and §11.4.103 continuous-parallel-stream all engaged by default — no per-session activation handshake. The continuation contract: the loop continues until ONE of two terminal conditions holds — (A) **Release scope** — a new, fully-validated-and-verified version (tag) is created AND published across all owned submodules AND the main repo to all configured remotes (per §2.1 multi-upstream push + §11.4.40 full-suite-retest-before-tag + §11.4.113 absolute-no-force-push merge-onto-latest-main); OR (B) **Non-release main-stream scope** — the main-stream goal is fully completed AND every side work stream is done AND the working queue holds nothing left for the current scope. Until (A) or (B) holds, the agent MUST keep working (claim the next priority item, dispatch the next parallel stream, progress every non-blocked item per §11.4.42 / §11.4.72 / §11.4.94 / §11.4.103). The loop STOPS ONLY on: (1) the operator explicitly saying so (STOP / pause / end); (2) nothing left to do in the current working scope — the upcoming release / current main-stream goal — with the queue genuinely empty per the (A)/(B) terminal conditions; (3) a §12 host-session-safety demand (the loop yields to host safety unconditionally). Idle-while-blocked parks one work unit, it does not stop the loop — the agent keeps progressing every non-blocked item in parallel per §11.4.101 + §11.4.94 + §11.4.97. Goal — ABSOLUTE EFFICIENCY (no operator-side restart overhead, no idle gaps, no stop-and-wait round-trips); applies to this project AND every project that incorporates this Constitution. Anti-bluff: mimicking / imitating this loop behaviour, narrating continuation without performing it, fabricating progress, or emitting false / bluff results of ANY kind is ABSOLUTELY FORBIDDEN — this composes the entire §11.4 anti-bluff covenant family (§11.4 / §11.4.1 / §11.4.2 / §11.4.5 / §11.4.6 / §11.4.50 / §11.4.69 / §11.4.107); the agent MUST genuinely perform the continuous work and capture positive evidence for every closure, and a report claiming the loop ran while no real work / no captured evidence was produced is a §11.4 PASS-bluff at the operating-mode layer. Classification: universal (§11.4.17). Composes with §11.4.87 (the endless-loop covenant — §11.4.126 promotes it from opt-in to always-on default) / §11.4.94 / §11.4.97 / §11.4.101 / §11.4.103 / §11.4.66 / §11.4.6 / §11.4.40 / §11.4.42 / §11.4.72 / §11.4.113 / §2.1 / §12. Propagation gate `CM-COVENANT-114-126-PROPAGATION` (literal `11.4.126` across the consumer fleet) + paired §1.1 meta-test mutation (strip the literal → propagation gate FAILs; gate-code = separate work item).
 
-**Canonical authority:** constitution submodule [`Constitution.md`](Constitution.md) §11.4.126. Non-compliance is a release blocker. No escape hatch — no `--ask-before-continuing`, `--single-turn-only`, `--not-default-loop`, `--mimic-OK` flag.
+**Canonical authority:** constitution submodule [`CONSTITUTION.md`](CONSTITUTION.md) §11.4.126. Non-compliance is a release blocker. No escape hatch — no `--ask-before-continuing`, `--single-turn-only`, `--not-default-loop`, `--mimic-OK` flag.
 
 ### §11.4.127 — Session-handoff resumption-prompt mandate (User mandate, 2026-06-06)
 
@@ -1556,7 +1198,7 @@ The endless fully-autonomous loop is the **DEFAULT working mode**, engaged autom
 
 When the agent determines a fresh session is needed (context-window limits, performance degradation) OR the operator asks whether a new session is needed / requests a handoff, the agent MUST ALWAYS prepare + proactively provide a ready-to-paste **resumption prompt valid for that EXACT moment and project phase** — self-contained enough that pasting it into a fresh session resumes work with ZERO loss. Two variants on demand: a SHORT first-sentence ("Read `<handoff docs>`, then continue `<terminal goal>` …") AND a FULL detailed block. The prompt MUST: (1) point to the live handoff doc(s) — `.remember/remember.md` if present + `docs/CONTINUATION.md` per §12.10 — read FIRST + `git fetch --all`; (2) state current PHASE + immediate NEXT action + terminal goal; (3) embed exact live-state anchors (build IDs / artifact MD5, device/target serials, commit HEAD, in-flight PIDs + log paths, captured-evidence paths); (4) restate binding constraints (anti-bluff §11.4, no-force-push §11.4.113, exact version/naming, hardware/target gotchas); (5) be MOMENT-VALID, NEVER a generic template. Handoff doc(s) MUST be current BEFORE the prompt is given (§12.10). A missing / stale / generic prompt is a §11.4.127 violation. Composes §12.10 / §11.4.6 / §11.4.66 / §11.4.87 / §11.4.103 / §11.4.126. Classification: universal (§11.4.17). Propagation gate `CM-COVENANT-114-127-PROPAGATION` (literal `11.4.127`) + paired §1.1 meta-test mutation.
 
-**Canonical authority:** constitution submodule [`Constitution.md`](Constitution.md) §11.4.127. Non-compliance is a release blocker. No escape hatch — no `--skip-handoff-prompt`, `--generic-prompt-OK`, `--no-resumption-sentence`, `--handoff-without-state` flag.
+**Canonical authority:** constitution submodule [`CONSTITUTION.md`](CONSTITUTION.md) §11.4.127. Non-compliance is a release blocker. No escape hatch — no `--skip-handoff-prompt`, `--generic-prompt-OK`, `--no-resumption-sentence`, `--handoff-without-state` flag.
 
 ### §11.4.128 — Always-on device-recording mandate (User mandate, 2026-06-06)
 
@@ -1566,7 +1208,7 @@ For EVERY test/debug device the project uses + every device under known manual t
 
 Composes §11.4.2 / §11.4.5 / §11.4.13 / §11.4.69 / §11.4.40 / §11.4.42 / §11.4.70 / §11.4.77 / §11.4.78 / §11.4.79 / §11.4.83 / §11.4.103 / §11.4.119. Classification: universal (§11.4.17). Propagation gate `CM-COVENANT-114-128-PROPAGATION` (literal `11.4.128`) + recommended gate `CM-DEVICE-RECORDING-ALWAYS-ON` + paired §1.1 mutation.
 
-**Canonical authority:** constitution submodule [`Constitution.md`](Constitution.md) §11.4.128. Non-compliance is a release blocker. No escape hatch — no `--skip-recording`, `--record-without-layout`, `--commit-raw-corpus`, `--index-raw-corpus`, `--analyse-corpus-always`, `--invasive-probe-OK` flag.
+**Canonical authority:** constitution submodule [`CONSTITUTION.md`](CONSTITUTION.md) §11.4.128. Non-compliance is a release blocker. No escape hatch — no `--skip-recording`, `--record-without-layout`, `--commit-raw-corpus`, `--index-raw-corpus`, `--analyse-corpus-always`, `--invasive-probe-OK` flag.
 
 ### §11.4.129 — Huge-blocker release protocol (User mandate, 2026-06-06)
 
@@ -1576,7 +1218,7 @@ On discovery of a HUGE BLOCKER (release-blocking-severity defect: core user-faci
 
 Composes §11.4.4 / §11.4.40 / §11.4.42 / §11.4.9 / §11.4.27 / §11.4.85 / §11.4.102 / §11.4.108 / §11.4.114 / §11.4.115 / §11.4.123 / §11.4.128 / §11.4.103 / §11.4.119. Classification: universal (§11.4.17). Propagation gate `CM-COVENANT-114-129-PROPAGATION` (literal `11.4.129`) + recommended gate `CM-HUGE-BLOCKER-FULL-RESTART` + paired §1.1 mutation.
 
-**Canonical authority:** constitution submodule [`Constitution.md`](Constitution.md) §11.4.129. Non-compliance is a release blocker. No escape hatch — no `--resume-after-blocker`, `--spot-validate-after-fix`, `--skip-recording-analysis`, `--skip-new-tests`, `--module-only-after-blocker`, `--single-device-restart` flag.
+**Canonical authority:** constitution submodule [`CONSTITUTION.md`](CONSTITUTION.md) §11.4.129. Non-compliance is a release blocker. No escape hatch — no `--resume-after-blocker`, `--spot-validate-after-fix`, `--skip-recording-analysis`, `--skip-new-tests`, `--module-only-after-blocker`, `--single-device-restart` flag.
 
 ### §11.4.130 — Post-remediation validate-the-fix-FIRST-after-redeploy (User mandate, 2026-06-06)
 
@@ -1584,7 +1226,7 @@ Composes §11.4.4 / §11.4.40 / §11.4.42 / §11.4.9 / §11.4.27 / §11.4.85 / �
 
 When a blocker / critical failure found during release validation is FIXED and a new artifact is produced + the target reflashed / redistributed / updated, the agent MUST: (1) **re-test the SPECIFIC last-failing features FIRST** (targeted guard tests for exactly the defects this fix addressed) BEFORE any broader / full-suite validation; (2) **validate the just-incorporated fixes with real captured evidence** — the §11.4.115 RED test flips GREEN at `RED_MODE=0` on the new artifact AND the §11.4.108 runtime-signature verifies on the CLEAN target the redeploy produced (metadata-only / config-only / absence-of-error / grep-without-runtime PASS forbidden per §11.4 / §11.4.1; proof per §11.4.5/§11.4.69/§11.4.107/§11.4.123); (3) **only after the targeted fix is CONFIRMED working** proceed to the §11.4.40 full retest from the last tag to now. Rationale: a first fix attempt may not work / may be incomplete / may regress again under the new artifact — confirming the targeted fix FIRST catches a fix-did-not-take case immediately instead of hours later at the END of a full cycle (then restarting per §11.4.129); cheap-confirmation-first is §11.4.82 applied to the post-blocker reflash. This is the §11.4.46 recent-work-validation gate specialised for the post-blocker-reflash case + the targeted-confirmation phase that GATES §11.4.129's step-7 full-restart. Honest boundary (§11.4.6): "the fix probably took" ≠ "the fix took" — the RED→GREEN flip + runtime-signature on the new artifact is the proof; a still-FAILing targeted re-test re-enters the §11.4.114/§11.4.115 isolate→RED→fix loop, never proceeds to the full cycle on a still-broken fix. Composes §11.4.4 / §11.4.40 / §11.4.46 / §11.4.108 / §11.4.114 / §11.4.115 / §11.4.123 / §11.4.129 / §11.4.82. Classification: universal (§11.4.17). Propagation gate `CM-COVENANT-114-130-PROPAGATION` (literal `11.4.130`) + recommended gate `CM-FIX-FIRST-AFTER-REDEPLOY` + paired §1.1 mutation.
 
-**Canonical authority:** constitution submodule [`Constitution.md`](Constitution.md) §11.4.130. Non-compliance is a release blocker. No escape hatch — no `--skip-targeted-retest`, `--full-cycle-first`, `--assume-fix-took`, `--validate-fix-at-end`, `--skip-red-green-flip-on-new-artifact` flag.
+**Canonical authority:** constitution submodule [`CONSTITUTION.md`](CONSTITUTION.md) §11.4.130. Non-compliance is a release blocker. No escape hatch — no `--skip-targeted-retest`, `--full-cycle-first`, `--assume-fix-took`, `--validate-fix-at-end`, `--skip-red-green-flip-on-new-artifact` flag.
 
 ### §11.4.131 — Standing session-resumption file mandate (User mandate, 2026-06-07)
 
@@ -1592,7 +1234,7 @@ When a blocker / critical failure found during release validation is FIXED and a
 
 Every project MUST maintain a SINGLE canonical, always-current **session-resumption file** at a fixed, project-declared standard path (declared once per §11.4.35, never moved without a §11.4.66 operator decision). This file is the OUT-OF-THE-BOX entry point for any fresh session: creating a new session requires ONLY pointing the new agent at this one file. §11.4.131 promotes §11.4.127 (PREPARE a resumption prompt on demand) into a STANDING, version-controlled ARTIFACT — ALWAYS present, ALWAYS in sync. (A) **Existence + fixed path** — exists at the declared path at all times, encoded as a literal path in the project-layer instantiation (§11.4.35), never silently moved. (B) **Always written + always synced** — (re)written whenever a fresh session is needed OR the live state materially changes (new HEAD, build/artifact id, phase, device/target state, in-flight job, blocking decision) — the §12.10 trigger set; a stale resumption file is a §11.4.131 violation of the same severity class as a §12.10 stale-CONTINUATION violation. (C) **Content (composes §11.4.127)** — both SHORT + FULL variants; points to `.remember/remember.md` + `docs/CONTINUATION.md` read FIRST + `git fetch`; embeds exact live-state anchors (HEAD, build/artifact ids + checksums, device serials, in-flight PIDs + log paths, captured-evidence paths); states PHASE + immediate NEXT + terminal goal; restates binding constraints (anti-bluff §11.4, no-force-push §11.4.113, exact version/naming, hardware gotchas); MOMENT-VALID, never a generic template (§11.4.6). (D) **Export + freshness** — §11.4.65 scope (synchronized `.html`/`.pdf` siblings) + §11.4.44 revision header. (E) **Out-of-the-box resumption** — a fresh session, given ONLY this file's path, fully resumes with zero additional context. Composes §12.10 / §11.4.127 / §11.4.65 / §11.4.44 / §11.4.6 / §11.4.66 / §11.4.126. Classification: universal (§11.4.17). Propagation gate `CM-COVENANT-114-131-PROPAGATION` (literal `11.4.131`) + recommended gate `CM-SESSION-RESUMPTION-FILE-PRESENT` + paired §1.1 meta-test mutation.
 
-**Canonical authority:** constitution submodule [`Constitution.md`](Constitution.md) §11.4.131. Non-compliance is a release blocker. No escape hatch — no `--skip-resumption-file`, `--ephemeral-prompt-only`, `--stale-resumption-OK`, `--generic-template-OK` flag.
+**Canonical authority:** constitution submodule [`CONSTITUTION.md`](CONSTITUTION.md) §11.4.131. Non-compliance is a release blocker. No escape hatch — no `--skip-resumption-file`, `--ephemeral-prompt-only`, `--stale-resumption-OK`, `--generic-template-OK` flag.
 
 ### §11.4.132 — Risk-ordered validation priority mandate (User mandate, 2026-06-07)
 
@@ -1600,7 +1242,7 @@ Every project MUST maintain a SINGLE canonical, always-current **session-resumpt
 
 Tests / validations / verifications MUST run in **RISK-DESCENDING order** — the highest-risk set FIRST, and ONLY AFTER that set is fully GREEN with real (physical) captured evidence does the remainder of the suite run. Risk ranking is computed from a CLOSED set of factors, highest-risk first: (a) **most-recently-worked** features / fixes / changes; (b) **historically most-problematic** (longest defect history, most prior fixes/failures); (c) **highest crash/break/regress likelihood** (greatest blast radius / complexity / dependency surface); (d) **most-reopened** per §11.4.55 reopens-count (a high reopen count is the strongest empirical fragility signal). Each item in the highest-risk set MUST pass with real (physical) captured evidence per §11.4.5/§11.4.69/§11.4.107 — no metadata-only / config-only / absence-of-error / grep-without-runtime PASS (§11.4/§11.4.1), no false results, no bluff (§11.4.6). ONLY AFTER the entire highest-risk set is GREEN with captured proof does the rest of the suite run; running the suite in arbitrary order, or running lower-risk tests before the highest-risk set is GREEN, is a §11.4.132 violation. §11.4.132 REFINES/STRENGTHENS §11.4.130 (generalises "validate the just-fixed items first" to the full risk-ordered set) + §11.4.46 (adds explicit risk-ordering within the recent/high-risk set) + §11.4.42 (applies the implementation-layer priority discipline to VALIDATION ordering). Classification: universal (§11.4.17) — the consuming project supplies its recency / problematic-history / reopen-count sources (e.g. §11.4.93 workable-items DB `reopens_count`+`last_modified`) per §11.4.35. Composes §11.4.4/.5/.6/.7/.40/.42/.46/.50/.55/.69/.107/.130. Propagation gate `CM-COVENANT-114-132-PROPAGATION` (literal `11.4.132`) + recommended gate `CM-RISK-ORDERED-VALIDATION-PRIORITY` + paired §1.1 meta-test mutation.
 
-**Canonical authority:** constitution submodule [`Constitution.md`](Constitution.md) §11.4.132. Non-compliance is a release blocker. No escape hatch — no `--skip-risk-ordering`, `--any-order-OK`, `--suite-order-fixed` flag.
+**Canonical authority:** constitution submodule [`CONSTITUTION.md`](CONSTITUTION.md) §11.4.132. Non-compliance is a release blocker. No escape hatch — no `--skip-risk-ordering`, `--any-order-OK`, `--suite-order-fixed` flag.
 
 ### §11.4.133 — Target-System + hardware safety mandate (User mandate, 2026-06-08)
 
@@ -1608,7 +1250,7 @@ Tests / validations / verifications MUST run in **RISK-DESCENDING order** — th
 
 Every change to the TARGET system (firmware, kernel, init/boot scripts, drivers, sysfs/devfreq/voltage/clock/thermal/regulator register writes, partition/bootloader/U-Boot, HAL, framework, prebuilts, device config) MUST ALWAYS be safe for BOTH (a) the target System itself — MUST NOT brick, boot-loop, corrupt data, or render the device unrecoverable — AND (b) the hardware it runs on — MUST NOT exceed safe electrical/thermal/voltage/clock limits or damage panels/storage/radios/regulators. Concrete obligations: (1) reversible-first — verify irreversible high-blast-radius changes (bootloader/U-Boot MD5, partition layout) against known-good values + capture a pre-op backup (§9.2) BEFORE applying; (2) NO unverified hardware-control writes — never write an unverified value to a voltage/clock/regulator/thermal-throttle/current-limit sysfs node or register that could exceed datasheet limits, the safe range established as FACT (§11.4.6), never guessed; (3) thermal/perf changes (forcing a performance governor, pinning the top OPP, disabling thermal management) MUST respect the device's cooling design, validated by captured thermal evidence; (4) flashing MUST use the sanctioned tool + a freshly-built integrity-verified image — never an ad-hoc partition write or stale/unverified artifact; (5) unprovable-safety ⇒ blocked — a change whose target/hardware safety cannot be established from captured evidence is treated as UNSAFE and blocked (§11.4.6 + §11.4.101 reversible-first + §11.4.123 rock-solid-proof). DISTINCT from §12 host-session safety: §12 protects the DEVELOPER's HOST + session; §11.4.133 protects the TARGET device + its hardware — both apply, neither weakens the other. Classification: universal (§11.4.17) — the consuming project supplies its concrete hardware-control surfaces, datasheet-safe ranges, known-good bootloader/image hashes, and sanctioned flashing tool per §11.4.35. Composes §12 / §11.4.6 / §11.4.101 / §11.4.108 / §11.4.123. Propagation gate `CM-COVENANT-114-133-PROPAGATION` (literal `11.4.133`) + recommended gate `CM-TARGET-HARDWARE-SAFETY` + paired §1.1 meta-test mutation.
 
-**Canonical authority:** constitution submodule [`Constitution.md`](Constitution.md) §11.4.133. Non-compliance is a release blocker. No escape hatch — no `--unsafe-hardware-write`, `--skip-system-safety`, `--brick-risk-accepted` flag.
+**Canonical authority:** constitution submodule [`CONSTITUTION.md`](CONSTITUTION.md) §11.4.133. Non-compliance is a release blocker. No escape hatch — no `--unsafe-hardware-write`, `--skip-system-safety`, `--brick-risk-accepted` flag.
 
 ### §11.4.134 — Code-review iterate-until-GO + rock-solid-evidence mandate (User mandate, 2026-06-08)
 
@@ -1616,7 +1258,7 @@ Every change to the TARGET system (firmware, kernel, init/boot scripts, drivers,
 
 When the §11.4.125 code-review returns ANY finding — BLOCKING, nit, or warning — and the author fixes/improves the batch per that review, the code review MUST BE RE-RUN, and MUST KEEP being re-run after each remediation round, until it returns a clean GO with ZERO new issues AND ZERO warnings of any kind. A single pass that "addressed the findings" is NOT sufficient: the corrected batch MUST pass a FRESH adversarial review (a re-review can surface NEW findings introduced by the very fixes that closed the prior ones — the §11.4.1 fix-A-creates-B failure mode). The loop terminates ONLY on a clean GO (no new findings, no warnings); a residual warning is itself a finding that re-arms the loop. Every round's verdict AND every fix's validation MUST carry rock-solid PHYSICAL captured evidence per §11.4.5 / §11.4.69 / §11.4.107 (captured audio / video / sysfs / dumpsys / sink-side / runtime-signature) proving the fixed/improved codebase REALLY works as expected — never metadata-only / configuration-only / absence-of-error / grep-without-runtime; no false results, no bluff at any round; a reported GO unbacked by captured physical evidence is itself a §11.4 PASS-bluff at the review-loop layer. §11.4.134 REFINES / STRENGTHENS §11.4.125 (iterate "until no blocking findings remain"): it makes the loop EXPLICIT (re-run after every remediation round, not once), raises termination to ZERO findings AND ZERO warnings (not merely zero-blocking), and BINDS rock-solid physical evidence to every round. Classification: universal (§11.4.17). Composes §11.4.125 / §11.4.1 / §11.4.4 / §11.4.5 / §11.4.6 / §11.4.69 / §11.4.107 / §11.4.50 / §11.4.108 / §11.4.123. Propagation gate `CM-COVENANT-114-134-PROPAGATION` (literal `11.4.134`) + recommended gate `CM-CODE-REVIEW-ITERATE-UNTIL-GO` + paired §1.1 meta-test mutation (gate-code = separate work item).
 
-**Canonical authority:** constitution submodule [`Constitution.md`](Constitution.md) §11.4.134. Non-compliance is a release blocker. No escape hatch — no `--skip-rereview`, `--single-review-pass`, `--warnings-ok`, `--evidence-optional` flag.
+**Canonical authority:** constitution submodule [`CONSTITUTION.md`](CONSTITUTION.md) §11.4.134. Non-compliance is a release blocker. No escape hatch — no `--skip-rereview`, `--single-review-pass`, `--warnings-ok`, `--evidence-optional` flag.
 
 **§11.4.135 — Standing regression-guard suite + every-fixed-defect-gets-a-permanent-regression-test (User mandate, 2026-06-08).** Every project MUST maintain a STANDING regression-guard suite that runs on EVERY build+deploy and BLOCKS the release tag on any failure. Every closed defect (stable ticket id, e.g. ATM-NNN) MUST, in the SAME commit as its fix (extending the §11.4.43 DOCUMENT step), register a permanent §11.4.115 RED-on-broken-artifact regression test into the suite — `RED_MODE=1` capturing the historical defect on a pre-fix artifact (the proof the guard is real), `RED_MODE=0` the standing GREEN guard asserting the defect is ABSENT. A closure without a registered guard is a §11.4.123 violation. The suite runs FIRST in the post-deploy cycle (highest-risk set per §11.4.132) and is a §11.4.40 release-gate blocker. Forensic anchor (FACT): the wrong-subtitle-on-2nd-display defect was "fixed" via a source-side `CONTROL_MENU_LABEL_DENYLIST` that NO test mirrored or re-ran, so the NEXT chrome class recurred silently while the GREEN suite passed. Industry-standard bug-driven testing (Google content-driven testing; AOSP CTS/Tradefed) made mechanical + enforced. Composes §11.4.4 / §11.4.40 / §11.4.43 / §11.4.46 / §11.4.50 / §11.4.107 / §11.4.108 / §11.4.115 / §11.4.118 / §11.4.123 / §11.4.124 / §11.4.130 / §11.4.132. Classification: universal (§11.4.17). Propagation gate `CM-COVENANT-114-135-PROPAGATION` (literal `11.4.135`) + recommended gates `CM-REGRESSION-GUARD-REGISTERED` / `CM-REGRESSION-GUARD-SUITE-WIRED` + paired §1.1 mutation. **Canonical authority:** constitution submodule [`Constitution.md`](constitution/Constitution.md) §11.4.135. Non-compliance is a release blocker. No escape hatch — no `--skip-regression-guard`, `--no-guard-on-close`, `--guard-optional` flag.
 
@@ -1681,7 +1323,7 @@ When the §11.4.125 code-review returns ANY finding — BLOCKING, nit, or warnin
 > context carrier per §11.4.35), extensible (new action = new registry row),
 > decoupled + reusable (§11.4.28), and loads out-of-the-box. Classification:
 > universal (§11.4.17). **Canonical authority:** constitution submodule
-> [`Constitution.md`](Constitution.md) §11.4.140. Non-compliance is a release
+> [`CONSTITUTION.md`](CONSTITUTION.md) §11.4.140. Non-compliance is a release
 > blocker. No escape hatch — no `--skip-action-prefix`, `--ignore-prefix`,
 > `--no-registry`, `--invent-expansion-OK`, `--single-layer-only` flag.
 
@@ -1728,16 +1370,6 @@ Cascade reference — see constitution submodule `Constitution.md` §11.4.120 fo
 Cascade reference — see constitution submodule `Constitution.md` §11.4.121 for the full mandate. A commit MUST NOT run while a build/packaging/generation step is actively writing artifacts into tracked (version-controlled) directories. The commit MUST be deferred until the writing step completes so the tree is quiescent and committed artifacts are the fresh, whole outputs. Propagation gate `CM-COVENANT-114-121-PROPAGATION` (literal `11.4.121`). Non-compliance is a release blocker.
 
 **Canonical authority:** constitution submodule `Constitution.md` §11.4.121.
-
-<!-- LVA-030: Lava parent-project inheritance pointers (per §6.AD / §6.F) -->
-
-## INHERITED FROM constitution/AGENTS.md
-
-All rules in `constitution/AGENTS.md` (and the `constitution/Constitution.md` it references) apply unconditionally. This file's rules below extend them — they MUST NOT weaken any inherited rule. See parent root `CLAUDE.md` §6.AD for the Lava-specific incorporation context (29th §6.L cycle, 2026-05-14) and §6.AD-debt for the implementation-gap inventory. Use `constitution/find_constitution.sh` from the parent project root to resolve the absolute path of the submodule from any nested location.
-
-## §6.X — Container-Submodule Emulator Wiring Mandate (inherited 2026-06-09, per §6.F, LVA-030)
-
-See root `/CLAUDE.md` §6.X. Every Android emulator instance the project depends on for testing MUST execute its emulator process INSIDE a podman/docker container managed by `Submodules/Containers/`, NOT be host-direct-launched by Containers-submodule code that runs on the host. The Containers submodule's `pkg/runtime/` (rootless podman/docker auto-detection) brings the container up; `pkg/emulator/` orchestrates the AVD lifecycle inside it. Lava-side `scripts/run-emulator-tests.sh` is thin glue forwarding to the Containers CLI. The container-bound path is the gate — host-direct emulators are permitted for workstation iteration only. §6.X-debt tracks the wiring implementation owed to `Submodules/Containers/`. This submodule MAY add stricter rules but MUST NOT relax.
 
 ## §11.4.103 — Continuous parallel-stream working routine (User mandate, 2026-05-29)
 
