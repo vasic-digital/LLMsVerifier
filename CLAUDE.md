@@ -943,6 +943,33 @@ Every committed shell script MUST be parseable by its target interpreter (`sh -n
 
 **Cascade requirement:** This anchor (verbatim or by `CONST-068` ID reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. See constitution submodule `Constitution.md` §11.4.67 for the full mandate.
 
+## CONST-069: Semantic-Visibility-Capability-Boundary Mandate (cascaded from constitution submodule §11.4.166)
+
+A generic semantic-visibility capability MUST accept its fixture, prompt, sentinel,
+and judge-config (judge endpoint/model/threshold + rubric) as runtime arguments
+supplied by the consuming project, and MUST NOT bundle consumer-specific fixtures,
+prompts, sentinels, or rubrics as defaults. The capability MUST NOT read any
+consumer's private directories or verification caches, MUST NOT reference any
+consumer project name, command prefix, or release-tag prefix in its source, and MUST
+NOT assume the identity of any single consumer (it serves N ≥ 2 unrelated consumers).
+Every consumer-specific input is passed in per-invocation; a default that embeds
+consumer context re-couples the submodule and is a CONST-069 violation of equal
+severity to a CONST-051 decoupling breach.
+
+**Anti-bluff / test coverage (per CONST-050(B)):** a Challenge bootstraps a throwaway
+consuming project, invokes the capability with consumer-supplied
+fixture/prompt/sentinel/judge-config args only, and asserts (a) it runs with no
+bundled defaults present and (b) grep of the submodule source finds no consumer
+project name, prefix, or private-path reference. Wire evidence captured per §11.4.2.
+A capability shipping any consumer-specific default, or a source grep hit for a
+consumer identifier, is a CONST-069 violation.
+
+**Cascade requirement:** This anchor (verbatim or by `CONST-069` ID reference) MUST
+remain in this submodule's CONSTITUTION.md, CLAUDE.md, and AGENTS.md, and propagate
+recursively to any nested owned-by-us submodule. See parent project's
+`CONSTITUTION.md` §CONST-069 and constitution submodule `Constitution.md` §11.4.166
+for the full mandate.
+
 ## §11.4.68 — Positive Sink-Side / Downstream Evidence Mandate (cascaded from constitution submodule §11.4.68)
 
 > Verbatim user mandate (2026-05-20): *"We still do not hear any audio played from D3 device! Arvus Web Dashboard when we play music from D3 shows nothing for Codec In Use! This MUST BE investigated and fixed! How come we passed the tests with Arvus validation? What were values for the Codec In Use field? Empty means nothing! This is not working! It MUST BE FIXED, TESTED AND VERIFIED WITH FULL AUTOMATION TESTING ASAP!!!"*
