@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -64,17 +65,17 @@ func TestRun_Round1(t *testing.T) {
 			wantReason: true,
 		},
 		{
-			name:       "http 500 -> round1 fail (anti-bluff, no false pass)",
+			name:       "http 500 -> round1 infra error (exit 3, anti-bluff, no false pass)",
 			status:     500,
-			wantExit:   1,
+			wantExit:   3,
 			wantR1Pass: false,
 			wantReason: true,
 		},
 		{
-			name:       "empty 200 body -> round1 fail (anti-bluff, no false pass)",
+			name:       "empty 200 body -> round1 infra error (exit 3, anti-bluff, no false pass)",
 			status:     200,
 			emptyBody:  true,
-			wantExit:   1,
+			wantExit:   3,
 			wantR1Pass: false,
 			wantReason: true,
 		},
@@ -227,9 +228,11 @@ func TestRun_Round2Judge(t *testing.T) {
 	}
 }
 
-// TestRun_Round2JudgeAntiBluff verifies a failing judge server yields
-// round2.pass=false (not skipped, not a false pass) while round1 still passed.
-func TestRun_Round2JudgeAntiBluff(t *testing.T) {
+// TestRun_Round2JudgeInfraError verifies a judge server that cannot complete
+// the call (HTTP 500) yields round2.pass=false AND exit 3 (infra/transport
+// error) — never exit 1 (which is reserved for a completed call that yields a
+// genuine negative verdict) and never a false pass.
+func TestRun_Round2JudgeInfraError(t *testing.T) {
 	const sentinel = "TOK-Z"
 
 	modelSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -244,7 +247,7 @@ func TestRun_Round2JudgeAntiBluff(t *testing.T) {
 	}))
 	defer modelSrv.Close()
 
-	// Judge returns HTTP 500 -> anti-bluff round2 fail.
+	// Judge returns HTTP 500 -> the judge call could not complete -> infra error.
 	judgeSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
@@ -265,8 +268,8 @@ func TestRun_Round2JudgeAntiBluff(t *testing.T) {
 
 	var stdout, stderr bytes.Buffer
 	exit := run(args, &stdout, &stderr)
-	if exit != 1 {
-		t.Fatalf("exit = %d, want 1 (round2 judge failed)\nstdout=%s\nstderr=%s", exit, stdout.String(), stderr.String())
+	if exit != 3 {
+		t.Fatalf("exit = %d, want 3 (round2 judge call could not complete)\nstdout=%s\nstderr=%s", exit, stdout.String(), stderr.String())
 	}
 
 	var rep report
@@ -287,6 +290,172 @@ func TestRun_Round2JudgeAntiBluff(t *testing.T) {
 	}
 	if rep.Overall {
 		t.Errorf("overall must be false when round2 fails")
+	}
+}
+
+// TestRun_Round2JudgeGenuineLowScore verifies that a judge call which
+// COMPLETES (HTTP 200, parseable score) but returns a score below threshold is
+// a genuine determination -> exit 1, NOT exit 3. This is the precise boundary
+// the exit-3 introduction must not blur: a completed call with a real
+// negative verdict stays exit 1.
+func TestRun_Round2JudgeGenuineLowScore(t *testing.T) {
+	const sentinel = "TOK-LOW"
+
+	modelSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		var req chatRequest
+		_ = json.Unmarshal(body, &req)
+		if len(req.Messages) >= 2 {
+			chatCompletionJSON(t, w, "A vague, mostly-wrong description of the code.")
+			return
+		}
+		chatCompletionJSON(t, w, "Visible: "+sentinel)
+	}))
+	defer modelSrv.Close()
+
+	// Judge call COMPLETES (200, parseable) with a genuinely low score.
+	judgeSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		chatCompletionJSON(t, w, "0")
+	}))
+	defer judgeSrv.Close()
+
+	dir := t.TempDir()
+	fixture := writeTemp(t, dir, "fixture.txt", "x := 1\n")
+	prompt := writeTemp(t, dir, "prompt.txt", "{{FIXTURE_CONTENT}} reply {{SENTINEL}}")
+
+	t.Setenv("SCV_MODEL_KEY", "model-key")
+	t.Setenv("SCV_JUDGE_KEY", "judge-key")
+
+	args := []string{
+		"--base-url", modelSrv.URL, "--model", "m", "--api-key-env", "SCV_MODEL_KEY",
+		"--fixture", fixture, "--prompt", prompt, "--sentinel", sentinel, "--timeout", "10",
+		"--judge-base-url", judgeSrv.URL, "--judge-model", "jm", "--judge-api-key-env", "SCV_JUDGE_KEY",
+	}
+
+	var stdout, stderr bytes.Buffer
+	exit := run(args, &stdout, &stderr)
+	if exit != 1 {
+		t.Fatalf("exit = %d, want 1 (completed call, genuine low score)\nstdout=%s\nstderr=%s", exit, stdout.String(), stderr.String())
+	}
+
+	var rep report
+	if err := json.Unmarshal(stdout.Bytes(), &rep); err != nil {
+		t.Fatalf("bad json: %v\nout=%s", err, stdout.String())
+	}
+	if rep.Round2.Pass == nil || *rep.Round2.Pass {
+		t.Errorf("round2 must fail on a genuinely low score, got %v", rep.Round2.Pass)
+	}
+	if rep.Round2.Score == nil || *rep.Round2.Score != 0 {
+		t.Errorf("round2 score should be 0, got %v", rep.Round2.Score)
+	}
+	if rep.Overall {
+		t.Errorf("overall must be false")
+	}
+}
+
+// TestRun_Round2ModelCallInfraError verifies that the round-2 model-under-test
+// "describe" call failing to complete (HTTP 500 on the continued
+// conversation) yields exit 3, distinguishing an infra failure occurring
+// AFTER round 1 has already genuinely passed.
+func TestRun_Round2ModelCallInfraError(t *testing.T) {
+	const sentinel = "TOK-R2M"
+
+	modelSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		var req chatRequest
+		_ = json.Unmarshal(body, &req)
+		if len(req.Messages) >= 2 {
+			// Round-2 describe call: fail to complete.
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		chatCompletionJSON(t, w, "Visible: "+sentinel)
+	}))
+	defer modelSrv.Close()
+
+	judgeSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		chatCompletionJSON(t, w, "3")
+	}))
+	defer judgeSrv.Close()
+
+	dir := t.TempDir()
+	fixture := writeTemp(t, dir, "fixture.txt", "x := 1\n")
+	prompt := writeTemp(t, dir, "prompt.txt", "{{FIXTURE_CONTENT}} reply {{SENTINEL}}")
+
+	t.Setenv("SCV_MODEL_KEY", "model-key")
+	t.Setenv("SCV_JUDGE_KEY", "judge-key")
+
+	args := []string{
+		"--base-url", modelSrv.URL, "--model", "m", "--api-key-env", "SCV_MODEL_KEY",
+		"--fixture", fixture, "--prompt", prompt, "--sentinel", sentinel, "--timeout", "10",
+		"--judge-base-url", judgeSrv.URL, "--judge-model", "jm", "--judge-api-key-env", "SCV_JUDGE_KEY",
+	}
+
+	var stdout, stderr bytes.Buffer
+	exit := run(args, &stdout, &stderr)
+	if exit != 3 {
+		t.Fatalf("exit = %d, want 3 (round2 model call could not complete)\nstdout=%s\nstderr=%s", exit, stdout.String(), stderr.String())
+	}
+
+	var rep report
+	if err := json.Unmarshal(stdout.Bytes(), &rep); err != nil {
+		t.Fatalf("bad json: %v\nout=%s", err, stdout.String())
+	}
+	if !rep.Round1.Pass {
+		t.Errorf("round1 should still pass")
+	}
+	if rep.Round2.Pass == nil || *rep.Round2.Pass {
+		t.Errorf("round2 must be a hard fail, got %v", rep.Round2.Pass)
+	}
+}
+
+// TestRun_Round1ConnectionRefused verifies a round-1 call that cannot even
+// reach a server (connection refused on a closed port) is an infra error ->
+// exit 3, exercising the network-error branch of chatComplete distinctly from
+// the non-200 and empty-body branches already covered above.
+func TestRun_Round1ConnectionRefused(t *testing.T) {
+	// Open then immediately close a listener to obtain a port nothing is
+	// listening on, guaranteeing a connection-refused error.
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("failed to allocate a port: %v", err)
+	}
+	closedAddr := ln.Addr().String()
+	if err := ln.Close(); err != nil {
+		t.Fatalf("failed to close listener: %v", err)
+	}
+
+	dir := t.TempDir()
+	fixture := writeTemp(t, dir, "fixture.txt", "code")
+	prompt := writeTemp(t, dir, "prompt.txt", "{{FIXTURE_CONTENT}} {{SENTINEL}}")
+
+	t.Setenv("SCV_TEST_KEY", "dummy-key-value")
+
+	args := []string{
+		"--base-url", "http://" + closedAddr,
+		"--model", "test-model",
+		"--api-key-env", "SCV_TEST_KEY",
+		"--fixture", fixture,
+		"--prompt", prompt,
+		"--sentinel", testSentinel,
+		"--timeout", "5",
+	}
+
+	var stdout, stderr bytes.Buffer
+	exit := run(args, &stdout, &stderr)
+	if exit != 3 {
+		t.Fatalf("exit = %d, want 3 (connection refused is an infra error)\nstdout=%s\nstderr=%s", exit, stdout.String(), stderr.String())
+	}
+
+	var rep report
+	if err := json.Unmarshal(stdout.Bytes(), &rep); err != nil {
+		t.Fatalf("bad json: %v\nout=%s", err, stdout.String())
+	}
+	if rep.Round1.Pass {
+		t.Errorf("round1 must not pass on connection refused")
+	}
+	if rep.Round1.Reason == "" {
+		t.Errorf("expected a non-empty reason on connection failure")
 	}
 }
 

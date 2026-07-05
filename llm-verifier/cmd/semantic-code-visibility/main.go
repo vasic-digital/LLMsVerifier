@@ -31,6 +31,20 @@
 // yields pass=false with a reason — never a false pass. The bearer token is
 // read ONLY from the env var named by --api-key-env (never taken as a flag
 // value, never echoed into argv or the JSON output).
+//
+// Exit codes:
+//
+//	0  overall pass (round 1 passed, and round 2 passed or was skipped).
+//	1  genuine verification failure — a round-1 or round-2 API call
+//	   COMPLETED and yielded a real negative determination: the sentinel was
+//	   not reflected back, or the judge score was below --judge-threshold.
+//	2  usage/config error — missing/invalid flags, unreadable fixture or
+//	   prompt files, unset --api-key-env, etc.
+//	3  infra/transport error — a round-1 or round-2 model/judge API call did
+//	   NOT complete: non-2xx status, network/timeout error, or empty
+//	   response/content. This is distinct from exit 1: it means the verifier
+//	   could not reach a determination at all, so a transient judge 429/5xx
+//	   must never be mistaken for a real failure.
 package main
 
 import (
@@ -82,20 +96,28 @@ type chatResponse struct {
 	} `json:"choices"`
 }
 
-// round1Result is the sentinel-visibility outcome.
+// round1Result is the sentinel-visibility outcome. infra is unexported (never
+// serialized) and is true iff Pass=false because the round-1 API call could
+// not complete (transport error, non-2xx, empty body/content) rather than
+// because it completed and genuinely lacked the sentinel.
 type round1Result struct {
 	Pass     bool   `json:"pass"`
 	Observed string `json:"observed"`
 	Reason   string `json:"reason,omitempty"`
+	infra    bool
 }
 
 // round2Result is the judge outcome. Pass/Score are pointers so they serialize
-// as JSON null when round 2 was not evaluated.
+// as JSON null when round 2 was not evaluated. infra is unexported (never
+// serialized) and is true iff Pass=false because the round-2 model-describe
+// call or the judge call could not complete, rather than because a completed
+// call yielded a genuine below-threshold score.
 type round2Result struct {
 	Pass    *bool  `json:"pass"`
 	Score   *int   `json:"score"`
 	Skipped bool   `json:"skipped"`
 	Reason  string `json:"reason,omitempty"`
+	infra   bool
 }
 
 // report is the machine-readable output document.
@@ -109,8 +131,10 @@ func main() {
 	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
 }
 
-// run is the testable entry point. Exit codes: 0 overall pass, 1 verification
-// fail, 2 usage/config error.
+// run is the testable entry point. Exit codes: 0 overall pass, 1 genuine
+// verification fail (completed call, real negative verdict), 2 usage/config
+// error, 3 infra/transport error (a model or judge call could not complete).
+// See the package doc comment above for the full table.
 func run(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("semantic-code-visibility", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -233,7 +257,9 @@ func run(args []string, stdout, stderr io.Writer) int {
 	}, 256)
 	if err != nil {
 		// Anti-bluff: any failed/empty call is a fail with a reason, never a pass.
-		rep.Round1 = round1Result{Pass: false, Observed: "", Reason: err.Error()}
+		// This is an infra/transport failure (exit 3), not a genuine
+		// determination (exit 1) — the call never completed.
+		rep.Round1 = round1Result{Pass: false, Observed: "", Reason: err.Error(), infra: true}
 	} else {
 		rep.Round1 = round1Result{
 			Pass:     strings.Contains(r1Content, *sentinel),
@@ -284,6 +310,14 @@ func run(args []string, stdout, stderr io.Writer) int {
 	if rep.Overall {
 		return 0
 	}
+	// Anti-bluff exit-code precision: an infra/transport failure (the model or
+	// judge call could not complete) is a different class of non-pass than a
+	// genuine verification failure (sentinel not reflected / judge score below
+	// threshold). Exit 3 means "the verifier could not reach a determination";
+	// exit 1 means "the verifier reached a determination and it was negative."
+	if rep.Round1.infra || (!rep.Round2.Skipped && rep.Round2.infra) {
+		return 3
+	}
 	return 1
 }
 
@@ -306,6 +340,16 @@ type round2Params struct {
 // asks the judge model to score it. Every failure yields pass=false with a
 // reason (anti-bluff) — never a null/pass on a broken call.
 func runRound2(ctx context.Context, hc *http.Client, p round2Params) round2Result {
+	// failInfra marks the failure as infra/transport (exit 3): the model or
+	// judge API call itself did not complete.
+	failInfra := func(reason string) round2Result {
+		f := false
+		return round2Result{Pass: &f, Skipped: false, Reason: reason, infra: true}
+	}
+	// fail marks a genuine determination (exit 1): the call completed but the
+	// content could not be turned into a usable verdict (e.g. the judge's
+	// reply had no parseable score) — the call succeeded, so this is not an
+	// infra failure.
 	fail := func(reason string) round2Result {
 		f := false
 		return round2Result{Pass: &f, Skipped: false, Reason: reason}
@@ -318,7 +362,7 @@ func runRound2(ctx context.Context, hc *http.Client, p round2Params) round2Resul
 		{Role: "user", Content: p.round2Instr},
 	}, 512)
 	if err != nil {
-		return fail("round-2 model call failed: " + err.Error())
+		return failInfra("round-2 model call failed: " + err.Error())
 	}
 
 	// Ask the judge to score the description.
@@ -328,7 +372,7 @@ func runRound2(ctx context.Context, hc *http.Client, p round2Params) round2Resul
 		{Role: "user", Content: judgePrompt},
 	}, 64)
 	if err != nil {
-		return fail("judge call failed: " + err.Error())
+		return failInfra("judge call failed: " + err.Error())
 	}
 
 	score, ok := parseScore(judgeReply)
