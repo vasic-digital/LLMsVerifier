@@ -416,4 +416,38 @@ func (mm *MigrationManager) SetupDefaultMigrations() {
 			return fmt.Errorf("rolling back Brotli support migration is not supported")
 		},
 	})
+
+	// Migration 6: Add CONST-040 capability fields (RAG / Skills / Plugins)
+	mm.AddMigration(Migration{
+		Version:     6,
+		Description: "Add supports_rag, supports_skills, supports_plugins columns to verification_results (CONST-040)",
+		Up: func(tx *sql.Tx) error {
+			// Idempotent: only add each column if it does not already exist.
+			// ALTER TABLE ADD COLUMN appends at the physical end, matching the
+			// fresh-DDL placement (after created_at) so SELECT vr.* stays aligned.
+			for _, col := range []string{"supports_rag", "supports_skills", "supports_plugins"} {
+				var columnExists bool
+				if err := tx.QueryRow(`
+					SELECT COUNT(*) > 0
+					FROM pragma_table_info('verification_results')
+					WHERE name = ?
+				`, col).Scan(&columnExists); err != nil {
+					return fmt.Errorf("failed to check if column %s exists: %w", col, err)
+				}
+				if !columnExists {
+					// #nosec G201 - col is from a fixed internal allow-list above, not user input
+					if _, err := tx.Exec(fmt.Sprintf(
+						"ALTER TABLE verification_results ADD COLUMN %s BOOLEAN DEFAULT 0", col,
+					)); err != nil {
+						return fmt.Errorf("failed to add %s column: %w", col, err)
+					}
+				}
+			}
+			return nil
+		},
+		Down: func(tx *sql.Tx) error {
+			// SQLite has no DROP COLUMN in older versions; rolling back is unsupported.
+			return fmt.Errorf("rolling back CONST-040 capability columns migration is not supported")
+		},
+	})
 }

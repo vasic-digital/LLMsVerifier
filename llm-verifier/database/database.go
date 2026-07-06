@@ -577,6 +577,13 @@ func (d *Database) initializeSchema() error {
 		raw_request TEXT,
 		raw_response TEXT,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		-- CONST-040 capability columns. Placed physically last so a fresh-DDL
+		-- table and a table migrated via ALTER TABLE ADD COLUMN (migration 6,
+		-- which SQLite appends at the end) share identical column order — the
+		-- SELECT vr.* scan in GetLatestVerificationResults depends on it.
+		supports_rag BOOLEAN DEFAULT 0,
+		supports_skills BOOLEAN DEFAULT 0,
+		supports_plugins BOOLEAN DEFAULT 0,
 		FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE CASCADE
 	);
 
@@ -898,6 +905,9 @@ type VerificationResult struct {
 	SupportsMCPs             bool       `json:"supports_mcps"`
 	SupportsLSPs             bool       `json:"supports_lsps"`
 	SupportsACPs             bool       `json:"supports_acps"`
+	SupportsRAG              bool       `json:"supports_rag"`
+	SupportsSkills           bool       `json:"supports_skills"`
+	SupportsPlugins          bool       `json:"supports_plugins"`
 	SupportsMultimodal       bool       `json:"supports_multimodal"`
 	SupportsStreaming        bool       `json:"supports_streaming"`
 	SupportsJSONMode         bool       `json:"supports_json_mode"`
@@ -1232,8 +1242,9 @@ func (d *Database) createVerificationResultTx(tx *sql.Tx, verificationResult *Ve
 		overall_score, code_capability_score, responsiveness_score,
 		reliability_score, feature_richness_score, value_proposition_score,
 		score_details, avg_latency_ms, p95_latency_ms, min_latency_ms,
-		max_latency_ms, throughput_rps, raw_request, raw_response
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		max_latency_ms, throughput_rps, raw_request, raw_response,
+		supports_rag, supports_skills, supports_plugins
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := tx.Exec(query,
@@ -1299,6 +1310,9 @@ func (d *Database) createVerificationResultTx(tx *sql.Tx, verificationResult *Ve
 		verificationResult.ThroughputRPS,
 		verificationResult.RawRequest,
 		verificationResult.RawResponse,
+		verificationResult.SupportsRAG,
+		verificationResult.SupportsSkills,
+		verificationResult.SupportsPlugins,
 	)
 
 	if err != nil {

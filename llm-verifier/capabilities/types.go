@@ -111,6 +111,12 @@ type ProviderCapabilities struct {
 
 	// Provider-specific features (dynamic)
 	Custom           map[string]interface{} `json:"custom,omitempty"`
+
+	// CapabilityEvidence maps a capability name (e.g. "tool_use", "rag",
+	// "skills", "plugins") to the captured probe artefact that proves its
+	// verdict — CONST-040 anti-bluff seam (§11.4.5 / §11.4.69). Storage only;
+	// probe wiring lands in a later change.
+	CapabilityEvidence map[string]CapabilityEvidenceEntry `json:"capability_evidence,omitempty"`
 }
 
 // StreamingCapability details streaming support
@@ -179,8 +185,23 @@ type ModelCapability struct {
 	CodeExecution    bool   `json:"code_execution"`
 	WebBrowsing      bool   `json:"web_browsing"`
 	Reasoning        bool   `json:"reasoning"`         // Extended thinking/reasoning
+	SupportsRAG      bool   `json:"supports_rag"`      // CONST-040: retrieval-augmented generation
+	SupportsSkills   bool   `json:"supports_skills"`   // CONST-040: agent skills/tools capability
+	SupportsPlugins  bool   `json:"supports_plugins"`  // CONST-040: plugin invocation capability
 	MaxContextTokens int    `json:"max_context_tokens"`
 	MaxOutputTokens  int    `json:"max_output_tokens"`
+}
+
+// CapabilityEvidenceEntry holds a captured wire artefact proving a single
+// capability's verification verdict — the CONST-040 / §11.4.5 / §11.4.69
+// anti-bluff seam: every capability flag traces to a real probe request+response.
+type CapabilityEvidenceEntry struct {
+	Capability  string    `json:"capability"`             // e.g. "tool_use", "rag", "skills", "plugins"
+	RawRequest  string    `json:"raw_request,omitempty"`  // captured probe request payload
+	RawResponse string    `json:"raw_response,omitempty"` // captured probe response payload
+	Verdict     bool      `json:"verdict"`                // true iff the probe confirmed the capability
+	Method      string    `json:"method,omitempty"`       // probe method identifier
+	VerifiedAt  time.Time `json:"verified_at,omitempty"`  // when the probe ran (CONST-037/038 freshness)
 }
 
 // ExtendedCapabilities details additional advanced features
