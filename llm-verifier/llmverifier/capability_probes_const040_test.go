@@ -13,18 +13,20 @@ import (
 
 // const040ProbePositiveContent is the assistant message body a loopback
 // endpoint returns so that ALL THREE CONST-040 capability probes added by
-// change C4 (RAG / Skills / Plugins) reach a positive verdict:
+// change C4 (RAG / Skills / Plugins) reach a positive verdict. Each probe now
+// uses a grounded-sentinel oracle (review advisory 2 tightened Skills/Plugins
+// to match TestRAG's style), so this content echoes every probe's sentinel:
 //   - RAG      → cites the injected-document sentinel "zorblax-7742"
-//   - Skills   → names the invoked skill "code_formatter"
-//   - Plugins  → names the invoked plugin "weather_lookup"
+//   - Skills   → echoes the skill's invocation marker  "sk-marker-5591"
+//   - Plugins  → echoes the plugin's station identifier "pl-station-3308"
 //
 // A model genuinely supporting these capabilities returns exactly this kind
-// of grounded, skill/plugin-citing answer; a model that ignores them does
-// not. The loopback server serving this content is a REAL HTTP round-trip
-// (no simulation — §3 root CLAUDE.md), so the probe exercised here makes an
-// actual wire call, not a stubbed one.
-const const040ProbePositiveContent = "Using the code_formatter skill and the weather_lookup plugin, " +
-	"the grounded answer from the provided document is zorblax-7742."
+// of grounded, sentinel-carrying answer; a model that merely repeats the words
+// "skill"/"plugin" does not. The loopback server serving this content is a REAL
+// HTTP round-trip (no simulation — §3 root CLAUDE.md), so the probe exercised
+// here makes an actual wire call, not a stubbed one.
+const const040ProbePositiveContent = "Using the code_formatter skill (marker sk-marker-5591) and the " +
+	"weather_lookup plugin (station pl-station-3308), the grounded answer from the provided document is zorblax-7742."
 
 // TestCapabilityProbesCONST040 is the §11.4.115 RED-baseline-on-the-broken-
 // artifact polarity test for change C4 (the per-capability probe path for

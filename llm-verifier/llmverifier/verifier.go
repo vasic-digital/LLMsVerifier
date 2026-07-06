@@ -1540,19 +1540,25 @@ func (v *Verifier) TestRAG(client *LLMClient, modelName string, ctx context.Cont
 }
 
 // TestSkills probes for agent-skill invocation support (CONST-040 / C4). It
-// advertises a named skill and asks the model to use it. A model that
-// understands skill invocation names/uses the skill; one that does not
-// produces a bare answer. Positive-evidence shape (10b §3 C4): a captured
-// skill invocation. A client/transport error yields a clean false.
+// advertises a named skill whose specification requires it to emit a unique
+// sentinel marker on invocation, and asks the model to use the skill and
+// include that marker. Grounded-sentinel oracle (same style as TestRAG): a
+// model that genuinely invokes/simulates the skill echoes the sentinel; a model
+// that merely repeats the word "skill" does NOT — so a bare keyword echo no
+// longer trips a false positive. Positive-evidence shape (10b §3 C4): a captured
+// skill invocation carrying the sentinel. A client/transport error yields a
+// clean false (never a faked positive), so a missing key SKIPs cleanly.
 func (v *Verifier) TestSkills(client *LLMClient, modelName string, ctx context.Context) bool {
+	const sentinel = "sk-marker-5591"
 	req := ChatCompletionRequest{
 		Model: modelName,
 		Messages: []Message{
 			{
 				Role: "user",
 				Content: "You have access to a skill named \"code_formatter\" that reformats " +
-					"source code. Using that skill, format this snippet: def f(x):return x+1 . " +
-					"Name the skill you invoke.",
+					"source code. Per its specification the skill ALWAYS prepends the exact " +
+					"marker " + sentinel + " to whatever it returns. Using that skill, format " +
+					"this snippet: def f(x):return x+1 — and include the skill's marker in your answer.",
 			},
 		},
 	}
@@ -1562,23 +1568,32 @@ func (v *Verifier) TestSkills(client *LLMClient, modelName string, ctx context.C
 		return false
 	}
 
-	content := strings.ToLower(resp.Choices[0].Message.Content)
-	return strings.Contains(content, "code_formatter") || strings.Contains(content, "skill")
+	// Grounded verdict: the model reproduced the skill's sentinel marker that a
+	// genuine invocation MUST emit — evidence it actually used the skill rather
+	// than merely echoing the word.
+	return strings.Contains(strings.ToLower(resp.Choices[0].Message.Content), sentinel)
 }
 
 // TestPlugins probes for plugin invocation support (CONST-040 / C4). It
-// advertises a named plugin and asks the model to invoke it. Positive-evidence
-// shape (10b §3 C4): a captured plugin call. A client/transport error yields a
-// clean false.
+// advertises a named plugin whose API response carries a unique sentinel
+// station id, and asks the model to invoke it and report that id. Grounded-
+// sentinel oracle (same style as TestRAG): a model that genuinely invokes/
+// simulates the plugin echoes the sentinel; a model that merely repeats the
+// word "plugin" does NOT — so a bare keyword echo no longer trips a false
+// positive. Positive-evidence shape (10b §3 C4): a captured plugin call
+// carrying the sentinel. A client/transport error yields a clean false (never a
+// faked positive), so a missing key SKIPs cleanly.
 func (v *Verifier) TestPlugins(client *LLMClient, modelName string, ctx context.Context) bool {
+	const sentinel = "pl-station-3308"
 	req := ChatCompletionRequest{
 		Model: modelName,
 		Messages: []Message{
 			{
 				Role: "user",
 				Content: "You have access to a plugin named \"weather_lookup\" that returns the " +
-					"current weather for a city. Invoke that plugin to get the weather in Paris " +
-					"and name the plugin you call.",
+					"current weather for a city. Its API response always includes the exact " +
+					"station identifier " + sentinel + ". Invoke that plugin to get the weather " +
+					"in Paris and report the station identifier it returns.",
 			},
 		},
 	}
@@ -1588,8 +1603,10 @@ func (v *Verifier) TestPlugins(client *LLMClient, modelName string, ctx context.
 		return false
 	}
 
-	content := strings.ToLower(resp.Choices[0].Message.Content)
-	return strings.Contains(content, "weather_lookup") || strings.Contains(content, "plugin")
+	// Grounded verdict: the model reproduced the plugin's sentinel station id
+	// that a genuine invocation MUST return — evidence it actually called the
+	// plugin rather than merely echoing the word.
+	return strings.Contains(strings.ToLower(resp.Choices[0].Message.Content), sentinel)
 }
 
 func (v *Verifier) testImageGeneration(client *LLMClient, modelName string, ctx context.Context) bool {
