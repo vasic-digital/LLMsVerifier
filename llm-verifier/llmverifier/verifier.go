@@ -64,6 +64,24 @@ func (v *Verifier) GetGlobalClient() *LLMClient {
 	return NewLLMClientWithTimeout(v.cfg.Global.BaseURL, v.cfg.Global.APIKey, nil, timeout)
 }
 
+// DetectModelFeatures builds a REAL LLM client from the verifier's configured
+// global endpoint + API key and runs the full feature-detection probe battery
+// (including the CONST-040 C4 RAG/Skills/Plugins probes) against modelName.
+//
+// It is the dispatch entry point the VerificationService (change C5,
+// 10b_code_exact_change_spec.md §3 C5) calls to obtain real, probe-sourced
+// capability outcomes to compose + persist into a database.VerificationResult.
+// A nil config is a programming error (the prober was constructed without one);
+// individual probe transport errors yield clean false verdicts inside
+// detectFeatures — never a faked positive (§11.4 / CONST-037).
+func (v *Verifier) DetectModelFeatures(modelName string) (*FeatureDetectionResult, error) {
+	if v == nil || v.cfg == nil {
+		return nil, fmt.Errorf("llmverifier: verifier has no config; cannot build client for model %q", modelName)
+	}
+	client := v.GetGlobalClient()
+	return v.detectFeatures(client, modelName)
+}
+
 // SummarizeConversation uses LLM to generate a summary of conversation messages
 func (v *Verifier) SummarizeConversation(messages []string) (*ConversationSummary, error) {
 	if len(messages) == 0 {
