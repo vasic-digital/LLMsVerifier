@@ -731,8 +731,17 @@ func (v *Verifier) testToolUse(client *LLMClient, modelName string, ctx context.
 		ToolChoice: "auto",
 	}
 
-	_, err := client.ChatCompletion(ctx, req)
-	return err == nil
+	// §11.4 / CONST-039/040 — Tool-use support means the model actually
+	// INVOKES the tool, not merely that the request returned without error.
+	// Verify at least one real tool call landed in the response's
+	// `tool_calls` array (now carried by Message.ToolCalls). The former
+	// `return err == nil` PASSed for any model that answered in plain text
+	// and ignored the tool entirely — a §11.4 PASS-bluff.
+	resp, err := client.ChatCompletion(ctx, req)
+	if err != nil || len(resp.Choices) == 0 {
+		return false
+	}
+	return len(resp.Choices[0].Message.ToolCalls) > 0
 }
 
 // Tool represents a tool specification for function calling
@@ -1089,26 +1098,19 @@ func (v *Verifier) testParallelToolUse(client *LLMClient, modelName string, ctx 
 	}
 
 	resp, err := client.ChatCompletion(ctx, req)
-	if err != nil {
+	if err != nil || len(resp.Choices) == 0 {
 		return false, 0
 	}
 
-	// §11.4 / CONST-035 — Counting REAL tool calls requires
-	// parsing the OpenAI-shape `tool_calls` array on every
-	// Choice.Message, but this codebase's Message struct
-	// (llm_client.go:92) does NOT yet carry a ToolCalls field —
-	// extending the schema is a CONST-039 prerequisite tracked
-	// separately. Until the schema lands, return the honest
-	// sentinel (false, 0).
-	//
-	// Previously hardcoded `toolCallCount = 2` — the number of
-	// TOOLS we provided, not the number of tool CALLS in the
-	// response. Any caller asserting "model invokes >= 2 tools"
-	// PASSed against the fabricated count even when the model
-	// invoked 0 or 1 tool. §11.4 PASS-bluff at the parallel-tool-
-	// use detection layer.
-	_ = resp
-	return false, 0
+	// §11.4 / CONST-035/039/040 — Count the REAL tool calls the model
+	// returned in the OpenAI-shape `tool_calls` array (now carried by
+	// Message.ToolCalls, llm_client.go). Parallel tool use = the model
+	// invoked more than one tool in a single response. This replaces the
+	// former hardcoded `toolCallCount = 2` (the number of TOOLS we
+	// PROVIDED, not the number of tool CALLS returned) — a §11.4 PASS-
+	// bluff that reported success even when the model invoked 0 or 1 tool.
+	toolCallCount := len(resp.Choices[0].Message.ToolCalls)
+	return toolCallCount > 1, toolCallCount
 }
 
 // testBatchProcessing checks for batch processing capability
