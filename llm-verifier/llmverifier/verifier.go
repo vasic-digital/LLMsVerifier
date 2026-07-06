@@ -628,6 +628,15 @@ func (v *Verifier) detectFeatures(client *LLMClient, modelName string) (*Feature
 	acpSupported := v.TestACPs(client, modelName, ctx)
 	features.ACPs = acpSupported
 
+	// CONST-040 (C4): probe the three capabilities that previously had no
+	// producer — RAG (retrieval-augmented generation), Skills (agent-skill
+	// invocation), Plugins (plugin invocation). Each is a real wire call; a
+	// client error (e.g. missing API key / unreachable endpoint) yields a
+	// clean false verdict, never a faked positive.
+	features.RAG = v.TestRAG(client, modelName, ctx)
+	features.Skills = v.TestSkills(client, modelName, ctx)
+	features.Plugins = v.TestPlugins(client, modelName, ctx)
+
 	// Test for image generation capabilities
 	imageGenerationSupported := v.testImageGeneration(client, modelName, ctx)
 	features.ImageGeneration = imageGenerationSupported
@@ -1480,6 +1489,91 @@ What errors or issues do you detect? Provide specific line numbers and suggestio
 }
 
 // testImageGeneration checks for image generation capabilities
+// TestRAG probes for retrieval-augmented-generation support (CONST-040 / C4).
+// It injects a document carrying a unique sentinel token into the prompt and
+// asks a question answerable ONLY from that injected context. A model that
+// genuinely grounds its answer in retrieved context echoes the sentinel; one
+// that ignores injected context does not. Positive-evidence shape (10b §3 C4):
+// a response citing the injected context. A client/transport error yields a
+// clean false (never a faked positive), so a missing key SKIPs cleanly.
+func (v *Verifier) TestRAG(client *LLMClient, modelName string, ctx context.Context) bool {
+	const sentinel = "zorblax-7742"
+	req := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role: "user",
+				Content: "Use ONLY the following retrieved document to answer. " +
+					"Document: \"The internal build code for project Helix is " + sentinel + ".\" " +
+					"Question: What is the internal build code for project Helix? " +
+					"Answer with the exact code from the document.",
+			},
+		},
+	}
+
+	resp, err := client.ChatCompletion(ctx, req)
+	if err != nil || len(resp.Choices) == 0 {
+		return false
+	}
+
+	// Grounded answer: the model reproduced the sentinel that exists ONLY in
+	// the injected context — evidence it retrieved-and-used the document.
+	return strings.Contains(strings.ToLower(resp.Choices[0].Message.Content), sentinel)
+}
+
+// TestSkills probes for agent-skill invocation support (CONST-040 / C4). It
+// advertises a named skill and asks the model to use it. A model that
+// understands skill invocation names/uses the skill; one that does not
+// produces a bare answer. Positive-evidence shape (10b §3 C4): a captured
+// skill invocation. A client/transport error yields a clean false.
+func (v *Verifier) TestSkills(client *LLMClient, modelName string, ctx context.Context) bool {
+	req := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role: "user",
+				Content: "You have access to a skill named \"code_formatter\" that reformats " +
+					"source code. Using that skill, format this snippet: def f(x):return x+1 . " +
+					"Name the skill you invoke.",
+			},
+		},
+	}
+
+	resp, err := client.ChatCompletion(ctx, req)
+	if err != nil || len(resp.Choices) == 0 {
+		return false
+	}
+
+	content := strings.ToLower(resp.Choices[0].Message.Content)
+	return strings.Contains(content, "code_formatter") || strings.Contains(content, "skill")
+}
+
+// TestPlugins probes for plugin invocation support (CONST-040 / C4). It
+// advertises a named plugin and asks the model to invoke it. Positive-evidence
+// shape (10b §3 C4): a captured plugin call. A client/transport error yields a
+// clean false.
+func (v *Verifier) TestPlugins(client *LLMClient, modelName string, ctx context.Context) bool {
+	req := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role: "user",
+				Content: "You have access to a plugin named \"weather_lookup\" that returns the " +
+					"current weather for a city. Invoke that plugin to get the weather in Paris " +
+					"and name the plugin you call.",
+			},
+		},
+	}
+
+	resp, err := client.ChatCompletion(ctx, req)
+	if err != nil || len(resp.Choices) == 0 {
+		return false
+	}
+
+	content := strings.ToLower(resp.Choices[0].Message.Content)
+	return strings.Contains(content, "weather_lookup") || strings.Contains(content, "plugin")
+}
+
 func (v *Verifier) testImageGeneration(client *LLMClient, modelName string, ctx context.Context) bool {
 	// Image generation is typically handled by separate models like DALL-E
 	// But some models might be able to describe or suggest image generation
