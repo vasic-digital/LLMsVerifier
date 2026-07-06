@@ -4,11 +4,18 @@ import (
 	"time"
 )
 
-// Provider capability registry - based on verified API testing
-var providerCapabilities = map[string]*ProviderCapabilities{
+// providerCapabilitySeeds are hand-authored bootstrap DEFAULTS ONLY — they are
+// NOT verified and MUST be overridden by a live probe / DB `VerificationResult`
+// before being shown to any user, per CONST-036/037/040 (§2.5, 10b §3 C3).
+// Every seed's `Verified` field is therefore `false` by construction: a seed is
+// unverified until a fresh probe backs it. The fail-closed resolver
+// (ResolveModelCapability, registry_resolve.go) prefers a fresh per-model
+// `database.VerificationResult` and reports `unverified` when none exists —
+// never a hand-authored self-certified literal.
+var providerCapabilitySeeds = map[string]*ProviderCapabilities{
 	"openai": {
 		Provider: "openai",
-		Verified: true,
+		Verified: false, // seed: unverified by construction (C3, CONST-036/037/040) — a fresh probe MUST override
 		Streaming: StreamingCapability{
 			Supported:   true,
 			Types:       []StreamingType{StreamingTypeSSE},
@@ -59,7 +66,7 @@ var providerCapabilities = map[string]*ProviderCapabilities{
 
 	"anthropic": {
 		Provider: "anthropic",
-		Verified: true,
+		Verified: false, // seed: unverified by construction (C3, CONST-036/037/040) — a fresh probe MUST override
 		Streaming: StreamingCapability{
 			Supported:   true,
 			Types:       []StreamingType{StreamingTypeSSE},
@@ -115,7 +122,7 @@ var providerCapabilities = map[string]*ProviderCapabilities{
 
 	"deepseek": {
 		Provider: "deepseek",
-		Verified: true,
+		Verified: false, // seed: unverified by construction (C3, CONST-036/037/040) — a fresh probe MUST override
 		Streaming: StreamingCapability{
 			Supported:   true,
 			Types:       []StreamingType{StreamingTypeSSE},
@@ -159,7 +166,7 @@ var providerCapabilities = map[string]*ProviderCapabilities{
 
 	"gemini": {
 		Provider: "gemini",
-		Verified: true,
+		Verified: false, // seed: unverified by construction (C3, CONST-036/037/040) — a fresh probe MUST override
 		Streaming: StreamingCapability{
 			Supported:   true,
 			Types:       []StreamingType{StreamingTypeJSONL, StreamingTypeSSE},
@@ -216,7 +223,7 @@ var providerCapabilities = map[string]*ProviderCapabilities{
 
 	"qwen": {
 		Provider: "qwen",
-		Verified: true,
+		Verified: false, // seed: unverified by construction (C3, CONST-036/037/040) — a fresh probe MUST override
 		Streaming: StreamingCapability{
 			Supported:   true,
 			Types:       []StreamingType{StreamingTypeSSE},
@@ -262,7 +269,7 @@ var providerCapabilities = map[string]*ProviderCapabilities{
 
 	"groq": {
 		Provider: "groq",
-		Verified: true,
+		Verified: false, // seed: unverified by construction (C3, CONST-036/037/040) — a fresh probe MUST override
 		Streaming: StreamingCapability{
 			Supported:   true,
 			Types:       []StreamingType{StreamingTypeSSE},
@@ -301,7 +308,7 @@ var providerCapabilities = map[string]*ProviderCapabilities{
 
 	"mistral": {
 		Provider: "mistral",
-		Verified: true,
+		Verified: false, // seed: unverified by construction (C3, CONST-036/037/040) — a fresh probe MUST override
 		Streaming: StreamingCapability{
 			Supported:   true,
 			Types:       []StreamingType{StreamingTypeSSE},
@@ -343,7 +350,7 @@ var providerCapabilities = map[string]*ProviderCapabilities{
 
 	"zen": {
 		Provider: "zen",
-		Verified: true,
+		Verified: false, // seed: unverified by construction (C3, CONST-036/037/040) — a fresh probe MUST override
 		Streaming: StreamingCapability{
 			Supported:   true,
 			Types:       []StreamingType{StreamingTypeSSE},
@@ -385,7 +392,7 @@ var providerCapabilities = map[string]*ProviderCapabilities{
 
 	"ollama": {
 		Provider: "ollama",
-		Verified: true,
+		Verified: false, // seed: unverified by construction (C3, CONST-036/037/040) — a fresh probe MUST override
 		Streaming: StreamingCapability{
 			Supported:   true,
 			Types:       []StreamingType{StreamingTypeJSONL},
@@ -1064,10 +1071,18 @@ var cliAgentCapabilities = map[string]*CLIAgentCapabilities{
 	},
 }
 
-// GetProviderBaseCapabilities returns base capabilities for a provider
+// GetProviderBaseCapabilities returns the base (SEED) capabilities for a
+// provider. The returned struct is a COPY of the seed so a caller mutating
+// `.Verified` (e.g. a detector that flips it true after a probe) can NEVER
+// write that state back into the shared registry seed — the seed stays
+// `Verified:false` (unverified-by-construction, C3 / CONST-036/037/040).
+// Callers that need a probe-backed, fail-closed verdict MUST use
+// ResolveModelCapability (registry_resolve.go), which prefers a fresh
+// database.VerificationResult and fail-closes to unverified when none exists.
 func GetProviderBaseCapabilities(provider string) *ProviderCapabilities {
-	if caps, ok := providerCapabilities[provider]; ok {
-		return caps
+	if caps, ok := providerCapabilitySeeds[provider]; ok {
+		seedCopy := *caps // shallow copy isolates the value fields (incl. Verified)
+		return &seedCopy
 	}
 	return nil
 }
@@ -1082,8 +1097,8 @@ func GetCLIAgentCapabilities(agent string) *CLIAgentCapabilities {
 
 // GetAllProviders returns all registered provider names
 func GetAllProviders() []string {
-	providers := make([]string, 0, len(providerCapabilities))
-	for name := range providerCapabilities {
+	providers := make([]string, 0, len(providerCapabilitySeeds))
+	for name := range providerCapabilitySeeds {
 		providers = append(providers, name)
 	}
 	return providers
@@ -1102,7 +1117,7 @@ func GetAllCLIAgents() []string {
 func GetProvidersWithCapability(capName string, capValue interface{}) []string {
 	var result []string
 
-	for name, caps := range providerCapabilities {
+	for name, caps := range providerCapabilitySeeds {
 		switch capName {
 		case "streaming":
 			if caps.Streaming.Supported {
