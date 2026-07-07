@@ -313,3 +313,4 @@ auto_exports/
 # END SECURITY SECTION
 # ========================================================================
 ultimate_opencode*.json
+llm-verifier/claude-alias-probe
