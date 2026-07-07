@@ -2,12 +2,12 @@ package providers
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"digital.vasic.llmsverifier/logging"
 	opencode_config "digital.vasic.llmsverifier/pkg/opencode/config"
 	"digital.vasic.llmsverifier/scoring"
 	"digital.vasic.llmsverifier/verification"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"sort"
@@ -55,11 +55,11 @@ type Model struct {
 	ID              string                 `json:"id"`
 	Name            string                 `json:"name"`
 	ProviderID      string                 `json:"provider_id"`
-	Provider        string                 `json:"provider"`       // Alias for ProviderID for compatibility
+	Provider        string                 `json:"provider"` // Alias for ProviderID for compatibility
 	ProviderName    string                 `json:"provider_name"`
 	DisplayName     string                 `json:"display_name"`
 	Features        map[string]interface{} `json:"features"`
-	Metadata        map[string]interface{} `json:"metadata"`       // Additional metadata
+	Metadata        map[string]interface{} `json:"metadata"` // Additional metadata
 	MaxTokens       int                    `json:"max_tokens"`
 	ContextWindow   int                    `json:"context_window"` // Alias for MaxTokens for compatibility
 	CostPer1MInput  float64                `json:"cost_per_1m_input"`
@@ -709,6 +709,14 @@ func (mps *ModelProviderService) fetchFromProviderAPIEnhanced(providerID string)
 	var err error
 
 	switch providerID {
+	case "claude-code":
+		// Claude-Code-CLI-bridge (§11.4.69 sink-side probe): ListModels-
+		// only registration via the 3-arg compatibility shim — a full
+		// ChatCompletion probe needs an explicit ClaudeCodeAliasConfig
+		// constructed via NewClaudeCodeCLIAdapter directly (see
+		// providers/claudecode.go).
+		adapter := NewClaudeCodeCLIAdapterFromClient(client.HTTPClient, client.BaseURL, client.APIKey)
+		models, err = mps.fetchModelsFromAdapter(adapter, providerID)
 	case "openai":
 		adapter := NewOpenAIAdapter(client.HTTPClient, client.BaseURL, client.APIKey)
 		models, err = mps.fetchModelsFromAdapter(adapter, providerID)

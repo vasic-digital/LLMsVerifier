@@ -489,6 +489,43 @@ func (pr *ProviderRegistry) registerDefaultProviders() {
 		},
 	}
 
+	pr.providers["claude-code"] = &ProviderConfig{
+		Name:            "claude-code",
+		Endpoint:        "http://127.0.0.1:3456", // provider-router (ccr) default; native/provider-native bypass this via env matrix
+		AuthType:        "oauth",
+		StreamingFormat: "json",
+		DefaultModel:    ClaudeCodeDefaultModel,
+		RateLimits: RateLimitConfig{
+			RequestsPerMinute: 60,
+			RequestsPerHour:   1000,
+			BurstLimit:        10,
+		},
+		Timeouts: TimeoutConfig{
+			RequestTimeout: 180 * time.Second,
+			StreamTimeout:  600 * time.Second,
+			ConnectTimeout: 10 * time.Second,
+		},
+		RetryConfig: RetryConfig{
+			MaxRetries:      3,
+			InitialDelay:    1 * time.Second,
+			MaxDelay:        30 * time.Second,
+			BackoffFactor:   2.0,
+			RetryableErrors: []string{"429", "500", "502", "503", "504"},
+		},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       false,
+			"max_context_length": 200000,
+			"supported_models": []string{
+				ClaudeCodeDefaultModel,
+			},
+			"cli_proxy":   true,
+			"alias_kinds": []string{"native", "provider-native", "provider-router"},
+		},
+	}
+
 	pr.providers["kimi-code"] = &ProviderConfig{
 		Name:            "kimi-code",
 		Endpoint:        "https://api.kimi.com/coding/v1",
@@ -1056,11 +1093,11 @@ func (pr *ProviderRegistry) registerDefaultProviders() {
 			"max_context_length": 1048576,
 			"max_output_tokens":  131072,
 			"supported_models": []string{
-				"mimo-v2.5-pro",   // 1M ctx, 128K out — text generation, code, reasoning, tool calling
-				"mimo-v2.5",       // 1M ctx, 128K out — multimodal (text + vision)
-				"mimo-v2-flash",   // 256K ctx, 64K out — fast inference
-				"mimo-v2.5-asr",   // 8K ctx, 2K out — automatic speech recognition
-				"mimo-v2.5-tts",   // 8K ctx, 8K out — text-to-speech
+				"mimo-v2.5-pro", // 1M ctx, 128K out — text generation, code, reasoning, tool calling
+				"mimo-v2.5",     // 1M ctx, 128K out — multimodal (text + vision)
+				"mimo-v2-flash", // 256K ctx, 64K out — fast inference
+				"mimo-v2.5-asr", // 8K ctx, 2K out — automatic speech recognition
+				"mimo-v2.5-tts", // 8K ctx, 8K out — text-to-speech
 			},
 		},
 	}

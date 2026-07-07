@@ -86,6 +86,23 @@ func (ec *ErrorClassifier) ClassifyError(resp *http.Response, body []byte) *Prov
 		}
 	}
 
+	// PWU-2 (§11.4.69 sink-side positive-evidence taxonomy): HTTP 402
+	// (Payment Required) is a provider-agnostic quota/subscription-cap
+	// signal. None of the per-provider classifiers above (nor
+	// classifyGenericError) carry a 402 case, so without this override a
+	// 402 falls through to "UNKNOWN_ERROR" -- the exact opaque-failed
+	// collapse PWU-2 closes. Captured FACT (§11.4.6, live 2026-07-06):
+	// qa-results/multitrack/logs/T4_iter2_20260706T223846Z.log --
+	// `API Error: 402 ... {"detail":"Subscription usage cap exceeded.
+	// Please add balance to continue."}`. A subscription/usage-cap
+	// condition will not clear on a short retry, so it is never marked
+	// Retryable (unlike 429/5xx).
+	if resp.StatusCode == http.StatusPaymentRequired {
+		errorCode = "QUOTA_EXCEEDED"
+		errorMessage = tr("llmsverifier_provider_err_quota_exceeded")
+		retryable = false
+	}
+
 	errorType := ec.getErrorType(resp.StatusCode, errorCode)
 
 	return &ProviderError{
@@ -213,7 +230,7 @@ func (ec *ErrorClassifier) getErrorType(statusCode int, errorCode string) ErrorT
 		return ErrorTypeAuth
 	case statusCode == 429 || strings.Contains(errorCode, "RATE_LIMIT"):
 		return ErrorTypeRateLimit
-	case strings.Contains(errorCode, "QUOTA"):
+	case statusCode == 402 || strings.Contains(errorCode, "QUOTA"):
 		return ErrorTypeQuota
 	case statusCode >= 400 && statusCode < 500:
 		return ErrorTypeInvalidRequest
