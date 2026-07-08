@@ -12,7 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Anti-bluff note (round-323 / HXV-001 — re-keyed from a §11.4 bluff test).
+// Anti-bluff note (round-323 / HXV-001 — re-keyed from a §11.4 bluff test;
+// §11.4.114/§11.4.120 reconciled 2026-07-08 against commit 28e6625a).
 //
 // These tests previously asserted that verification.Verify() returned a
 // VerificationResult with EVERY capability flag true and EVERY score 8.5
@@ -20,7 +21,20 @@ import (
 // success. Round-17 (commit a6328629) correctly removed that
 // hardcoded-all-true bluff from verification/verification.go and made
 // Verify() return ErrVerificationNotWired until a real
-// llmverifier.Verifier is plumbed in.
+// llmverifier.Verifier was plumbed in.
+//
+// Commit 28e6625a (C5, §11.4.115 RED->GREEN) wired that real dispatch:
+// NewVerifierWithProber(db, prober) now resolves the model, dispatches the
+// C4 per-capability probes, composes a real database.VerificationResult, and
+// persists it. The unwired-sentinel ErrVerificationNotWired was RENAMED (not
+// re-designed) to ErrVerifierNotConfigured, returned whenever a Verifier is
+// constructed WITHOUT both a database AND a probe engine — exactly the case
+// these unit tests exercise via NewModelVerifier(nil)/NewVerifier(nil). This
+// file is reconciled per §11.4.120 (fix-breaks-its-own-gate: the `go vet`
+// failure here was the correct signal 28e6625a landed, not a regression) +
+// §11.4.114 (isolated against the last-known-good commit, 28e6625a itself,
+// whose own message shows the sibling verification/verification_test.go was
+// reconciled in the same commit but this tests/unit copy was missed).
 //
 // That correct production fix left these unit tests asserting the *old
 // bluff behaviour*, so they began failing — discovered as HXV-001. The
@@ -29,18 +43,19 @@ import (
 //  1. Input validation (nil request / empty ModelID / empty Prompt) is
 //     enforced BEFORE any dispatch and returns a descriptive error with
 //     a nil result.
-//  2. A well-formed request, when no real verifier is wired (the case in
-//     a unit test with a nil database and no provider endpoint), returns
-//     ErrVerificationNotWired loudly rather than fabricating a result.
+//  2. A well-formed request, against a Verifier constructed WITHOUT a
+//     database + probe engine (the case in a unit test — no real infra),
+//     returns ErrVerifierNotConfigured loudly rather than fabricating a
+//     result.
 //
 // Real end-to-end verification against live provider endpoints is
 // exercised by the integration suite in ./llmverifier/ (TestVerifier_*),
 // which uses real config + real HTTP — not by these unit tests.
 
-// TestModelVerification_ValidRequest_NotWired proves a well-formed
-// request returns the loud ErrVerificationNotWired sentinel — never a
-// fabricated result — when no real verifier is plumbed in.
-func TestModelVerification_ValidRequest_NotWired(t *testing.T) {
+// TestModelVerification_ValidRequest_NotConfigured proves a well-formed
+// request returns the loud ErrVerifierNotConfigured sentinel — never a
+// fabricated result — when the Verifier has no database + probe engine.
+func TestModelVerification_ValidRequest_NotConfigured(t *testing.T) {
 	verifier := verification.NewModelVerifier(nil)
 	require.NotNil(t, verifier, "verifier should not be nil")
 
@@ -51,10 +66,10 @@ func TestModelVerification_ValidRequest_NotWired(t *testing.T) {
 	}
 
 	result, err := verifier.Verify(ctx, req)
-	require.Error(t, err, "unwired verification must surface the gap loudly")
-	require.Nil(t, result, "no fabricated result may be returned when unwired")
-	assert.ErrorIs(t, err, verification.ErrVerificationNotWired,
-		"error must be the ErrVerificationNotWired sentinel")
+	require.Error(t, err, "unconfigured verification must surface the gap loudly")
+	require.Nil(t, result, "no fabricated result may be returned when unconfigured")
+	assert.ErrorIs(t, err, verification.ErrVerifierNotConfigured,
+		"error must be the ErrVerifierNotConfigured sentinel")
 }
 
 // TestModelVerification_InvalidModel tests verification with invalid model ID.
@@ -72,12 +87,12 @@ func TestModelVerification_InvalidModel(t *testing.T) {
 	assert.Error(t, err, "should error for empty model ID")
 	assert.Nil(t, result, "result should be nil on error")
 	assert.Contains(t, err.Error(), "model ID is required")
-	assert.NotErrorIs(t, err, verification.ErrVerificationNotWired,
-		"validation error must be distinct from the not-wired sentinel")
+	assert.NotErrorIs(t, err, verification.ErrVerifierNotConfigured,
+		"validation error must be distinct from the not-configured sentinel")
 }
 
 // TestModelVerification_Timeout tests that input validation and the
-// not-wired dispatch both honour a deadline-bounded context.
+// not-configured dispatch both honour a deadline-bounded context.
 func TestModelVerification_Timeout(t *testing.T) {
 	verifier := verification.NewModelVerifier(nil)
 	require.NotNil(t, verifier, "verifier should not be nil")
@@ -92,15 +107,15 @@ func TestModelVerification_Timeout(t *testing.T) {
 
 	// Verify returns synchronously (validation + sentinel) so it
 	// completes well within the deadline; it must still surface the
-	// not-wired sentinel rather than a fabricated result.
+	// not-configured sentinel rather than a fabricated result.
 	result, err := verifier.Verify(ctx, req)
 	require.Error(t, err)
 	require.Nil(t, result)
-	assert.ErrorIs(t, err, verification.ErrVerificationNotWired)
+	assert.ErrorIs(t, err, verification.ErrVerifierNotConfigured)
 }
 
 // TestModelVerification_EdgeCases tests various edge cases of the
-// validation + not-wired-dispatch contract.
+// validation + not-configured-dispatch contract.
 func TestModelVerification_EdgeCases(t *testing.T) {
 	verifier := verification.NewModelVerifier(nil)
 	require.NotNil(t, verifier)
@@ -110,7 +125,7 @@ func TestModelVerification_EdgeCases(t *testing.T) {
 		req  *verification.Request
 		// errMsg is the substring expected in a *validation* error.
 		// When empty, the request is well-formed and the call must
-		// return the ErrVerificationNotWired sentinel instead.
+		// return the ErrVerifierNotConfigured sentinel instead.
 		errMsg string
 	}{
 		{
@@ -147,31 +162,31 @@ func TestModelVerification_EdgeCases(t *testing.T) {
 			require.Nil(t, result, "no result may be returned on the error path")
 			if tc.errMsg != "" {
 				assert.Contains(t, err.Error(), tc.errMsg)
-				assert.NotErrorIs(t, err, verification.ErrVerificationNotWired,
-					"validation error must be distinct from not-wired sentinel")
+				assert.NotErrorIs(t, err, verification.ErrVerifierNotConfigured,
+					"validation error must be distinct from not-configured sentinel")
 			} else {
-				assert.ErrorIs(t, err, verification.ErrVerificationNotWired,
-					"well-formed-but-unwired request must surface the sentinel")
+				assert.ErrorIs(t, err, verification.ErrVerifierNotConfigured,
+					"well-formed-but-unconfigured request must surface the sentinel")
 			}
 		})
 	}
 }
 
-// TestVerification_NotWiredSentinel_IsStable proves the sentinel error is
-// a stable, identifiable value (so callers can branch on it) and that it
-// names the missing wiring honestly — the anti-bluff guarantee.
-func TestVerification_NotWiredSentinel_IsStable(t *testing.T) {
-	require.NotNil(t, verification.ErrVerificationNotWired)
-	msg := verification.ErrVerificationNotWired.Error()
-	assert.Contains(t, msg, "not wired",
-		"sentinel must honestly state the wiring gap")
+// TestVerification_NotConfiguredSentinel_IsStable proves the sentinel error
+// is a stable, identifiable value (so callers can branch on it) and that it
+// names the missing configuration honestly — the anti-bluff guarantee.
+func TestVerification_NotConfiguredSentinel_IsStable(t *testing.T) {
+	require.NotNil(t, verification.ErrVerifierNotConfigured)
+	msg := verification.ErrVerifierNotConfigured.Error()
+	assert.Contains(t, msg, "not configured",
+		"sentinel must honestly state the configuration gap")
 	assert.Contains(t, msg, "PASS-bluff",
 		"sentinel must reference the anti-bluff rationale")
 
 	verifier := verification.NewModelVerifier(nil)
 	_, err := verifier.Verify(context.Background(),
 		&verification.Request{ModelID: "gpt-4", Prompt: "stable check"})
-	assert.True(t, errors.Is(err, verification.ErrVerificationNotWired),
+	assert.True(t, errors.Is(err, verification.ErrVerifierNotConfigured),
 		"Verify must return the same sentinel instance on every call")
 }
 
@@ -202,12 +217,12 @@ func TestErrorHandling_Recovery(t *testing.T) {
 	require.Nil(t, r1)
 	assert.Contains(t, err1.Error(), "model ID is required")
 
-	// Second well-formed request still returns the not-wired sentinel
+	// Second well-formed request still returns the not-configured sentinel
 	// (no state leaked from the prior validation failure).
 	r2, err2 := verifier.Verify(ctx, &verification.Request{ModelID: "gpt-4", Prompt: "test"})
 	require.Error(t, err2)
 	require.Nil(t, r2)
-	assert.ErrorIs(t, err2, verification.ErrVerificationNotWired)
+	assert.ErrorIs(t, err2, verification.ErrVerifierNotConfigured)
 }
 
 // TestConcurrentVerification proves the verifier contract is race-free:
@@ -231,19 +246,19 @@ func TestConcurrentVerification(t *testing.T) {
 		}()
 	}
 
-	notWiredCount := 0
+	notConfiguredCount := 0
 	for i := 0; i < numGoroutines; i++ {
 		select {
 		case err := <-errCh:
 			require.Error(t, err, "every concurrent call must return an error")
-			if errors.Is(err, verification.ErrVerificationNotWired) {
-				notWiredCount++
+			if errors.Is(err, verification.ErrVerifierNotConfigured) {
+				notConfiguredCount++
 			}
 		case <-time.After(5 * time.Second):
 			t.Fatal("timeout waiting for goroutines")
 		}
 	}
 
-	assert.Equal(t, numGoroutines, notWiredCount,
-		"all concurrent well-formed requests must return ErrVerificationNotWired")
+	assert.Equal(t, numGoroutines, notConfiguredCount,
+		"all concurrent well-formed requests must return ErrVerifierNotConfigured")
 }

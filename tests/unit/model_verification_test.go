@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"digital.vasic.llmsverifier/providers"
 	"digital.vasic.llmsverifier/verification"
 )
@@ -19,9 +20,18 @@ import (
 // Round-17 converted VerifyModel to sentinel-return per §11.4/CONST-036/037 anti-bluff fix.
 // Round-84 tightened this test from asserting-fabricated-values to asserting-sentinel-error.
 // The previous body asserted result.OverallScore > 0 and "completed" status against a
-// hardcoded-all-capabilities-true fabrication — that was a PASS-bluff. The real contract
-// today is: Verify returns ErrVerificationNotWired + nil result until llmverifier.Verifier
-// is plumbed into VerificationService. Asserting that contract is the only honest test.
+// hardcoded-all-capabilities-true fabrication — that was a PASS-bluff.
+//
+// §11.4.114/§11.4.120 reconciliation (2026-07-08, against commit 28e6625a): commit
+// 28e6625a (C5, §11.4.115 RED->GREEN) wired verification.Verify to compose+persist a
+// real database.VerificationResult from real C4 probes via NewVerifierWithProber(db,
+// prober), and renamed the unwired-sentinel ErrVerificationNotWired to
+// ErrVerifierNotConfigured (same honest-no-fabrication contract; a Verifier
+// constructed via NewModelVerifier(nil)/NewVerifier(nil) — no database, no probe
+// engine — still returns the sentinel loudly instead of fabricating a result, exactly
+// as this unit test exercises). Real end-to-end verification against a wired
+// NewVerifierWithProber is exercised by the integration suite in ./llmverifier/
+// (TestVerifier_*), not by this unit test.
 func TestModelVerification_ValidModel(t *testing.T) {
 	verifier := verification.NewModelVerifier(nil)
 	require.NotNil(t, verifier)
@@ -34,8 +44,8 @@ func TestModelVerification_ValidModel(t *testing.T) {
 
 	result, err := verifier.Verify(ctx, req)
 	require.Error(t, err)
-	assert.True(t, errors.Is(err, verification.ErrVerificationNotWired),
-		"expected ErrVerificationNotWired sentinel, got: %v", err)
+	assert.True(t, errors.Is(err, verification.ErrVerifierNotConfigured),
+		"expected ErrVerifierNotConfigured sentinel, got: %v", err)
 	assert.Nil(t, result, "sentinel-return contract: nil result alongside sentinel error")
 }
 
@@ -76,9 +86,13 @@ func TestModelVerification_InvalidModel(t *testing.T) {
 // Round-17 converted VerifyModel to sentinel-return per §11.4/CONST-036/037 anti-bluff fix.
 // Round-84 tightened this test from asserting-fabricated-values to asserting-sentinel-error.
 // The previous body asserted NoError + non-nil result with a 5s context — that "succeeded"
-// only because the bluff returned fabricated values without ever doing work. Once the real
-// verifier is wired (round-17 deferral closure), this test should be re-tightened to a true
-// timeout assertion (deadline-exceeded via httptest server delay). Until then, sentinel.
+// only because the bluff returned fabricated values without ever doing work. §11.4.114/
+// §11.4.120 reconciliation (2026-07-08, commit 28e6625a): the sentinel was renamed
+// ErrVerificationNotWired -> ErrVerifierNotConfigured; the unconfigured-Verifier case this
+// test exercises (NewModelVerifier(nil)) still surfaces the sentinel, never a fabricated
+// result. Once a NewVerifierWithProber(db, prober) instance is exercised end-to-end (the
+// ./llmverifier/ integration suite), this test class re-tightens to a true timeout
+// assertion (deadline-exceeded via httptest server delay).
 func TestModelVerification_Timeout(t *testing.T) {
 	verifier := verification.NewModelVerifier(nil)
 	require.NotNil(t, verifier)
@@ -94,8 +108,8 @@ func TestModelVerification_Timeout(t *testing.T) {
 
 	result, err := verifier.Verify(ctx, req)
 	require.Error(t, err)
-	assert.True(t, errors.Is(err, verification.ErrVerificationNotWired),
-		"expected ErrVerificationNotWired sentinel, got: %v", err)
+	assert.True(t, errors.Is(err, verification.ErrVerifierNotConfigured),
+		"expected ErrVerifierNotConfigured sentinel, got: %v", err)
 	assert.Nil(t, result, "sentinel-return contract: nil result alongside sentinel error")
 }
 
@@ -106,7 +120,9 @@ func TestModelVerification_Timeout(t *testing.T) {
 // The previous body asserted NoError + non-nil result for the four "well-formed input" cases
 // — that was a PASS-bluff (the inputs were valid in shape, but the production code fabricated
 // the result rather than verifying anything). For well-formed inputs that pass the nil/empty
-// validation, the current contract is sentinel-error. Input-validation rejections (nil/empty)
+// validation, the current contract (§11.4.114/§11.4.120 reconciled 2026-07-08 against commit
+// 28e6625a: sentinel renamed ErrVerificationNotWired -> ErrVerifierNotConfigured) is
+// sentinel-error against an unconfigured Verifier. Input-validation rejections (nil/empty)
 // remain covered by TestModelVerification_InvalidModel which is unchanged (it tests the
 // pre-sentinel validation gate that still works).
 func TestModelVerification_EdgeCases(t *testing.T) {
@@ -150,8 +166,8 @@ func TestModelVerification_EdgeCases(t *testing.T) {
 
 			result, err := verifier.Verify(ctx, req)
 			require.Error(t, err)
-			assert.True(t, errors.Is(err, verification.ErrVerificationNotWired),
-				"expected ErrVerificationNotWired sentinel, got: %v", err)
+			assert.True(t, errors.Is(err, verification.ErrVerifierNotConfigured),
+				"expected ErrVerifierNotConfigured sentinel, got: %v", err)
 			assert.Nil(t, result, "sentinel-return contract: nil result alongside sentinel error")
 		})
 	}
@@ -164,8 +180,10 @@ func TestModelVerification_EdgeCases(t *testing.T) {
 // The previous body asserted OverallScore > 0 and a swarm of score-field positivity assertions
 // against a hardcoded `8.5` fabrication — the highest blast-radius PASS-bluff in the suite,
 // since it certified the SCORING ENGINE worked when no scoring engine had executed. Real
-// scoring requires database + models.dev client wiring (round-17 deferral). Until then, the
-// only honest assertion is the sentinel.
+// scoring now runs when a Verifier is constructed via NewVerifierWithProber(db, prober)
+// (commit 28e6625a, C5); this unit test intentionally constructs an unconfigured Verifier
+// (no database, no probe engine) so the only honest assertion remains the (renamed)
+// ErrVerifierNotConfigured sentinel — §11.4.114/§11.4.120 reconciliation, 2026-07-08.
 func TestScoringSystem_CalculateScore(t *testing.T) {
 	// The scoring engine requires database and models.dev client
 	// For unit testing, we verify the interface exists and basic validation
@@ -179,8 +197,8 @@ func TestScoringSystem_CalculateScore(t *testing.T) {
 	})
 
 	require.Error(t, err)
-	assert.True(t, errors.Is(err, verification.ErrVerificationNotWired),
-		"expected ErrVerificationNotWired sentinel, got: %v", err)
+	assert.True(t, errors.Is(err, verification.ErrVerifierNotConfigured),
+		"expected ErrVerifierNotConfigured sentinel, got: %v", err)
 	assert.Nil(t, result, "sentinel-return contract: nil result alongside sentinel error")
 }
 
@@ -189,8 +207,11 @@ func TestScoringSystem_CalculateScore(t *testing.T) {
 // Round-17 converted VerifyModel to sentinel-return per §11.4/CONST-036/037 anti-bluff fix.
 // Round-84 tightened this test from asserting-fabricated-values to asserting-sentinel-error.
 // The previous body asserted result.ScoreDetails contained "performance" — that string was
-// hardcoded into the fabricated return, not generated by any real explanation engine. Once
-// the real verifier is wired, this test re-tightens to assert real explanation structure.
+// hardcoded into the fabricated return, not generated by any real explanation engine.
+// §11.4.114/§11.4.120 reconciliation (2026-07-08, commit 28e6625a): sentinel renamed
+// ErrVerificationNotWired -> ErrVerifierNotConfigured; this unconfigured-Verifier case
+// still surfaces it rather than fabricating a result. Once a wired Verifier's real
+// explanation structure is exercised end-to-end, this test class re-tightens accordingly.
 func TestScoringSystem_GetScoreExplanation(t *testing.T) {
 	verifier := verification.NewModelVerifier(nil)
 	require.NotNil(t, verifier)
@@ -202,8 +223,8 @@ func TestScoringSystem_GetScoreExplanation(t *testing.T) {
 	})
 
 	require.Error(t, err)
-	assert.True(t, errors.Is(err, verification.ErrVerificationNotWired),
-		"expected ErrVerificationNotWired sentinel, got: %v", err)
+	assert.True(t, errors.Is(err, verification.ErrVerifierNotConfigured),
+		"expected ErrVerifierNotConfigured sentinel, got: %v", err)
 	assert.Nil(t, result, "sentinel-return contract: nil result alongside sentinel error")
 }
 
@@ -306,9 +327,11 @@ func TestConfiguration_Validation(t *testing.T) {
 // Round-84 tightened this test from asserting-fabricated-values to asserting-sentinel-error.
 // The previous body asserted that after a validation-rejection (nil request), a well-formed
 // follow-up call returned NoError + "completed" status — but "completed" was a hardcoded
-// fabrication. The real recovery semantics today: validation-rejection returns a different
-// error than the sentinel; well-formed input that passes validation returns the sentinel.
-// Both behaviors are deterministic post-error, which IS what "recovery" means at this layer.
+// fabrication. §11.4.114/§11.4.120 reconciliation (2026-07-08, commit 28e6625a): the sentinel
+// was renamed ErrVerificationNotWired -> ErrVerifierNotConfigured; the real recovery semantics
+// today: validation-rejection returns a different error than the (renamed) sentinel;
+// well-formed input against an unconfigured Verifier returns the sentinel. Both behaviors
+// are deterministic post-error, which IS what "recovery" means at this layer.
 func TestErrorHandling_Recovery(t *testing.T) {
 	verifier := verification.NewModelVerifier(nil)
 	require.NotNil(t, verifier)
@@ -318,7 +341,7 @@ func TestErrorHandling_Recovery(t *testing.T) {
 	// Test rejection from invalid input (validation-layer error, NOT the sentinel)
 	_, err := verifier.Verify(ctx, nil)
 	require.Error(t, err)
-	assert.False(t, errors.Is(err, verification.ErrVerificationNotWired),
+	assert.False(t, errors.Is(err, verification.ErrVerifierNotConfigured),
 		"nil-request should be rejected at validation gate, not by sentinel")
 
 	// Verify the verifier is still functional after error — well-formed input
@@ -328,8 +351,8 @@ func TestErrorHandling_Recovery(t *testing.T) {
 		Prompt:  "Test recovery after error",
 	})
 	require.Error(t, err)
-	assert.True(t, errors.Is(err, verification.ErrVerificationNotWired),
-		"expected ErrVerificationNotWired sentinel post-recovery, got: %v", err)
+	assert.True(t, errors.Is(err, verification.ErrVerifierNotConfigured),
+		"expected ErrVerifierNotConfigured sentinel post-recovery, got: %v", err)
 	assert.Nil(t, result, "sentinel-return contract: nil result alongside sentinel error")
 }
 
@@ -339,11 +362,13 @@ func TestErrorHandling_Recovery(t *testing.T) {
 // Round-84 tightened this test from asserting-fabricated-values to asserting-sentinel-error.
 // The previous body launched 10 goroutines and asserted ALL returned NoError + "completed"
 // — that "succeeded" only because the bluff was data-race-free by virtue of returning
-// constant fabricated values. The honest concurrency assertion today: every concurrent
-// call deterministically yields the sentinel, proving the package-level sentinel value is
-// safe to read concurrently and the verifier struct survives parallel invocation without
-// state corruption. The "channel-named-errors-shadows-imported-errors-pkg" hazard is
-// avoided by renaming the local channel to errCh.
+// constant fabricated values. §11.4.114/§11.4.120 reconciliation (2026-07-08, commit
+// 28e6625a): the sentinel was renamed ErrVerificationNotWired -> ErrVerifierNotConfigured.
+// The honest concurrency assertion today: every concurrent call against an unconfigured
+// Verifier deterministically yields the (renamed) sentinel, proving the package-level
+// sentinel value is safe to read concurrently and the verifier struct survives parallel
+// invocation without state corruption. The "channel-named-errors-shadows-imported-errors-pkg"
+// hazard is avoided by naming the local channel errCh.
 func TestConcurrentVerification(t *testing.T) {
 	verifier := verification.NewModelVerifier(nil)
 	require.NotNil(t, verifier)
@@ -379,8 +404,8 @@ func TestConcurrentVerification(t *testing.T) {
 			t.Errorf("expected sentinel error from every concurrent call, got non-nil result: %+v", result)
 			unexpectedCount++
 		case err := <-errCh:
-			assert.True(t, errors.Is(err, verification.ErrVerificationNotWired),
-				"expected ErrVerificationNotWired sentinel from concurrent call, got: %v", err)
+			assert.True(t, errors.Is(err, verification.ErrVerifierNotConfigured),
+				"expected ErrVerifierNotConfigured sentinel from concurrent call, got: %v", err)
 			sentinelCount++
 		case <-time.After(10 * time.Second):
 			t.Fatal("Timeout waiting for concurrent results")
