@@ -1,8 +1,52 @@
 package providers
 
 import (
+	"os"
+	"strings"
 	"time"
 )
+
+// helixLLMLocalOpenAIEndpointEnv is the SAME environment-variable name the
+// sibling HelixAgent submodule's HelixLLM provider adapter uses
+// (submodules/helix_agent/internal/llm/providers/helixllm/provider.go,
+// EnvLocalOpenAIEndpoint) — kept identical across the two submodules so a
+// single env var configures both consumers (CONST-045: no hardcoded
+// reachable host beyond the documented localhost default).
+const helixLLMLocalOpenAIEndpointEnv = "HELIX_LLM_LOCAL_OPENAI_ENDPOINT"
+
+// helixLLMDefaultBase is the plain-HTTP OpenAI-compatible llama-server
+// sidecar HelixLLM's coder exposes by default (port 18434 — matches the
+// HelixAgent submodule's defaultPort). LIVE-CONFIRMED this session
+// (2026-07-08): GET http://localhost:18434/v1/models returns a real,
+// non-empty model list (/models/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf).
+const helixLLMDefaultBase = "http://localhost:18434"
+
+// helixLLMEndpoint resolves the HelixLLM local coder's base URL for THIS
+// module's ProviderConfig.Endpoint convention: Endpoint carries the /v1
+// segment (matches the "openai" row's "https://api.openai.com/v1"), and
+// ProbeProviderReachability (extended_providers.go) composes a real
+// GET <Endpoint>/models — LIVE-CONFIRMED this session to resolve to the
+// coder's actual /v1/models path. Precedence:
+//  1. HELIX_LLM_LOCAL_OPENAI_ENDPOINT (consumer-configured, §11.4.28) — the
+//     SAME env var the sibling HelixAgent HelixLLM adapter reads. Accepted
+//     WITH or WITHOUT a trailing /v1 (normalised below) so an operator does
+//     not need to remember this module's specific convention.
+//  2. helixLLMDefaultBase — the documented localhost default.
+//
+// In both cases a trailing "/v1" is normalised away first, then re-appended
+// exactly once — eliminating the double-"/v1/v1" 404 gotcha regardless of
+// how the operator wrote the env var (mirrors normalizeBase in the
+// HelixAgent submodule's provider.go).
+func helixLLMEndpoint() string {
+	base := strings.TrimSpace(os.Getenv(helixLLMLocalOpenAIEndpointEnv))
+	if base == "" {
+		base = helixLLMDefaultBase
+	}
+	base = strings.TrimRight(base, "/")
+	base = strings.TrimSuffix(base, "/v1")
+	base = strings.TrimRight(base, "/")
+	return base + "/v1"
+}
 
 // ProviderConfig represents configuration for a specific provider
 type ProviderConfig struct {
@@ -1336,6 +1380,46 @@ func (pr *ProviderRegistry) registerDefaultProviders() {
 			"env_var":            "REKA_API_KEY",
 			"doc_url":            "https://docs.reka.ai/chat/overview",
 			"notes":              "Multimodal chat; fully /chat/completions-compatible incl. streaming + JSON.",
+			"supported_models":   []string{},
+		},
+	}
+
+	// ---------------------------------------------------------------------
+	// HelixLLM — in-repo local coder (Phase A, providers-coverage
+	// EXPANSION_PLAN_v2.md §3 Phase A). The HelixLLM submodule's llama-server
+	// sidecar serves an OpenAI-compatible surface (/v1/chat/completions,
+	// /v1/models) with NO credential required (loopback-only local server) —
+	// LIVE-CONFIRMED this session: GET http://localhost:18434/v1/models
+	// returns a real model (/models/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf).
+	// CONST-036: NO hardcoded model list — supported_models is left EMPTY,
+	// the live model set is discovered from the coder's own GET /v1/models.
+	// CONST-040: capability flags are NOT asserted here — sourced from the
+	// real C4/C5 probe (verification.Verifier.Verify via
+	// llmverifier.Verifier.DetectModelFeatures), see helixllm_test.go.
+	// AuthType "bearer" matches this module's universal convention even
+	// though no key is required (ProbeProviderReachability always sends the
+	// Authorization header; an empty Bearer token is harmless against the
+	// local coder — confirmed live this session).
+	// ---------------------------------------------------------------------
+	pr.providers["helixllm"] = &ProviderConfig{
+		Name:            "helixllm",
+		Endpoint:        helixLLMEndpoint(),
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "", // CONST-036: discovered from live /v1/models
+		RateLimits:      RateLimitConfig{RequestsPerMinute: 120, RequestsPerHour: 5000, BurstLimit: 20},
+		Timeouts:        TimeoutConfig{RequestTimeout: 120 * time.Second, StreamTimeout: 600 * time.Second, ConnectTimeout: 5 * time.Second},
+		RetryConfig:     RetryConfig{MaxRetries: 2, InitialDelay: 1 * time.Second, MaxDelay: 10 * time.Second, BackoffFactor: 2.0, RetryableErrors: []string{"429", "500", "502", "503", "504"}},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false, // CONST-040: real value sourced from the C4 probe, not hardcoded
+			"supports_vision":    false,
+			"supports_acp":       false,
+			"openai_compatible":  true,
+			"local_only":         true,
+			"env_var":            helixLLMLocalOpenAIEndpointEnv, // ENDPOINT override; no API key required
+			"doc_url":            "submodules/helix_llm/README.md",
+			"notes":              "In-repo HelixLLM llama-server sidecar (Qwen3-Coder-30B-A3B-Instruct, port 18434). No API key required (loopback). Base URL overridable via HELIX_LLM_LOCAL_OPENAI_ENDPOINT (same env var the sibling helix_agent HelixLLM provider adapter reads).",
 			"supported_models":   []string{},
 		},
 	}

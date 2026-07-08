@@ -431,6 +431,54 @@ var providerCapabilitySeeds = map[string]*ProviderCapabilities{
 			"local_only": true,
 		},
 	},
+
+	// helixllm — in-repo HelixLLM local coder (Phase A, providers-coverage
+	// EXPANSION_PLAN_v2.md §3 Phase A). Mirrors the "ollama" seed shape for a
+	// local, no-credential OpenAI-compatible server. LIVE-CONFIRMED this
+	// session: the coder's llama-server sidecar serves /v1/chat/completions +
+	// /v1/models with no Authorization required. As with every seed in this
+	// map, these are hand-authored bootstrap DEFAULTS ONLY (Verified: false);
+	// the real capability flags come from the C4/C5 probe
+	// (verification.Verifier.Verify), never this literal.
+	"helixllm": {
+		Provider: "helixllm",
+		Verified: false, // seed: unverified by construction (C3, CONST-036/037/040) — a fresh probe MUST override
+		Streaming: StreamingCapability{
+			Supported:   true,
+			Types:       []StreamingType{StreamingTypeSSE},
+			DefaultType: StreamingTypeSSE,
+		},
+		Network: NetworkCapability{
+			HTTPVersions:   []HTTPVersion{HTTPVersion1_1},
+			HTTP2Supported: false,
+			HTTP3Supported: false,
+			QUICSupported:  false,
+			ProxySupported: false,
+			TimeoutConnect: 5 * time.Second,
+			TimeoutRequest: 120 * time.Second,
+			TimeoutStream:  600 * time.Second,
+			MaxRetries:     2,
+		},
+		Compression: CompressionCapability{
+			Supported: false,
+		},
+		Caching: CachingCapability{
+			Supported: false,
+		},
+		Protocols: []ProtocolType{ProtocolOpenAI},
+		Auth: AuthCapability{
+			Types:       []AuthType{AuthNone},
+			DefaultType: AuthNone,
+		},
+		Model_: ModelCapability{
+			FunctionCalling:  false, // CONST-040: real value sourced from the C4 probe, not hardcoded
+			MaxContextTokens: 32768,
+			MaxOutputTokens:  4096,
+		},
+		Custom: map[string]interface{}{
+			"local_only": true,
+		},
+	},
 }
 
 // CLI Agent capability registry - based on source code exploration
