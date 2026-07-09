@@ -161,11 +161,11 @@ func TestJudgeOutcome_CappedAlias_RED_GREEN(t *testing.T) {
 
 func TestRun_ConfigErrors_Exit2(t *testing.T) {
 	cases := [][]string{
-		{}, // no flags at all: missing --sentinel
-		{"--sentinel", "X"},                                    // missing --kind
-		{"--kind", "native", "--sentinel", "X"},                // missing --config-dir
-		{"--kind", "bogus", "--sentinel", "X"},                 // unknown kind
-		{"--kind", "native", "--config-dir", "/x", "--sentinel", "X", "--timeout", "0"}, // bad timeout
+		{},                                      // no flags at all: missing --sentinel
+		{"--sentinel", "X"},                     // missing --kind
+		{"--kind", "native", "--sentinel", "X"}, // missing --config-dir
+		{"--kind", "bogus", "--sentinel", "X"},  // unknown kind
+		{"--kind", "native", "--config-dir", "/x", "--sentinel", "X", "--timeout", "0"},   // bad timeout
 		{"--kind", "native", "--config-dir", "/x", "--sentinel", "X", "--format", "yaml"}, // bad format
 	}
 	for i, args := range cases {

@@ -32,10 +32,10 @@ type HubConfig struct {
 
 // RetryConfig contains retry configuration.
 type RetryConfig struct {
-	MaxRetries      int           `json:"max_retries" yaml:"max_retries"`
-	InitialBackoff  time.Duration `json:"initial_backoff" yaml:"initial_backoff"`
-	MaxBackoff      time.Duration `json:"max_backoff" yaml:"max_backoff"`
-	BackoffFactor   float64       `json:"backoff_factor" yaml:"backoff_factor"`
+	MaxRetries     int           `json:"max_retries" yaml:"max_retries"`
+	InitialBackoff time.Duration `json:"initial_backoff" yaml:"initial_backoff"`
+	MaxBackoff     time.Duration `json:"max_backoff" yaml:"max_backoff"`
+	BackoffFactor  float64       `json:"backoff_factor" yaml:"backoff_factor"`
 }
 
 // CircuitBreakerConfig contains circuit breaker configuration.
@@ -72,8 +72,8 @@ func DefaultHubConfig() *HubConfig {
 type MessagingHub struct {
 	mu sync.RWMutex
 
-	config      *HubConfig
-	logger      *logrus.Logger
+	config *HubConfig
+	logger *logrus.Logger
 
 	// Brokers
 	taskQueue   TaskQueueBroker

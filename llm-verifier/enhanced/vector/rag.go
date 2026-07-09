@@ -620,7 +620,7 @@ func (krs *KeywordRetrievalStrategy) calculateKeywordScore(content string, keywo
 	keywordCoverage := float64(matches) / float64(len(keywords))
 	lengthNormalization := float64(matches) / math.Sqrt(float64(len(contentWords)))
 
-	return keywordCoverage * 0.7 + lengthNormalization * 0.3
+	return keywordCoverage*0.7 + lengthNormalization*0.3
 }
 
 // SemanticRetrievalStrategy implements semantic search

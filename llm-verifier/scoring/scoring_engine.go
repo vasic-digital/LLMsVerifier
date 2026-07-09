@@ -37,13 +37,13 @@ func NewEngine(db *database.Database, modelsDevClient ModelsDevClientInterface, 
 // CalculateComprehensiveScore calculates a comprehensive score for a model
 func (se *ScoringEngine) CalculateComprehensiveScore(ctx context.Context, modelID string, config ScoringConfig) (*ComprehensiveScore, error) {
 	weights := &config.Weights
-	
+
 	// Fetch model data from models.dev
 	modelData, err := se.modelsDevClient.FetchModelByID(ctx, modelID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch model data: %w", err)
 	}
-	
+
 	// Convert ModelsDevModel to ModelData for scoring calculations
 	modelInfo := &ModelData{
 		ID:              modelData.ModelID,
@@ -54,7 +54,7 @@ func (se *ScoringEngine) CalculateComprehensiveScore(ctx context.Context, modelI
 		MaxTokens:       modelData.OutputLimit,
 		InputTokenCost:  modelData.InputCostPer1M,
 		OutputTokenCost: modelData.OutputCostPer1M,
-		ThroughputRPS:   5.0, // Default value
+		ThroughputRPS:   5.0,  // Default value
 		LatencyMs:       1000, // Default value
 		ParameterCount:  modelData.AdditionalData.ParameterCount,
 		OpenSource:      modelData.AdditionalData.OpenWeights,
@@ -62,7 +62,7 @@ func (se *ScoringEngine) CalculateComprehensiveScore(ctx context.Context, modelI
 		Reasoning:       modelData.Reasoning,
 		LastUpdated:     time.Now(), // Use current time as placeholder
 	}
-	
+
 	// Get existing model from database to get pricing and other data
 	dbModel, err := se.dbIntegration.GetModelByModelID(modelID)
 	if err != nil {
@@ -73,29 +73,29 @@ func (se *ScoringEngine) CalculateComprehensiveScore(ctx context.Context, modelI
 			Name:    modelData.Model,
 		}
 	}
-	
+
 	// Calculate individual component scores
 	responseScore := se.calculateResponseSpeedScore(modelInfo, dbModel)
 	efficiencyScore := se.calculateModelEfficiencyScore(modelInfo, dbModel)
 	costScore := se.calculateCostEffectivenessScore(modelInfo, dbModel)
 	capabilityScore := se.calculateCapabilityScore(modelInfo, dbModel)
 	recencyScore := se.calculateRecencyScore(modelInfo, dbModel)
-	
+
 	// Calculate weighted total score
 	totalScore := (responseScore * weights.ResponseSpeed) +
 		(efficiencyScore * weights.ModelEfficiency) +
 		(costScore * weights.CostEffectiveness) +
 		(capabilityScore * weights.Capability) +
 		(recencyScore * weights.Recency)
-	
+
 	// Ensure score is within bounds
 	totalScore = math.Max(0, math.Min(10, totalScore))
-	
+
 	score := &ComprehensiveScore{
-		ModelID:     modelID,
-		ModelName:   modelData.Model,
+		ModelID:      modelID,
+		ModelName:    modelData.Model,
 		OverallScore: totalScore,
-		ScoreSuffix: fmt.Sprintf("(SC:%.1f)", totalScore),
+		ScoreSuffix:  fmt.Sprintf("(SC:%.1f)", totalScore),
 		Components: ScoreComponents{
 			SpeedScore:      responseScore,
 			EfficiencyScore: efficiencyScore,
@@ -104,37 +104,37 @@ func (se *ScoringEngine) CalculateComprehensiveScore(ctx context.Context, modelI
 			RecencyScore:    recencyScore,
 		},
 		LastCalculated: time.Now(),
-		DataSource:   "models.dev",
+		DataSource:     "models.dev",
 	}
-	
+
 	// Update database with new scores
 	if err := se.dbIntegration.UpdateModelScores(dbModel.ID, score); err != nil {
 		log.Printf("Warning: Failed to update model scores in database: %v", err)
 	}
-	
+
 	// Create verification score record
 	if err := se.dbIntegration.CreateVerificationScore(dbModel.ID, score); err != nil {
 		log.Printf("Warning: Failed to create verification score: %v", err)
 	}
-	
+
 	// Log scoring event
-	if err := se.dbIntegration.CreateScoringEvent("model_scored", 
+	if err := se.dbIntegration.CreateScoringEvent("model_scored",
 		fmt.Sprintf("Calculated score %.1f for model %s", totalScore, modelID),
 		&dbModel.ID, map[string]interface{}{
-			"model_id": modelID,
-			"score": totalScore,
+			"model_id":   modelID,
+			"score":      totalScore,
 			"components": score.Components,
 		}); err != nil {
 		log.Printf("Warning: Failed to create scoring event: %v", err)
 	}
-	
+
 	return score, nil
 }
 
 // CalculateBatchScores calculates scores for multiple models
 func (se *ScoringEngine) CalculateBatchScores(ctx context.Context, modelIDs []string, weights *ScoreWeights) ([]*ComprehensiveScore, error) {
 	var scores []*ComprehensiveScore
-	
+
 	for _, modelID := range modelIDs {
 		score, err := se.CalculateComprehensiveScore(ctx, modelID, ScoringConfig{Weights: *weights})
 		if err != nil {
@@ -143,7 +143,7 @@ func (se *ScoringEngine) CalculateBatchScores(ctx context.Context, modelIDs []st
 		}
 		scores = append(scores, score)
 	}
-	
+
 	return scores, nil
 }
 
@@ -161,7 +161,7 @@ func (se *ScoringEngine) GetModelsByScoreRange(ctx context.Context, minScore, ma
 
 func (se *ScoringEngine) calculateResponseSpeedScore(modelData *ModelData, dbModel *database.Model) float64 {
 	baseScore := 5.0
-	
+
 	// Factor in average response time if available (use ResponsivenessScore as proxy)
 	if dbModel.ResponsivenessScore > 0 {
 		if dbModel.ResponsivenessScore > 8.0 {
@@ -174,7 +174,7 @@ func (se *ScoringEngine) calculateResponseSpeedScore(modelData *ModelData, dbMod
 			baseScore -= 1.0
 		}
 	}
-	
+
 	// Factor in throughput if available
 	if modelData.ThroughputRPS > 0 {
 		if modelData.ThroughputRPS > 10 {
@@ -183,13 +183,13 @@ func (se *ScoringEngine) calculateResponseSpeedScore(modelData *ModelData, dbMod
 			baseScore += 0.5
 		}
 	}
-	
+
 	return math.Max(0, math.Min(10, baseScore))
 }
 
 func (se *ScoringEngine) calculateModelEfficiencyScore(modelData *ModelData, dbModel *database.Model) float64 {
 	baseScore := 5.0
-	
+
 	// Factor in parameter count efficiency
 	if dbModel.ParameterCount != nil && *dbModel.ParameterCount > 0 {
 		params := *dbModel.ParameterCount
@@ -201,7 +201,7 @@ func (se *ScoringEngine) calculateModelEfficiencyScore(modelData *ModelData, dbM
 			baseScore -= 1.0
 		}
 	}
-	
+
 	// Factor in context window efficiency
 	if dbModel.ContextWindowTokens != nil && *dbModel.ContextWindowTokens > 0 {
 		context := *dbModel.ContextWindowTokens
@@ -211,21 +211,21 @@ func (se *ScoringEngine) calculateModelEfficiencyScore(modelData *ModelData, dbM
 			baseScore += 1.0
 		}
 	}
-	
+
 	// Factor in multimodal capabilities
 	if dbModel.IsMultimodal {
 		baseScore += 1.0
 	}
-	
+
 	return math.Max(0, math.Min(10, baseScore))
 }
 
 func (se *ScoringEngine) calculateCostEffectivenessScore(modelData *ModelData, dbModel *database.Model) float64 {
 	baseScore := 5.0
-	
+
 	// This would ideally use pricing data from the database
 	// For now, we'll use a basic heuristic based on model size and capabilities
-	
+
 	if dbModel.ParameterCount != nil && *dbModel.ParameterCount > 0 {
 		params := *dbModel.ParameterCount
 		if params < 1000000000 { // Smaller models are more cost-effective
@@ -236,17 +236,17 @@ func (se *ScoringEngine) calculateCostEffectivenessScore(modelData *ModelData, d
 			baseScore -= 1.0
 		}
 	}
-	
+
 	// Factor in open source (more cost-effective)
 	if dbModel.OpenSource {
 		baseScore += 2.0
 	}
-	
+
 	// Factor in multimodal capabilities (better value proposition)
 	if dbModel.IsMultimodal {
 		baseScore += 1.0
 	}
-	
+
 	// Factor in models.dev cost data if available
 	if modelData.InputTokenCost > 0 {
 		if modelData.InputTokenCost < 1.0 { // Very cheap
@@ -259,18 +259,18 @@ func (se *ScoringEngine) calculateCostEffectivenessScore(modelData *ModelData, d
 			baseScore -= 1.0
 		}
 	}
-	
+
 	return math.Max(0, math.Min(10, baseScore))
 }
 
 func (se *ScoringEngine) calculateCapabilityScore(modelData *ModelData, dbModel *database.Model) float64 {
 	baseScore := 5.0
-	
+
 	// Factor in code capabilities from verification results
 	verificationResults, err := se.dbIntegration.GetVerificationResults([]int64{dbModel.ID})
 	if err == nil && len(verificationResults) > 0 {
 		latestResult := verificationResults[0]
-		
+
 		if latestResult.SupportsCodeGeneration {
 			baseScore += 2.0
 		}
@@ -298,23 +298,23 @@ func (se *ScoringEngine) calculateCapabilityScore(modelData *ModelData, dbModel 
 		// Note: We could add more logic here based on ModelData capabilities
 		// but for now, the test expects the scoring to be based on database model characteristics
 	}
-	
+
 	// Factor in multimodal capabilities
 	if dbModel.IsMultimodal {
 		baseScore += 1.0
 	}
-	
+
 	// Factor in reasoning capabilities
 	if dbModel.SupportsReasoning {
 		baseScore += 1.0
 	}
-	
+
 	return math.Max(0, math.Min(10, baseScore))
 }
 
 func (se *ScoringEngine) calculateRecencyScore(modelData *ModelData, dbModel *database.Model) float64 {
 	baseScore := 5.0
-	
+
 	// Factor in release date
 	if dbModel.ReleaseDate != nil {
 		age := time.Since(*dbModel.ReleaseDate).Hours() / 24
@@ -328,7 +328,7 @@ func (se *ScoringEngine) calculateRecencyScore(modelData *ModelData, dbModel *da
 			baseScore -= 1.0
 		}
 	}
-	
+
 	// Factor in training data cutoff
 	if dbModel.TrainingDataCutoff != nil {
 		cutoffAge := time.Since(*dbModel.TrainingDataCutoff).Hours() / 24
@@ -338,7 +338,7 @@ func (se *ScoringEngine) calculateRecencyScore(modelData *ModelData, dbModel *da
 			baseScore -= 0.5
 		}
 	}
-	
+
 	// Factor in last verification date
 	if dbModel.LastVerified != nil {
 		verificationAge := time.Since(*dbModel.LastVerified).Hours() / 24
@@ -348,18 +348,18 @@ func (se *ScoringEngine) calculateRecencyScore(modelData *ModelData, dbModel *da
 			baseScore += 0.5
 		}
 	}
-	
+
 	return math.Max(0, math.Min(10, baseScore))
 }
 
 // DefaultScoreWeights returns default scoring weights
 func DefaultScoreWeights() ScoreWeights {
 	return ScoreWeights{
-		ResponseSpeed:   0.25,
-		ModelEfficiency: 0.20,
+		ResponseSpeed:     0.25,
+		ModelEfficiency:   0.20,
 		CostEffectiveness: 0.25,
-		Capability:      0.20,
-		Recency:         0.10,
+		Capability:        0.20,
+		Recency:           0.10,
 	}
 }
 

@@ -29,8 +29,8 @@ func TestInMemoryDatabaseCreateSchedule(t *testing.T) {
 	schedule := &Schedule{
 		Name:           "Test Schedule",
 		Description:    &desc,
-		ScheduleType:    "cron",
-		CronExpression:  &expr,
+		ScheduleType:   "cron",
+		CronExpression: &expr,
 		IsActive:       true,
 	}
 	err := db.CreateSchedule(schedule)
@@ -177,10 +177,10 @@ func TestScheduleStruct(t *testing.T) {
 	schedule := Schedule{
 		ID:              1,
 		Name:            "Daily Test",
-		Description:      &desc,
-		ScheduleType:     "cron",
-		CronExpression:   &expr,
-		IntervalSeconds:  &interval,
+		Description:     &desc,
+		ScheduleType:    "cron",
+		CronExpression:  &expr,
+		IntervalSeconds: &interval,
 		TargetType:      "model",
 		TargetID:        &targetID,
 		IsActive:        true,
@@ -203,14 +203,14 @@ func TestScheduleRunStruct(t *testing.T) {
 	msg := ""
 
 	run := ScheduleRun{
-		ID:            1,
-		ScheduleID:    1,
-		StartedAt:     started,
-		CompletedAt:   &completed,
-		Status:        status,
-		ResultsCount:  5,
-		ErrorsCount:   0,
-		ErrorMessage:  &msg,
+		ID:           1,
+		ScheduleID:   1,
+		StartedAt:    started,
+		CompletedAt:  &completed,
+		Status:       status,
+		ResultsCount: 5,
+		ErrorsCount:  0,
+		ErrorMessage: &msg,
 	}
 
 	assert.Equal(t, int64(1), run.ID)
@@ -226,8 +226,8 @@ func TestInMemoryDatabaseMultipleSchedules(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		schedule := &Schedule{
 			Name:           "Test Schedule",
-			ScheduleType:    "cron",
-			CronExpression:  &expr,
+			ScheduleType:   "cron",
+			CronExpression: &expr,
 			IsActive:       true,
 		}
 		err := db.CreateSchedule(schedule)
@@ -284,7 +284,7 @@ func TestInMemoryDatabaseListSchedulesWithFilters(t *testing.T) {
 
 	filters := map[string]interface{}{
 		"schedule_type": "cron",
-		"is_active":      true,
+		"is_active":     true,
 	}
 
 	schedules, err := db.ListSchedules(filters)
@@ -302,11 +302,11 @@ func TestScheduleStatusValues(t *testing.T) {
 	for _, status := range statuses {
 		run := &ScheduleRun{
 			ScheduleID:   1,
-			StartedAt:     time.Now(),
-			Status:        status,
-			ResultsCount:  0,
-			ErrorsCount:   0,
-			ErrorMessage:  &msg,
+			StartedAt:    time.Now(),
+			Status:       status,
+			ResultsCount: 0,
+			ErrorsCount:  0,
+			ErrorMessage: &msg,
 		}
 		err := db.CreateScheduleRun(run)
 		assert.NoError(t, err)

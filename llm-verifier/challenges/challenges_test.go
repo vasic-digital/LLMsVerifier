@@ -2,25 +2,25 @@ package challenges
 
 import (
 	"context"
+	"digital.vasic.llmsverifier/database"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
-	"github.com/stretchr/testify/assert"
-	"digital.vasic.llmsverifier/database"
 )
 
 // TestProviderModelsDiscovery tests the provider models discovery challenge
 func TestProviderModelsDiscovery(t *testing.T) {
 	// Create a mock context
 	ctx := context.Background()
-	
+
 	// Create mock database
 	db := &database.Database{}
-	
+
 	// Test challenge creation
 	challenge := NewProviderModelsDiscoveryChallenge(db)
-	
+
 	assert.NotNil(t, challenge)
-	
+
 	// Test challenge execution
 	err := challenge.Run(ctx)
 	assert.NoError(t, err)
@@ -30,15 +30,15 @@ func TestProviderModelsDiscovery(t *testing.T) {
 func TestCrushConfigConverter(t *testing.T) {
 	// Create a mock context
 	ctx := context.Background()
-	
+
 	// Create mock database
 	db := &database.Database{}
-	
+
 	// Test challenge creation
 	challenge := NewCrushConfigConverterChallenge(db)
-	
+
 	assert.NotNil(t, challenge)
-	
+
 	// Test challenge execution
 	err := challenge.Run(ctx)
 	assert.NoError(t, err)
@@ -48,15 +48,15 @@ func TestCrushConfigConverter(t *testing.T) {
 func TestRunModelVerification(t *testing.T) {
 	// Create a mock context
 	ctx := context.Background()
-	
+
 	// Create mock database
 	db := &database.Database{}
-	
+
 	// Test challenge creation
 	challenge := NewRunModelVerificationChallenge(db, nil)
-	
+
 	assert.NotNil(t, challenge)
-	
+
 	// Test challenge execution
 	err := challenge.Run(ctx)
 	assert.NoError(t, err)
@@ -74,26 +74,26 @@ func TestChallengeInterface(t *testing.T) {
 func TestChallengeReEnabled(t *testing.T) {
 	// Test that challenges are not temporarily disabled
 	// This is a meta-test to ensure our implementation is complete
-	
+
 	// Verify challenges have proper implementation
 	ctx := context.Background()
 	timeout := 5 * time.Second
-	
+
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	
+
 	// Test that we can create challenge instances without errors
 	db := &database.Database{}
-	
+
 	providerChallenge := NewProviderModelsDiscoveryChallenge(db)
 	assert.NotNil(t, providerChallenge)
-	
+
 	crushChallenge := NewCrushConfigConverterChallenge(db)
 	assert.NotNil(t, crushChallenge)
-	
+
 	verificationChallenge := NewRunModelVerificationChallenge(db, nil)
 	assert.NotNil(t, verificationChallenge)
-	
+
 	// Test that challenges have the required Run method
 	assert.NotPanics(t, func() {
 		// These would panic if the methods don't exist

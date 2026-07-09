@@ -27,8 +27,8 @@ type MockAPIServer struct {
 
 // EmbeddingRequest represents request for embeddings
 type EmbeddingRequest struct {
-	Model string   `json:"model"`
-	Input string   `json:"input"`
+	Model string `json:"model"`
+	Input string `json:"input"`
 }
 
 // EmbeddingResponse represents response from embeddings
@@ -290,7 +290,7 @@ func (m *MockAPIServer) handleEmbeddings(w http.ResponseWriter, r *http.Request)
 	// Generate mock embeddings based on input
 	response := EmbeddingResponse{
 		Object: "list",
-		Data:   []struct {
+		Data: []struct {
 			Object    string    `json:"object"`
 			Embedding []float64 `json:"embedding"`
 			Index     int       `json:"index"`

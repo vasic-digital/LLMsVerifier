@@ -535,10 +535,10 @@ func (ws *WebSocketServer) handleClientMessage(wsConn *WebSocketConnection, mess
 	case "status":
 		// Return connection status
 		ws.sendAck(wsConn, "status", map[string]interface{}{
-			"connection_id":   wsConn.ID,
-			"active":          wsConn.IsActive,
+			"connection_id":    wsConn.ID,
+			"active":           wsConn.IsActive,
 			"subscribed_types": wsConn.SupportedTypes,
-			"last_activity":   wsConn.LastActivity,
+			"last_activity":    wsConn.LastActivity,
 		})
 
 	default:

@@ -27,17 +27,17 @@ func (ve ValidationError) Error() string {
 func generateSecureJWTSecret() (string, error) {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
 	secretLength := 32
-	
+
 	bytes := make([]byte, secretLength)
 	_, err := rand.Read(bytes)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate secure random bytes: %w", err)
 	}
-	
+
 	for i, b := range bytes {
 		bytes[i] = charset[b%byte(len(charset))]
 	}
-	
+
 	return string(bytes), nil
 }
 
@@ -47,7 +47,7 @@ func setDefaults(cfg *Config) {
 	if cfg.Global.Timeout <= 0 {
 		cfg.Global.Timeout = 30 * time.Second
 	}
-	
+
 	// Set default top-level timeout if not specified
 	if cfg.Timeout <= 0 {
 		cfg.Timeout = 30 * time.Second
@@ -146,7 +146,7 @@ func ValidateConfig(cfg *Config) *ValidationResult {
 
 	// Validate monitoring config
 	result.merge(validateMonitoringConfig(&cfg.Monitoring))
-	
+
 	// Validate logging config
 	result.merge(validateLoggingConfig(&cfg.Logging))
 
@@ -359,11 +359,10 @@ func ValidateAndFixConfig(cfg *Config) *ValidationResult {
 	return result
 }
 
-
 // validateLoggingConfig validates logging configuration
 func validateLoggingConfig(logging *LoggingConfig) *ValidationResult {
 	result := &ValidationResult{Valid: true, Errors: make([]ValidationError, 0)}
-	
+
 	// Only validate if fields are set
 	if logging.Level != "" {
 		validLevels := []string{"debug", "info", "warn", "error"}
@@ -397,7 +396,6 @@ func validateLoggingConfig(logging *LoggingConfig) *ValidationResult {
 	if logging.MaxAge < 0 {
 		result.addError("logging.max_age", tr("config.validation.log_max_age_non_negative"))
 	}
-	
+
 	return result
 }
-

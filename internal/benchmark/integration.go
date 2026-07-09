@@ -31,10 +31,10 @@ func DefaultBenchmarkSystemConfig() *BenchmarkSystemConfig {
 
 // BenchmarkSystem orchestrates benchmarking
 type BenchmarkSystem struct {
-	runner   BenchmarkRunner
-	config   *BenchmarkSystemConfig
-	logger   *log.Logger
-	mu       sync.RWMutex
+	runner BenchmarkRunner
+	config *BenchmarkSystemConfig
+	logger *log.Logger
+	mu     sync.RWMutex
 }
 
 // NewBenchmarkSystem creates a new benchmark system

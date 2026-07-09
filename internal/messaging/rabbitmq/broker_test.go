@@ -213,9 +213,9 @@ func TestErrNotConnected(t *testing.T) {
 
 func TestBrokerConnect_Integration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping integration test in short mode") // SKIP-OK: #short-mode
 	}
 
 	// This test requires a running RabbitMQ server
-	t.Skip("Skipping - requires RabbitMQ server")  // SKIP-OK: #legacy-untriaged
+	t.Skip("Skipping - requires RabbitMQ server") // SKIP-OK: #legacy-untriaged
 }

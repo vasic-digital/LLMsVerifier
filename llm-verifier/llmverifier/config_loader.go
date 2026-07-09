@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"digital.vasic.llmsverifier/config"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
-	"digital.vasic.llmsverifier/config"
 )
 
 // LoadConfig loads the configuration from a YAML file with validation and advanced features

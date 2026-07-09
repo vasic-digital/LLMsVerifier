@@ -30,15 +30,15 @@ func (v *Verifier) Verify(ctx context.Context, req *Request) (*database.Verifica
 	if req == nil {
 		return nil, fmt.Errorf("verification request cannot be nil")
 	}
-	
+
 	if req.ModelID == "" {
 		return nil, fmt.Errorf("model ID is required")
 	}
-	
+
 	if req.Prompt == "" {
 		return nil, fmt.Errorf("prompt is required")
 	}
-	
+
 	// Real verification requires: (1) resolve req.ModelID against the
 	// models table to get the int64 PK; (2) dispatch the appropriate
 	// per-feature test via the llmverifier.Verifier against the

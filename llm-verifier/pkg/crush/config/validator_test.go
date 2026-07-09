@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"testing"
-	
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -38,9 +38,9 @@ func TestValidateFromReader(t *testing.T) {
 								"cost_per_1m_out":      60.0,
 								"context_window":       128000,
 								"default_max_tokens":   4096,
-								"can_reason":          true,
+								"can_reason":           true,
 								"supports_attachments": false,
-								"streaming":           true,
+								"streaming":            true,
 							},
 						},
 					},
@@ -73,4 +73,3 @@ func TestValidateFromReader(t *testing.T) {
 		})
 	}
 }
-

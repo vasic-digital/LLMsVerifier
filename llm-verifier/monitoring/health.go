@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"digital.vasic.llmsverifier/database"
+	"github.com/gin-gonic/gin"
 )
 
 // HealthStatus represents the health status of a component

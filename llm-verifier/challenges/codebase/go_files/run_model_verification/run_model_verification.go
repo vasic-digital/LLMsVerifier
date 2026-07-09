@@ -37,28 +37,28 @@ type ModelCapability struct {
 
 // CapabilityTestResult holds the result of testing a capability.
 type CapabilityTestResult struct {
-	Capability  string        `json:"capability"`
-	Supported   bool          `json:"supported"`
-	Tested      bool          `json:"tested"`
-	LatencyMs   int64         `json:"latency_ms,omitempty"`
-	Error       string        `json:"error,omitempty"`
-	Details     string        `json:"details,omitempty"`
+	Capability string `json:"capability"`
+	Supported  bool   `json:"supported"`
+	Tested     bool   `json:"tested"`
+	LatencyMs  int64  `json:"latency_ms,omitempty"`
+	Error      string `json:"error,omitempty"`
+	Details    string `json:"details,omitempty"`
 }
 
 // ModelVerificationResult holds verification results for a model.
 type ModelVerificationResult struct {
-	ModelID           string                 `json:"model_id"`
-	ModelName         string                 `json:"model_name"`
-	Provider          string                 `json:"provider"`
-	Verified          bool                   `json:"verified"`
-	CapabilityResults []CapabilityTestResult `json:"capability_results"`
-	TotalCapabilities int                    `json:"total_capabilities"`
-	PassedCapabilities int                   `json:"passed_capabilities"`
-	FailedCapabilities int                   `json:"failed_capabilities"`
-	VerificationScore float64                `json:"verification_score"`
-	ResponseTimeMs    int64                  `json:"response_time_ms"`
-	Error             string                 `json:"error,omitempty"`
-	Timestamp         time.Time              `json:"timestamp"`
+	ModelID            string                 `json:"model_id"`
+	ModelName          string                 `json:"model_name"`
+	Provider           string                 `json:"provider"`
+	Verified           bool                   `json:"verified"`
+	CapabilityResults  []CapabilityTestResult `json:"capability_results"`
+	TotalCapabilities  int                    `json:"total_capabilities"`
+	PassedCapabilities int                    `json:"passed_capabilities"`
+	FailedCapabilities int                    `json:"failed_capabilities"`
+	VerificationScore  float64                `json:"verification_score"`
+	ResponseTimeMs     int64                  `json:"response_time_ms"`
+	Error              string                 `json:"error,omitempty"`
+	Timestamp          time.Time              `json:"timestamp"`
 }
 
 // ProviderVerificationResult holds all model verification results for a provider.
@@ -143,11 +143,11 @@ type ChatCompletionResponse struct {
 
 // Anthropic-specific structures
 type AnthropicRequest struct {
-	Model     string               `json:"model"`
-	MaxTokens int                  `json:"max_tokens"`
-	Messages  []AnthropicMessage   `json:"messages"`
-	Stream    bool                 `json:"stream,omitempty"`
-	Tools     []AnthropicTool      `json:"tools,omitempty"`
+	Model     string             `json:"model"`
+	MaxTokens int                `json:"max_tokens"`
+	Messages  []AnthropicMessage `json:"messages"`
+	Stream    bool               `json:"stream,omitempty"`
+	Tools     []AnthropicTool    `json:"tools,omitempty"`
 }
 
 type AnthropicMessage struct {
@@ -162,16 +162,16 @@ type AnthropicTool struct {
 }
 
 type AnthropicResponse struct {
-	ID           string `json:"id"`
-	Type         string `json:"type"`
-	Role         string `json:"role"`
-	Content      []struct {
+	ID      string `json:"id"`
+	Type    string `json:"type"`
+	Role    string `json:"role"`
+	Content []struct {
 		Type string `json:"type"`
 		Text string `json:"text"`
 	} `json:"content"`
-	Model        string `json:"model"`
-	StopReason   string `json:"stop_reason"`
-	Usage        struct {
+	Model      string `json:"model"`
+	StopReason string `json:"stop_reason"`
+	Usage      struct {
 		InputTokens  int `json:"input_tokens"`
 		OutputTokens int `json:"output_tokens"`
 	} `json:"usage"`

@@ -150,7 +150,7 @@ func TestRateLimiting(t *testing.T) {
 	for i := 0; i < 15; i++ {
 		resp, err := http.Get(fmt.Sprintf("%s/test", server.URL))
 		require.NoError(t, err)
-		
+
 		if i < 10 {
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
 		} else {
@@ -198,13 +198,13 @@ func TestSecureConfiguration(t *testing.T) {
 
 	// Test that configuration is properly sanitized
 	sanitized := sanitizeConfiguration(config)
-	
+
 	// Check that secrets are masked
 	assert.Contains(t, sanitized["apiKey"], "***", "API key should be masked")
-	
+
 	dbConfig := sanitized["database"].(map[string]interface{})
 	assert.Contains(t, dbConfig["password"], "***", "Database password should be masked")
-	
+
 	providers := sanitized["providers"].([]map[string]interface{})
 	assert.Contains(t, providers[0]["apiKey"], "***", "Provider API key should be masked")
 }
@@ -262,7 +262,7 @@ func TestSecureHeaders(t *testing.T) {
 		w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 		w.Header().Set("Content-Security-Policy", "default-src 'self'")
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-		
+
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	}))
@@ -308,16 +308,16 @@ func TestEncryptionDecryption(t *testing.T) {
 // Test logging security
 func TestLoggingSecurity(t *testing.T) {
 	sensitiveData := map[string]interface{}{
-		"apiKey": "sk-secret-key",
-		"token": "bearer-secret-token",
-		"password": "user-password",
+		"apiKey":     "sk-secret-key",
+		"token":      "bearer-secret-token",
+		"password":   "user-password",
 		"creditCard": "4111-1111-1111-1111",
-		"ssn": "123-45-6789",
+		"ssn":        "123-45-6789",
 	}
 
 	// Test that sensitive data is sanitized in logs
 	sanitizedLog := sanitizeForLogging(sensitiveData)
-	
+
 	logStr := fmt.Sprintf("%v", sanitizedLog)
 	assert.NotContains(t, logStr, "sk-secret-key", "API key should not be in logs")
 	assert.NotContains(t, logStr, "bearer-secret-token", "Token should not be in logs")
@@ -369,15 +369,15 @@ func TestSessionSecurity(t *testing.T) {
 	token := generateSecureToken()
 	assert.NotEmpty(t, token, "Token should not be empty")
 	assert.Greater(t, len(token), 32, "Token should be sufficiently long")
-	
+
 	// Test token uniqueness
 	token2 := generateSecureToken()
 	assert.NotEqual(t, token, token2, "Tokens should be unique")
-	
+
 	// Test session timeout
 	session := createSession(token, 1*time.Hour)
 	assert.False(t, isSessionExpired(session), "New session should not be expired")
-	
+
 	// Simulate time passing
 	time.Sleep(2 * time.Second)
 	session = createSession(token, 1*time.Second) // Short timeout for testing
@@ -492,9 +492,9 @@ func sanitizeConfiguration(config map[string]interface{}) map[string]interface{}
 		switch v := value.(type) {
 		case string:
 			if strings.Contains(strings.ToLower(key), "key") ||
-			   strings.Contains(strings.ToLower(key), "password") ||
-			   strings.Contains(strings.ToLower(key), "secret") ||
-			   strings.Contains(strings.ToLower(key), "token") {
+				strings.Contains(strings.ToLower(key), "password") ||
+				strings.Contains(strings.ToLower(key), "secret") ||
+				strings.Contains(strings.ToLower(key), "token") {
 				sanitized[key] = maskAPIKey(v)
 			} else {
 				sanitized[key] = v
@@ -616,9 +616,9 @@ func generateSecureToken() string {
 
 func createSession(token string, duration time.Duration) map[string]interface{} {
 	return map[string]interface{}{
-		"token":     token,
-		"created":   time.Now(),
-		"expires":   time.Now().Add(duration),
+		"token":   token,
+		"created": time.Now(),
+		"expires": time.Now().Add(duration),
 	}
 }
 

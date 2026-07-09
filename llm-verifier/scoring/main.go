@@ -20,12 +20,12 @@ type ScoringService struct {
 
 // ServiceConfig holds configuration for the scoring service
 type ServiceConfig struct {
-	SystemConfig   ScoringSystemConfig
-	MonitorConfig  MonitoringConfig
-	AutoStart      bool
-	EnableMetrics  bool
-	MetricsPort    int
-	EnableTracing  bool
+	SystemConfig  ScoringSystemConfig
+	MonitorConfig MonitoringConfig
+	AutoStart     bool
+	EnableMetrics bool
+	MetricsPort   int
+	EnableTracing bool
 }
 
 // DefaultServiceConfig returns default service configuration
@@ -209,16 +209,16 @@ func (ss *ScoringService) GetServiceStatus() ServiceStatus {
 	if err != nil {
 		rankings = []ModelRanking{}
 	}
-	
+
 	status := ServiceStatus{
-		Status:           health.OverallStatus,
-		Uptime:           time.Since(time.Now().Add(-24 * time.Hour)), // Placeholder
-		TotalModels:      int64(len(rankings)),
-		LastScoreCalc:    metrics.LastUpdated,
-		ScoreCalcRate:    ss.monitor.metrics.GetScoreCalculationRate(),
-		APIErrorRate:     ss.monitor.metrics.GetAPIErrorRate(),
+		Status:            health.OverallStatus,
+		Uptime:            time.Since(time.Now().Add(-24 * time.Hour)), // Placeholder
+		TotalModels:       int64(len(rankings)),
+		LastScoreCalc:     metrics.LastUpdated,
+		ScoreCalcRate:     ss.monitor.metrics.GetScoreCalculationRate(),
+		APIErrorRate:      ss.monitor.metrics.GetAPIErrorRate(),
 		DatabaseErrorRate: ss.monitor.metrics.GetDatabaseErrorRate(),
-		LastUpdated:      time.Now(),
+		LastUpdated:       time.Now(),
 	}
 
 	return status
@@ -413,7 +413,7 @@ func (ss *ScoringService) exportScoresCSV(filters map[string]interface{}) ([]byt
 	// Convert to CSV
 	var csvData []byte
 	csvData = append(csvData, []byte("Rank,Model ID,Model Name,Overall Score,Score Suffix,Category Score,Last Updated\n")...)
-	
+
 	for _, ranking := range filteredRankings {
 		line := fmt.Sprintf("%d,%s,%s,%.1f,%s,%.1f,%s\n",
 			ranking.Rank,
@@ -434,12 +434,12 @@ func (ss *ScoringService) applyFilters(rankings []ModelRanking, filters map[stri
 	// This is a simplified filter implementation
 	// In a real implementation, you would handle various filter types
 	filtered := make([]ModelRanking, 0)
-	
+
 	for _, ranking := range rankings {
 		// Apply filters based on filter map
 		// For now, just return all rankings
 		filtered = append(filtered, ranking)
 	}
-	
+
 	return filtered
 }

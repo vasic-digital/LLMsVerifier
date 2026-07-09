@@ -535,9 +535,9 @@ func TestEnterpriseAPI_GetRequiredPermission(t *testing.T) {
 	api := NewEnterpriseAPI(manager)
 
 	tests := []struct {
-		path       string
-		method     string
-		expected   Permission
+		path     string
+		method   string
+		expected Permission
 	}{
 		{"/api/enterprise/users", "GET", PermissionJobView},
 		{"/api/enterprise/users", "POST", PermissionUserManage},

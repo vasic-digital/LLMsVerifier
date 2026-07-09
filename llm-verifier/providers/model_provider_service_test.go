@@ -284,12 +284,12 @@ func TestCacheOperations(t *testing.T) {
 // TestIntegrationWithRealProvider tests integration (with OpenAI as example)
 func TestIntegrationWithRealProvider(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping integration test in short mode") // SKIP-OK: #short-mode
 	}
 
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
-		t.Skip("OPENAI_API_KEY not set, skipping integration test")  // SKIP-OK: #requires-upstream-key
+		t.Skip("OPENAI_API_KEY not set, skipping integration test") // SKIP-OK: #requires-upstream-key
 	}
 
 	logger := NewTestLogger()

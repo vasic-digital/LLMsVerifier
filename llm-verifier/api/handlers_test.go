@@ -1,17 +1,17 @@
 package api
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
-	"github.com/stretchr/testify/assert"
 )
 
 // TestHandlers_Complete tests all API handlers
 func TestHandlers_Complete(t *testing.T) {
 	tests := []struct {
-		name     string
-		handler  string
-		setupFunc func() interface{}
+		name         string
+		handler      string
+		setupFunc    func() interface{}
 		validateFunc func(t *testing.T, result interface{})
 	}{
 		{
@@ -41,7 +41,7 @@ func TestHandlers_Complete(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			setup := tt.setupFunc()

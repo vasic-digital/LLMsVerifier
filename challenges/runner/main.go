@@ -73,13 +73,13 @@ import (
 // (CONST-051(B): no transitive deps creeping into a reusable
 // submodule).
 type fixture struct {
-	locale                       string
-	providerID                   string
-	prompt                       string
-	expectValidMinimalConfig     bool
-	expectInvalidNoProviders     bool // expected Valid for no-providers (false = expect Valid=false)
-	expectInvalidJSONError       bool
-	expectRoundtripPreserves     bool
+	locale                   string
+	providerID               string
+	prompt                   string
+	expectValidMinimalConfig bool
+	expectInvalidNoProviders bool // expected Valid for no-providers (false = expect Valid=false)
+	expectInvalidJSONError   bool
+	expectRoundtripPreserves bool
 }
 
 func main() {

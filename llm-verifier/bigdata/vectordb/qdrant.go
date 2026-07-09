@@ -13,26 +13,26 @@ import (
 
 // QdrantConfig holds Qdrant connection configuration
 type QdrantConfig struct {
-	Host             string        `yaml:"host" json:"host"`
-	HTTPPort         int           `yaml:"http_port" json:"http_port"`
-	GRPCPort         int           `yaml:"grpc_port" json:"grpc_port"`
-	APIKey           string        `yaml:"api_key" json:"api_key"`
-	Timeout          time.Duration `yaml:"timeout" json:"timeout"`
-	VerificationCollection string  `yaml:"verification_collection" json:"verification_collection"`
-	ModelEmbeddingsCollection string `yaml:"model_embeddings_collection" json:"model_embeddings_collection"`
-	VectorDimension  int           `yaml:"vector_dimension" json:"vector_dimension"`
+	Host                      string        `yaml:"host" json:"host"`
+	HTTPPort                  int           `yaml:"http_port" json:"http_port"`
+	GRPCPort                  int           `yaml:"grpc_port" json:"grpc_port"`
+	APIKey                    string        `yaml:"api_key" json:"api_key"`
+	Timeout                   time.Duration `yaml:"timeout" json:"timeout"`
+	VerificationCollection    string        `yaml:"verification_collection" json:"verification_collection"`
+	ModelEmbeddingsCollection string        `yaml:"model_embeddings_collection" json:"model_embeddings_collection"`
+	VectorDimension           int           `yaml:"vector_dimension" json:"vector_dimension"`
 }
 
 // DefaultQdrantConfig returns default Qdrant configuration
 func DefaultQdrantConfig() *QdrantConfig {
 	return &QdrantConfig{
-		Host:             "localhost",
-		HTTPPort:         6333,
-		GRPCPort:         6334,
-		Timeout:          30 * time.Second,
-		VerificationCollection: "verification_embeddings",
+		Host:                      "localhost",
+		HTTPPort:                  6333,
+		GRPCPort:                  6334,
+		Timeout:                   30 * time.Second,
+		VerificationCollection:    "verification_embeddings",
 		ModelEmbeddingsCollection: "model_embeddings",
-		VectorDimension:  1536,
+		VectorDimension:           1536,
 	}
 }
 
@@ -372,13 +372,13 @@ func (c *QdrantClient) SearchSimilarVerifications(ctx context.Context, vector []
 
 // ModelEmbedding represents a model embedding
 type ModelEmbedding struct {
-	ID         string                 `json:"id"`
-	ProviderID string                 `json:"provider_id"`
-	ModelID    string                 `json:"model_id"`
-	ModelName  string                 `json:"model_name"`
-	Vector     []float32              `json:"vector"`
+	ID           string                 `json:"id"`
+	ProviderID   string                 `json:"provider_id"`
+	ModelID      string                 `json:"model_id"`
+	ModelName    string                 `json:"model_name"`
+	Vector       []float32              `json:"vector"`
 	Capabilities map[string]interface{} `json:"capabilities"`
-	Metadata   map[string]interface{} `json:"metadata"`
+	Metadata     map[string]interface{} `json:"metadata"`
 }
 
 // UpsertModelEmbedding upserts a model embedding

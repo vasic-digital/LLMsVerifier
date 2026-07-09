@@ -1,9 +1,9 @@
 package opencode_verifier
 
 import (
-	"encoding/json"
 	"digital.vasic.llmsverifier/database"
 	opencodeConfig "digital.vasic.llmsverifier/pkg/opencode/config"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"

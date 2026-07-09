@@ -138,9 +138,9 @@ func TestClientManager_UpdateClientPreferences(t *testing.T) {
 	require.NoError(t, err)
 
 	newPrefs := ClientPreferences{
-		Theme:      "dark",
-		Language:   "es",
-		MaxTokens:  8192,
+		Theme:       "dark",
+		Language:    "es",
+		MaxTokens:   8192,
 		Temperature: 0.5,
 	}
 

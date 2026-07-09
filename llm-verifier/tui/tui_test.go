@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/charmbracelet/bubbletea"
 	"digital.vasic.llmsverifier/client"
+	"github.com/charmbracelet/bubbletea"
 )
 
 func TestNewAppBasic(t *testing.T) {
@@ -46,8 +46,8 @@ func TestAppUpdate(t *testing.T) {
 	app.height = 24
 
 	tests := []struct {
-		name       string
-		msg        tea.Msg
+		name string
+		msg  tea.Msg
 	}{
 		{"Quit message", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}}},
 		{"Screen 1", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'1'}}},

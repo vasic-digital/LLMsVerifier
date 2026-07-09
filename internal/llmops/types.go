@@ -16,17 +16,17 @@ type PromptVariable struct {
 
 // PromptVersion represents a versioned prompt template
 type PromptVersion struct {
-	ID          string           `json:"id"`
-	Name        string           `json:"name"`
-	Version     string           `json:"version"`
-	Content     string           `json:"content"`
-	Variables   []PromptVariable `json:"variables,omitempty"`
-	SystemPrompt string          `json:"system_prompt,omitempty"`
-	Model       string           `json:"model,omitempty"`
-	Tags        []string         `json:"tags,omitempty"`
-	IsActive    bool             `json:"is_active"`
-	CreatedAt   time.Time        `json:"created_at"`
-	UpdatedAt   time.Time        `json:"updated_at"`
+	ID           string           `json:"id"`
+	Name         string           `json:"name"`
+	Version      string           `json:"version"`
+	Content      string           `json:"content"`
+	Variables    []PromptVariable `json:"variables,omitempty"`
+	SystemPrompt string           `json:"system_prompt,omitempty"`
+	Model        string           `json:"model,omitempty"`
+	Tags         []string         `json:"tags,omitempty"`
+	IsActive     bool             `json:"is_active"`
+	CreatedAt    time.Time        `json:"created_at"`
+	UpdatedAt    time.Time        `json:"updated_at"`
 }
 
 // ExperimentStatus represents the status of an experiment
@@ -69,21 +69,21 @@ type Experiment struct {
 
 // ExperimentResults represents results of an experiment
 type ExperimentResults struct {
-	ExperimentID    string                  `json:"experiment_id"`
-	TotalSamples    int                     `json:"total_samples"`
-	VariantResults  map[string]*VariantResult `json:"variant_results"`
-	WinningVariant  string                  `json:"winning_variant,omitempty"`
-	Confidence      float64                 `json:"confidence"`
-	IsSignificant   bool                    `json:"is_significant"`
+	ExperimentID   string                    `json:"experiment_id"`
+	TotalSamples   int                       `json:"total_samples"`
+	VariantResults map[string]*VariantResult `json:"variant_results"`
+	WinningVariant string                    `json:"winning_variant,omitempty"`
+	Confidence     float64                   `json:"confidence"`
+	IsSignificant  bool                      `json:"is_significant"`
 }
 
 // VariantResult represents results for a single variant
 type VariantResult struct {
-	VariantID     string             `json:"variant_id"`
-	SampleCount   int                `json:"sample_count"`
-	MetricValues  map[string]float64 `json:"metric_values"`
-	AverageScore  float64            `json:"average_score"`
-	Improvement   float64            `json:"improvement"` // vs control
+	VariantID    string             `json:"variant_id"`
+	SampleCount  int                `json:"sample_count"`
+	MetricValues map[string]float64 `json:"metric_values"`
+	AverageScore float64            `json:"average_score"`
+	Improvement  float64            `json:"improvement"` // vs control
 }
 
 // EvaluationStatus represents the status of an evaluation run
@@ -126,16 +126,16 @@ type DatasetSample struct {
 
 // EvaluationRun represents a continuous evaluation run
 type EvaluationRun struct {
-	ID         string           `json:"id"`
-	Name       string           `json:"name"`
-	Dataset    string           `json:"dataset"`
-	PromptName string           `json:"prompt_name"`
-	Metrics    []string         `json:"metrics"`
-	Status     EvaluationStatus `json:"status"`
+	ID         string             `json:"id"`
+	Name       string             `json:"name"`
+	Dataset    string             `json:"dataset"`
+	PromptName string             `json:"prompt_name"`
+	Metrics    []string           `json:"metrics"`
+	Status     EvaluationStatus   `json:"status"`
 	Results    *EvaluationResults `json:"results,omitempty"`
-	StartedAt  *time.Time       `json:"started_at,omitempty"`
-	EndedAt    *time.Time       `json:"ended_at,omitempty"`
-	CreatedAt  time.Time        `json:"created_at"`
+	StartedAt  *time.Time         `json:"started_at,omitempty"`
+	EndedAt    *time.Time         `json:"ended_at,omitempty"`
+	CreatedAt  time.Time          `json:"created_at"`
 }
 
 // EvaluationResults represents results of an evaluation
@@ -233,12 +233,12 @@ type AlertFilter struct {
 
 // LLMOpsConfig holds configuration for LLMOps
 type LLMOpsConfig struct {
-	EnableAutoEvaluation  bool               `json:"enable_auto_evaluation"`
-	EvaluationInterval    time.Duration      `json:"evaluation_interval"`
-	MinSamplesForSignif   int                `json:"min_samples_for_significance"`
-	SignificanceLevel     float64            `json:"significance_level"`
-	AlertThresholds       map[string]float64 `json:"alert_thresholds"`
-	EnableDebateEval      bool               `json:"enable_debate_eval"`
+	EnableAutoEvaluation bool               `json:"enable_auto_evaluation"`
+	EvaluationInterval   time.Duration      `json:"evaluation_interval"`
+	MinSamplesForSignif  int                `json:"min_samples_for_significance"`
+	SignificanceLevel    float64            `json:"significance_level"`
+	AlertThresholds      map[string]float64 `json:"alert_thresholds"`
+	EnableDebateEval     bool               `json:"enable_debate_eval"`
 }
 
 // DefaultLLMOpsConfig returns default configuration

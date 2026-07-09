@@ -291,7 +291,7 @@ type CreateModelRequest struct {
 	OverallScore          float64    `json:"overall_score" binding:"min=0,max=100"`
 	CodeCapabilityScore   float64    `json:"code_capability_score" binding:"min=0,max=100"`
 	ResponsivenessScore   float64    `json:"responsiveness_score" binding:"min=0,max=100"`
-	ReliabilityScore      float64 `json:"reliability_score" binding:"omitempty,min=0,max=100"`
+	ReliabilityScore      float64    `json:"reliability_score" binding:"omitempty,min=0,max=100"`
 	FeatureRichnessScore  float64    `json:"feature_richness_score" binding:"min=0,max=100"`
 	ValuePropositionScore float64    `json:"value_proposition_score" binding:"min=0,max=100"`
 }
@@ -380,7 +380,7 @@ type CreateVerificationResultRequest struct {
 	OverallScore             float64    `json:"overall_score" binding:"min=0,max=100"`
 	CodeCapabilityScore      float64    `json:"code_capability_score" binding:"min=0,max=100"`
 	ResponsivenessScore      float64    `json:"responsiveness_score" binding:"min=0,max=100"`
-	ReliabilityScore      float64 `json:"reliability_score" binding:"omitempty,min=0,max=100"`
+	ReliabilityScore         float64    `json:"reliability_score" binding:"omitempty,min=0,max=100"`
 	FeatureRichnessScore     float64    `json:"feature_richness_score" binding:"min=0,max=100"`
 	ValuePropositionScore    float64    `json:"value_proposition_score" binding:"min=0,max=100"`
 	ScoreDetails             string     `json:"score_details" binding:"omitempty,max=5000"`
@@ -445,7 +445,7 @@ type UpdateVerificationResultRequest struct {
 	OverallScore             float64    `json:"overall_score" binding:"omitempty,min=0,max=100"`
 	CodeCapabilityScore      float64    `json:"code_capability_score" binding:"omitempty,min=0,max=100"`
 	ResponsivenessScore      float64    `json:"responsiveness_score" binding:"omitempty,min=0,max=100"`
-	ReliabilityScore      float64 `json:"reliability_score" binding:"omitempty,min=0,max=100"`
+	ReliabilityScore         float64    `json:"reliability_score" binding:"omitempty,min=0,max=100"`
 	FeatureRichnessScore     float64    `json:"feature_richness_score" binding:"omitempty,min=0,max=100"`
 	ValuePropositionScore    float64    `json:"value_proposition_score" binding:"omitempty,min=0,max=100"`
 	ScoreDetails             string     `json:"score_details" binding:"omitempty,max=5000"`

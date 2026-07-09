@@ -10,12 +10,12 @@ import (
 
 // MessagingConfig represents the complete messaging configuration.
 type MessagingConfig struct {
-	Messaging       MessagingSettings       `yaml:"messaging"`
-	RabbitMQ        RabbitMQConfig          `yaml:"rabbitmq"`
-	Kafka           KafkaConfig             `yaml:"kafka"`
-	CircuitBreaker  CircuitBreakerSettings  `yaml:"circuit_breaker"`
-	Retry           RetrySettings           `yaml:"retry"`
-	HealthCheck     HealthCheckSettings     `yaml:"health_check"`
+	Messaging      MessagingSettings      `yaml:"messaging"`
+	RabbitMQ       RabbitMQConfig         `yaml:"rabbitmq"`
+	Kafka          KafkaConfig            `yaml:"kafka"`
+	CircuitBreaker CircuitBreakerSettings `yaml:"circuit_breaker"`
+	Retry          RetrySettings          `yaml:"retry"`
+	HealthCheck    HealthCheckSettings    `yaml:"health_check"`
 }
 
 // MessagingSettings contains general messaging settings.
@@ -27,27 +27,27 @@ type MessagingSettings struct {
 
 // RabbitMQConfig contains RabbitMQ-specific configuration.
 type RabbitMQConfig struct {
-	Host                 string              `yaml:"host"`
-	Port                 int                 `yaml:"port"`
-	Username             string              `yaml:"username"`
-	Password             string              `yaml:"password"`
-	VHost                string              `yaml:"vhost"`
-	UseTLS               bool                `yaml:"use_tls"`
-	TLSCertFile          string              `yaml:"tls_cert_file"`
-	TLSKeyFile           string              `yaml:"tls_key_file"`
-	TLSCAFile            string              `yaml:"tls_ca_file"`
-	ConnectionTimeout    time.Duration       `yaml:"connection_timeout"`
-	HeartbeatInterval    time.Duration       `yaml:"heartbeat_interval"`
-	ReconnectInterval    time.Duration       `yaml:"reconnect_interval"`
-	MaxReconnectInterval time.Duration       `yaml:"max_reconnect_interval"`
-	MaxReconnectAttempts int                 `yaml:"max_reconnect_attempts"`
-	ChannelMax           int                 `yaml:"channel_max"`
-	FrameSize            int                 `yaml:"frame_size"`
-	PrefetchCount        int                 `yaml:"prefetch_count"`
-	PrefetchSize         int                 `yaml:"prefetch_size"`
-	PublisherConfirms    bool                `yaml:"publisher_confirms"`
-	ConfirmTimeout       time.Duration       `yaml:"confirm_timeout"`
-	Queues               []QueueDefinition   `yaml:"queues"`
+	Host                 string               `yaml:"host"`
+	Port                 int                  `yaml:"port"`
+	Username             string               `yaml:"username"`
+	Password             string               `yaml:"password"`
+	VHost                string               `yaml:"vhost"`
+	UseTLS               bool                 `yaml:"use_tls"`
+	TLSCertFile          string               `yaml:"tls_cert_file"`
+	TLSKeyFile           string               `yaml:"tls_key_file"`
+	TLSCAFile            string               `yaml:"tls_ca_file"`
+	ConnectionTimeout    time.Duration        `yaml:"connection_timeout"`
+	HeartbeatInterval    time.Duration        `yaml:"heartbeat_interval"`
+	ReconnectInterval    time.Duration        `yaml:"reconnect_interval"`
+	MaxReconnectInterval time.Duration        `yaml:"max_reconnect_interval"`
+	MaxReconnectAttempts int                  `yaml:"max_reconnect_attempts"`
+	ChannelMax           int                  `yaml:"channel_max"`
+	FrameSize            int                  `yaml:"frame_size"`
+	PrefetchCount        int                  `yaml:"prefetch_count"`
+	PrefetchSize         int                  `yaml:"prefetch_size"`
+	PublisherConfirms    bool                 `yaml:"publisher_confirms"`
+	ConfirmTimeout       time.Duration        `yaml:"confirm_timeout"`
+	Queues               []QueueDefinition    `yaml:"queues"`
 	Exchanges            []ExchangeDefinition `yaml:"exchanges"`
 }
 

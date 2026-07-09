@@ -61,39 +61,39 @@ type EventHandler func(ctx context.Context, event *Event) error
 
 // TopicMetadata contains metadata about a topic.
 type TopicMetadata struct {
-	Name            string           `json:"name"`
-	Partitions      int32            `json:"partitions"`
-	ReplicationFactor int16          `json:"replication_factor"`
-	PartitionInfo   []PartitionInfo  `json:"partition_info,omitempty"`
-	Config          map[string]string `json:"config,omitempty"`
+	Name              string            `json:"name"`
+	Partitions        int32             `json:"partitions"`
+	ReplicationFactor int16             `json:"replication_factor"`
+	PartitionInfo     []PartitionInfo   `json:"partition_info,omitempty"`
+	Config            map[string]string `json:"config,omitempty"`
 }
 
 // PartitionInfo contains information about a partition.
 type PartitionInfo struct {
-	Partition     int32   `json:"partition"`
-	Leader        int32   `json:"leader"`
-	Replicas      []int32 `json:"replicas"`
-	ISR           []int32 `json:"isr"` // In-Sync Replicas
-	BeginOffset   int64   `json:"begin_offset"`
-	EndOffset     int64   `json:"end_offset"`
+	Partition   int32   `json:"partition"`
+	Leader      int32   `json:"leader"`
+	Replicas    []int32 `json:"replicas"`
+	ISR         []int32 `json:"isr"` // In-Sync Replicas
+	BeginOffset int64   `json:"begin_offset"`
+	EndOffset   int64   `json:"end_offset"`
 }
 
 // ConsumerGroupInfo contains information about a consumer group.
 type ConsumerGroupInfo struct {
-	GroupID         string                   `json:"group_id"`
-	State           string                   `json:"state"`
-	Protocol        string                   `json:"protocol"`
-	ProtocolType    string                   `json:"protocol_type"`
-	Members         []ConsumerGroupMember    `json:"members,omitempty"`
-	PartitionLag    map[string]int64         `json:"partition_lag,omitempty"`
+	GroupID      string                `json:"group_id"`
+	State        string                `json:"state"`
+	Protocol     string                `json:"protocol"`
+	ProtocolType string                `json:"protocol_type"`
+	Members      []ConsumerGroupMember `json:"members,omitempty"`
+	PartitionLag map[string]int64      `json:"partition_lag,omitempty"`
 }
 
 // ConsumerGroupMember contains information about a consumer group member.
 type ConsumerGroupMember struct {
-	MemberID    string   `json:"member_id"`
-	ClientID    string   `json:"client_id"`
-	ClientHost  string   `json:"client_host"`
-	Partitions  []int32  `json:"partitions"`
+	MemberID   string  `json:"member_id"`
+	ClientID   string  `json:"client_id"`
+	ClientHost string  `json:"client_host"`
+	Partitions []int32 `json:"partitions"`
 }
 
 // EventStreamBroker extends MessageBroker with event streaming specific operations.
@@ -178,7 +178,7 @@ func DefaultTopicConfig(name string) *TopicConfig {
 		Partitions:        3,
 		ReplicationFactor: 1,
 		RetentionTime:     7 * 24 * time.Hour,
-		RetentionBytes:    -1, // unlimited
+		RetentionBytes:    -1,         // unlimited
 		SegmentBytes:      1073741824, // 1GB
 		CleanupPolicy:     "delete",
 		CompressionType:   "lz4",
@@ -298,13 +298,13 @@ type StreamOption func(*StreamOptions)
 // DefaultStreamOptions returns default streaming options.
 func DefaultStreamOptions() *StreamOptions {
 	return &StreamOptions{
-		StartOffset:         "latest",
-		BufferSize:          1000,
-		MaxPollRecords:      500,
-		PollTimeout:         1 * time.Second,
-		AutoCommit:          false,
-		AutoCommitInterval:  5 * time.Second,
-		IsolationLevel:      "read_committed",
+		StartOffset:        "latest",
+		BufferSize:         1000,
+		MaxPollRecords:     500,
+		PollTimeout:        1 * time.Second,
+		AutoCommit:         false,
+		AutoCommitInterval: 5 * time.Second,
+		IsolationLevel:     "read_committed",
 	}
 }
 
@@ -438,9 +438,9 @@ const (
 	TopicErrors              = "helixagent.events.errors"
 
 	// Streaming topics (high-throughput) - topic names, not credentials
-	TopicTokenStream = "helixagent.stream.tokens" // #nosec G101 - Kafka topic name, not credentials
-	TopicSSEEvents          = "helixagent.stream.sse"
-	TopicWebSocketMessages  = "helixagent.stream.websocket"
+	TopicTokenStream       = "helixagent.stream.tokens" // #nosec G101 - Kafka topic name, not credentials
+	TopicSSEEvents         = "helixagent.stream.sse"
+	TopicWebSocketMessages = "helixagent.stream.websocket"
 
 	// Change data capture
 	TopicCDCProviders = "helixagent.cdc.providers"

@@ -3,8 +3,8 @@ package failover
 import (
 	"errors"
 	"sync"
-	"testing"
 	"sync/atomic"
+	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -425,7 +425,7 @@ func TestCircuitBreakerRecovery(t *testing.T) {
 	assert.Equal(t, StateOpen, cb.GetState())
 
 	// Wait for recovery time
-	time.Sleep(1 * time.Second + 100*time.Millisecond)
+	time.Sleep(1*time.Second + 100*time.Millisecond)
 
 	// Check state should transition to half-open
 	cb.CheckState()

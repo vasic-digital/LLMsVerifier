@@ -38,54 +38,54 @@ func TestVerificationResult_JsonMarshal(t *testing.T) {
 			Streaming:        true,
 			JSONMode:         true,
 			StructuredOutput: true,
-			Reasoning:       true,
+			Reasoning:        true,
 			ParallelToolUse:  true,
 			MaxParallelCalls: 5,
 			BatchProcessing:  true,
 			Modalities:       []string{"text", "image"},
 		},
 		CodeCapabilities: CodeCapabilityResult{
-			LanguageSupport: []string{"python", "javascript", "go", "java"},
-			CodeGeneration:  true,
-			CodeCompletion:  true,
-			CodeDebugging:   true,
-			CodeOptimization: true,
-			CodeReview:      true,
-			CodeExplanation: true,
-			TestGeneration:  true,
-			Documentation:   true,
-			Refactoring:    true,
-			ErrorResolution: true,
-			Architecture:   true,
+			LanguageSupport:    []string{"python", "javascript", "go", "java"},
+			CodeGeneration:     true,
+			CodeCompletion:     true,
+			CodeDebugging:      true,
+			CodeOptimization:   true,
+			CodeReview:         true,
+			CodeExplanation:    true,
+			TestGeneration:     true,
+			Documentation:      true,
+			Refactoring:        true,
+			ErrorResolution:    true,
+			Architecture:       true,
 			SecurityAssessment: true,
 			PatternRecognition: true,
-			DebuggingAccuracy: 95.5,
+			DebuggingAccuracy:  95.5,
 			ComplexityHandling: ComplexityMetrics{
-				MaxHandledDepth: 10,
-				MaxTokens:       4096,
-				CodeQuality:     85.0,
-				LogicCorrectness: 90.0,
+				MaxHandledDepth:   10,
+				MaxTokens:         4096,
+				CodeQuality:       85.0,
+				LogicCorrectness:  90.0,
 				RuntimeEfficiency: 88.0,
 			},
 			PromptResponse: PromptResponseTest{
-				PythonSuccessRate:       95.0,
+				PythonSuccessRate:     95.0,
 				JavascriptSuccessRate: 92.0,
-				GoSuccessRate:          90.0,
-				JavaSuccessRate:        88.0,
+				GoSuccessRate:         90.0,
+				JavaSuccessRate:       88.0,
 				CppSuccessRate:        85.0,
 				TypescriptSuccessRate: 93.0,
-				OverallSuccessRate:     90.5,
+				OverallSuccessRate:    90.5,
 				AvgResponseTime:       120 * time.Millisecond,
 			},
 		},
 		GenerativeCapabilities: GenerativeCapabilityResult{
-			CreativeWriting:        true,
-			Storytelling:          true,
-			ContentGeneration:     true,
-			ArtisticCreativity:    true,
+			CreativeWriting:      true,
+			Storytelling:         true,
+			ContentGeneration:    true,
+			ArtisticCreativity:   true,
 			ProblemSolving:       true,
-			MultimodalGenerative:  true,
-			OriginalityScore:      85.5,
+			MultimodalGenerative: true,
+			OriginalityScore:     85.5,
 			CreativityScore:      88.0,
 		},
 		PerformanceScores: PerformanceScore{
@@ -128,9 +128,9 @@ func TestVerificationResult_JsonMarshal(t *testing.T) {
 
 func TestModelInfo_Fields(t *testing.T) {
 	modelInfo := ModelInfo{
-		ID:                 "gpt-4",
-		Object:             "model",
-		Created:            1677610602,
+		ID:                "gpt-4",
+		Object:            "model",
+		Created:           1677610602,
 		OwnedBy:           "openai",
 		Root:              "",
 		Parent:            "",
@@ -295,7 +295,7 @@ func TestFeatureDetectionResult_Fields(t *testing.T) {
 		Streaming:        true,
 		JSONMode:         true,
 		StructuredOutput: true,
-		Reasoning:       true,
+		Reasoning:        true,
 		FunctionCalling:  true,
 		ParallelToolUse:  true,
 		MaxParallelCalls: 3,
@@ -326,13 +326,13 @@ func TestFeatureDetectionResult_Fields(t *testing.T) {
 
 func TestGenerativeCapabilityResult_Fields(t *testing.T) {
 	result := GenerativeCapabilityResult{
-		CreativeWriting:        true,
-		Storytelling:          true,
-		ContentGeneration:     true,
-		ArtisticCreativity:    true,
+		CreativeWriting:      true,
+		Storytelling:         true,
+		ContentGeneration:    true,
+		ArtisticCreativity:   true,
 		ProblemSolving:       true,
-		MultimodalGenerative:  false,
-		OriginalityScore:      92.5,
+		MultimodalGenerative: false,
+		OriginalityScore:     92.5,
 		CreativityScore:      88.0,
 	}
 
@@ -355,36 +355,36 @@ func TestGenerativeCapabilityResult_Fields(t *testing.T) {
 
 func TestCodeCapabilityResult_Fields(t *testing.T) {
 	result := CodeCapabilityResult{
-		LanguageSupport: []string{"python", "javascript", "go", "rust", "java"},
-		CodeGeneration:  true,
-		CodeCompletion:  true,
-		CodeDebugging:   true,
-		CodeOptimization: true,
-		CodeReview:      true,
-		CodeExplanation: true,
-		TestGeneration:  true,
-		Documentation:   true,
-		Refactoring:    true,
-		ErrorResolution: true,
-		Architecture:   true,
+		LanguageSupport:    []string{"python", "javascript", "go", "rust", "java"},
+		CodeGeneration:     true,
+		CodeCompletion:     true,
+		CodeDebugging:      true,
+		CodeOptimization:   true,
+		CodeReview:         true,
+		CodeExplanation:    true,
+		TestGeneration:     true,
+		Documentation:      true,
+		Refactoring:        true,
+		ErrorResolution:    true,
+		Architecture:       true,
 		SecurityAssessment: true,
 		PatternRecognition: true,
-		DebuggingAccuracy: 96.5,
+		DebuggingAccuracy:  96.5,
 		ComplexityHandling: ComplexityMetrics{
-			MaxHandledDepth: 15,
-			MaxTokens:       8192,
-			CodeQuality:     92.0,
-			LogicCorrectness: 94.0,
+			MaxHandledDepth:   15,
+			MaxTokens:         8192,
+			CodeQuality:       92.0,
+			LogicCorrectness:  94.0,
 			RuntimeEfficiency: 89.5,
 		},
 		PromptResponse: PromptResponseTest{
-			PythonSuccessRate:       98.0,
+			PythonSuccessRate:     98.0,
 			JavascriptSuccessRate: 95.0,
-			GoSuccessRate:          93.0,
-			JavaSuccessRate:        90.0,
+			GoSuccessRate:         93.0,
+			JavaSuccessRate:       90.0,
 			CppSuccessRate:        87.0,
 			TypescriptSuccessRate: 94.0,
-			OverallSuccessRate:     93.0,
+			OverallSuccessRate:    93.0,
 			AvgResponseTime:       100 * time.Millisecond,
 		},
 	}
@@ -438,7 +438,7 @@ func TestComplexityMetrics_Fields(t *testing.T) {
 		MaxHandledDepth:   20,
 		MaxTokens:         16384,
 		CodeQuality:       91.5,
-		LogicCorrectness: 93.0,
+		LogicCorrectness:  93.0,
 		RuntimeEfficiency: 89.0,
 	}
 
@@ -461,13 +461,13 @@ func TestComplexityMetrics_Fields(t *testing.T) {
 
 func TestPromptResponseTest_Fields(t *testing.T) {
 	result := PromptResponseTest{
-		PythonSuccessRate:       97.5,
+		PythonSuccessRate:     97.5,
 		JavascriptSuccessRate: 94.0,
-		GoSuccessRate:          92.5,
-		JavaSuccessRate:        89.0,
+		GoSuccessRate:         92.5,
+		JavaSuccessRate:       89.0,
 		CppSuccessRate:        86.0,
 		TypescriptSuccessRate: 93.0,
-		OverallSuccessRate:     92.0,
+		OverallSuccessRate:    92.0,
 		AvgResponseTime:       110 * time.Millisecond,
 	}
 
@@ -493,7 +493,7 @@ func TestSummary_Fields(t *testing.T) {
 		{ModelName: "model-3", Score: 88.0, Rank: 3},
 	}
 	categoryRankings := CategoryRankings{
-		ByCodeCapability: topPerformers[:2],
+		ByCodeCapability:  topPerformers[:2],
 		ByResponsiveness:  topPerformers[:2],
 		ByReliability:     topPerformers[:2],
 		ByFeatureRichness: topPerformers[:2],
@@ -550,10 +550,10 @@ func TestModels_EdgeCases(t *testing.T) {
 
 	t.Run("zero values", func(t *testing.T) {
 		result := AvailabilityResult{
-			Exists:      false,
-			Responsive:  false,
-			Overloaded:  false,
-			Latency:     0,
+			Exists:     false,
+			Responsive: false,
+			Overloaded: false,
+			Latency:    0,
 		}
 
 		if result.Exists {
@@ -646,16 +646,16 @@ func TestModels_OptionalFields(t *testing.T) {
 	// Test optional fields when they are nil/not set
 	result := VerificationResult{
 		ModelInfo: ModelInfo{
-			ID:      "test",
-			Root:    "", // Empty optional field
-			Parent:  "", // Empty optional field
+			ID:     "test",
+			Root:   "", // Empty optional field
+			Parent: "", // Empty optional field
 		},
 		Availability: AvailabilityResult{
 			Exists: true,
-			Error: "", // Empty optional error field
+			Error:  "", // Empty optional error field
 		},
 		FeatureDetection: FeatureDetectionResult{
-			ToolUse:         true,
+			ToolUse:          true,
 			MaxParallelCalls: 0, // Zero value for optional field
 		},
 		Timestamp: time.Now(),

@@ -14,29 +14,29 @@ var (
 	ErrConnectionLost   = errors.New("connection lost")
 
 	// Configuration errors
-	ErrNilConfig       = errors.New("config is nil")
-	ErrInvalidConfig   = errors.New("invalid configuration")
-	ErrInvalidHost     = errors.New("invalid or empty host")
-	ErrInvalidPort     = errors.New("invalid port number")
-	ErrInvalidTimeout  = errors.New("invalid timeout value")
-	ErrInvalidTopic    = errors.New("invalid or empty topic name")
-	ErrInvalidQueue    = errors.New("invalid or empty queue name")
-	ErrInvalidMessage  = errors.New("invalid message")
-	ErrEmptyPayload    = errors.New("message payload is empty")
+	ErrNilConfig      = errors.New("config is nil")
+	ErrInvalidConfig  = errors.New("invalid configuration")
+	ErrInvalidHost    = errors.New("invalid or empty host")
+	ErrInvalidPort    = errors.New("invalid port number")
+	ErrInvalidTimeout = errors.New("invalid timeout value")
+	ErrInvalidTopic   = errors.New("invalid or empty topic name")
+	ErrInvalidQueue   = errors.New("invalid or empty queue name")
+	ErrInvalidMessage = errors.New("invalid message")
+	ErrEmptyPayload   = errors.New("message payload is empty")
 
 	// Operation errors
-	ErrPublishFailed      = errors.New("failed to publish message")
-	ErrSubscribeFailed    = errors.New("failed to subscribe")
-	ErrAckFailed          = errors.New("failed to acknowledge message")
-	ErrNackFailed         = errors.New("failed to nack message")
-	ErrTimeout            = errors.New("operation timed out")
-	ErrQueueFull          = errors.New("queue is full")
-	ErrQueueNotFound      = errors.New("queue not found")
-	ErrTopicNotFound      = errors.New("topic not found")
-	ErrPartitionNotFound  = errors.New("partition not found")
-	ErrConsumerNotFound   = errors.New("consumer not found")
-	ErrNoConsumers        = errors.New("no consumers available")
-	ErrMaxRetriesReached  = errors.New("maximum retries reached")
+	ErrPublishFailed     = errors.New("failed to publish message")
+	ErrSubscribeFailed   = errors.New("failed to subscribe")
+	ErrAckFailed         = errors.New("failed to acknowledge message")
+	ErrNackFailed        = errors.New("failed to nack message")
+	ErrTimeout           = errors.New("operation timed out")
+	ErrQueueFull         = errors.New("queue is full")
+	ErrQueueNotFound     = errors.New("queue not found")
+	ErrTopicNotFound     = errors.New("topic not found")
+	ErrPartitionNotFound = errors.New("partition not found")
+	ErrConsumerNotFound  = errors.New("consumer not found")
+	ErrNoConsumers       = errors.New("no consumers available")
+	ErrMaxRetriesReached = errors.New("maximum retries reached")
 
 	// Transaction errors
 	ErrTxNotStarted = errors.New("transaction not started")
@@ -44,14 +44,14 @@ var (
 	ErrTxRollback   = errors.New("transaction rolled back")
 
 	// Dead letter errors
-	ErrDeadLetterFull    = errors.New("dead letter queue is full")
-	ErrDeadLetterFailed  = errors.New("failed to move message to dead letter queue")
+	ErrDeadLetterFull   = errors.New("dead letter queue is full")
+	ErrDeadLetterFailed = errors.New("failed to move message to dead letter queue")
 
 	// Authentication/Authorization errors
-	ErrAuthFailed     = errors.New("authentication failed")
-	ErrAccessDenied   = errors.New("access denied")
-	ErrInvalidToken   = errors.New("invalid authentication token")
-	ErrTokenExpired   = errors.New("authentication token expired")
+	ErrAuthFailed   = errors.New("authentication failed")
+	ErrAccessDenied = errors.New("access denied")
+	ErrInvalidToken = errors.New("invalid authentication token")
+	ErrTokenExpired = errors.New("authentication token expired")
 
 	// Serialization errors
 	ErrSerializationFailed   = errors.New("failed to serialize message")
@@ -62,8 +62,8 @@ var (
 	ErrRateLimited       = errors.New("rate limited")
 
 	// State errors
-	ErrAlreadyConnected  = errors.New("already connected")
-	ErrAlreadySubscribed = errors.New("already subscribed to topic")
+	ErrAlreadyConnected   = errors.New("already connected")
+	ErrAlreadySubscribed  = errors.New("already subscribed to topic")
 	ErrSubscriptionClosed = errors.New("subscription is closed")
 )
 

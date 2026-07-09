@@ -503,7 +503,7 @@ func (s *Scheduler) parseCronExpression(expression string, now time.Time) time.T
 	month := s.parseCronField(parts[3], 1, 12)
 	weekday := s.parseCronField(parts[4], 0, 6)
 
-// Find next matching time
+	// Find next matching time
 	next := now
 	for i := 0; i < 10000; i++ { // Prevent infinite loop
 		if s.matchesCronField(next.Minute(), minute) &&

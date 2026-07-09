@@ -460,14 +460,14 @@ func TestExtendedFeatures_Branching(t *testing.T) {
 
 func TestProviderCounts(t *testing.T) {
 	tests := []struct {
-		agent         string
-		minProviders  int
+		agent        string
+		minProviders int
 	}{
-		{"kilocode", 40},   // 43+ providers
-		{"cline", 40},      // 41+ providers
-		{"opencode", 10},   // 15+ providers
-		{"helixcode", 15},  // 18+ providers
-		{"aider", 5},       // 10+ providers
+		{"kilocode", 40},  // 43+ providers
+		{"cline", 40},     // 41+ providers
+		{"opencode", 10},  // 15+ providers
+		{"helixcode", 15}, // 18+ providers
+		{"aider", 5},      // 10+ providers
 	}
 
 	for _, tt := range tests {
@@ -486,8 +486,8 @@ func TestProviderCounts(t *testing.T) {
 
 func TestToolCounts(t *testing.T) {
 	tests := []struct {
-		agent     string
-		minTools  int
+		agent    string
+		minTools int
 	}{
 		{"kilocode", 25},   // 28 tools
 		{"helixcode", 20},  // 21 tools (all tools)
@@ -524,8 +524,8 @@ func TestDetector_Query_Provider(t *testing.T) {
 	// Query OpenAI capabilities
 	sseType := StreamingTypeSSE
 	query := &CapabilityQuery{
-		Provider:          "openai",
-		RequireStreaming:  &sseType,
+		Provider:         "openai",
+		RequireStreaming: &sseType,
 	}
 
 	result, err := detector.Query(ctx, query)

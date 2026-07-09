@@ -82,13 +82,13 @@ func TestValidateLLMConfig(t *testing.T) {
 				APIKey:   "complete-key",
 				Model:    "claude-3-sonnet",
 				Headers: map[string]string{
-					"X-Custom": "value",
+					"X-Custom":   "value",
 					"User-Agent": "LLM-Verifier/1.0",
 				},
 				Features: map[string]bool{
 					"code_generation": true,
 					"multimodal":      true,
-					"streaming":      true,
+					"streaming":       true,
 				},
 			},
 			wantErr: false,
@@ -99,7 +99,7 @@ func TestValidateLLMConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := ValidateLLMConfig(&tt.config)
-			
+
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errMsg)
@@ -208,7 +208,7 @@ func TestValidateGlobalConfig(t *testing.T) {
 				Timeout:      60 * time.Second,
 				CustomParams: map[string]any{
 					"temperature": 0.7,
-					"max_tokens":   4096,
+					"max_tokens":  4096,
 				},
 			},
 			wantErr: false,
@@ -219,7 +219,7 @@ func TestValidateGlobalConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := ValidateGlobalConfig(&tt.config)
-			
+
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errMsg)
@@ -294,7 +294,7 @@ func TestValidateDatabaseConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := ValidateDatabaseConfig(&tt.config)
-			
+
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errMsg)
@@ -379,9 +379,9 @@ func TestValidateAPIConfig(t *testing.T) {
 		{
 			name: "Negative rate limit",
 			config: APIConfig{
-				Port:       "8080",
-				JWTSecret:  "test-jwt-secret",
-				RateLimit:  -1,
+				Port:      "8080",
+				JWTSecret: "test-jwt-secret",
+				RateLimit: -1,
 			},
 			wantErr: true,
 			errMsg:  "rate_limit must be non-negative",
@@ -389,9 +389,9 @@ func TestValidateAPIConfig(t *testing.T) {
 		{
 			name: "Zero rate limit",
 			config: APIConfig{
-				Port:       "8080",
-				JWTSecret:  "test-jwt-secret",
-				RateLimit:  0,
+				Port:      "8080",
+				JWTSecret: "test-jwt-secret",
+				RateLimit: 0,
 			},
 			wantErr: false, // Allow zero rate limit (no rate limiting)
 			errMsg:  "",
@@ -399,11 +399,11 @@ func TestValidateAPIConfig(t *testing.T) {
 		{
 			name: "Invalid TLS configuration",
 			config: APIConfig{
-				Port:         "8080",
-				JWTSecret:    "test-jwt-secret",
-				EnableHTTPS:   true,
-				TLSCertFile:  "",
-				TLSKeyFile:   "",
+				Port:        "8080",
+				JWTSecret:   "test-jwt-secret",
+				EnableHTTPS: true,
+				TLSCertFile: "",
+				TLSKeyFile:  "",
 			},
 			wantErr: true,
 			errMsg:  "tls_cert_file and tls_key_file are required when enable_https is true",
@@ -423,18 +423,18 @@ func TestValidateAPIConfig(t *testing.T) {
 		{
 			name: "Valid with all options",
 			config: APIConfig{
-				Port:              "8080",
-				JWTSecret:         "very-secure-jwt-secret-key",
-				RateLimit:         1000,
-				BurstLimit:        200,
-				RateLimitWindow:   60,
-				EnableCORS:       true,
-				TrustedProxies:    "127.0.0.1,192.168.1.1",
-				CORSOrigins:       "https://example.com,https://test.com",
-				EnableHTTPS:       false,
-				ReadTimeout:       30,
-				WriteTimeout:      30,
-				MaxHeaderBytes:    1048576,
+				Port:            "8080",
+				JWTSecret:       "very-secure-jwt-secret-key",
+				RateLimit:       1000,
+				BurstLimit:      200,
+				RateLimitWindow: 60,
+				EnableCORS:      true,
+				TrustedProxies:  "127.0.0.1,192.168.1.1",
+				CORSOrigins:     "https://example.com,https://test.com",
+				EnableHTTPS:     false,
+				ReadTimeout:     30,
+				WriteTimeout:    30,
+				MaxHeaderBytes:  1048576,
 			},
 			wantErr: false,
 			errMsg:  "",
@@ -444,7 +444,7 @@ func TestValidateAPIConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := ValidateAPIConfig(&tt.config)
-			
+
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errMsg)
@@ -562,7 +562,7 @@ func TestValidateLoggingConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := ValidateLoggingConfig(&tt.config)
-			
+
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errMsg)
@@ -583,9 +583,9 @@ func TestValidateCompleteConfig(t *testing.T) {
 		{
 			name: "Valid complete config",
 			config: Config{
-				Profile:    "production",
+				Profile:     "production",
 				Concurrency: 10,
-				Timeout:    60 * time.Second,
+				Timeout:     60 * time.Second,
 				Global: GlobalConfig{
 					BaseURL:      "https://api.example.com",
 					APIKey:       "test-key",
@@ -679,7 +679,7 @@ func TestValidateCompleteConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := ValidateCompleteConfig(&tt.config)
-			
+
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errMsg)
@@ -710,7 +710,7 @@ func TestConfigMerge(t *testing.T) {
 	overlayConfig := Config{
 		Global: GlobalConfig{
 			BaseURL: "https://override.api.com", // Override
-			APIKey:  "override-key",          // New field
+			APIKey:  "override-key",             // New field
 		},
 		Database: DatabaseConfig{
 			EncryptionKey: "override-key", // Add to existing
@@ -724,13 +724,13 @@ func TestConfigMerge(t *testing.T) {
 
 	assert.Equal(t, "https://override.api.com", merged.Global.BaseURL)
 	assert.Equal(t, "gpt-3.5-turbo", merged.Global.DefaultModel) // Kept from default
-	assert.Equal(t, 3, merged.Global.MaxRetries)                  // Kept from default
-	assert.Equal(t, "override-key", merged.Global.APIKey)           // Added from overlay
+	assert.Equal(t, 3, merged.Global.MaxRetries)                 // Kept from default
+	assert.Equal(t, "override-key", merged.Global.APIKey)        // Added from overlay
 
-	assert.Equal(t, "./default.db", merged.Database.Path)           // Kept from default
-	assert.Equal(t, "override-key", merged.Database.EncryptionKey)   // Added from overlay
+	assert.Equal(t, "./default.db", merged.Database.Path)          // Kept from default
+	assert.Equal(t, "override-key", merged.Database.EncryptionKey) // Added from overlay
 
-	assert.Equal(t, "9090", merged.API.Port)     // Overridden
+	assert.Equal(t, "9090", merged.API.Port)   // Overridden
 	assert.Equal(t, 100, merged.API.RateLimit) // Kept from default
 }
 

@@ -333,15 +333,15 @@ func (p *KimiCodeCLIAdapter) ListModels(ctx context.Context) (*OpenAIModelsRespo
 	}
 	for _, m := range models {
 		resp.Data = append(resp.Data, struct {
-			ID       string `json:"id"`
-			Object   string `json:"object"`
-			Created  int64  `json:"created"`
+			ID      string `json:"id"`
+			Object  string `json:"object"`
+			Created int64  `json:"created"`
 			OwnedBy string `json:"owned_by"`
 		}{
-			ID:       m.ID,
-			Object:   m.Object,
-			Created:  m.Created,
-			OwnedBy:  m.OwnedBy,
+			ID:      m.ID,
+			Object:  m.Object,
+			Created: m.Created,
+			OwnedBy: m.OwnedBy,
 		})
 	}
 	return resp, nil
@@ -349,20 +349,20 @@ func (p *KimiCodeCLIAdapter) ListModels(ctx context.Context) (*OpenAIModelsRespo
 
 // kimiCodeModel holds model metadata for Kimi Code models.
 type kimiCodeModel struct {
-	ID       string
-	Object   string
-	Created  int64
-	OwnedBy  string
+	ID      string
+	Object  string
+	Created int64
+	OwnedBy string
 }
 
 func (p *KimiCodeCLIAdapter) GetKnownModels() []kimiCodeModel {
 	var models []kimiCodeModel
 	for _, m := range knownKimiCodeModels {
 		models = append(models, kimiCodeModel{
-			ID:       m,
-			Object:   "model",
-			Created:  time.Now().Unix(),
-			OwnedBy:  "kimi-code",
+			ID:      m,
+			Object:  "model",
+			Created: time.Now().Unix(),
+			OwnedBy: "kimi-code",
 		})
 	}
 	return models

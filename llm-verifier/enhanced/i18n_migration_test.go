@@ -263,12 +263,12 @@ func TestAIAssistant_StaticResponses_RouteThroughTranslator(t *testing.T) {
 	ai := &AIAssistant{context: map[string][]string{}}
 	withFakeTranslator(t, func() {
 		checks := map[string]string{
-			"help":                ai.generateHelpResponse(),
-			"status":              ai.generateStatusResponse(),
-			"suggestion-model":    ai.generateSuggestionResponse("which model is best"),
-			"suggestion-general":  ai.generateSuggestionResponse("give me tips"),
-			"configuration":       ai.generateConfigurationResponse("help config"),
-			"general":             ai.generateGeneralResponse("hello there"),
+			"help":               ai.generateHelpResponse(),
+			"status":             ai.generateStatusResponse(),
+			"suggestion-model":   ai.generateSuggestionResponse("which model is best"),
+			"suggestion-general": ai.generateSuggestionResponse("give me tips"),
+			"configuration":      ai.generateConfigurationResponse("help config"),
+			"general":            ai.generateGeneralResponse("hello there"),
 		}
 		for name, got := range checks {
 			if !strings.HasPrefix(got, "<TRANSLATED:enhanced.supervisor.") {

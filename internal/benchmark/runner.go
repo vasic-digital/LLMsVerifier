@@ -20,14 +20,14 @@ var ErrBenchmarkProviderNotConfigured = fmt.Errorf("llmsverifier benchmark: prov
 
 // StandardBenchmarkRunner implements BenchmarkRunner
 type StandardBenchmarkRunner struct {
-	mu             sync.RWMutex
-	provider       LLMProvider
-	debateEval     DebateEvaluator
-	benchmarks     map[string]*Benchmark
-	tasks          map[string][]*BenchmarkTask
-	runs           map[string]*BenchmarkRun
-	runCancels     map[string]context.CancelFunc
-	logger         *log.Logger
+	mu         sync.RWMutex
+	provider   LLMProvider
+	debateEval DebateEvaluator
+	benchmarks map[string]*Benchmark
+	tasks      map[string][]*BenchmarkTask
+	runs       map[string]*BenchmarkRun
+	runCancels map[string]context.CancelFunc
+	logger     *log.Logger
 }
 
 // NewStandardBenchmarkRunner creates a new benchmark runner
@@ -107,13 +107,13 @@ func (r *StandardBenchmarkRunner) AddBenchmark(b *Benchmark, tasks []*BenchmarkT
 func (r *StandardBenchmarkRunner) createSWEBenchTasks() []*BenchmarkTask {
 	return []*BenchmarkTask{
 		{ID: "swe-1", Type: BenchmarkTypeSWEBench, Name: "Fix NPE in User Service",
-			Prompt: "Fix the null pointer exception in the UserService.getUser() method",
+			Prompt:     "Fix the null pointer exception in the UserService.getUser() method",
 			Difficulty: DifficultyEasy, Tags: []string{"bug-fix", "java"}},
 		{ID: "swe-2", Type: BenchmarkTypeSWEBench, Name: "Implement Caching",
-			Prompt: "Add Redis caching to the product catalog service",
+			Prompt:     "Add Redis caching to the product catalog service",
 			Difficulty: DifficultyMedium, Tags: []string{"feature", "caching"}},
 		{ID: "swe-3", Type: BenchmarkTypeSWEBench, Name: "Optimize Query",
-			Prompt: "Optimize the slow SQL query in the reports module",
+			Prompt:     "Optimize the slow SQL query in the reports module",
 			Difficulty: DifficultyHard, Tags: []string{"optimization", "sql"}},
 	}
 }
@@ -124,12 +124,12 @@ func (r *StandardBenchmarkRunner) createHumanEvalTasks() []*BenchmarkTask {
 			Prompt: `def has_close_elements(numbers: List[float], threshold: float) -> bool:
     """ Check if in given list of numbers, are any two numbers closer to each other than
     given threshold. """`,
-			Expected: "True for [1.0, 2.0, 3.0] with threshold 1.5",
+			Expected:   "True for [1.0, 2.0, 3.0] with threshold 1.5",
 			Difficulty: DifficultyEasy, Tags: []string{"code"}},
 		{ID: "he-2", Type: BenchmarkTypeHumanEval, Name: "separate_paren_groups",
 			Prompt: `def separate_paren_groups(paren_string: str) -> List[str]:
     """ Separate balanced parentheses groups. """`,
-			Expected: "['(()())', '((()))', '()()']",
+			Expected:   "['(()())', '((()))', '()()']",
 			Difficulty: DifficultyMedium, Tags: []string{"code"}},
 	}
 }
@@ -137,13 +137,13 @@ func (r *StandardBenchmarkRunner) createHumanEvalTasks() []*BenchmarkTask {
 func (r *StandardBenchmarkRunner) createMMLUTasks() []*BenchmarkTask {
 	return []*BenchmarkTask{
 		{ID: "mmlu-1", Type: BenchmarkTypeMMLU, Name: "Binary Search Complexity",
-			Prompt: "What is the time complexity of binary search? A) O(n) B) O(log n) C) O(n^2) D) O(1)",
+			Prompt:   "What is the time complexity of binary search? A) O(n) B) O(log n) C) O(n^2) D) O(1)",
 			Expected: "B", Difficulty: DifficultyEasy, Tags: []string{"cs", "algorithms"}},
 		{ID: "mmlu-2", Type: BenchmarkTypeMMLU, Name: "Physics: Newton's Law",
-			Prompt: "Which law states F=ma? A) First B) Second C) Third D) None",
+			Prompt:   "Which law states F=ma? A) First B) Second C) Third D) None",
 			Expected: "B", Difficulty: DifficultyEasy, Tags: []string{"physics"}},
 		{ID: "mmlu-3", Type: BenchmarkTypeMMLU, Name: "World History",
-			Prompt: "In which year did World War II end? A) 1943 B) 1944 C) 1945 D) 1946",
+			Prompt:   "In which year did World War II end? A) 1943 B) 1944 C) 1945 D) 1946",
 			Expected: "C", Difficulty: DifficultyMedium, Tags: []string{"history"}},
 	}
 }
@@ -151,13 +151,13 @@ func (r *StandardBenchmarkRunner) createMMLUTasks() []*BenchmarkTask {
 func (r *StandardBenchmarkRunner) createGSM8KTasks() []*BenchmarkTask {
 	return []*BenchmarkTask{
 		{ID: "gsm-1", Type: BenchmarkTypeGSM8K, Name: "Eggs Problem",
-			Prompt: "Janet sells duck eggs. She sells 16 eggs per day. How many eggs per week?",
+			Prompt:   "Janet sells duck eggs. She sells 16 eggs per day. How many eggs per week?",
 			Expected: "112", Difficulty: DifficultyEasy, Tags: []string{"math"}},
 		{ID: "gsm-2", Type: BenchmarkTypeGSM8K, Name: "Shopping Problem",
-			Prompt: "Tom bought 3 apples at $2 each and 4 oranges at $1.5 each. What is the total?",
+			Prompt:   "Tom bought 3 apples at $2 each and 4 oranges at $1.5 each. What is the total?",
 			Expected: "12", Difficulty: DifficultyEasy, Tags: []string{"math"}},
 		{ID: "gsm-3", Type: BenchmarkTypeGSM8K, Name: "Workers Problem",
-			Prompt: "If 5 workers can build a wall in 10 days, how many days for 10 workers?",
+			Prompt:   "If 5 workers can build a wall in 10 days, how many days for 10 workers?",
 			Expected: "5", Difficulty: DifficultyMedium, Tags: []string{"math"}},
 	}
 }

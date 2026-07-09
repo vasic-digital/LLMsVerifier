@@ -15,12 +15,12 @@ import (
 // TestAPIServer_Complete tests the complete API server functionality
 func TestAPIServer_Complete(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	
+
 	// Setup test server
 	router := setupTestRouter()
 	server := httptest.NewServer(router)
 	defer server.Close()
-	
+
 	tests := []struct {
 		name           string
 		method         string
@@ -60,9 +60,9 @@ func TestAPIServer_Complete(t *testing.T) {
 			},
 		},
 		{
-			name:           "Verify Model - Success",
-			method:         "POST",
-			path:           "/api/verify",
+			name:   "Verify Model - Success",
+			method: "POST",
+			path:   "/api/verify",
 			body: map[string]interface{}{
 				"model_id": "gpt-4",
 				"prompt":   "Test verification",
@@ -78,17 +78,17 @@ func TestAPIServer_Complete(t *testing.T) {
 			},
 		},
 		{
-			name:           "Calculate Model Score - Success",
-			method:         "POST",
-			path:           "/api/scoring/calculate",
+			name:   "Calculate Model Score - Success",
+			method: "POST",
+			path:   "/api/scoring/calculate",
 			body: map[string]interface{}{
 				"model_id": "gpt-4",
 				"weights": map[string]float64{
-					"response_speed":    0.25,
-					"model_efficiency":  0.20,
+					"response_speed":     0.25,
+					"model_efficiency":   0.20,
 					"cost_effectiveness": 0.25,
-					"capability":        0.20,
-					"recency":          0.10,
+					"capability":         0.20,
+					"recency":            0.10,
 				},
 			},
 			expectedStatus: http.StatusOK,
@@ -102,12 +102,12 @@ func TestAPIServer_Complete(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var req *http.Request
 			var err error
-			
+
 			if tt.body != nil {
 				jsonBody, _ := json.Marshal(tt.body)
 				req, err = http.NewRequest(tt.method, server.URL+tt.path, bytes.NewBuffer(jsonBody))
@@ -115,15 +115,15 @@ func TestAPIServer_Complete(t *testing.T) {
 			} else {
 				req, err = http.NewRequest(tt.method, server.URL+tt.path, nil)
 			}
-			
+
 			assert.NoError(t, err)
-			
+
 			resp, err := http.DefaultClient.Do(req)
 			assert.NoError(t, err)
 			defer resp.Body.Close()
-			
+
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
-			
+
 			if tt.validateFunc != nil {
 				tt.validateFunc(t, resp)
 			}
@@ -137,7 +137,7 @@ func TestAPIServer_ErrorHandling(t *testing.T) {
 	router := setupTestRouter()
 	server := httptest.NewServer(router)
 	defer server.Close()
-	
+
 	tests := []struct {
 		name           string
 		method         string
@@ -170,12 +170,12 @@ func TestAPIServer_ErrorHandling(t *testing.T) {
 			errorMessage:   "Invalid request body",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var req *http.Request
 			var err error
-			
+
 			if tt.body != nil {
 				jsonBody, _ := json.Marshal(tt.body)
 				req, err = http.NewRequest(tt.method, server.URL+tt.path, bytes.NewBuffer(jsonBody))
@@ -183,13 +183,13 @@ func TestAPIServer_ErrorHandling(t *testing.T) {
 			} else {
 				req, err = http.NewRequest(tt.method, server.URL+tt.path, nil)
 			}
-			
+
 			assert.NoError(t, err)
-			
+
 			resp, err := http.DefaultClient.Do(req)
 			assert.NoError(t, err)
 			defer resp.Body.Close()
-			
+
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 		})
 	}
@@ -201,16 +201,16 @@ func TestAPIServer_ScoreFormat(t *testing.T) {
 	router := setupTestRouter()
 	server := httptest.NewServer(router)
 	defer server.Close()
-	
+
 	// Test model list
 	resp, err := http.Get(server.URL + "/api/models")
 	assert.NoError(t, err)
 	defer resp.Body.Close()
-	
+
 	var models []Model
 	err = json.NewDecoder(resp.Body).Decode(&models)
 	assert.NoError(t, err)
-	
+
 	for _, model := range models {
 		// Verify score suffix format (SC:X.X)
 		assert.Regexp(t, `\(SC:\d+\.\d+\)`, model.Name, "Model name should contain score suffix")
@@ -223,13 +223,13 @@ func TestAPIServer_ScoreFormat(t *testing.T) {
 func setupTestRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	
+
 	// API routes
 	router.GET("/api/models", handleGetModels)
 	router.GET("/api/models/:id", handleGetModel)
 	router.POST("/api/verify", handleVerifyModel)
 	router.POST("/api/scoring/calculate", handleCalculateScore)
-	
+
 	return router
 }
 
@@ -275,12 +275,12 @@ func handleVerifyModel(c *gin.Context) {
 		ModelID string `json:"model_id" binding:"required"`
 		Prompt  string `json:"prompt" binding:"required"`
 	}
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
-	
+
 	result := VerificationResult{
 		ID:          "test-123",
 		ModelID:     req.ModelID,
@@ -292,35 +292,35 @@ func handleVerifyModel(c *gin.Context) {
 		Timestamp:   time.Now(),
 		Duration:    1500,
 	}
-	
+
 	c.JSON(http.StatusOK, result)
 }
 
 func handleCalculateScore(c *gin.Context) {
 	var req struct {
-		ModelID string      `json:"model_id" binding:"required"`
+		ModelID string       `json:"model_id" binding:"required"`
 		Weights ScoreWeights `json:"weights" binding:"required"`
 	}
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
-	
+
 	score := ModelScore{
 		ModelID:     req.ModelID,
 		ModelName:   "GPT-4",
 		Score:       8.5,
 		ScoreSuffix: "(SC:8.5)",
 		Components: ScoreComponents{
-			ResponseSpeed:   8.0,
-			ModelEfficiency: 9.0,
+			ResponseSpeed:     8.0,
+			ModelEfficiency:   9.0,
 			CostEffectiveness: 8.5,
-			Capability:      8.5,
-			Recency:         8.0,
+			Capability:        8.5,
+			Recency:           8.0,
 		},
 		Timestamp: time.Now(),
 	}
-	
+
 	c.JSON(http.StatusOK, score)
 }

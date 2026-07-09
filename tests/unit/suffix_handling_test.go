@@ -13,10 +13,10 @@ import (
 
 func TestSuffixHandling_ParseSuffixes(t *testing.T) {
 	tests := []struct {
-		name               string
-		input              string
-		expectedBaseName   string
-		expectedSuffixes   []string
+		name             string
+		input            string
+		expectedBaseName string
+		expectedSuffixes []string
 	}{
 		{
 			name:             "Model with single suffix",
@@ -46,7 +46,7 @@ func TestSuffixHandling_ParseSuffixes(t *testing.T) {
 			name:             "Model with nested parentheses",
 			input:            "Test-Model (llmsvd (verified))",
 			expectedBaseName: "Test-Model",
-			expectedSuffixes: []string{"llmsvd (verified"},  // Parser doesn't handle nested parens perfectly
+			expectedSuffixes: []string{"llmsvd (verified"}, // Parser doesn't handle nested parens perfectly
 		},
 		{
 			name:             "Empty string",
@@ -75,10 +75,10 @@ func TestSuffixHandling_ParseSuffixes(t *testing.T) {
 
 func TestSuffixHandling_GenerateModelName(t *testing.T) {
 	tests := []struct {
-		name             string
-		baseName         string
-		suffixes         map[string]bool
-		expectedOutput   string
+		name           string
+		baseName       string
+		suffixes       map[string]bool
+		expectedOutput string
 	}{
 		{
 			name:           "Model with llmsvd suffix",
@@ -106,10 +106,10 @@ func TestSuffixHandling_GenerateModelName(t *testing.T) {
 			name:     "Model with scoring suffix",
 			baseName: "Mixtral-8x7B",
 			suffixes: map[string]bool{
-				"llmsvd":  true,
-				"brotli":  true,
-				"http3":   true,
-				"SC:8.5":  true,
+				"llmsvd": true,
+				"brotli": true,
+				"http3":  true,
+				"SC:8.5": true,
 			},
 			expectedOutput: "Mixtral-8x7B (llmsvd) (SC:8.5) (brotli) (http3)",
 		},
@@ -117,10 +117,10 @@ func TestSuffixHandling_GenerateModelName(t *testing.T) {
 			name:     "Model with boolean flags",
 			baseName: "Test-Model",
 			suffixes: map[string]bool{
-				"llmsvd":     true,
-				"brotli":     false,
-				"http3":      true,
-				"free":       true,
+				"llmsvd":      true,
+				"brotli":      false,
+				"http3":       true,
+				"free":        true,
 				"open source": false,
 			},
 			expectedOutput: "Test-Model (llmsvd) (free) (http3)",
@@ -139,10 +139,10 @@ func TestSuffixHandling_GenerateModelName(t *testing.T) {
 
 func TestSuffixHandling_Validation(t *testing.T) {
 	tests := []struct {
-		name           string
-		suffix         string
-		expectedValid  bool
-		expectedError  string
+		name          string
+		suffix        string
+		expectedValid bool
+		expectedError string
 	}{
 		{
 			name:          "Valid llmsvd suffix",
@@ -367,7 +367,7 @@ func TestSuffixHandling_Integration(t *testing.T) {
 		if score, ok := model.Metadata["score"].(float64); ok {
 			suffixes[fmt.Sprintf("SC:%.1f", score)] = true
 		}
-		
+
 		// Always add llmsvd suffix for verified models
 		suffixes["llmsvd"] = true
 

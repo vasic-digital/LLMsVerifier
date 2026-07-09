@@ -23,10 +23,10 @@ func main() {
 
 	// Test with the full Crush config
 	configPath := filepath.Join(currentDir, "..", "test_crush_full.json")
-	
+
 	// Create verifier
 	verifier := crush_verifier.NewCrushVerifier(nil, configPath)
-	
+
 	// Verify configuration
 	result, err := verifier.VerifyConfiguration()
 	if err != nil {

@@ -63,9 +63,9 @@ func TestScheduler_CalculateNextRun(t *testing.T) {
 	now := time.Date(2024, 1, 15, 12, 0, 0, 0, time.UTC)
 
 	tests := []struct {
-		name       string
-		schedule   *Schedule
-		wantAfter  time.Duration
+		name      string
+		schedule  *Schedule
+		wantAfter time.Duration
 	}{
 		{
 			name: "Daily at 2 AM",
@@ -121,14 +121,14 @@ func TestScheduler_CalculateNextRun(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			nextRun := scheduler.calculateNextRun(tt.schedule, now)
 			duration := nextRun.Sub(now)
-			
+
 			// Allow some tolerance for cron calculations
 			assert.GreaterOrEqual(t, duration, tt.wantAfter-1*time.Hour)
 			assert.LessOrEqual(t, duration, tt.wantAfter+1*time.Hour)
-			
+
 			// Debug logging to understand failures
 			t.Logf("Test: %s, Now: %s, Next: %s, Duration: %v, Expected: %v",
-				tt.name, now.Format("2006-01-02 15:04:05"), 
+				tt.name, now.Format("2006-01-02 15:04:05"),
 				nextRun.Format("2006-01-02 15:04:05"), duration, tt.wantAfter)
 		})
 	}
@@ -141,34 +141,34 @@ func TestScheduler_ParseIntervalExpression(t *testing.T) {
 	now := time.Date(2024, 1, 15, 12, 0, 0, 0, time.UTC)
 
 	tests := []struct {
-		name      string
+		name       string
 		expression string
-		wantDelta time.Duration
+		wantDelta  time.Duration
 	}{
 		{
-			name:      "1 hour",
+			name:       "1 hour",
 			expression: "1h",
-			wantDelta: 1 * time.Hour,
+			wantDelta:  1 * time.Hour,
 		},
 		{
-			name:      "30 minutes",
+			name:       "30 minutes",
 			expression: "30m",
-			wantDelta: 30 * time.Minute,
+			wantDelta:  30 * time.Minute,
 		},
 		{
-			name:      "2 hours 30 minutes",
+			name:       "2 hours 30 minutes",
 			expression: "2h30m",
-			wantDelta: 2*time.Hour + 30*time.Minute,
+			wantDelta:  2*time.Hour + 30*time.Minute,
 		},
 		{
-			name:      "45 seconds",
+			name:       "45 seconds",
 			expression: "45s",
-			wantDelta: 45 * time.Second,
+			wantDelta:  45 * time.Second,
 		},
 		{
-			name:      "Invalid defaults to hourly",
+			name:       "Invalid defaults to hourly",
 			expression: "invalid",
-			wantDelta: 1 * time.Hour,
+			wantDelta:  1 * time.Hour,
 		},
 	}
 
@@ -186,18 +186,24 @@ func TestScheduler_ParseCronField(t *testing.T) {
 	scheduler := NewScheduler(nil)
 
 	tests := []struct {
-		name      string
-		field     string
-		min       int
-		max       int
-		want      []int
+		name  string
+		field string
+		min   int
+		max   int
+		want  []int
 	}{
 		{
 			name:  "All values",
 			field: "*",
 			min:   0,
 			max:   59,
-			want:  func() []int { var vals []int; for i := 0; i <= 59; i++ { vals = append(vals, i) }; return vals }(),
+			want: func() []int {
+				var vals []int
+				for i := 0; i <= 59; i++ {
+					vals = append(vals, i)
+				}
+				return vals
+			}(),
 		},
 		{
 			name:  "Single value",
@@ -218,14 +224,28 @@ func TestScheduler_ParseCronField(t *testing.T) {
 			field: "10-20",
 			min:   0,
 			max:   59,
-			want:  func() []int { var vals []int; for i := 10; i <= 20; i++ { vals = append(vals, i) }; return vals }(),
+			want: func() []int {
+				var vals []int
+				for i := 10; i <= 20; i++ {
+					vals = append(vals, i)
+				}
+				return vals
+			}(),
 		},
 		{
 			name:  "Mixed values and ranges",
 			field: "0,15-20,30",
 			min:   0,
 			max:   59,
-			want:  func() []int { var vals []int; vals = append(vals, 0); for i := 15; i <= 20; i++ { vals = append(vals, i) }; vals = append(vals, 30); return vals }(),
+			want: func() []int {
+				var vals []int
+				vals = append(vals, 0)
+				for i := 15; i <= 20; i++ {
+					vals = append(vals, i)
+				}
+				vals = append(vals, 30)
+				return vals
+			}(),
 		},
 	}
 
@@ -242,10 +262,10 @@ func TestScheduler_MatchesCronField(t *testing.T) {
 	scheduler := NewScheduler(nil)
 
 	tests := []struct {
-		name     string
-		value    int
-		allowed  []int
-		want     bool
+		name    string
+		value   int
+		allowed []int
+		want    bool
 	}{
 		{
 			name:    "Match",
@@ -462,7 +482,7 @@ func TestScheduler_StartStopTests(t *testing.T) {
 // BenchmarkScheduler_CalculateNextRun benchmarks next run calculation
 func BenchmarkScheduler_CalculateNextRun(b *testing.B) {
 	scheduler := NewScheduler(nil)
-	
+
 	schedule := &Schedule{
 		Type:       ScheduleTypeCron,
 		Expression: "0 2 * * *",
@@ -477,7 +497,7 @@ func BenchmarkScheduler_CalculateNextRun(b *testing.B) {
 // BenchmarkScheduler_ParseCronExpression benchmarks cron expression parsing
 func BenchmarkScheduler_ParseCronExpression(b *testing.B) {
 	scheduler := NewScheduler(nil)
-	
+
 	expression := "0 2 * * *"
 	now := time.Now()
 
@@ -490,7 +510,7 @@ func BenchmarkScheduler_ParseCronExpression(b *testing.B) {
 // BenchmarkScheduler_ParseIntervalExpression benchmarks interval expression parsing
 func BenchmarkScheduler_ParseIntervalExpression(b *testing.B) {
 	scheduler := NewScheduler(nil)
-	
+
 	expression := "1h30m"
 	now := time.Now()
 
@@ -503,7 +523,7 @@ func BenchmarkScheduler_ParseIntervalExpression(b *testing.B) {
 // BenchmarkScheduler_ParseCronField benchmarks cron field parsing
 func BenchmarkScheduler_ParseCronField(b *testing.B) {
 	scheduler := NewScheduler(nil)
-	
+
 	field := "0,15,30,45"
 
 	b.ResetTimer()

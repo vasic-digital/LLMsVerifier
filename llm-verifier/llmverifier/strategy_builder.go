@@ -96,9 +96,9 @@ type builtStrategy struct {
 	thresholds  Thresholds
 }
 
-func (s *builtStrategy) Name() string        { return s.name }
-func (s *builtStrategy) Description() string { return s.description }
-func (s *builtStrategy) WeightConfig() WeightConfig    { return s.weights }
+func (s *builtStrategy) Name() string                    { return s.name }
+func (s *builtStrategy) Description() string             { return s.description }
+func (s *builtStrategy) WeightConfig() WeightConfig      { return s.weights }
 func (s *builtStrategy) CustomTests() []VerificationTest { return s.tests }
 func (s *builtStrategy) MinimumThresholds() Thresholds   { return s.thresholds }
 
@@ -171,11 +171,11 @@ func (s *builtStrategy) ScoreModel(_ context.Context, _ ModelInfo, results []Tes
 	}
 
 	weightMap := map[string]float64{
-		"responsiveness":       wc.Responsiveness,
-		"code_capability":      wc.CodeCapability,
-		"feature_richness":     wc.FeatureRichness,
-		"reliability":          wc.Reliability,
-		"vision_capability":    wc.VisionCapability,
+		"responsiveness":        wc.Responsiveness,
+		"code_capability":       wc.CodeCapability,
+		"feature_richness":      wc.FeatureRichness,
+		"reliability":           wc.Reliability,
+		"vision_capability":     wc.VisionCapability,
 		"instruction_following": wc.InstructionFollowing,
 	}
 

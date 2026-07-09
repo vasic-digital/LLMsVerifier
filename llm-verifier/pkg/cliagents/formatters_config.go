@@ -68,8 +68,8 @@ func DefaultFormattersConfig(helixAgentHost string, helixAgentPort int) Formatte
 		ServiceURL:        fmt.Sprintf("http://%s:%d/v1/format", helixAgentHost, helixAgentPort),
 		Timeout:           30,
 		Preferences: FormatterPreferences{
-			"python":     "ruff",            // 30x faster than black
-			"javascript": "biome",           // 35x faster than prettier
+			"python":     "ruff",  // 30x faster than black
+			"javascript": "biome", // 35x faster than prettier
 			"typescript": "biome",
 			"rust":       "rustfmt",
 			"go":         "gofmt",
@@ -94,7 +94,7 @@ func DefaultFormattersConfig(helixAgentHost string, helixAgentPort int) Formatte
 			"perl":       "perltidy",
 			"clojure":    "cljfmt",
 			"groovy":     "npm-groovy-lint",
-			"r":          "air",             // 300x faster than styler
+			"r":          "air", // 300x faster than styler
 			"powershell": "psscriptanalyzer",
 		},
 		Fallback: FormatterFallbacks{
@@ -117,7 +117,7 @@ func DefaultFormattersConfig(helixAgentHost string, helixAgentPort int) Formatte
 				LineLength: 100,
 			},
 			"*.js": {
-				Formatter:  "prettier",
+				Formatter: "prettier",
 			},
 		},
 	}

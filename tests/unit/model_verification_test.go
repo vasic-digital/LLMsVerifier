@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"digital.vasic.llmsverifier/providers"
 	"digital.vasic.llmsverifier/verification"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestModelVerification_ValidModel tests verification of a valid model

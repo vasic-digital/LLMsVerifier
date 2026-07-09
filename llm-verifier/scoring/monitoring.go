@@ -21,17 +21,17 @@ type ScoringMonitor struct {
 
 // MonitoringConfig holds configuration for monitoring
 type MonitoringConfig struct {
-	Enabled                    bool
-	ScoreChangeThreshold       float64
-	PerformanceThreshold       float64
-	APIResponseTimeThreshold   time.Duration
-	DatabaseLatencyThreshold   time.Duration
-	AlertCooldownPeriod        time.Duration
-	MetricsRetentionPeriod     time.Duration
-	EnableEmailAlerts          bool
-	EnableWebhookAlerts        bool
-	WebhookURL                 string
-	AlertRecipients            []string
+	Enabled                  bool
+	ScoreChangeThreshold     float64
+	PerformanceThreshold     float64
+	APIResponseTimeThreshold time.Duration
+	DatabaseLatencyThreshold time.Duration
+	AlertCooldownPeriod      time.Duration
+	MetricsRetentionPeriod   time.Duration
+	EnableEmailAlerts        bool
+	EnableWebhookAlerts      bool
+	WebhookURL               string
+	AlertRecipients          []string
 	// SMTP configuration for email alerts
 	SMTPHost     string
 	SMTPPort     int
@@ -45,7 +45,7 @@ type MonitoringConfig struct {
 func DefaultMonitoringConfig() MonitoringConfig {
 	return MonitoringConfig{
 		Enabled:                  true,
-		ScoreChangeThreshold:     0.5, // 0.5 point change triggers alert
+		ScoreChangeThreshold:     0.5,  // 0.5 point change triggers alert
 		PerformanceThreshold:     80.0, // 80% performance threshold
 		APIResponseTimeThreshold: 5 * time.Second,
 		DatabaseLatencyThreshold: 1 * time.Second,
@@ -104,14 +104,14 @@ func (sm *ScoringMonitor) MonitorScoreChange(modelID string, oldScore, newScore 
 
 	if absChange >= sm.config.ScoreChangeThreshold {
 		alert := ScoreChangeAlert{
-			ModelID:       modelID,
-			OldScore:      oldScore,
-			NewScore:      newScore,
-			ScoreChange:   change,
-			Components:    components,
-			Timestamp:     time.Now(),
-			Severity:      sm.determineAlertSeverity(absChange),
-			Message:       sm.generateScoreChangeMessage(modelID, oldScore, newScore, change),
+			ModelID:     modelID,
+			OldScore:    oldScore,
+			NewScore:    newScore,
+			ScoreChange: change,
+			Components:  components,
+			Timestamp:   time.Now(),
+			Severity:    sm.determineAlertSeverity(absChange),
+			Message:     sm.generateScoreChangeMessage(modelID, oldScore, newScore, change),
 		}
 
 		if err := sm.alerts.SendScoreChangeAlert(alert); err != nil {
@@ -157,12 +157,12 @@ func (sm *ScoringMonitor) MonitorDatabasePerformance(operation string, latency t
 
 	if !success || latency > sm.config.DatabaseLatencyThreshold {
 		alert := DatabasePerformanceAlert{
-			Operation:   operation,
-			Latency:     latency,
-			Success:     success,
-			Timestamp:   time.Now(),
-			Threshold:   sm.config.DatabaseLatencyThreshold,
-			Message:     sm.generateDatabasePerformanceMessage(operation, latency, success),
+			Operation: operation,
+			Latency:   latency,
+			Success:   success,
+			Timestamp: time.Now(),
+			Threshold: sm.config.DatabaseLatencyThreshold,
+			Message:   sm.generateDatabasePerformanceMessage(operation, latency, success),
 		}
 
 		if err := sm.alerts.SendDatabasePerformanceAlert(alert); err != nil {
@@ -177,7 +177,7 @@ func (sm *ScoringMonitor) GetSystemHealth() SystemHealth {
 	defer sm.mu.RUnlock()
 
 	metrics := sm.metrics.GetCurrentMetrics()
-	
+
 	health := SystemHealth{
 		OverallStatus: "healthy",
 		Timestamp:     time.Now(),
@@ -373,14 +373,14 @@ func (sm *ScoringMonitor) generateDatabasePerformanceMessage(operation string, l
 // Alert types
 
 type ScoreChangeAlert struct {
-	ModelID     string        `json:"model_id"`
-	OldScore    float64       `json:"old_score"`
-	NewScore    float64       `json:"new_score"`
-	ScoreChange float64       `json:"score_change"`
+	ModelID     string          `json:"model_id"`
+	OldScore    float64         `json:"old_score"`
+	NewScore    float64         `json:"new_score"`
+	ScoreChange float64         `json:"score_change"`
 	Components  ScoreComponents `json:"components"`
-	Timestamp   time.Time     `json:"timestamp"`
-	Severity    string        `json:"severity"`
-	Message     string        `json:"message"`
+	Timestamp   time.Time       `json:"timestamp"`
+	Severity    string          `json:"severity"`
+	Message     string          `json:"message"`
 }
 
 type APIPerformanceAlert struct {
@@ -404,8 +404,8 @@ type DatabasePerformanceAlert struct {
 // System health types
 
 type SystemHealth struct {
-	OverallStatus string                      `json:"overall_status"`
-	Timestamp     time.Time                   `json:"timestamp"`
+	OverallStatus string                     `json:"overall_status"`
+	Timestamp     time.Time                  `json:"timestamp"`
 	Components    map[string]ComponentHealth `json:"components"`
 }
 

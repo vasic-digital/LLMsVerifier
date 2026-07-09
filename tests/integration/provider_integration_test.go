@@ -25,7 +25,7 @@ var _ = sync.Mutex{}
 // Test complete provider integration workflow
 func TestProviderIntegration_CompleteWorkflow(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping integration test in short mode") // SKIP-OK: #short-mode
 	}
 
 	// Setup test environment
@@ -73,7 +73,7 @@ func TestProviderIntegration_CompleteWorkflow(t *testing.T) {
 // Test multiple provider integration
 func TestProviderIntegration_MultipleProviders(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping integration test in short mode") // SKIP-OK: #short-mode
 	}
 
 	testDir := setupTestEnvironment(t)
@@ -115,7 +115,7 @@ func TestProviderIntegration_MultipleProviders(t *testing.T) {
 // Test provider failover and retry
 func TestProviderIntegration_Failover(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping integration test in short mode") // SKIP-OK: #short-mode
 	}
 
 	testDir := setupTestEnvironment(t)
@@ -171,7 +171,7 @@ func TestProviderIntegration_Failover(t *testing.T) {
 // Test provider authentication
 func TestProviderIntegration_Authentication(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping integration test in short mode") // SKIP-OK: #short-mode
 	}
 
 	testDir := setupTestEnvironment(t)
@@ -213,7 +213,7 @@ func TestProviderIntegration_Authentication(t *testing.T) {
 // Test provider rate limiting
 func TestProviderIntegration_RateLimiting(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping integration test in short mode") // SKIP-OK: #short-mode
 	}
 
 	testDir := setupTestEnvironment(t)
@@ -265,7 +265,7 @@ func TestProviderIntegration_RateLimiting(t *testing.T) {
 // Test provider timeout handling
 func TestProviderIntegration_Timeout(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping integration test in short mode") // SKIP-OK: #short-mode
 	}
 
 	testDir := setupTestEnvironment(t)
@@ -302,7 +302,7 @@ func TestProviderIntegration_Timeout(t *testing.T) {
 // Test provider caching
 func TestProviderIntegration_Caching(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping integration test in short mode") // SKIP-OK: #short-mode
 	}
 
 	testDir := setupTestEnvironment(t)
@@ -350,7 +350,7 @@ func TestProviderIntegration_Caching(t *testing.T) {
 // Test provider error handling and recovery
 func TestProviderIntegration_ErrorRecovery(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping integration test in short mode") // SKIP-OK: #short-mode
 	}
 
 	testDir := setupTestEnvironment(t)
@@ -401,7 +401,7 @@ func TestProviderIntegration_ErrorRecovery(t *testing.T) {
 // Test concurrent provider operations
 func TestProviderIntegration_ConcurrentOperations(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping integration test in short mode") // SKIP-OK: #short-mode
 	}
 
 	testDir := setupTestEnvironment(t)

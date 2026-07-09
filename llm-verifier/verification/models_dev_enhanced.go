@@ -14,12 +14,12 @@ import (
 
 // EnhancedModelsDevClient is a production-ready client for models.dev API
 type EnhancedModelsDevClient struct {
-	httpClient     *http.Client
-	baseURL        string
-	logger         *logging.Logger
-	cacheEnabled   bool
-	lastFetchTime  time.Time
-	cachedData     *ModelsDevEnhancedResponse
+	httpClient    *http.Client
+	baseURL       string
+	logger        *logging.Logger
+	cacheEnabled  bool
+	lastFetchTime time.Time
+	cachedData    *ModelsDevEnhancedResponse
 }
 
 // ModelsDevEnhancedResponse represents the full models.dev API structure
@@ -27,36 +27,36 @@ type ModelsDevEnhancedResponse map[string]ProviderData
 
 // ProviderData contains provider information and their models
 type ProviderData struct {
-	ID             string                  `json:"id"`
-	Env            []string                `json:"env"`
-	NPM            string                  `json:"npm"`
-	API            string                  `json:"api,omitempty"`
-	Name           string                  `json:"name"`
-	Doc            string                  `json:"doc"`
-	Models         map[string]ModelDetails `json:"models"`
-	LogoURL        string                  `json:"-"` // Computed field
+	ID      string                  `json:"id"`
+	Env     []string                `json:"env"`
+	NPM     string                  `json:"npm"`
+	API     string                  `json:"api,omitempty"`
+	Name    string                  `json:"name"`
+	Doc     string                  `json:"doc"`
+	Models  map[string]ModelDetails `json:"models"`
+	LogoURL string                  `json:"-"` // Computed field
 }
 
 // ModelDetails contains comprehensive model information
 type ModelDetails struct {
-	ID               string              `json:"id"`
-	Name             string              `json:"name"`
-	Family           string              `json:"family,omitempty"`
-	Attachment       bool                `json:"attachment"`
-	Reasoning        bool                `json:"reasoning"`
-	ToolCall         bool                `json:"tool_call"`
-	Temperature      bool                `json:"temperature"`
-	Knowledge        string              `json:"knowledge,omitempty"`
-	ReleaseDate      string              `json:"release_date"`
-	LastUpdated      string              `json:"last_updated"`
-	Modalities       ModelModalities     `json:"modalities"`
-	OpenWeights      bool                `json:"open_weights"`
-	Cost             ModelCost           `json:"cost"`
-	Limits           ModelLimits         `json:"limit"`
-	StructuredOutput bool                `json:"structured_output,omitempty"`
-	Status           string              `json:"status,omitempty"`
-	ContextOver200k  interface{}         `json:"context_over_200k,omitempty"`
-	Interleaved      interface{}         `json:"interleaved,omitempty"`
+	ID               string          `json:"id"`
+	Name             string          `json:"name"`
+	Family           string          `json:"family,omitempty"`
+	Attachment       bool            `json:"attachment"`
+	Reasoning        bool            `json:"reasoning"`
+	ToolCall         bool            `json:"tool_call"`
+	Temperature      bool            `json:"temperature"`
+	Knowledge        string          `json:"knowledge,omitempty"`
+	ReleaseDate      string          `json:"release_date"`
+	LastUpdated      string          `json:"last_updated"`
+	Modalities       ModelModalities `json:"modalities"`
+	OpenWeights      bool            `json:"open_weights"`
+	Cost             ModelCost       `json:"cost"`
+	Limits           ModelLimits     `json:"limit"`
+	StructuredOutput bool            `json:"structured_output,omitempty"`
+	Status           string          `json:"status,omitempty"`
+	ContextOver200k  interface{}     `json:"context_over_200k,omitempty"`
+	Interleaved      interface{}     `json:"interleaved,omitempty"`
 }
 
 // ModelModalities defines input/output modalities
@@ -67,13 +67,13 @@ type ModelModalities struct {
 
 // ModelCost contains pricing information
 type ModelCost struct {
-	Input              float64 `json:"input"`               // Cost per 1M input tokens (USD)
-	Output             float64 `json:"output"`              // Cost per 1M output tokens (USD)
-	Reasoning          float64 `json:"reasoning,omitempty"` // Cost per 1M reasoning tokens (USD)
-	CacheRead          float64 `json:"cache_read,omitempty"` // Cost per 1M cached read tokens (USD)
-	CacheWrite         float64 `json:"cache_write,omitempty"` // Cost per 1M cached write tokens (USD)
-	InputAudio         float64 `json:"input_audio,omitempty"` // Cost per 1M audio input tokens (USD)
-	OutputAudio        float64 `json:"output_audio,omitempty"` // Cost per 1M audio output tokens (USD)
+	Input       float64 `json:"input"`                  // Cost per 1M input tokens (USD)
+	Output      float64 `json:"output"`                 // Cost per 1M output tokens (USD)
+	Reasoning   float64 `json:"reasoning,omitempty"`    // Cost per 1M reasoning tokens (USD)
+	CacheRead   float64 `json:"cache_read,omitempty"`   // Cost per 1M cached read tokens (USD)
+	CacheWrite  float64 `json:"cache_write,omitempty"`  // Cost per 1M cached write tokens (USD)
+	InputAudio  float64 `json:"input_audio,omitempty"`  // Cost per 1M audio input tokens (USD)
+	OutputAudio float64 `json:"output_audio,omitempty"` // Cost per 1M audio output tokens (USD)
 }
 
 // ModelLimits contains token limit information
@@ -487,13 +487,13 @@ func (c *EnhancedModelsDevClient) GetProviderStats(ctx context.Context) (*Provid
 	}
 
 	stats := &ProviderStats{
-		TotalProviders:      len(providers),
-		TotalModels:         0,
-		ProvidersByNPM:      make(map[string]int),
-		ModelsByFeature:     make(map[string]int),
-		ModelsByModality:    make(map[string]int),
-		OpenWeightModels:    0,
-		RecentUpdates:       0,
+		TotalProviders:   len(providers),
+		TotalModels:      0,
+		ProvidersByNPM:   make(map[string]int),
+		ModelsByFeature:  make(map[string]int),
+		ModelsByModality: make(map[string]int),
+		OpenWeightModels: 0,
+		RecentUpdates:    0,
 	}
 
 	now := time.Now()
@@ -547,13 +547,13 @@ func (c *EnhancedModelsDevClient) GetProviderStats(ctx context.Context) (*Provid
 
 // ProviderStats contains aggregated statistics
 type ProviderStats struct {
-	TotalProviders      int
-	TotalModels         int
-	ProvidersByNPM      map[string]int
-	ModelsByFeature     map[string]int
-	ModelsByModality    map[string]int
-	OpenWeightModels    int
-	RecentUpdates       int
+	TotalProviders   int
+	TotalModels      int
+	ProvidersByNPM   map[string]int
+	ModelsByFeature  map[string]int
+	ModelsByModality map[string]int
+	OpenWeightModels int
+	RecentUpdates    int
 }
 
 // Helper function to parse dates

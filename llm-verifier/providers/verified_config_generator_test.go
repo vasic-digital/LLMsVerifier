@@ -126,8 +126,8 @@ func TestVerifiedConfigGenerator_SaveVerificationSummary(t *testing.T) {
 		VerifiedModels:      7,
 		Providers: map[string]VerifiedProviderConfig{
 			"openai": {
-				ProviderID:   "openai",
-				ModelCount:   6,
+				ProviderID: "openai",
+				ModelCount: 6,
 				VerifiedModels: []VerifiedModelConfig{
 					{ModelID: "gpt-4"},
 					{ModelID: "gpt-4-turbo"},
@@ -135,8 +135,8 @@ func TestVerifiedConfigGenerator_SaveVerificationSummary(t *testing.T) {
 				},
 			},
 			"anthropic": {
-				ProviderID:   "anthropic",
-				ModelCount:   4,
+				ProviderID: "anthropic",
+				ModelCount: 4,
 				VerifiedModels: []VerifiedModelConfig{
 					{ModelID: "claude-3-opus"},
 					{ModelID: "claude-3-sonnet"},

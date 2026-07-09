@@ -57,9 +57,9 @@ type Logger struct {
 	flushTicker  *time.Ticker
 	stopCh       chan struct{}
 	// In-memory log history for queryable persistence
-	history      []*LogEntry
-	historyMux   sync.RWMutex
-	maxHistory   int
+	history    []*LogEntry
+	historyMux sync.RWMutex
+	maxHistory int
 }
 
 // NewLogger creates a new structured logger
@@ -626,7 +626,6 @@ func (l *Logger) GetLogsByCorrelationID(correlationID string) []*LogEntry {
 	}
 	return result
 }
-
 
 func getLevelPriority(level LogLevel) int {
 	switch level {

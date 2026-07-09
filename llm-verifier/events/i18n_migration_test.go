@@ -114,7 +114,9 @@ func TestEventPublisher_TitlesRouted(t *testing.T) {
 		{"verification_failed", "<TRANSLATED:events.verification.failed.",
 			func(ep *EventPublisher) error { return ep.PublishVerificationFailed("boom") }},
 		{"issue_detected", "<TRANSLATED:events.issue.detected.",
-			func(ep *EventPublisher) error { return ep.PublishIssueDetected(1, "perf", "warning", "Slow", "took too long") }},
+			func(ep *EventPublisher) error {
+				return ep.PublishIssueDetected(1, "perf", "warning", "Slow", "took too long")
+			}},
 		{"issue_resolved", "<TRANSLATED:events.issue.resolved.",
 			func(ep *EventPublisher) error { return ep.PublishIssueResolved(1, 9, "patched") }},
 		{"client_connected", "<TRANSLATED:events.client.connected.",

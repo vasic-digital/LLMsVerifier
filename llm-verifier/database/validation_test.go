@@ -50,9 +50,9 @@ func TestValidateTableName(t *testing.T) {
 
 func TestValidateColumnName(t *testing.T) {
 	tests := []struct {
-		name     string
-		column   string
-		wantErr  bool
+		name    string
+		column  string
+		wantErr bool
 	}{
 		{
 			name:    "Valid column",
@@ -179,34 +179,34 @@ func TestQuoteColumnName(t *testing.T) {
 
 func TestBuildSafeSelectQuery(t *testing.T) {
 	tests := []struct {
-		name       string
-		tableName  string
-		columns    []string
+		name        string
+		tableName   string
+		columns     []string
 		whereClause string
-		wantErr    bool
-		contains   string
+		wantErr     bool
+		contains    string
 	}{
 		{
-			name:       "Valid query",
-			tableName:  "users",
-			columns:    []string{"id", "name"},
+			name:        "Valid query",
+			tableName:   "users",
+			columns:     []string{"id", "name"},
 			whereClause: "WHERE id = ?",
-			wantErr:    false,
-			contains:   "SELECT \"id\", \"name\" FROM \"users\" WHERE id = ?",
+			wantErr:     false,
+			contains:    "SELECT \"id\", \"name\" FROM \"users\" WHERE id = ?",
 		},
 		{
-			name:       "Invalid table",
-			tableName:  "users; DROP TABLE; --",
-			columns:    []string{"id"},
+			name:        "Invalid table",
+			tableName:   "users; DROP TABLE; --",
+			columns:     []string{"id"},
 			whereClause: "",
-			wantErr:    true,
+			wantErr:     true,
 		},
 		{
-			name:       "Invalid column",
-			tableName:  "users",
-			columns:    []string{"id; DROP TABLE; --"},
+			name:        "Invalid column",
+			tableName:   "users",
+			columns:     []string{"id; DROP TABLE; --"},
 			whereClause: "",
-			wantErr:    true,
+			wantErr:     true,
 		},
 	}
 
@@ -226,30 +226,30 @@ func TestBuildSafeSelectQuery(t *testing.T) {
 
 func TestBuildSafeInsertQuery(t *testing.T) {
 	tests := []struct {
-		name     string
+		name      string
 		tableName string
-		columns  []string
-		wantErr  bool
-		contains string
+		columns   []string
+		wantErr   bool
+		contains  string
 	}{
 		{
-			name:     "Valid insert",
+			name:      "Valid insert",
 			tableName: "users",
-			columns:  []string{"id", "name", "email"},
-			wantErr:  false,
-			contains: "INSERT INTO \"users\" (\"id\", \"name\", \"email\") VALUES (?, ?, ?)",
+			columns:   []string{"id", "name", "email"},
+			wantErr:   false,
+			contains:  "INSERT INTO \"users\" (\"id\", \"name\", \"email\") VALUES (?, ?, ?)",
 		},
 		{
-			name:     "Invalid table",
+			name:      "Invalid table",
 			tableName: "users; DROP TABLE; --",
-			columns:  []string{"id"},
-			wantErr:  true,
+			columns:   []string{"id"},
+			wantErr:   true,
 		},
 		{
-			name:     "Invalid column",
+			name:      "Invalid column",
 			tableName: "users",
-			columns:  []string{"id; DROP TABLE; --"},
-			wantErr:  true,
+			columns:   []string{"id; DROP TABLE; --"},
+			wantErr:   true,
 		},
 	}
 
@@ -269,11 +269,11 @@ func TestBuildSafeInsertQuery(t *testing.T) {
 
 func TestGetAllowedTables(t *testing.T) {
 	allowed := GetAllowedTables()
-	
+
 	if len(allowed) == 0 {
 		t.Error("GetAllowedTables() returned empty map")
 	}
-	
+
 	// Check some expected tables
 	expectedTables := []string{"users", "models", "providers", "verification_results"}
 	for _, table := range expectedTables {

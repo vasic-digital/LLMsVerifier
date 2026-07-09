@@ -96,10 +96,10 @@ func TestNewMinIOClient(t *testing.T) {
 
 	t.Run("with custom config", func(t *testing.T) {
 		config := &MinIOConfig{
-			Endpoint:        "minio.example.com:9000",
-			AccessKey:       "access",
-			SecretKey:       "secret",
-			ConnectTimeout:  60 * time.Second,
+			Endpoint:       "minio.example.com:9000",
+			AccessKey:      "access",
+			SecretKey:      "secret",
+			ConnectTimeout: 60 * time.Second,
 		}
 		client, err := NewMinIOClient(config)
 		require.NoError(t, err)

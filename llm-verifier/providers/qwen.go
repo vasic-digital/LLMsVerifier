@@ -423,11 +423,11 @@ func (q *QwenAdapter) discoverAvailableModels(ctx context.Context) []struct {
 		ID      string
 		Created int64
 	}{
-		{ID: "qwen-turbo", Created: 1704067200},          // Jan 2024
-		{ID: "qwen-plus", Created: 1704067200},           // Jan 2024
-		{ID: "qwen-max", Created: 1704067200},            // Jan 2024
-		{ID: "qwen-max-longcontext", Created: 1704067200}, // Jan 2024
-		{ID: "qwen-coder-turbo", Created: 1709251200},    // Feb 2024
+		{ID: "qwen-turbo", Created: 1704067200},                 // Jan 2024
+		{ID: "qwen-plus", Created: 1704067200},                  // Jan 2024
+		{ID: "qwen-max", Created: 1704067200},                   // Jan 2024
+		{ID: "qwen-max-longcontext", Created: 1704067200},       // Jan 2024
+		{ID: "qwen-coder-turbo", Created: 1709251200},           // Feb 2024
 		{ID: "qwen2.5-coder-32b-instruct", Created: 1729036800}, // Oct 2024
 		{ID: "qwen2.5-72b-instruct", Created: 1729036800},       // Oct 2024
 	}

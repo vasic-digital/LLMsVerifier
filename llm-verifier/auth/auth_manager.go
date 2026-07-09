@@ -732,15 +732,15 @@ func (sm *SSOManager) AddProvider(config *SSOConfig) {
 //   - Round-59 (current): wires real JWKS-based asymmetric signature
 //     verification via verifyJWTWithJWKS (see jwks.go). Re-enables SSO
 //     with full crypto:
-//       1. Provider-existence check (preserved).
-//       2. Token format sanity (preserved).
-//       3. If SSOConfig.JWKSURL is empty -> round-28 sentinel
-//          (preserves "unconfigured" semantics for any deployment that
-//          registered a provider but never supplied jwks_uri).
-//       4. Else -> full JWKS path: fetch JWKS (cached per kid),
-//          enforce alg allowlist (no `none`, no HMAC for SSO), verify
-//          signature against IdP public key, validate iss/aud/exp/iat.
-//       5. On success: synthesise SSOUserInfo from verified claims.
+//     1. Provider-existence check (preserved).
+//     2. Token format sanity (preserved).
+//     3. If SSOConfig.JWKSURL is empty -> round-28 sentinel
+//     (preserves "unconfigured" semantics for any deployment that
+//     registered a provider but never supplied jwks_uri).
+//     4. Else -> full JWKS path: fetch JWKS (cached per kid),
+//     enforce alg allowlist (no `none`, no HMAC for SSO), verify
+//     signature against IdP public key, validate iss/aud/exp/iat.
+//     5. On success: synthesise SSOUserInfo from verified claims.
 //
 // CONST-035 / CONST-042 / CONST-050(A) / Article XI §11.9 anchors apply.
 func (sm *SSOManager) ValidateToken(provider, tokenString string) (*SSOUserInfo, error) {
@@ -827,12 +827,12 @@ func (sm *SSOManager) ValidateToken(provider, tokenString string) (*SSOUserInfo,
 
 // SSOUserInfo contains user information from SSO provider
 type SSOUserInfo struct {
-	Provider string `json:"provider"`
-	Issuer   string `json:"issuer"`
-	Subject  string `json:"subject"`
-	Email    string `json:"email"`
-	Name     string `json:"name"`
-	Picture  string `json:"picture"`
+	Provider string   `json:"provider"`
+	Issuer   string   `json:"issuer"`
+	Subject  string   `json:"subject"`
+	Email    string   `json:"email"`
+	Name     string   `json:"name"`
+	Picture  string   `json:"picture"`
 	Groups   []string `json:"groups"`
 }
 
@@ -954,12 +954,12 @@ func (am *AuthManager) GetRolePermissions(name string) []string {
 // the RBAC layer.
 //
 // Round-28 fix:
-//   1. Look up the client via the existing clientsByID map (the correct
-//      data structure for the numeric clientID argument the API accepts).
-//   2. Resolve the role's permission set from the in-memory roles map
-//      (populated by CreateRole and by NewAuthManager's default roles).
-//   3. Merge the role's permissions into the client's permission set
-//      (deduplicating) and stamp UpdatedAt.
+//  1. Look up the client via the existing clientsByID map (the correct
+//     data structure for the numeric clientID argument the API accepts).
+//  2. Resolve the role's permission set from the in-memory roles map
+//     (populated by CreateRole and by NewAuthManager's default roles).
+//  3. Merge the role's permissions into the client's permission set
+//     (deduplicating) and stamp UpdatedAt.
 func (am *AuthManager) AssignRoleToClient(clientID int64, roleName string) error {
 	am.mu.Lock()
 	defer am.mu.Unlock()

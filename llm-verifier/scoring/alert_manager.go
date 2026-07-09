@@ -16,11 +16,11 @@ import (
 
 // AlertManagerFixed handles sending alerts for various system events
 type AlertManagerFixed struct {
-	config         MonitoringConfig
-	logger         *logging.Logger
-	sentAlerts     map[string]time.Time
-	mu             sync.RWMutex
-	httpClient     *http.Client
+	config     MonitoringConfig
+	logger     *logging.Logger
+	sentAlerts map[string]time.Time
+	mu         sync.RWMutex
+	httpClient *http.Client
 }
 
 // NewAlertManagerFixed creates a new alert manager
@@ -49,11 +49,11 @@ func (am *AlertManagerFixed) SendScoreChangeAlert(alert ScoreChangeAlert) error 
 	}
 
 	am.logger.Info("Sending score change alert", map[string]interface{}{
-		"model_id": alert.ModelID,
+		"model_id":  alert.ModelID,
 		"old_score": alert.OldScore,
 		"new_score": alert.NewScore,
-		"change": alert.ScoreChange,
-		"severity": alert.Severity,
+		"change":    alert.ScoreChange,
+		"severity":  alert.Severity,
 	})
 
 	// Send email alert if enabled
@@ -90,10 +90,10 @@ func (am *AlertManagerFixed) SendAPIPerformanceAlert(alert APIPerformanceAlert) 
 	}
 
 	am.logger.Info("Sending API performance alert", map[string]interface{}{
-		"api_name": alert.APIName,
+		"api_name":      alert.APIName,
 		"response_time": alert.ResponseTime,
-		"success": alert.Success,
-		"threshold": alert.Threshold,
+		"success":       alert.Success,
+		"threshold":     alert.Threshold,
 	})
 
 	// Send email alert if enabled
@@ -131,8 +131,8 @@ func (am *AlertManagerFixed) SendDatabasePerformanceAlert(alert DatabasePerforma
 
 	am.logger.Info("Sending database performance alert", map[string]interface{}{
 		"operation": alert.Operation,
-		"latency": alert.Latency,
-		"success": alert.Success,
+		"latency":   alert.Latency,
+		"success":   alert.Success,
 		"threshold": alert.Threshold,
 	})
 
@@ -476,19 +476,19 @@ func (am *AlertManagerFixed) sendWebhookAlert(alert interface{}) error {
 
 func (am *AlertManagerFixed) createWebhookPayload(alert interface{}) (map[string]interface{}, error) {
 	var payload map[string]interface{}
-	
+
 	switch a := alert.(type) {
 	case ScoreChangeAlert:
 		payload = map[string]interface{}{
-			"type":         "score_change",
-			"model_id":     a.ModelID,
-			"old_score":    a.OldScore,
-			"new_score":    a.NewScore,
-			"change":       a.ScoreChange,
-			"severity":     a.Severity,
-			"timestamp":    a.Timestamp.Format(time.RFC3339),
-			"message":      a.Message,
-			"components":   a.Components,
+			"type":       "score_change",
+			"model_id":   a.ModelID,
+			"old_score":  a.OldScore,
+			"new_score":  a.NewScore,
+			"change":     a.ScoreChange,
+			"severity":   a.Severity,
+			"timestamp":  a.Timestamp.Format(time.RFC3339),
+			"message":    a.Message,
+			"components": a.Components,
 		}
 	case APIPerformanceAlert:
 		payload = map[string]interface{}{
@@ -517,7 +517,7 @@ func (am *AlertManagerFixed) createWebhookPayload(alert interface{}) (map[string
 	// Add common fields
 	payload["alert_id"] = newAlertID()
 	payload["version"] = "1.0"
-	
+
 	return payload, nil
 }
 

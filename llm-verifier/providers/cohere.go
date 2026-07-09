@@ -348,11 +348,11 @@ func (c *CohereAdapter) getKnownModels() []struct {
 		Created int64  `json:"created"`
 		OwnedBy string `json:"owned_by"`
 	}{
-		{ID: "command-r-plus", Object: "model", Created: 1712102400, OwnedBy: "cohere"},      // Apr 2024
-		{ID: "command-r", Object: "model", Created: 1709510400, OwnedBy: "cohere"},           // Mar 2024
-		{ID: "command", Object: "model", Created: 1672531200, OwnedBy: "cohere"},             // Jan 2023
-		{ID: "command-light", Object: "model", Created: 1672531200, OwnedBy: "cohere"},       // Jan 2023
-		{ID: "command-nightly", Object: "model", Created: 1704067200, OwnedBy: "cohere"},     // Jan 2024
+		{ID: "command-r-plus", Object: "model", Created: 1712102400, OwnedBy: "cohere"},  // Apr 2024
+		{ID: "command-r", Object: "model", Created: 1709510400, OwnedBy: "cohere"},       // Mar 2024
+		{ID: "command", Object: "model", Created: 1672531200, OwnedBy: "cohere"},         // Jan 2023
+		{ID: "command-light", Object: "model", Created: 1672531200, OwnedBy: "cohere"},   // Jan 2023
+		{ID: "command-nightly", Object: "model", Created: 1704067200, OwnedBy: "cohere"}, // Jan 2024
 		{ID: "command-light-nightly", Object: "model", Created: 1704067200, OwnedBy: "cohere"},
 	}
 }

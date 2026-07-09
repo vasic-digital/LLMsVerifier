@@ -74,10 +74,10 @@ func TestStrategyScore_ToPerformanceScore(t *testing.T) {
 	ss := StrategyScore{
 		Overall: 0.85,
 		Breakdown: map[string]float64{
-			"responsiveness":   0.90,
-			"code_capability":  0.80,
-			"feature_richness": 0.85,
-			"reliability":      0.82,
+			"responsiveness":    0.90,
+			"code_capability":   0.80,
+			"feature_richness":  0.85,
+			"reliability":       0.82,
 			"value_proposition": 0.75,
 		},
 		Passed: true,
@@ -195,15 +195,15 @@ func TestScoringStrategy_InterfaceExists(t *testing.T) {
 // mockStrategy for interface compliance test
 type mockStrategy struct{}
 
-func (m *mockStrategy) Name() string                  { return "mock" }
-func (m *mockStrategy) Description() string           { return "mock strategy" }
-func (m *mockStrategy) WeightConfig() WeightConfig    { return WeightConfig{Responsiveness: 1.0} }
+func (m *mockStrategy) Name() string                    { return "mock" }
+func (m *mockStrategy) Description() string             { return "mock strategy" }
+func (m *mockStrategy) WeightConfig() WeightConfig      { return WeightConfig{Responsiveness: 1.0} }
 func (m *mockStrategy) CustomTests() []VerificationTest { return nil }
 func (m *mockStrategy) ScoreModel(_ context.Context, _ ModelInfo, _ []TestResult) (StrategyScore, error) {
 	return StrategyScore{Overall: 0.5, Passed: true}, nil
 }
 func (m *mockStrategy) FilterModels(models []ModelInfo) []ModelInfo { return models }
-func (m *mockStrategy) MinimumThresholds() Thresholds              { return Thresholds{} }
+func (m *mockStrategy) MinimumThresholds() Thresholds               { return Thresholds{} }
 
 // --- VerificationTest Interface Compliance ---
 
@@ -311,9 +311,11 @@ func TestDefaultStrategy_ImplementsScoringStrategy(t *testing.T) {
 
 type mockVerificationTest struct{}
 
-func (m *mockVerificationTest) ID() string                                            { return "mock-test" }
-func (m *mockVerificationTest) Name() string                                          { return "Mock Test" }
-func (m *mockVerificationTest) Category() TestCategory                                { return TestCategoryVision }
-func (m *mockVerificationTest) Run(_ context.Context, _ *LLMClient) (TestResult, error) { return TestResult{Passed: true}, nil }
-func (m *mockVerificationTest) Weight() float64                                       { return 1.0 }
-func (m *mockVerificationTest) Required() bool                                        { return false }
+func (m *mockVerificationTest) ID() string             { return "mock-test" }
+func (m *mockVerificationTest) Name() string           { return "Mock Test" }
+func (m *mockVerificationTest) Category() TestCategory { return TestCategoryVision }
+func (m *mockVerificationTest) Run(_ context.Context, _ *LLMClient) (TestResult, error) {
+	return TestResult{Passed: true}, nil
+}
+func (m *mockVerificationTest) Weight() float64 { return 1.0 }
+func (m *mockVerificationTest) Required() bool  { return false }

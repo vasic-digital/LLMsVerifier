@@ -230,7 +230,7 @@ func TestAlertManagerFixed_CleanupOldRecords(t *testing.T) {
 	// Record old alerts
 	am.mu.Lock()
 	am.sentAlerts["old_alert"] = time.Now().Add(-1 * time.Hour) // Old alert
-	am.sentAlerts["new_alert"] = time.Now()                      // Recent alert
+	am.sentAlerts["new_alert"] = time.Now()                     // Recent alert
 	am.mu.Unlock()
 
 	// Cleanup with 30 minute max age

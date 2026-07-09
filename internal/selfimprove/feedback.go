@@ -55,7 +55,7 @@ func (c *InMemoryFeedbackCollector) Collect(ctx context.Context, feedback *Feedb
 	}
 
 	c.feedback = append(c.feedback, feedback)
-	
+
 	if feedback.SessionID != "" {
 		c.bySession[feedback.SessionID] = append(c.bySession[feedback.SessionID], feedback)
 	}
@@ -84,7 +84,7 @@ func (c *InMemoryFeedbackCollector) rebuildIndexes() {
 func (c *InMemoryFeedbackCollector) GetBySession(ctx context.Context, sessionID string) ([]*Feedback, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	result := make([]*Feedback, len(c.bySession[sessionID]))
 	copy(result, c.bySession[sessionID])
 	return result, nil
@@ -94,7 +94,7 @@ func (c *InMemoryFeedbackCollector) GetBySession(ctx context.Context, sessionID 
 func (c *InMemoryFeedbackCollector) GetByPrompt(ctx context.Context, promptID string) ([]*Feedback, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	result := make([]*Feedback, len(c.byPrompt[promptID]))
 	copy(result, c.byPrompt[promptID])
 	return result, nil
@@ -215,7 +215,7 @@ func (c *InMemoryFeedbackCollector) Export(ctx context.Context, filter *Feedback
 	defer c.mu.RUnlock()
 
 	filtered := c.applyFilter(filter)
-	
+
 	// Group by prompt
 	byPrompt := make(map[string][]*Feedback)
 	for _, f := range filtered {

@@ -16,7 +16,7 @@ func NewProviderServiceAdapter(service *ModelProviderService) verification.Provi
 func (a *ProviderServiceAdapter) GetAllProviders() map[string]verification.ProviderClientInfo {
 	providers := a.service.GetAllProviders()
 	result := make(map[string]verification.ProviderClientInfo)
-	
+
 	for id, client := range providers {
 		result[id] = verification.ProviderClientInfo{
 			ProviderID: id,
@@ -24,7 +24,7 @@ func (a *ProviderServiceAdapter) GetAllProviders() map[string]verification.Provi
 			APIKey:     client.APIKey,
 		}
 	}
-	
+
 	return result
 }
 
@@ -34,7 +34,7 @@ func (a *ProviderServiceAdapter) GetModels(providerID string) ([]verification.Mo
 	if err != nil {
 		return nil, err
 	}
-	
+
 	result := make([]verification.ModelInfo, len(models))
 	for i, model := range models {
 		result[i] = verification.ModelInfo{
@@ -44,6 +44,6 @@ func (a *ProviderServiceAdapter) GetModels(providerID string) ([]verification.Mo
 			Features:   model.Features,
 		}
 	}
-	
+
 	return result, nil
 }

@@ -30,16 +30,16 @@ type ProviderConfig struct {
 
 // SimpleTestResult holds the result of a simple model test.
 type SimpleTestResult struct {
-	ModelID      string    `json:"model_id"`
-	Provider     string    `json:"provider"`
-	Success      bool      `json:"success"`
-	Response     string    `json:"response"`
-	ResponseLen  int       `json:"response_length"`
-	LatencyMs    int64     `json:"latency_ms"`
-	HasContent   bool      `json:"has_content"`
-	IsCoherent   bool      `json:"is_coherent"`
-	Error        string    `json:"error,omitempty"`
-	Timestamp    time.Time `json:"timestamp"`
+	ModelID     string    `json:"model_id"`
+	Provider    string    `json:"provider"`
+	Success     bool      `json:"success"`
+	Response    string    `json:"response"`
+	ResponseLen int       `json:"response_length"`
+	LatencyMs   int64     `json:"latency_ms"`
+	HasContent  bool      `json:"has_content"`
+	IsCoherent  bool      `json:"is_coherent"`
+	Error       string    `json:"error,omitempty"`
+	Timestamp   time.Time `json:"timestamp"`
 }
 
 // ProviderTestResult holds all test results for a provider.

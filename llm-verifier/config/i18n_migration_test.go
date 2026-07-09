@@ -57,9 +57,9 @@ func invalidConfig() *Config {
 			HealthPort:    "",
 		},
 		Logging: LoggingConfig{
-			Level:   "trace",   // log_level_invalid
-			Format:  "xml",     // log_format_invalid
-			Output:  "syslog",  // log_output_invalid
+			Level:   "trace",  // log_level_invalid
+			Format:  "xml",    // log_format_invalid
+			Output:  "syslog", // log_output_invalid
 			MaxSize: -1,
 			MaxAge:  -1,
 		},

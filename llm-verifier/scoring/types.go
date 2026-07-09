@@ -16,41 +16,41 @@ type ScoreComponents struct {
 
 // ComprehensiveScore represents a comprehensive model score with all components
 type ComprehensiveScore struct {
-	ModelID        string         `json:"model_id"`
-	ModelName      string         `json:"model_name"`
-	OverallScore   float64        `json:"overall_score"`
-	ScoreSuffix    string         `json:"score_suffix"`
-	Components     ScoreComponents `json:"components"`
-	LastCalculated time.Time      `json:"last_calculated"`
-	CalculationHash string        `json:"calculation_hash"`
-	DataSource     string         `json:"data_source"`
+	ModelID         string          `json:"model_id"`
+	ModelName       string          `json:"model_name"`
+	OverallScore    float64         `json:"overall_score"`
+	ScoreSuffix     string          `json:"score_suffix"`
+	Components      ScoreComponents `json:"components"`
+	LastCalculated  time.Time       `json:"last_calculated"`
+	CalculationHash string          `json:"calculation_hash"`
+	DataSource      string          `json:"data_source"`
 }
 
 // ModelScore represents a model score (used in scoring engine)
 type ModelScore struct {
-	ID                int64           `json:"id"`
-	ModelID           string          `json:"model_id"`
-	ModelName         string          `json:"model_name"`
-	Score             float64         `json:"score"`
-	ScoreSuffix       string          `json:"score_suffix"`
-	Components        ScoreComponents `json:"components"`
-	CalculationHash   string          `json:"calculation_hash"`
-	CalculationDetails string         `json:"calculation_details,omitempty"`
-	LastCalculated    time.Time       `json:"last_calculated"`
-	ValidUntil        *time.Time      `json:"valid_until,omitempty"`
-	IsActive          bool            `json:"is_active"`
-	CreatedAt         time.Time       `json:"created_at"`
-	UpdatedAt         time.Time       `json:"updated_at"`
-	DataSource        string          `json:"data_source"`
+	ID                 int64           `json:"id"`
+	ModelID            string          `json:"model_id"`
+	ModelName          string          `json:"model_name"`
+	Score              float64         `json:"score"`
+	ScoreSuffix        string          `json:"score_suffix"`
+	Components         ScoreComponents `json:"components"`
+	CalculationHash    string          `json:"calculation_hash"`
+	CalculationDetails string          `json:"calculation_details,omitempty"`
+	LastCalculated     time.Time       `json:"last_calculated"`
+	ValidUntil         *time.Time      `json:"valid_until,omitempty"`
+	IsActive           bool            `json:"is_active"`
+	CreatedAt          time.Time       `json:"created_at"`
+	UpdatedAt          time.Time       `json:"updated_at"`
+	DataSource         string          `json:"data_source"`
 }
 
 // ScoreWeights represents the weights for different scoring components
 type ScoreWeights struct {
-	ResponseSpeed   float64 `json:"response_speed"`
-	ModelEfficiency float64 `json:"model_efficiency"`
+	ResponseSpeed     float64 `json:"response_speed"`
+	ModelEfficiency   float64 `json:"model_efficiency"`
 	CostEffectiveness float64 `json:"cost_effectiveness"`
-	Capability      float64 `json:"capability"`
-	Recency         float64 `json:"recency"`
+	Capability        float64 `json:"capability"`
+	Recency           float64 `json:"recency"`
 }
 
 // ScoreThresholds represents score thresholds
@@ -61,18 +61,16 @@ type ScoreThresholds struct {
 
 // ScoringConfig represents scoring system configuration
 type ScoringConfig struct {
-	ConfigName  string         `json:"config_name"`
-	Weights     ScoreWeights   `json:"weights"`
+	ConfigName  string          `json:"config_name"`
+	Weights     ScoreWeights    `json:"weights"`
 	Thresholds  ScoreThresholds `json:"thresholds"`
-	Enabled     bool           `json:"enabled"`
-	LastUpdated time.Time      `json:"last_updated"`
+	Enabled     bool            `json:"enabled"`
+	LastUpdated time.Time       `json:"last_updated"`
 }
-
-
 
 // BatchScoreRequest represents a batch scoring request
 type BatchScoreRequest struct {
-	ModelIDs []string     `json:"model_ids"`
+	ModelIDs []string      `json:"model_ids"`
 	Weights  *ScoreWeights `json:"weights,omitempty"`
 }
 
@@ -87,30 +85,30 @@ type BatchScoreResponse struct {
 
 // ScoreComparison represents a score comparison between models
 type ScoreComparison struct {
-	ModelID1   string  `json:"model_id_1"`
-	ModelID2   string  `json:"model_id_2"`
-	Score1     float64 `json:"score_1"`
-	Score2     float64 `json:"score_2"`
-	Difference float64 `json:"difference"`
-	BetterModel string `json:"better_model"`
+	ModelID1    string  `json:"model_id_1"`
+	ModelID2    string  `json:"model_id_2"`
+	Score1      float64 `json:"score_1"`
+	Score2      float64 `json:"score_2"`
+	Difference  float64 `json:"difference"`
+	BetterModel string  `json:"better_model"`
 }
 
 // ScoreHistory represents score history for a model
 type ScoreHistory struct {
-	ModelID      string    `json:"model_id"`
-	Scores       []float64 `json:"scores"`
+	ModelID      string      `json:"model_id"`
+	Scores       []float64   `json:"scores"`
 	Timestamps   []time.Time `json:"timestamps"`
-	ScoreChanges []float64 `json:"score_changes"`
+	ScoreChanges []float64   `json:"score_changes"`
 }
 
 // ScoreAnalytics represents score analytics data
 type ScoreAnalytics struct {
-	AverageScore    float64           `json:"average_score"`
-	MedianScore     float64           `json:"median_score"`
-	MinScore        float64           `json:"min_score"`
-	MaxScore        float64           `json:"max_score"`
-	StdDev          float64           `json:"std_dev"`
-	TotalModels     int               `json:"total_models"`
+	AverageScore      float64             `json:"average_score"`
+	MedianScore       float64             `json:"median_score"`
+	MinScore          float64             `json:"min_score"`
+	MaxScore          float64             `json:"max_score"`
+	StdDev            float64             `json:"std_dev"`
+	TotalModels       int                 `json:"total_models"`
 	ScoreDistribution []ScoreDistribution `json:"score_distribution"`
 }
 
@@ -138,14 +136,14 @@ type ModelData struct {
 
 // ModelRanking represents a model's ranking information
 type ModelRanking struct {
-	Rank          int        `json:"rank"`
-	ModelID       string     `json:"model_id"`
-	ModelName     string     `json:"model_name"`
-	OverallScore  float64    `json:"overall_score"`
-	ScoreSuffix   string     `json:"score_suffix"`
-	Category      string     `json:"category"`
-	CategoryScore float64    `json:"category_score"`
-	LastUpdated   time.Time  `json:"last_updated"`
+	Rank          int       `json:"rank"`
+	ModelID       string    `json:"model_id"`
+	ModelName     string    `json:"model_name"`
+	OverallScore  float64   `json:"overall_score"`
+	ScoreSuffix   string    `json:"score_suffix"`
+	Category      string    `json:"category"`
+	CategoryScore float64   `json:"category_score"`
+	LastUpdated   time.Time `json:"last_updated"`
 }
 
 // ModelsDevClientInterface defines the interface for models.dev client
@@ -160,11 +158,11 @@ func DefaultScoringConfig() ScoringConfig {
 	return ScoringConfig{
 		ConfigName: "default",
 		Weights: ScoreWeights{
-			ResponseSpeed:   0.25,
-			ModelEfficiency: 0.20,
+			ResponseSpeed:     0.25,
+			ModelEfficiency:   0.20,
 			CostEffectiveness: 0.25,
-			Capability:      0.20,
-			Recency:         0.10,
+			Capability:        0.20,
+			Recency:           0.10,
 		},
 		Thresholds: ScoreThresholds{
 			MinScore: 0.0,

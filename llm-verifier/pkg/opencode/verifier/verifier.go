@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	opencode_config "digital.vasic.llmsverifier/pkg/opencode/config"
 	"digital.vasic.llmsverifier/database"
+	opencode_config "digital.vasic.llmsverifier/pkg/opencode/config"
 )
 
 // OpenCodeVerifier handles verification of OpenCode configurations and setups
@@ -29,24 +29,24 @@ func NewOpenCodeVerifier(db *database.Database, configPath string) *OpenCodeVeri
 
 // VerificationResult represents the result of a configuration verification
 type VerificationResult struct {
-	ConfigFile     string                                   `json:"config_file"`
-	Valid          bool                                     `json:"valid"`
-	Errors         []opencode_config.ValidationError        `json:"errors,omitempty"`
-	Warnings       []opencode_config.ValidationWarning      `json:"warnings,omitempty"`
-	ProviderStatus map[string]ProviderVerificationStatus    `json:"provider_status,omitempty"`
-	AgentStatus    map[string]AgentVerificationStatus       `json:"agent_status,omitempty"`
-	McpStatus      map[string]McpVerificationStatus         `json:"mcp_status,omitempty"`
-	OverallScore   float64                                  `json:"overall_score"`
+	ConfigFile     string                                `json:"config_file"`
+	Valid          bool                                  `json:"valid"`
+	Errors         []opencode_config.ValidationError     `json:"errors,omitempty"`
+	Warnings       []opencode_config.ValidationWarning   `json:"warnings,omitempty"`
+	ProviderStatus map[string]ProviderVerificationStatus `json:"provider_status,omitempty"`
+	AgentStatus    map[string]AgentVerificationStatus    `json:"agent_status,omitempty"`
+	McpStatus      map[string]McpVerificationStatus      `json:"mcp_status,omitempty"`
+	OverallScore   float64                               `json:"overall_score"`
 }
 
 // ProviderVerificationStatus represents the verification status of a provider
 type ProviderVerificationStatus struct {
-	Name        string  `json:"name"`
-	Configured  bool    `json:"configured"`
-	HasAPIKey   bool    `json:"has_api_key"`
-	Verified    bool    `json:"verified"`
-	Error       string  `json:"error,omitempty"`
-	Score       float64 `json:"score"`
+	Name       string  `json:"name"`
+	Configured bool    `json:"configured"`
+	HasAPIKey  bool    `json:"has_api_key"`
+	Verified   bool    `json:"verified"`
+	Error      string  `json:"error,omitempty"`
+	Score      float64 `json:"score"`
 }
 
 // AgentVerificationStatus represents the verification status of an agent
@@ -303,7 +303,7 @@ func GetVerificationStatus(db *database.Database) (map[string]interface{}, error
 // VerifyAllConfigurations verifies all OpenCode configurations in a project
 func VerifyAllConfigurations(db *database.Database, projectPath string) error {
 	verifier := NewOpenCodeVerifier(db, filepath.Join(projectPath, "opencode.jsonc"))
-	
+
 	results, err := verifier.VerifySetup(projectPath)
 	if err != nil {
 		return fmt.Errorf("verification failed: %w", err)

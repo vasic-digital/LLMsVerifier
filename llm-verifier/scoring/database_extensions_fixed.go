@@ -197,7 +197,7 @@ func (sde *ScoringDatabaseExtensions) CreateModelScore(score interface{}) error 
 		var speedScore, efficiencyScore, costScore, capabilityScore, recencyScore float64
 		var scoreSuffix string
 		var calculatedAt time.Time
-		
+
 		switch s := score.(type) {
 		case *ModelScore:
 			// Convert string modelID to int64 - this is a simplification
@@ -226,7 +226,7 @@ func (sde *ScoringDatabaseExtensions) CreateModelScore(score interface{}) error 
 		default:
 			return fmt.Errorf("unsupported score type: %T", score)
 		}
-		
+
 		result, err := tx.Exec(query,
 			modelID,
 			overallScore,
@@ -239,7 +239,7 @@ func (sde *ScoringDatabaseExtensions) CreateModelScore(score interface{}) error 
 			"hash123", // CalculationHash
 			"",        // CalculationDetails
 			calculatedAt,
-			nil, // ValidUntil
+			nil,  // ValidUntil
 			true, // IsActive
 		)
 
@@ -356,8 +356,6 @@ func (sde *ScoringDatabaseExtensions) GetModelScoresByRange(minScore, maxScore f
 
 	return scores, err
 }
-
-
 
 // GetScoringConfiguration retrieves scoring configuration by name
 func (sde *ScoringDatabaseExtensions) GetScoringConfiguration(configName string) (*ScoringConfig, error) {

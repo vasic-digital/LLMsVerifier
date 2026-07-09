@@ -84,9 +84,9 @@ func TestNewIcebergClient(t *testing.T) {
 
 	t.Run("with custom config", func(t *testing.T) {
 		config := &IcebergConfig{
-			CatalogURI:  "http://iceberg.example.com:8181",
-			Warehouse:   "s3://custom-warehouse",
-			Timeout:     60 * time.Second,
+			CatalogURI: "http://iceberg.example.com:8181",
+			Warehouse:  "s3://custom-warehouse",
+			Timeout:    60 * time.Second,
 		}
 		client, err := NewIcebergClient(config)
 		require.NoError(t, err)
@@ -169,10 +169,10 @@ func TestTableSchema(t *testing.T) {
 func TestTableInfo(t *testing.T) {
 	schema := VerificationResultsSchema()
 	info := &TableInfo{
-		Namespace:  "llmsverifier",
-		Name:       "verification_results",
-		Schema:     schema,
-		Location:   "s3://warehouse/llmsverifier/verification_results",
+		Namespace: "llmsverifier",
+		Name:      "verification_results",
+		Schema:    schema,
+		Location:  "s3://warehouse/llmsverifier/verification_results",
 		Properties: map[string]string{
 			"write.format.default": "parquet",
 		},

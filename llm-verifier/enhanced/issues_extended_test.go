@@ -98,9 +98,9 @@ func TestGitHubIssueReporter_GenerateIssueTitle(t *testing.T) {
 
 	for _, tt := range tests {
 		issue := &database.Issue{
-			IssueType:   "performance",
-			Severity:    string(tt.severity),
-			Title:       "Test Title",
+			IssueType:     "performance",
+			Severity:      string(tt.severity),
+			Title:         "Test Title",
 			FirstDetected: time.Now(),
 		}
 
@@ -248,15 +248,15 @@ func TestGitHubIssueReporter_GenerateIssueBody(t *testing.T) {
 	workarounds := "[\"workaround1\"]"
 
 	issue := &database.Issue{
-		ID:            1,
-		ModelID:       1,
-		IssueType:     string(IssueTypePerformance),
-		Severity:      string(SeverityMedium),
-		Title:         "Test Issue",
-		Description:   "Test Description",
-		Symptoms:      &symptoms,
-		Workarounds:   &workarounds,
-		FirstDetected: now,
+		ID:               1,
+		ModelID:          1,
+		IssueType:        string(IssueTypePerformance),
+		Severity:         string(SeverityMedium),
+		Title:            "Test Issue",
+		Description:      "Test Description",
+		Symptoms:         &symptoms,
+		Workarounds:      &workarounds,
+		FirstDetected:    now,
 		AffectedFeatures: []string{"feature1", "feature2"},
 	}
 
@@ -406,13 +406,13 @@ func TestSlackIssueReporter_ReportIssue_Success(t *testing.T) {
 	}
 
 	issue := &database.Issue{
-		ID:            1,
-		ModelID:       1,
-		IssueType:     string(IssueTypePerformance),
-		Severity:      string(SeverityMedium),
-		Title:         "Test Issue",
-		Description:   "Test Description",
-		FirstDetected: time.Now(),
+		ID:               1,
+		ModelID:          1,
+		IssueType:        string(IssueTypePerformance),
+		Severity:         string(SeverityMedium),
+		Title:            "Test Issue",
+		Description:      "Test Description",
+		FirstDetected:    time.Now(),
 		AffectedFeatures: []string{"feature1"},
 	}
 

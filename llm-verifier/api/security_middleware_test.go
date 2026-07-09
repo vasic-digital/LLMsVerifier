@@ -789,13 +789,13 @@ func TestValidatePassword(t *testing.T) {
 		password string
 		wantErr  bool
 	}{
-		{"Passw0rd!", false},         // Valid
-		{"shor1A!", true},            // Too short (7 chars)
-		{"password1!", true},         // No uppercase
-		{"PASSWORD1!", true},         // No lowercase
-		{"Password!!", true},         // No digit
-		{"Password12", true},         // No special char
-		{"ValidP@ssw0rd123", false},  // Valid
+		{"Passw0rd!", false},        // Valid
+		{"shor1A!", true},           // Too short (7 chars)
+		{"password1!", true},        // No uppercase
+		{"PASSWORD1!", true},        // No lowercase
+		{"Password!!", true},        // No digit
+		{"Password12", true},        // No special char
+		{"ValidP@ssw0rd123", false}, // Valid
 	}
 
 	for _, tt := range tests {
@@ -819,10 +819,10 @@ func TestValidateUsername(t *testing.T) {
 		{"valid_user", false},
 		{"valid-user", false},
 		{"user123", false},
-		{"ab", true},                              // Too short
-		{"user with space", true},                 // Contains space
-		{"user@name", true},                                                          // Invalid character
-		{"verylongusernamethatexceedsfiftycharsverylonguserna", true},                // Too long (51 chars)
+		{"ab", true},              // Too short
+		{"user with space", true}, // Contains space
+		{"user@name", true},       // Invalid character
+		{"verylongusernamethatexceedsfiftycharsverylonguserna", true}, // Too long (51 chars)
 	}
 
 	for _, tt := range tests {
@@ -894,9 +894,9 @@ func TestValidateCronExpression(t *testing.T) {
 		{"* * * * *", false},
 		{"0 0 * * *", false},
 		{"*/5 * * * *", false},
-		{"", false},                    // Empty is valid
-		{"0 0 *", true},                // Not enough fields
-		{"0 0 * * * *", true},          // Too many fields
+		{"", false},           // Empty is valid
+		{"0 0 *", true},       // Not enough fields
+		{"0 0 * * * *", true}, // Too many fields
 	}
 
 	for _, tt := range tests {
@@ -1062,7 +1062,7 @@ func TestGetValidationErrors(t *testing.T) {
 	}
 
 	err := ValidateRequest(&TestStruct{
-		Name:  "ab", // Too short
+		Name:  "ab",      // Too short
 		Email: "invalid", // Not a valid email
 	})
 

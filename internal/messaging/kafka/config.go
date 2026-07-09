@@ -37,18 +37,18 @@ type Config struct {
 	CompressionType string        `json:"compression_type" yaml:"compression_type"` // none, gzip, snappy, lz4, zstd
 
 	// Consumer settings
-	FetchMinBytes     int           `json:"fetch_min_bytes" yaml:"fetch_min_bytes"`
-	FetchMaxBytes     int           `json:"fetch_max_bytes" yaml:"fetch_max_bytes"`
-	MaxWaitTime       time.Duration `json:"max_wait_time" yaml:"max_wait_time"`
-	AutoOffsetReset   string        `json:"auto_offset_reset" yaml:"auto_offset_reset"` // earliest, latest
-	AutoCommit        bool          `json:"auto_commit" yaml:"auto_commit"`
+	FetchMinBytes      int           `json:"fetch_min_bytes" yaml:"fetch_min_bytes"`
+	FetchMaxBytes      int           `json:"fetch_max_bytes" yaml:"fetch_max_bytes"`
+	MaxWaitTime        time.Duration `json:"max_wait_time" yaml:"max_wait_time"`
+	AutoOffsetReset    string        `json:"auto_offset_reset" yaml:"auto_offset_reset"` // earliest, latest
+	AutoCommit         bool          `json:"auto_commit" yaml:"auto_commit"`
 	AutoCommitInterval time.Duration `json:"auto_commit_interval" yaml:"auto_commit_interval"`
 
 	// Connection settings
-	DialTimeout       time.Duration `json:"dial_timeout" yaml:"dial_timeout"`
-	ReadTimeout       time.Duration `json:"read_timeout" yaml:"read_timeout"`
-	WriteTimeout      time.Duration `json:"write_timeout" yaml:"write_timeout"`
-	MetadataMaxRetries int          `json:"metadata_max_retries" yaml:"metadata_max_retries"`
+	DialTimeout        time.Duration `json:"dial_timeout" yaml:"dial_timeout"`
+	ReadTimeout        time.Duration `json:"read_timeout" yaml:"read_timeout"`
+	WriteTimeout       time.Duration `json:"write_timeout" yaml:"write_timeout"`
+	MetadataMaxRetries int           `json:"metadata_max_retries" yaml:"metadata_max_retries"`
 
 	// Retry settings
 	RetryBackoff    time.Duration `json:"retry_backoff" yaml:"retry_backoff"`
@@ -179,9 +179,9 @@ func ApplyConfigOptions(opts ...ConfigOption) *Config {
 
 // Error types for configuration validation.
 var (
-	ErrNoBrokers   = ConfigError("no brokers specified")
-	ErrNoClientID  = ConfigError("no client ID specified")
-	ErrNoGroupID   = ConfigError("no group ID specified")
+	ErrNoBrokers  = ConfigError("no brokers specified")
+	ErrNoClientID = ConfigError("no client ID specified")
+	ErrNoGroupID  = ConfigError("no group ID specified")
 )
 
 // ConfigError represents a configuration error.

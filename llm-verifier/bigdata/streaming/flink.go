@@ -13,21 +13,21 @@ import (
 
 // FlinkConfig holds Flink connection configuration
 type FlinkConfig struct {
-	JobManagerHost  string        `yaml:"jobmanager_host" json:"jobmanager_host"`
-	JobManagerPort  int           `yaml:"jobmanager_port" json:"jobmanager_port"`
-	WebUIPort       int           `yaml:"web_ui_port" json:"web_ui_port"`
-	RESTURL         string        `yaml:"rest_url" json:"rest_url"`
-	RequestTimeout  time.Duration `yaml:"request_timeout" json:"request_timeout"`
+	JobManagerHost string        `yaml:"jobmanager_host" json:"jobmanager_host"`
+	JobManagerPort int           `yaml:"jobmanager_port" json:"jobmanager_port"`
+	WebUIPort      int           `yaml:"web_ui_port" json:"web_ui_port"`
+	RESTURL        string        `yaml:"rest_url" json:"rest_url"`
+	RequestTimeout time.Duration `yaml:"request_timeout" json:"request_timeout"`
 }
 
 // DefaultFlinkConfig returns default Flink configuration
 func DefaultFlinkConfig() *FlinkConfig {
 	return &FlinkConfig{
-		JobManagerHost:  "localhost",
-		JobManagerPort:  6123,
-		WebUIPort:       8082,
-		RESTURL:         "http://localhost:8082",
-		RequestTimeout:  30 * time.Second,
+		JobManagerHost: "localhost",
+		JobManagerPort: 6123,
+		WebUIPort:      8082,
+		RESTURL:        "http://localhost:8082",
+		RequestTimeout: 30 * time.Second,
 	}
 }
 
@@ -150,15 +150,15 @@ func (c *FlinkClient) HealthCheck(ctx context.Context) error {
 
 // ClusterOverview represents the Flink cluster overview
 type ClusterOverview struct {
-	TaskManagers      int    `json:"taskmanagers"`
-	SlotsTotal        int    `json:"slots-total"`
-	SlotsAvailable    int    `json:"slots-available"`
-	JobsRunning       int    `json:"jobs-running"`
-	JobsFinished      int    `json:"jobs-finished"`
-	JobsCancelled     int    `json:"jobs-cancelled"`
-	JobsFailed        int    `json:"jobs-failed"`
-	FlinkVersion      string `json:"flink-version"`
-	FlinkCommit       string `json:"flink-commit"`
+	TaskManagers   int    `json:"taskmanagers"`
+	SlotsTotal     int    `json:"slots-total"`
+	SlotsAvailable int    `json:"slots-available"`
+	JobsRunning    int    `json:"jobs-running"`
+	JobsFinished   int    `json:"jobs-finished"`
+	JobsCancelled  int    `json:"jobs-cancelled"`
+	JobsFailed     int    `json:"jobs-failed"`
+	FlinkVersion   string `json:"flink-version"`
+	FlinkCommit    string `json:"flink-commit"`
 }
 
 // GetClusterOverview returns the cluster overview
@@ -196,12 +196,12 @@ func (c *FlinkClient) GetClusterOverview(ctx context.Context) (*ClusterOverview,
 
 // JobInfo represents information about a Flink job
 type JobInfo struct {
-	ID        string    `json:"jid"`
-	Name      string    `json:"name"`
-	State     string    `json:"state"`
-	StartTime int64     `json:"start-time"`
-	EndTime   int64     `json:"end-time"`
-	Duration  int64     `json:"duration"`
+	ID        string `json:"jid"`
+	Name      string `json:"name"`
+	State     string `json:"state"`
+	StartTime int64  `json:"start-time"`
+	EndTime   int64  `json:"end-time"`
+	Duration  int64  `json:"duration"`
 }
 
 // ListJobs returns all jobs

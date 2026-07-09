@@ -3,8 +3,8 @@ package scoring
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"digital.vasic.llmsverifier/database"
+	"github.com/stretchr/testify/require"
 )
 
 // TestListModelsByScore_RespectsMaxScore is a reproduce-first RED test for the

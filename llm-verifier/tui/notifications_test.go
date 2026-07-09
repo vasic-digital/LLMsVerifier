@@ -134,8 +134,8 @@ func TestNotificationManager_RenderNotification_Types(t *testing.T) {
 	nm.autoDismiss = false
 
 	tests := []struct {
-		ntype    NotificationType
-		message  string
+		ntype   NotificationType
+		message string
 	}{
 		{NotificationInfo, "Info"},
 		{NotificationSuccess, "Success"},

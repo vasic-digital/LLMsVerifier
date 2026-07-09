@@ -44,9 +44,9 @@ func TestScoringSystemIntegration(t *testing.T) {
 		// assertion). Anchor the fixture dates RELATIVE to now so the model is
 		// always ~6 months old (<365d → +3.0) with a ~12-month cutoff (<730d →
 		// +1.0), keeping Recency deterministically at 9.0 regardless of run date.
-		ReleaseDate:        timePtr(time.Now().AddDate(0, -6, 0)),
-		TrainingDataCutoff: timePtr(time.Now().AddDate(-1, 0, 0)),
-		IsMultimodal:       true,
+		ReleaseDate:         timePtr(time.Now().AddDate(0, -6, 0)),
+		TrainingDataCutoff:  timePtr(time.Now().AddDate(-1, 0, 0)),
+		IsMultimodal:        true,
 		SupportsVision:      true,
 		SupportsReasoning:   true,
 		OpenSource:          false,
@@ -68,7 +68,7 @@ func TestScoringSystemIntegration(t *testing.T) {
 	// Create mock models.dev client
 	mockClient := NewMockModelsDevClient()
 	logger := setupTestLogger()
-	
+
 	// Create comprehensive models.dev model data
 	integrationDevModel := ModelsDevModel{
 		Provider:            "Integration Test Provider",
@@ -164,7 +164,7 @@ func TestScoringSystemIntegration(t *testing.T) {
 
 	for _, comp := range components {
 		if comp.score < comp.min || comp.score > comp.max {
-			t.Errorf("%s score should be between %.1f and %.1f, got %.1f", 
+			t.Errorf("%s score should be between %.1f and %.1f, got %.1f",
 				comp.name, comp.min, comp.max, comp.score)
 		}
 	}
@@ -208,14 +208,14 @@ func TestScoringSystemWithDifferentConfigurations(t *testing.T) {
 	}
 
 	testModel := &database.Model{
-		ProviderID:       testProvider.ID,
-		ModelID:          "config-test-model",
-		Name:             "Config Test Model",
-		ParameterCount:   int64Ptr(1000000000), // 1B parameters
-		IsMultimodal:     true,
+		ProviderID:        testProvider.ID,
+		ModelID:           "config-test-model",
+		Name:              "Config Test Model",
+		ParameterCount:    int64Ptr(1000000000), // 1B parameters
+		IsMultimodal:      true,
 		SupportsReasoning: true,
-		ReleaseDate:      timePtr(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
-		OpenSource:       false,
+		ReleaseDate:       timePtr(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
+		OpenSource:        false,
 	}
 
 	err = db.CreateModel(testModel)
@@ -295,7 +295,7 @@ func TestScoringSystemWithDifferentConfigurations(t *testing.T) {
 
 			// Verify that different configurations produce different scores
 			if i > 0 && score.OverallScore == previousScore {
-				t.Errorf("%s configuration produced the same score as previous configuration: %f", 
+				t.Errorf("%s configuration produced the same score as previous configuration: %f",
 					tc.name, score.OverallScore)
 			}
 			previousScore = score.OverallScore

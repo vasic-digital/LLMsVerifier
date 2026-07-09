@@ -18,13 +18,13 @@ func TestNewModelDisplayName(t *testing.T) {
 // TestFormatWithFeatureSuffixes tests feature suffix formatting
 func TestFormatWithFeatureSuffixes(t *testing.T) {
 	md := NewModelDisplayName()
-	
+
 	// Note: (llmsvd) suffix is mandatory branding for all LLMsVerifier-generated model names
 	tests := []struct {
-		name        string
-		modelName   string
-		features    map[string]interface{}
-		expected    string
+		name      string
+		modelName string
+		features  map[string]interface{}
+		expected  string
 	}{
 		{
 			name:      "brotli only",
@@ -81,10 +81,10 @@ func TestFormatWithFeatureSuffixes(t *testing.T) {
 			name:      "all features",
 			modelName: "Premium-Model",
 			features: map[string]interface{}{
-				"supports_brotli": true,
-				"supports_http3":  true,
-				"supports_toon":   true,
-				"open_weights":    true,
+				"supports_brotli":  true,
+				"supports_http3":   true,
+				"supports_toon":    true,
+				"open_weights":     true,
 				"response_time_ms": 300.0,
 				"cost": map[string]interface{}{
 					"input":  0.0,
@@ -94,7 +94,7 @@ func TestFormatWithFeatureSuffixes(t *testing.T) {
 			expected: "Premium-Model (brotli) (http3) (toon) (open source) (free to use) (fast) (llmsvd)",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := md.FormatWithFeatureSuffixes(tt.modelName, tt.features)
@@ -108,7 +108,7 @@ func TestFormatWithFeatureSuffixes(t *testing.T) {
 // TestRemoveFeatureSuffixes tests removing existing suffixes
 func TestRemoveFeatureSuffixes(t *testing.T) {
 	md := NewModelDisplayName()
-	
+
 	tests := []struct {
 		input    string
 		expected string
@@ -138,7 +138,7 @@ func TestRemoveFeatureSuffixes(t *testing.T) {
 			expected: "Complex Model",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
 			result := md.removeFeatureSuffixes(tt.input)
@@ -152,11 +152,11 @@ func TestRemoveFeatureSuffixes(t *testing.T) {
 // TestExtractFeatures tests feature extraction from model data
 func TestExtractFeatures(t *testing.T) {
 	md := NewModelDisplayName()
-	
+
 	tests := []struct {
-		name     string
+		name      string
 		modelData map[string]interface{}
-		expected ModelFeatures
+		expected  ModelFeatures
 	}{
 		{
 			name: "brotli support",
@@ -231,16 +231,16 @@ func TestExtractFeatures(t *testing.T) {
 			},
 		},
 		{
-			name: "empty data",
+			name:      "empty data",
 			modelData: map[string]interface{}{},
-			expected: ModelFeatures{},
+			expected:  ModelFeatures{},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := md.extractFeatures(tt.modelData)
-			
+
 			// Compare individual fields
 			if result.supportsBrotli != tt.expected.supportsBrotli {
 				t.Errorf("supportsBrotli = %v, want %v", result.supportsBrotli, tt.expected.supportsBrotli)
@@ -334,20 +334,20 @@ func TestFormatModelNameWithScoreAndFeatures(t *testing.T) {
 			expected:     "Standard-Model (llmsvd) (SC:6.0)",
 		},
 		{
-			name:         "complex model",
-			modelName:    "Premium-Model",
-			score:        9.2,
+			name:      "complex model",
+			modelName: "Premium-Model",
+			score:     9.2,
 			features: map[string]interface{}{
-				"supports_brotli": true,
-				"supports_http3":  true,
-				"open_weights":    true,
+				"supports_brotli":  true,
+				"supports_http3":   true,
+				"open_weights":     true,
 				"response_time_ms": 200.0,
 			},
 			includeScore: true,
 			expected:     "Premium-Model (brotli) (http3) (open source) (fast) (llmsvd) (SC:9.2)",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := md.FormatModelNameWithScoreAndFeatures(
@@ -363,7 +363,7 @@ func TestFormatModelNameWithScoreAndFeatures(t *testing.T) {
 // TestParseFeatureSuffixes tests parsing suffixes from model names
 func TestParseFeatureSuffixes(t *testing.T) {
 	md := NewModelDisplayName()
-	
+
 	tests := []struct {
 		input    string
 		expected []string
@@ -389,15 +389,15 @@ func TestParseFeatureSuffixes(t *testing.T) {
 			expected: []string{"(brotli)"}, // Score suffix not included
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
 			result := md.ParseFeatureSuffixes(tt.input)
-			
+
 			if len(result) != len(tt.expected) {
 				t.Errorf("ParseFeatureSuffixes() returned %d suffixes, want %d", len(result), len(tt.expected))
 			}
-			
+
 			// Check all expected suffixes are present
 			for _, expected := range tt.expected {
 				found := false
@@ -418,9 +418,9 @@ func TestParseFeatureSuffixes(t *testing.T) {
 // TestHasFeatureSuffix tests checking for specific suffixes
 func TestHasFeatureSuffix(t *testing.T) {
 	md := NewModelDisplayName()
-	
+
 	modelName := "GPT-4 (brotli) (http3) (fast)"
-	
+
 	tests := []struct {
 		suffix   string
 		expected bool
@@ -432,7 +432,7 @@ func TestHasFeatureSuffix(t *testing.T) {
 		{"(free to use)", false},
 		{"(open source)", false},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.suffix, func(t *testing.T) {
 			result := md.HasFeatureSuffix(modelName, tt.suffix)
@@ -446,7 +446,7 @@ func TestHasFeatureSuffix(t *testing.T) {
 // TestValidateFeatureSuffix tests suffix validation
 func TestValidateFeatureSuffix(t *testing.T) {
 	md := NewModelDisplayName()
-	
+
 	tests := []struct {
 		suffix      string
 		shouldValid bool
@@ -459,11 +459,11 @@ func TestValidateFeatureSuffix(t *testing.T) {
 		{"(fast)", true},
 		{"(invalid)", false},
 		{"(unknown)", false},
-		{"brotli", false}, // Missing parentheses
+		{"brotli", false},   // Missing parentheses
 		{"(BROTLI)", false}, // Wrong case
 		{"", false},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.suffix, func(t *testing.T) {
 			valid, suggestion := md.ValidateFeatureSuffix(tt.suffix)
@@ -480,7 +480,7 @@ func TestValidateFeatureSuffix(t *testing.T) {
 // TestComplexRealWorldScenario tests a complex real-world scenario
 func TestComplexRealWorldScenario(t *testing.T) {
 	md := NewModelDisplayName()
-	
+
 	// Simulate a real model from OpenCode config
 	modelData := map[string]interface{}{
 		"name":            "GPT-4 Turbo",
@@ -495,7 +495,7 @@ func TestComplexRealWorldScenario(t *testing.T) {
 		},
 		"response_time_ms": 800.0,
 	}
-	
+
 	// Format with all features and score
 	// Note: (llmsvd) suffix is mandatory branding for all LLMsVerifier-generated model names
 	result := md.FormatModelNameWithScoreAndFeatures(
@@ -510,7 +510,7 @@ func TestComplexRealWorldScenario(t *testing.T) {
 	if result != expected {
 		t.Errorf("Complex real-world scenario failed\nGot:      %v\nExpected: %v", result, expected)
 	}
-	
+
 	// Verify suffixes are present
 	if !md.HasFeatureSuffix(result, "(brotli)") {
 		t.Error("Missing (brotli) suffix")
@@ -542,7 +542,7 @@ func TestEmptyAndEdgeCases(t *testing.T) {
 	if result != "Model (llmsvd)" {
 		t.Errorf("Nil features should return name with branding suffix, got: %v", result)
 	}
-	
+
 	// Test with only cost.output = 0 (not free)
 	modelData := map[string]interface{}{
 		"cost": map[string]interface{}{
@@ -552,6 +552,6 @@ func TestEmptyAndEdgeCases(t *testing.T) {
 	}
 	features := md.extractFeatures(modelData)
 	if features.isFree {
-		t.Error("Model with only output=0 should not be free");
+		t.Error("Model with only output=0 should not be free")
 	}
 }

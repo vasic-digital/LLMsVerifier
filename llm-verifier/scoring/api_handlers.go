@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"digital.vasic.llmsverifier/logging"
+	"github.com/gin-gonic/gin"
 )
 
 // ScoringAPIHandlers handles HTTP requests for scoring functionality
@@ -72,7 +72,7 @@ func (sah *ScoringAPIHandlers) GetModelScore(c *gin.Context) {
 // CalculateModelScore calculates a new score for a model
 func (sah *ScoringAPIHandlers) CalculateModelScore(c *gin.Context) {
 	modelID := c.Param("model_id")
-	
+
 	var request struct {
 		Configuration *ScoringConfig `json:"configuration,omitempty"`
 		ForceRecalc   bool           `json:"force_recalculation,omitempty"`
@@ -111,23 +111,23 @@ func (sah *ScoringAPIHandlers) CalculateModelScore(c *gin.Context) {
 	formattedName := sah.modelNaming.AddScoreSuffix(score.ModelName, score.OverallScore)
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":          tr("llmsverifier_scoring_msg_score_calculated"),
-		"model_id":         modelID,
-		"model_name":       score.ModelName,
-		"formatted_name":   formattedName,
-		"overall_score":    score.OverallScore,
-		"score_suffix":     score.ScoreSuffix,
-		"components":       score.Components,
-		"last_calculated":  score.LastCalculated,
+		"message":         tr("llmsverifier_scoring_msg_score_calculated"),
+		"model_id":        modelID,
+		"model_name":      score.ModelName,
+		"formatted_name":  formattedName,
+		"overall_score":   score.OverallScore,
+		"score_suffix":    score.ScoreSuffix,
+		"components":      score.Components,
+		"last_calculated": score.LastCalculated,
 	})
 }
 
 // RecalculateModelScore forces recalculation of an existing score
 func (sah *ScoringAPIHandlers) RecalculateModelScore(c *gin.Context) {
 	modelID := c.Param("model_id")
-	
+
 	var request struct {
-		Reason      string         `json:"reason,omitempty"`
+		Reason        string         `json:"reason,omitempty"`
 		Configuration *ScoringConfig `json:"configuration,omitempty"`
 	}
 
@@ -163,20 +163,20 @@ func (sah *ScoringAPIHandlers) RecalculateModelScore(c *gin.Context) {
 	// Log the recalculation reason
 	if request.Reason != "" {
 		sah.logger.Info("Model score recalculated", map[string]interface{}{
-			"model_id": modelID,
-			"reason": request.Reason,
+			"model_id":  modelID,
+			"reason":    request.Reason,
 			"new_score": score.OverallScore,
 		})
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":          tr("llmsverifier_scoring_msg_score_recalculated"),
-		"model_id":         modelID,
-		"overall_score":    score.OverallScore,
-		"score_suffix":     score.ScoreSuffix,
-		"components":       score.Components,
-		"last_calculated":  score.LastCalculated,
-		"recalc_reason":    request.Reason,
+		"message":         tr("llmsverifier_scoring_msg_score_recalculated"),
+		"model_id":        modelID,
+		"overall_score":   score.OverallScore,
+		"score_suffix":    score.ScoreSuffix,
+		"components":      score.Components,
+		"last_calculated": score.LastCalculated,
+		"recalc_reason":   request.Reason,
 	})
 }
 
@@ -197,9 +197,9 @@ func (sah *ScoringAPIHandlers) DeleteModelScore(c *gin.Context) {
 // BatchCalculateScores calculates scores for multiple models
 func (sah *ScoringAPIHandlers) BatchCalculateScores(c *gin.Context) {
 	var request struct {
-		ModelIDs    []string       `json:"model_ids" binding:"required"`
+		ModelIDs      []string       `json:"model_ids" binding:"required"`
 		Configuration *ScoringConfig `json:"configuration,omitempty"`
-		Async       bool           `json:"async,omitempty"`
+		Async         bool           `json:"async,omitempty"`
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -222,9 +222,9 @@ func (sah *ScoringAPIHandlers) BatchCalculateScores(c *gin.Context) {
 		go sah.processBatchScoresAsync(batchID, request.ModelIDs, *request.Configuration)
 
 		c.JSON(http.StatusAccepted, gin.H{
-			"message":   tr("llmsverifier_scoring_msg_batch_started"),
-			"batch_id":  batchID,
-			"status":    "processing",
+			"message":     tr("llmsverifier_scoring_msg_batch_started"),
+			"batch_id":    batchID,
+			"status":      "processing",
 			"model_count": len(request.ModelIDs),
 		})
 		return
@@ -234,11 +234,11 @@ func (sah *ScoringAPIHandlers) BatchCalculateScores(c *gin.Context) {
 	results := sah.processBatchScoresSync(request.ModelIDs, *request.Configuration)
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":      tr("llmsverifier_scoring_msg_batch_completed"),
-		"batch_id":     batchID,
-		"status":       "completed",
-		"results":      results,
-		"model_count":  len(request.ModelIDs),
+		"message":       tr("llmsverifier_scoring_msg_batch_completed"),
+		"batch_id":      batchID,
+		"status":        "completed",
+		"results":       results,
+		"model_count":   len(request.ModelIDs),
 		"success_count": len(results),
 	})
 }
@@ -285,16 +285,16 @@ func (sah *ScoringAPIHandlers) GetModelRankings(c *gin.Context) {
 // GetScoringConfiguration retrieves current scoring configuration
 func (sah *ScoringAPIHandlers) GetScoringConfiguration(c *gin.Context) {
 	configName := c.DefaultQuery("config", "default")
-	
+
 	// Simulate configuration
 	config := map[string]interface{}{
 		"config_name": configName,
 		"weights": map[string]float64{
-			"response_speed":    0.25,
-			"model_efficiency":  0.20,
+			"response_speed":     0.25,
+			"model_efficiency":   0.20,
 			"cost_effectiveness": 0.25,
-			"capability":        0.20,
-			"recency":          0.10,
+			"capability":         0.20,
+			"recency":            0.10,
 		},
 		"thresholds": map[string]float64{
 			"min_score": 0.0,
@@ -411,17 +411,17 @@ func (sah *ScoringAPIHandlers) processBatchScoresAsync(batchID string, modelIDs 
 	// Implementation for async batch processing
 	// This would typically use a background job system
 	sah.logger.Info("Processing batch scores async", map[string]interface{}{
-		"batch_id": batchID,
+		"batch_id":    batchID,
 		"model_count": len(modelIDs),
 	})
 }
 
 func (sah *ScoringAPIHandlers) processBatchScoresSync(modelIDs []string, config ScoringConfig) []interface{} {
 	results := make([]interface{}, 0, len(modelIDs))
-	
+
 	for _, modelID := range modelIDs {
 		_, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		
+
 		// Simulate score calculation
 		score := &ComprehensiveScore{
 			ModelID:      modelID,
@@ -438,7 +438,7 @@ func (sah *ScoringAPIHandlers) processBatchScoresSync(modelIDs []string, config 
 			LastCalculated: time.Now(),
 		}
 		cancel()
-		
+
 		results = append(results, gin.H{
 			"model_id":      modelID,
 			"overall_score": score.OverallScore,
@@ -446,6 +446,6 @@ func (sah *ScoringAPIHandlers) processBatchScoresSync(modelIDs []string, config 
 			"success":       true,
 		})
 	}
-	
+
 	return results
 }

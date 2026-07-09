@@ -33,11 +33,11 @@ func (di *DatabaseIntegration) GetModelByModelID(modelID string) (*database.Mode
 	if err != nil {
 		return nil, fmt.Errorf("failed to get model by model_id: %w", err)
 	}
-	
+
 	if len(models) == 0 {
 		return nil, fmt.Errorf("model not found: %s", modelID)
 	}
-	
+
 	return models[0], nil
 }
 
@@ -47,7 +47,7 @@ func (di *DatabaseIntegration) UpdateModelScores(modelID int64, score interface{
 	if err != nil {
 		return fmt.Errorf("failed to get model: %w", err)
 	}
-	
+
 	// Handle both ModelScore and ComprehensiveScore types
 	switch s := score.(type) {
 	case *ModelScore:
@@ -67,7 +67,7 @@ func (di *DatabaseIntegration) UpdateModelScores(modelID int64, score interface{
 	default:
 		return fmt.Errorf("unsupported score type: %T", score)
 	}
-	
+
 	return di.db.UpdateModel(model)
 }
 
@@ -76,7 +76,7 @@ func (di *DatabaseIntegration) CreateVerificationScore(modelID int64, score inte
 	// Handle both ModelScore and ComprehensiveScore types
 	var overallScore float64
 	var components ScoreComponents
-	
+
 	switch s := score.(type) {
 	case *ModelScore:
 		overallScore = s.Score
@@ -87,26 +87,26 @@ func (di *DatabaseIntegration) CreateVerificationScore(modelID int64, score inte
 	default:
 		return fmt.Errorf("unsupported score type: %T", score)
 	}
-	
+
 	// Convert our score to verification score format
 	verificationScore := &database.VerificationScore{
-		ModelID:              modelID,
-		Score:                int(overallScore * 10), // Convert 0-10 to 0-100
-		ScoreType:            "comprehensive_scoring",
-		ScoringMethod:        "weighted_algorithm",
-		Category:             di.getScoreCategory(overallScore),
-		CodeCorrectnessScore: intPtr(int(components.CapabilityScore * 10)),
-		CodeQualityScore:     intPtr(int(components.EfficiencyScore * 10)),
-		CodeSpeedScore:       intPtr(int(components.SpeedScore * 10)),
-		ErrorHandlingScore:   intPtr(int(components.RecencyScore * 10)),
+		ModelID:                   modelID,
+		Score:                     int(overallScore * 10), // Convert 0-10 to 0-100
+		ScoreType:                 "comprehensive_scoring",
+		ScoringMethod:             "weighted_algorithm",
+		Category:                  di.getScoreCategory(overallScore),
+		CodeCorrectnessScore:      intPtr(int(components.CapabilityScore * 10)),
+		CodeQualityScore:          intPtr(int(components.EfficiencyScore * 10)),
+		CodeSpeedScore:            intPtr(int(components.SpeedScore * 10)),
+		ErrorHandlingScore:        intPtr(int(components.RecencyScore * 10)),
 		ContextUnderstandingScore: intPtr(int(components.CostScore * 10)),
-		Evidence:             di.createScoreEvidence(score),
-		BenchmarkVersion:     "1.0",
-		ScoredBy:             "scoring_system",
-		ConfidenceLevel:      85,
-		ScoredAt:             time.Now(),
+		Evidence:                  di.createScoreEvidence(score),
+		BenchmarkVersion:          "1.0",
+		ScoredBy:                  "scoring_system",
+		ConfidenceLevel:           85,
+		ScoredAt:                  time.Now(),
 	}
-	
+
 	_, err := di.db.CreateVerificationScore(verificationScore)
 	return err
 }
@@ -154,7 +154,7 @@ func (di *DatabaseIntegration) GetTopScoringModels(limit int) ([]*database.Model
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Sort by overall score (descending)
 	for i := 0; i < len(models)-1; i++ {
 		for j := i + 1; j < len(models); j++ {
@@ -163,7 +163,7 @@ func (di *DatabaseIntegration) GetTopScoringModels(limit int) ([]*database.Model
 			}
 		}
 	}
-	
+
 	return models, nil
 }
 
@@ -173,7 +173,7 @@ func (di *DatabaseIntegration) CreateScoringEvent(eventType, message string, mod
 	if err != nil {
 		return fmt.Errorf("failed to marshal details: %w", err)
 	}
-	
+
 	event := &database.Event{
 		EventType: eventType,
 		Severity:  "info",
@@ -183,7 +183,7 @@ func (di *DatabaseIntegration) CreateScoringEvent(eventType, message string, mod
 		ModelID:   modelID,
 		CreatedAt: time.Now(),
 	}
-	
+
 	return di.db.CreateEvent(event)
 }
 
@@ -192,7 +192,7 @@ func (di *DatabaseIntegration) GetVerificationResults(modelIDs []int64) ([]*data
 	if len(modelIDs) == 0 {
 		return []*database.VerificationResult{}, nil
 	}
-	
+
 	// Get latest verification results for the models
 	return di.db.GetLatestVerificationResults(modelIDs)
 }
@@ -216,7 +216,7 @@ func (di *DatabaseIntegration) createScoreEvidence(score interface{}) string {
 	var overallScore float64
 	var components ScoreComponents
 	var scoreSuffix string
-	
+
 	switch s := score.(type) {
 	case *ModelScore:
 		overallScore = s.Score
@@ -231,7 +231,7 @@ func (di *DatabaseIntegration) createScoreEvidence(score interface{}) string {
 		components = ScoreComponents{}
 		scoreSuffix = ""
 	}
-	
+
 	evidence := map[string]interface{}{
 		"overall_score": overallScore,
 		"components": map[string]float64{
@@ -241,10 +241,10 @@ func (di *DatabaseIntegration) createScoreEvidence(score interface{}) string {
 			"capability_score": components.CapabilityScore,
 			"recency_score":    components.RecencyScore,
 		},
-		"score_suffix": scoreSuffix,
+		"score_suffix":  scoreSuffix,
 		"calculated_at": time.Now().Format(time.RFC3339),
 	}
-	
+
 	jsonBytes, _ := json.Marshal(evidence)
 	return string(jsonBytes)
 }

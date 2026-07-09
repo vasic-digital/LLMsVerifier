@@ -1,6 +1,5 @@
 package security
 
-
 import (
 	"fmt"
 
@@ -120,7 +119,7 @@ func TestAPIKeyMaskerMaskAnthropic(t *testing.T) {
 	_ = akm.MaskAPIKeys(input)
 
 	// Some patterns may not match
-	
+
 }
 
 func TestAPIKeyMaskerMaskMultiple(t *testing.T) {
@@ -557,9 +556,9 @@ func TestExtractIPAddressXRealIP(t *testing.T) {
 
 func TestSanitizeHeaders(t *testing.T) {
 	headers := map[string][]string{
-		"Authorization":  {"Bearer token123"},
-		"Content-Type":   {"application/json"},
-		"User-Agent":     {"test"},
+		"Authorization": {"Bearer token123"},
+		"Content-Type":  {"application/json"},
+		"User-Agent":    {"test"},
 	}
 
 	sanitized := sanitizeHeaders(headers)
@@ -625,8 +624,6 @@ func TestRequestThrottlerConcurrent(t *testing.T) {
 	allowed, _ := rt.CheckRequest("192.168.1.1", "")
 	assert.True(t, allowed, "Throttler should remain functional after concurrent checks")
 }
-
-
 
 // Mock implementations
 
@@ -695,7 +692,7 @@ func (m *MockAuditStore) Query(filters map[string]interface{}) ([]AuditEntry, er
 func TestComplianceInfoStruct(t *testing.T) {
 	info := ComplianceInfo{
 		GDPRCompliant:     true,
-		DataRetentionDays:  2555,
+		DataRetentionDays: 2555,
 		RequiredFields:    []string{"user_id", "action", "resource"},
 	}
 

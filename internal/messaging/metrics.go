@@ -16,23 +16,23 @@ type BrokerMetrics struct {
 	Reconnections  int64     `json:"reconnections"`
 
 	// Message metrics
-	MessagesPublished   int64 `json:"messages_published"`
-	MessagesConsumed    int64 `json:"messages_consumed"`
-	MessagesFailed      int64 `json:"messages_failed"`
-	MessagesAcked       int64 `json:"messages_acked"`
-	MessagesNacked      int64 `json:"messages_nacked"`
-	MessagesRequeued    int64 `json:"messages_requeued"`
-	MessagesDeadLetter  int64 `json:"messages_dead_letter"`
+	MessagesPublished  int64 `json:"messages_published"`
+	MessagesConsumed   int64 `json:"messages_consumed"`
+	MessagesFailed     int64 `json:"messages_failed"`
+	MessagesAcked      int64 `json:"messages_acked"`
+	MessagesNacked     int64 `json:"messages_nacked"`
+	MessagesRequeued   int64 `json:"messages_requeued"`
+	MessagesDeadLetter int64 `json:"messages_dead_letter"`
 
 	// Byte metrics
 	BytesPublished int64 `json:"bytes_published"`
 	BytesConsumed  int64 `json:"bytes_consumed"`
 
 	// Latency metrics (nanoseconds for precision)
-	PublishLatencyTotal  int64 `json:"publish_latency_total_ns"`
-	PublishLatencyCount  int64 `json:"publish_latency_count"`
-	ConsumeLatencyTotal  int64 `json:"consume_latency_total_ns"`
-	ConsumeLatencyCount  int64 `json:"consume_latency_count"`
+	PublishLatencyTotal int64 `json:"publish_latency_total_ns"`
+	PublishLatencyCount int64 `json:"publish_latency_count"`
+	ConsumeLatencyTotal int64 `json:"consume_latency_total_ns"`
+	ConsumeLatencyCount int64 `json:"consume_latency_count"`
 
 	// Error metrics
 	ConnectionErrors int64 `json:"connection_errors"`
@@ -51,14 +51,14 @@ type BrokerMetrics struct {
 
 // TopicMetrics contains metrics for a specific topic/queue.
 type TopicMetrics struct {
-	Name             string `json:"name"`
-	MessagesIn       int64  `json:"messages_in"`
-	MessagesOut      int64  `json:"messages_out"`
-	BytesIn          int64  `json:"bytes_in"`
-	BytesOut         int64  `json:"bytes_out"`
-	ConsumerCount    int32  `json:"consumer_count"`
-	LastPublishTime  int64  `json:"last_publish_time"`
-	LastConsumeTime  int64  `json:"last_consume_time"`
+	Name            string `json:"name"`
+	MessagesIn      int64  `json:"messages_in"`
+	MessagesOut     int64  `json:"messages_out"`
+	BytesIn         int64  `json:"bytes_in"`
+	BytesOut        int64  `json:"bytes_out"`
+	ConsumerCount   int32  `json:"consumer_count"`
+	LastPublishTime int64  `json:"last_publish_time"`
+	LastConsumeTime int64  `json:"last_consume_time"`
 }
 
 // NewBrokerMetrics creates a new BrokerMetrics instance.

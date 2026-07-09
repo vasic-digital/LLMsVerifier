@@ -63,22 +63,22 @@ type ChallengeResult struct {
 
 // ChallengeSummary provides aggregated statistics.
 type ChallengeSummary struct {
-	TotalProviders     int     `json:"total_providers"`
-	SuccessfulProviders int    `json:"successful_providers"`
-	FailedProviders    int     `json:"failed_providers"`
-	TotalModels        int     `json:"total_models"`
-	UniqueModels       int     `json:"unique_models"`
-	AverageResponseMs  float64 `json:"average_response_ms"`
+	TotalProviders      int     `json:"total_providers"`
+	SuccessfulProviders int     `json:"successful_providers"`
+	FailedProviders     int     `json:"failed_providers"`
+	TotalModels         int     `json:"total_models"`
+	UniqueModels        int     `json:"unique_models"`
+	AverageResponseMs   float64 `json:"average_response_ms"`
 }
 
 // OpenAI-style models response
 type ModelsResponse struct {
 	Object string `json:"object"`
 	Data   []struct {
-		ID       string `json:"id"`
-		Object   string `json:"object"`
-		Created  int64  `json:"created"`
-		OwnedBy  string `json:"owned_by"`
+		ID      string `json:"id"`
+		Object  string `json:"object"`
+		Created int64  `json:"created"`
+		OwnedBy string `json:"owned_by"`
 	} `json:"data"`
 }
 

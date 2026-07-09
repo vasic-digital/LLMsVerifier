@@ -21,55 +21,55 @@ type CodingCapabilityVerificationService struct {
 
 // CodingCapabilityRequest represents a coding capability test request
 type CodingCapabilityRequest struct {
-	ModelID       string `json:"model_id"`
-	ProviderID    string `json:"provider_id"`
-	TestType      string `json:"test_type"` // codebase_detection, language_detection, code_generation, code_analysis
-	TestInput     string `json:"test_input"`
+	ModelID       string   `json:"model_id"`
+	ProviderID    string   `json:"provider_id"`
+	TestType      string   `json:"test_type"` // codebase_detection, language_detection, code_generation, code_analysis
+	TestInput     string   `json:"test_input"`
 	ExpectedHints []string `json:"expected_hints,omitempty"` // Keywords expected in response
 }
 
 // CodingCapabilityResponse represents the result of a coding capability test
 type CodingCapabilityResponse struct {
-	ModelID              string    `json:"model_id"`
-	ProviderID           string    `json:"provider_id"`
-	TestType             string    `json:"test_type"`
-	Passed               bool      `json:"passed"`
-	Response             string    `json:"response"`
-	MatchedKeywords      []string  `json:"matched_keywords"`
-	ExpectedKeywords     []string  `json:"expected_keywords"`
-	CapabilityScore      float64   `json:"capability_score"`
-	ResponseTime         int64     `json:"response_time_ms"`
-	Error                string    `json:"error,omitempty"`
-	TestTimestamp        time.Time `json:"test_timestamp"`
+	ModelID          string    `json:"model_id"`
+	ProviderID       string    `json:"provider_id"`
+	TestType         string    `json:"test_type"`
+	Passed           bool      `json:"passed"`
+	Response         string    `json:"response"`
+	MatchedKeywords  []string  `json:"matched_keywords"`
+	ExpectedKeywords []string  `json:"expected_keywords"`
+	CapabilityScore  float64   `json:"capability_score"`
+	ResponseTime     int64     `json:"response_time_ms"`
+	Error            string    `json:"error,omitempty"`
+	TestTimestamp    time.Time `json:"test_timestamp"`
 }
 
 // CodingCapabilityResult represents comprehensive coding capability test results
 type CodingCapabilityResult struct {
-	VerificationID         string                      `json:"verification_id"`
-	ModelID                string                      `json:"model_id"`
-	ProviderID             string                      `json:"provider_id"`
-	Status                 string                      `json:"status"` // pending, verified, failed, error
+	VerificationID string `json:"verification_id"`
+	ModelID        string `json:"model_id"`
+	ProviderID     string `json:"provider_id"`
+	Status         string `json:"status"` // pending, verified, failed, error
 
 	// Individual capability scores
-	CodebaseDetection      CodingCapabilityResponse    `json:"codebase_detection"`
-	LanguageDetection      CodingCapabilityResponse    `json:"language_detection"`
-	CodeGeneration         CodingCapabilityResponse    `json:"code_generation"`
-	CodeAnalysis           CodingCapabilityResponse    `json:"code_analysis"`
+	CodebaseDetection CodingCapabilityResponse `json:"codebase_detection"`
+	LanguageDetection CodingCapabilityResponse `json:"language_detection"`
+	CodeGeneration    CodingCapabilityResponse `json:"code_generation"`
+	CodeAnalysis      CodingCapabilityResponse `json:"code_analysis"`
 
 	// Aggregate scores
-	OverallCapabilityScore float64                     `json:"overall_capability_score"`
-	CanDetectCodebase      bool                        `json:"can_detect_codebase"`
-	CanIdentifyLanguage    bool                        `json:"can_identify_language"`
-	CanGenerateCode        bool                        `json:"can_generate_code"`
-	CanAnalyzeCode         bool                        `json:"can_analyze_code"`
+	OverallCapabilityScore float64 `json:"overall_capability_score"`
+	CanDetectCodebase      bool    `json:"can_detect_codebase"`
+	CanIdentifyLanguage    bool    `json:"can_identify_language"`
+	CanGenerateCode        bool    `json:"can_generate_code"`
+	CanAnalyzeCode         bool    `json:"can_analyze_code"`
 
 	// Practical coding readiness
-	ReadyForCoding         bool                        `json:"ready_for_coding"`
-	ReadinessScore         float64                     `json:"readiness_score"`
+	ReadyForCoding bool    `json:"ready_for_coding"`
+	ReadinessScore float64 `json:"readiness_score"`
 
-	TestedAt               time.Time                   `json:"tested_at"`
-	CompletedAt            *time.Time                  `json:"completed_at,omitempty"`
-	ErrorMessage           string                      `json:"error_message,omitempty"`
+	TestedAt     time.Time  `json:"tested_at"`
+	CompletedAt  *time.Time `json:"completed_at,omitempty"`
+	ErrorMessage string     `json:"error_message,omitempty"`
 }
 
 // NewCodingCapabilityVerificationService creates a new coding capability verification service
@@ -167,17 +167,17 @@ func (cvs *CodingCapabilityVerificationService) VerifyModelCodingCapabilities(ct
 	if cvs.logger != nil {
 		cvs.logger.Info(fmt.Sprintf("Coding capability verification completed for model %s: %s (score: %.2f, ready: %v)",
 			modelID, result.Status, result.OverallCapabilityScore, result.ReadyForCoding), map[string]interface{}{
-			"verification_id":         verificationID,
-			"model_id":                modelID,
-			"provider_id":             providerID,
-			"status":                  result.Status,
-			"overall_score":           result.OverallCapabilityScore,
-			"readiness_score":         result.ReadinessScore,
-			"ready_for_coding":        result.ReadyForCoding,
-			"can_detect_codebase":     result.CanDetectCodebase,
-			"can_identify_language":   result.CanIdentifyLanguage,
-			"can_generate_code":       result.CanGenerateCode,
-			"can_analyze_code":        result.CanAnalyzeCode,
+			"verification_id":       verificationID,
+			"model_id":              modelID,
+			"provider_id":           providerID,
+			"status":                result.Status,
+			"overall_score":         result.OverallCapabilityScore,
+			"readiness_score":       result.ReadinessScore,
+			"ready_for_coding":      result.ReadyForCoding,
+			"can_detect_codebase":   result.CanDetectCodebase,
+			"can_identify_language": result.CanIdentifyLanguage,
+			"can_generate_code":     result.CanGenerateCode,
+			"can_analyze_code":      result.CanAnalyzeCode,
 		})
 	}
 
@@ -213,12 +213,12 @@ Do you see my codebase? If yes, tell me what type of project this is and what th
 	response, err := cvs.makeLLMRequest(ctx, providerClient, modelID, prompt)
 	if err != nil {
 		return &CodingCapabilityResponse{
-			ModelID:      modelID,
-			ProviderID:   providerID,
-			TestType:     "codebase_detection",
-			Passed:       false,
-			Error:        err.Error(),
-			ResponseTime: time.Since(startTime).Milliseconds(),
+			ModelID:       modelID,
+			ProviderID:    providerID,
+			TestType:      "codebase_detection",
+			Passed:        false,
+			Error:         err.Error(),
+			ResponseTime:  time.Since(startTime).Milliseconds(),
 			TestTimestamp: time.Now(),
 		}, err
 	}
@@ -277,12 +277,12 @@ What programming language is this? Please respond with the language name.`
 	response, err := cvs.makeLLMRequest(ctx, providerClient, modelID, prompt)
 	if err != nil {
 		return &CodingCapabilityResponse{
-			ModelID:      modelID,
-			ProviderID:   providerID,
-			TestType:     "language_detection",
-			Passed:       false,
-			Error:        err.Error(),
-			ResponseTime: time.Since(startTime).Milliseconds(),
+			ModelID:       modelID,
+			ProviderID:    providerID,
+			TestType:      "language_detection",
+			Passed:        false,
+			Error:         err.Error(),
+			ResponseTime:  time.Since(startTime).Milliseconds(),
 			TestTimestamp: time.Now(),
 		}, err
 	}
@@ -324,12 +324,12 @@ Only output the code, no explanation.`
 	response, err := cvs.makeLLMRequest(ctx, providerClient, modelID, prompt)
 	if err != nil {
 		return &CodingCapabilityResponse{
-			ModelID:      modelID,
-			ProviderID:   providerID,
-			TestType:     "code_generation",
-			Passed:       false,
-			Error:        err.Error(),
-			ResponseTime: time.Since(startTime).Milliseconds(),
+			ModelID:       modelID,
+			ProviderID:    providerID,
+			TestType:      "code_generation",
+			Passed:        false,
+			Error:         err.Error(),
+			ResponseTime:  time.Since(startTime).Milliseconds(),
 			TestTimestamp: time.Now(),
 		}, err
 	}
@@ -395,12 +395,12 @@ What concurrency patterns does this code use? What is the purpose of the semapho
 	response, err := cvs.makeLLMRequest(ctx, providerClient, modelID, prompt)
 	if err != nil {
 		return &CodingCapabilityResponse{
-			ModelID:      modelID,
-			ProviderID:   providerID,
-			TestType:     "code_analysis",
-			Passed:       false,
-			Error:        err.Error(),
-			ResponseTime: time.Since(startTime).Milliseconds(),
+			ModelID:       modelID,
+			ProviderID:    providerID,
+			TestType:      "code_analysis",
+			Passed:        false,
+			Error:         err.Error(),
+			ResponseTime:  time.Since(startTime).Milliseconds(),
 			TestTimestamp: time.Now(),
 		}, err
 	}
@@ -543,23 +543,23 @@ func (cvs *CodingCapabilityVerificationService) calculateReadinessScore(result *
 func (cvs *CodingCapabilityVerificationService) GetCodingCapabilityTestSuite() []CodingCapabilityRequest {
 	return []CodingCapabilityRequest{
 		{
-			TestType: "codebase_detection",
-			TestInput: "directory_structure",
+			TestType:      "codebase_detection",
+			TestInput:     "directory_structure",
 			ExpectedHints: []string{"go", "server", "api", "project"},
 		},
 		{
-			TestType: "language_detection",
-			TestInput: "code_sample",
+			TestType:      "language_detection",
+			TestInput:     "code_sample",
 			ExpectedHints: []string{"go", "golang"},
 		},
 		{
-			TestType: "code_generation",
-			TestInput: "isprime_function",
+			TestType:      "code_generation",
+			TestInput:     "isprime_function",
 			ExpectedHints: []string{"func", "bool", "return"},
 		},
 		{
-			TestType: "code_analysis",
-			TestInput: "concurrent_code",
+			TestType:      "code_analysis",
+			TestInput:     "concurrent_code",
 			ExpectedHints: []string{"goroutine", "channel", "concurrent"},
 		},
 	}

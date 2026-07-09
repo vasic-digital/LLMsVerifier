@@ -354,7 +354,6 @@ func TestSchemaValidator_ValidateModelRequest(t *testing.T) {
 	})
 }
 
-
 func TestSchemaValidator_BasicValidation_EdgeCases(t *testing.T) {
 	validator := NewSchemaValidator()
 
@@ -396,4 +395,3 @@ func TestSchemaValidator_BasicValidation_EdgeCases(t *testing.T) {
 		assert.NoError(t, err) // Unknown types are accepted
 	})
 }
-

@@ -48,12 +48,12 @@ func TestEnvResolver_ResolveInString(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			resolver := NewEnvResolver(tt.strict)
 			result, err := resolver.ResolveInString(tt.input)
-			
+
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ResolveInString() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			
+
 			if result != tt.expected {
 				t.Errorf("ResolveInString() = %v, want %v", result, tt.expected)
 			}
@@ -192,11 +192,11 @@ func TestEnvResolver_NoProviderInitError(t *testing.T) {
 	// Verify that the placeholder was resolved to actual value
 	testProvider := resolved.Provider["test-provider"]
 	apiKey := testProvider.Options["api_key"]
-	
+
 	if apiKey == "${TEST_PROVIDER_KEY}" {
 		t.Error("API key still contains placeholder, should be resolved!")
 	}
-	
+
 	if apiKey != "sk-validkey123" {
 		t.Errorf("API key = %v, want sk-validkey123", apiKey)
 	}
@@ -260,7 +260,7 @@ func TestLoadAndResolveConfigIntegration(t *testing.T) {
 			}
 		}
 	}`
-	
+
 	if _, err := tmpFile.WriteString(configContent); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
 	}

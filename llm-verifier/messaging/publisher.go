@@ -31,34 +31,34 @@ type MessageBroker interface {
 
 // Publisher publishes verification events to message brokers.
 type Publisher struct {
-	config      *Config
-	broker      MessageBroker
-	buffer      chan *publishRequest
-	stopCh      chan struct{}
-	wg          sync.WaitGroup
-	mu          sync.RWMutex
-	connected   bool
-	metrics     *PublisherMetrics
-	logger      Logger
+	config    *Config
+	broker    MessageBroker
+	buffer    chan *publishRequest
+	stopCh    chan struct{}
+	wg        sync.WaitGroup
+	mu        sync.RWMutex
+	connected bool
+	metrics   *PublisherMetrics
+	logger    Logger
 }
 
 // publishRequest represents a request to publish an event.
 type publishRequest struct {
-	event   *VerificationEvent
-	topic   string
-	errCh   chan error
-	ctx     context.Context
+	event *VerificationEvent
+	topic string
+	errCh chan error
+	ctx   context.Context
 }
 
 // PublisherMetrics holds metrics for the publisher.
 type PublisherMetrics struct {
-	EventsPublished    int64
-	EventsFailed       int64
-	EventsBuffered     int64
-	EventsDropped      int64
-	PublishLatencySum  time.Duration
+	EventsPublished     int64
+	EventsFailed        int64
+	EventsBuffered      int64
+	EventsDropped       int64
+	PublishLatencySum   time.Duration
 	PublishLatencyCount int64
-	mu                 sync.RWMutex
+	mu                  sync.RWMutex
 }
 
 // Logger interface for logging.

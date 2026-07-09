@@ -20,14 +20,14 @@ import (
 
 // ChallengeResult represents the result of the verification challenge
 type ChallengeResult struct {
-	ChallengeID   string              `json:"challenge_id"`
-	ChallengeName string              `json:"challenge_name"`
-	Success       bool                `json:"success"`
-	Message       string              `json:"message"`
-	Timestamp     time.Time           `json:"timestamp"`
-	Duration      string              `json:"duration"`
-	Models        []ModelResult       `json:"models,omitempty"`
-	Error         string              `json:"error,omitempty"`
+	ChallengeID   string        `json:"challenge_id"`
+	ChallengeName string        `json:"challenge_name"`
+	Success       bool          `json:"success"`
+	Message       string        `json:"message"`
+	Timestamp     time.Time     `json:"timestamp"`
+	Duration      string        `json:"duration"`
+	Models        []ModelResult `json:"models,omitempty"`
+	Error         string        `json:"error,omitempty"`
 }
 
 // ModelResult represents verification result for a single model
@@ -147,8 +147,8 @@ func calculateVerificationScore(resp ChatResponse, latencyMs int64) float64 {
 	if strings.Contains(responseContent, "verified") {
 		score += 50.0
 	} else if strings.Contains(responseContent, "yes") ||
-	          strings.Contains(responseContent, "can read") ||
-	          strings.Contains(responseContent, "i can") {
+		strings.Contains(responseContent, "can read") ||
+		strings.Contains(responseContent, "i can") {
 		score += 35.0 // Partial credit for affirmative response
 	} else if len(responseContent) > 0 {
 		score += 15.0 // Some response is better than none
@@ -190,7 +190,6 @@ func calculateVerificationScore(resp ChatResponse, latencyMs int64) float64 {
 
 	return score
 }
-
 
 func main() {
 	resultsDir := flag.String("results-dir", "", "Directory to store results")

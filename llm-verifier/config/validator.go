@@ -151,7 +151,7 @@ func ValidateCompleteConfig(cfg *Config) error {
 	// Store original values to validate before defaults are set
 	originalConcurrency := cfg.Concurrency
 	originalTimeout := cfg.Timeout
-	
+
 	// Set defaults first
 	setDefaults(cfg)
 

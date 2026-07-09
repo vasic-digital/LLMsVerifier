@@ -1,12 +1,12 @@
 package crush_verifier
 
 import (
+	"digital.vasic.llmsverifier/database"
 	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
-	"digital.vasic.llmsverifier/database"
-	
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -50,10 +50,10 @@ func TestVerifyConfiguration(t *testing.T) {
 								"cost_per_1m_out":      60.0,
 								"context_window":       128000,
 								"default_max_tokens":   4096,
-								"can_reason":          true,
+								"can_reason":           true,
 								"supports_attachments": false,
-								"streaming":           true,
-								"supports_brotli":     true,
+								"streaming":            true,
+								"supports_brotli":      true,
 							},
 						},
 					},
@@ -79,7 +79,7 @@ func TestVerifyConfiguration(t *testing.T) {
 			// Create verifier and verify
 			verifier := NewCrushVerifier(db, configPath)
 			result, err := verifier.VerifyConfiguration()
-			
+
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
@@ -127,9 +127,9 @@ func TestVerifyAllConfigurations(t *testing.T) {
 						"cost_per_1m_out":      60.0,
 						"context_window":       128000,
 						"default_max_tokens":   4096,
-						"can_reason":          true,
+						"can_reason":           true,
 						"supports_attachments": false,
-						"streaming":           true,
+						"streaming":            true,
 					},
 				},
 			},
