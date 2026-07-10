@@ -183,6 +183,7 @@ bulk_exportsdefault/
 # Test results and reports
 TEST_RESULTS.md
 test-results/
+qa-results/
 coverage-reports/
 
 # Documentation build

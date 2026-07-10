@@ -245,7 +245,15 @@ func (am *AdvancedMonitor) HealthCheck() map[string]interface{} {
 	}
 
 	stats["active_alerts"] = len(activeAlerts)
+	// am.metrics is mutated under am.mu by RecordMetric (map write on every
+	// recorded point); reading len(am.metrics) here without holding the same
+	// lock raced with that write under -race (confirmed:
+	// TestAdvancedMonitor_ConcurrentAccess, RecordMetric goroutine vs this
+	// HealthCheck goroutine). GetActiveAlerts (above) already takes RLock
+	// correctly -- this read was the one path in HealthCheck that didn't.
+	am.mu.RLock()
 	stats["monitored_metrics"] = len(am.metrics)
+	am.mu.RUnlock()
 
 	return stats
 }

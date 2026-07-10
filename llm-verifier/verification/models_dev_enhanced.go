@@ -211,6 +211,16 @@ func (c *EnhancedModelsDevClient) GetProviderByID(ctx context.Context, providerI
 // 2. Provider/model path match (e.g., "openai/gpt-4")
 // 3. Fuzzy match on model name
 func (c *EnhancedModelsDevClient) FindModel(ctx context.Context, searchQuery string) ([]ModelMatch, error) {
+	// Fail fast on a blank query (see calculateMatchScore's doc comment for
+	// why this is not merely defensive: a malformed/empty external model ID
+	// -- e.g. a provider's `/v1/models` response containing `{"id":""}` --
+	// would otherwise reach Strategy 2 and "match" every model in the
+	// catalogue). Checked BEFORE the network fetch so garbage input doesn't
+	// also cost a wasted models.dev round trip.
+	if strings.TrimSpace(searchQuery) == "" {
+		return nil, fmt.Errorf("search query cannot be empty")
+	}
+
 	providers, err := c.FetchAllProviders(ctx)
 	if err != nil {
 		return nil, err
@@ -286,6 +296,21 @@ type ModelMatch struct {
 
 // calculateMatchScore calculates how well a model matches the search query
 func (c *EnhancedModelsDevClient) calculateMatchScore(query, providerID string, provider ProviderData, modelID string, model ModelDetails) float64 {
+	// An empty (or whitespace-only) query must never be treated as a
+	// substring match: strings.Contains(s, "") is ALWAYS true for any s, so
+	// without this guard every candidate model would score >= 1.7 (0.6+0.5+
+	// 0.4+0.2 from the four Contains checks below) against a blank query --
+	// comfortably above FindModel's 0.3 acceptance threshold. A blank query
+	// arises from real external input: FindModel is called with a
+	// provider-reported model ID (providers/model_provider_service.go:437)
+	// that is not validated non-empty first, so a malformed
+	// `{"id":""}` entry in a provider's `/v1/models` response would
+	// otherwise "match" every model in the entire models.dev catalogue and
+	// get enriched with an arbitrary unrelated model's metadata. Score 0
+	// unconditionally so the caller correctly treats this as "no match".
+	if strings.TrimSpace(query) == "" {
+		return 0.0
+	}
 	query = strings.ToLower(query)
 	modelIDLower := strings.ToLower(modelID)
 	modelNameLower := strings.ToLower(model.Name)
