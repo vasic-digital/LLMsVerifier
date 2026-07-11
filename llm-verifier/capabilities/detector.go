@@ -52,14 +52,22 @@ func (d *Detector) DetectProviderCapabilities(ctx context.Context, provider, api
 		}
 	}
 
-	// Run dynamic detection tests
+	// Run dynamic detection tests. A probe is attempted ONLY when an apiKey is
+	// supplied; without one, no request reaches any provider endpoint.
+	probed := false
 	if apiKey != "" {
 		d.detectStreaming(ctx, caps, provider, apiKey)
 		d.detectModels(ctx, caps, provider, apiKey)
+		probed = true
 	}
 
-	caps.Verified = true
-	caps.VerifiedAt = time.Now()
+	// Fail-closed: only stamp Verified/VerifiedAt when a probe actually ran.
+	// Stamping Verified=true with no probe (empty apiKey) would be a self-cert
+	// bluff, inconsistent with the C3 seed fail-closed invariant.
+	if probed {
+		caps.Verified = true
+		caps.VerifiedAt = time.Now()
+	}
 
 	// Update cache
 	d.mu.Lock()

@@ -1,8 +1,52 @@
 package providers
 
 import (
+	"os"
+	"strings"
 	"time"
 )
+
+// helixLLMLocalOpenAIEndpointEnv is the SAME environment-variable name the
+// sibling HelixAgent submodule's HelixLLM provider adapter uses
+// (submodules/helix_agent/internal/llm/providers/helixllm/provider.go,
+// EnvLocalOpenAIEndpoint) — kept identical across the two submodules so a
+// single env var configures both consumers (CONST-045: no hardcoded
+// reachable host beyond the documented localhost default).
+const helixLLMLocalOpenAIEndpointEnv = "HELIX_LLM_LOCAL_OPENAI_ENDPOINT"
+
+// helixLLMDefaultBase is the plain-HTTP OpenAI-compatible llama-server
+// sidecar HelixLLM's coder exposes by default (port 18434 — matches the
+// HelixAgent submodule's defaultPort). LIVE-CONFIRMED this session
+// (2026-07-08): GET http://localhost:18434/v1/models returns a real,
+// non-empty model list (/models/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf).
+const helixLLMDefaultBase = "http://localhost:18434"
+
+// helixLLMEndpoint resolves the HelixLLM local coder's base URL for THIS
+// module's ProviderConfig.Endpoint convention: Endpoint carries the /v1
+// segment (matches the "openai" row's "https://api.openai.com/v1"), and
+// ProbeProviderReachability (extended_providers.go) composes a real
+// GET <Endpoint>/models — LIVE-CONFIRMED this session to resolve to the
+// coder's actual /v1/models path. Precedence:
+//  1. HELIX_LLM_LOCAL_OPENAI_ENDPOINT (consumer-configured, §11.4.28) — the
+//     SAME env var the sibling HelixAgent HelixLLM adapter reads. Accepted
+//     WITH or WITHOUT a trailing /v1 (normalised below) so an operator does
+//     not need to remember this module's specific convention.
+//  2. helixLLMDefaultBase — the documented localhost default.
+//
+// In both cases a trailing "/v1" is normalised away first, then re-appended
+// exactly once — eliminating the double-"/v1/v1" 404 gotcha regardless of
+// how the operator wrote the env var (mirrors normalizeBase in the
+// HelixAgent submodule's provider.go).
+func helixLLMEndpoint() string {
+	base := strings.TrimSpace(os.Getenv(helixLLMLocalOpenAIEndpointEnv))
+	if base == "" {
+		base = helixLLMDefaultBase
+	}
+	base = strings.TrimRight(base, "/")
+	base = strings.TrimSuffix(base, "/v1")
+	base = strings.TrimRight(base, "/")
+	return base + "/v1"
+}
 
 // ProviderConfig represents configuration for a specific provider
 type ProviderConfig struct {
@@ -1099,6 +1143,321 @@ func (pr *ProviderRegistry) registerDefaultProviders() {
 				"mimo-v2.5-asr", // 8K ctx, 2K out — automatic speech recognition
 				"mimo-v2.5-tts", // 8K ctx, 8K out — text-to-speech
 			},
+		},
+	}
+
+	// ---------------------------------------------------------------------
+	// Extended OpenAI-compatible hosted providers (P4 provider-coverage).
+	// Source of truth for every base URL below:
+	// docs/research/07.2026/00_master/PROVIDER_COVERAGE.md §1.1
+	// (LATEST-doc-verified 2026-07-06). Each is a config/data row that
+	// reuses the existing OpenAI-compatible adapter — 0 net-new wire
+	// adapters (§11.4.28 decoupling / §11.4.74 extend-don't-reimplement).
+	// CONST-036: NO hardcoded model lists — supported_models is left EMPTY;
+	//            the live model set is discovered from each provider's own
+	//            GET /v1/models at verification time.
+	// CONST-040: capability flags (functions/vision) are NOT asserted here —
+	//            they are sourced from the verifier's real probe. Only the
+	//            wire-universal defaults (OpenAI SSE streaming) are set true.
+	// Auth: Bearer API key from a per-provider env var (§11.4.10 —
+	//       never hardcoded, never logged). Env vars: <UPPER>_API_KEY.
+	// ---------------------------------------------------------------------
+
+	// Poe (aggregator) — https://api.poe.com/v1 (PROVIDER_COVERAGE.md §1.1)
+	pr.providers["poe"] = &ProviderConfig{
+		Name:            "poe",
+		Endpoint:        "https://api.poe.com/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "", // CONST-036: discovered from live /v1/models
+		RateLimits:      RateLimitConfig{RequestsPerMinute: 30, RequestsPerHour: 1000, BurstLimit: 5},
+		Timeouts:        TimeoutConfig{RequestTimeout: 60 * time.Second, StreamTimeout: 300 * time.Second, ConnectTimeout: 10 * time.Second},
+		RetryConfig:     RetryConfig{MaxRetries: 3, InitialDelay: 1 * time.Second, MaxDelay: 30 * time.Second, BackoffFactor: 2.0, RetryableErrors: []string{"429", "500", "502", "503", "504"}},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"openai_compatible":  true,
+			"env_var":            "POE_API_KEY",
+			"doc_url":            "https://creator.poe.com/docs/external-applications/openai-compatible-api",
+			"notes":              "Aggregator: hundreds of bots behind one OpenAI endpoint; capability flags resolve per underlying model via /v1/models (CONST-040).",
+			"supported_models":   []string{},
+		},
+	}
+
+	// Perplexity (Sonar) — https://api.perplexity.ai (PROVIDER_COVERAGE.md §1.1)
+	pr.providers["perplexity"] = &ProviderConfig{
+		Name:            "perplexity",
+		Endpoint:        "https://api.perplexity.ai",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "", // CONST-036: discovered from live /v1/models
+		RateLimits:      RateLimitConfig{RequestsPerMinute: 30, RequestsPerHour: 1000, BurstLimit: 5},
+		Timeouts:        TimeoutConfig{RequestTimeout: 60 * time.Second, StreamTimeout: 300 * time.Second, ConnectTimeout: 10 * time.Second},
+		RetryConfig:     RetryConfig{MaxRetries: 3, InitialDelay: 1 * time.Second, MaxDelay: 30 * time.Second, BackoffFactor: 2.0, RetryableErrors: []string{"429", "500", "502", "503", "504"}},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"openai_compatible":  true,
+			"env_var":            "PERPLEXITY_API_KEY",
+			"doc_url":            "https://docs.perplexity.ai/getting-started/overview",
+			"notes":              "Search-grounded Sonar models; /chat/completions is OpenAI-shaped. Sonar tool-schema UNCONFIRMED (probe at build).",
+			"supported_models":   []string{},
+		},
+	}
+
+	// Sakana Fugu — https://api.sakana.ai/v1 (PROVIDER_COVERAGE.md §1.1)
+	pr.providers["sakana"] = &ProviderConfig{
+		Name:            "sakana",
+		Endpoint:        "https://api.sakana.ai/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "", // CONST-036: discovered from live /v1/models
+		RateLimits:      RateLimitConfig{RequestsPerMinute: 30, RequestsPerHour: 1000, BurstLimit: 5},
+		Timeouts:        TimeoutConfig{RequestTimeout: 60 * time.Second, StreamTimeout: 300 * time.Second, ConnectTimeout: 10 * time.Second},
+		RetryConfig:     RetryConfig{MaxRetries: 3, InitialDelay: 1 * time.Second, MaxDelay: 30 * time.Second, BackoffFactor: 2.0, RetryableErrors: []string{"429", "500", "502", "503", "504"}},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"openai_compatible":  true,
+			"env_var":            "SAKANA_API_KEY",
+			"doc_url":            "https://console.sakana.ai/get-started",
+			"notes":              "Fugu family; Chat Completions + Responses + Models APIs; reuse lands on /chat/completions.",
+			"supported_models":   []string{},
+		},
+	}
+
+	// Tencent Hunyuan — https://api.hunyuan.cloud.tencent.com/v1 (PROVIDER_COVERAGE.md §1.1)
+	pr.providers["hunyuan"] = &ProviderConfig{
+		Name:            "hunyuan",
+		Endpoint:        "https://api.hunyuan.cloud.tencent.com/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "", // CONST-036: discovered from live /v1/models
+		RateLimits:      RateLimitConfig{RequestsPerMinute: 30, RequestsPerHour: 1000, BurstLimit: 5},
+		Timeouts:        TimeoutConfig{RequestTimeout: 60 * time.Second, StreamTimeout: 300 * time.Second, ConnectTimeout: 10 * time.Second},
+		RetryConfig:     RetryConfig{MaxRetries: 3, InitialDelay: 1 * time.Second, MaxDelay: 30 * time.Second, BackoffFactor: 2.0, RetryableErrors: []string{"429", "500", "502", "503", "504"}},
+		Features: map[string]interface{}{
+			"supports_streaming":  true,
+			"supports_functions":  false,
+			"supports_vision":     false,
+			"supports_acp":        true,
+			"openai_compatible":   true,
+			"env_var":             "HUNYUAN_API_KEY",
+			"doc_url":             "https://cloud.tencent.com/document/product/1729/111007",
+			"notes":               "Drop-in OpenAI SDK; default 5-concurrent quota — set client concurrency in config.",
+			"default_concurrency": 5,
+			"supported_models":    []string{},
+		},
+	}
+
+	// xAI Grok — https://api.x.ai/v1 (PROVIDER_COVERAGE.md §1.1)
+	pr.providers["xai"] = &ProviderConfig{
+		Name:            "xai",
+		Endpoint:        "https://api.x.ai/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "", // CONST-036: discovered from live /v1/models
+		RateLimits:      RateLimitConfig{RequestsPerMinute: 60, RequestsPerHour: 1000, BurstLimit: 10},
+		Timeouts:        TimeoutConfig{RequestTimeout: 60 * time.Second, StreamTimeout: 300 * time.Second, ConnectTimeout: 10 * time.Second},
+		RetryConfig:     RetryConfig{MaxRetries: 3, InitialDelay: 1 * time.Second, MaxDelay: 30 * time.Second, BackoffFactor: 2.0, RetryableErrors: []string{"429", "500", "502", "503", "504"}},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"openai_compatible":  true,
+			"env_var":            "XAI_API_KEY",
+			"doc_url":            "https://docs.x.ai/docs/overview",
+			"notes":              "Grok family via OpenAI client; xAI Anthropic-compat surface UNCONFIRMED — reuse the confirmed OpenAI path.",
+			"supported_models":   []string{},
+		},
+	}
+
+	// Moonshot / Kimi (international) — https://api.moonshot.ai/v1 (PROVIDER_COVERAGE.md §1.1)
+	// NOTE: distinct from the pre-existing "kimi" record (api.moonshot.cn, China endpoint).
+	pr.providers["moonshot"] = &ProviderConfig{
+		Name:            "moonshot",
+		Endpoint:        "https://api.moonshot.ai/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "", // CONST-036: discovered from live /v1/models
+		RateLimits:      RateLimitConfig{RequestsPerMinute: 30, RequestsPerHour: 1000, BurstLimit: 5},
+		Timeouts:        TimeoutConfig{RequestTimeout: 60 * time.Second, StreamTimeout: 300 * time.Second, ConnectTimeout: 10 * time.Second},
+		RetryConfig:     RetryConfig{MaxRetries: 3, InitialDelay: 1 * time.Second, MaxDelay: 30 * time.Second, BackoffFactor: 2.0, RetryableErrors: []string{"429", "500", "502", "503", "504"}},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"openai_compatible":  true,
+			"env_var":            "MOONSHOT_API_KEY",
+			"doc_url":            "https://platform.kimi.ai/docs/api/chat",
+			"notes":              "Kimi models (international .ai endpoint). Distinct from the pre-existing 'kimi' (.cn). Anthropic-compat UNCONFIRMED — reuse OpenAI path.",
+			"supported_models":   []string{},
+		},
+	}
+
+	// Zhipu / Z.ai GLM (international) — https://api.z.ai/api/paas/v4/ (PROVIDER_COVERAGE.md §1.1)
+	// NOTE: distinct from the pre-existing "zhipu" record (open.bigmodel.cn, China endpoint).
+	// The non-standard "/api/paas/v4" path segment is a config value, not a code assumption.
+	pr.providers["zai"] = &ProviderConfig{
+		Name:            "zai",
+		Endpoint:        "https://api.z.ai/api/paas/v4",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "", // CONST-036: discovered from live /v1/models
+		RateLimits:      RateLimitConfig{RequestsPerMinute: 30, RequestsPerHour: 1000, BurstLimit: 5},
+		Timeouts:        TimeoutConfig{RequestTimeout: 60 * time.Second, StreamTimeout: 300 * time.Second, ConnectTimeout: 10 * time.Second},
+		RetryConfig:     RetryConfig{MaxRetries: 3, InitialDelay: 1 * time.Second, MaxDelay: 30 * time.Second, BackoffFactor: 2.0, RetryableErrors: []string{"429", "500", "502", "503", "504"}},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"openai_compatible":  true,
+			"env_var":            "ZAI_API_KEY",
+			"doc_url":            "https://docs.z.ai/guides/overview/quick-start",
+			"notes":              "GLM family (international Z.ai). Distinct from the pre-existing 'zhipu' (.cn). Note the non-standard /api/paas/v4 path segment.",
+			"supported_models":   []string{},
+		},
+	}
+
+	// Fireworks AI — https://api.fireworks.ai/inference/v1 (PROVIDER_COVERAGE.md §1.1)
+	pr.providers["fireworks"] = &ProviderConfig{
+		Name:            "fireworks",
+		Endpoint:        "https://api.fireworks.ai/inference/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "", // CONST-036: discovered from live /v1/models
+		RateLimits:      RateLimitConfig{RequestsPerMinute: 30, RequestsPerHour: 1000, BurstLimit: 5},
+		Timeouts:        TimeoutConfig{RequestTimeout: 60 * time.Second, StreamTimeout: 300 * time.Second, ConnectTimeout: 10 * time.Second},
+		RetryConfig:     RetryConfig{MaxRetries: 3, InitialDelay: 1 * time.Second, MaxDelay: 30 * time.Second, BackoffFactor: 2.0, RetryableErrors: []string{"429", "500", "502", "503", "504"}},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"openai_compatible":  true,
+			"env_var":            "FIREWORKS_API_KEY",
+			"doc_url":            "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+			"notes":              "Open-model host; models discovered via live /models (CONST-036).",
+			"supported_models":   []string{},
+		},
+	}
+
+	// DeepInfra — https://api.deepinfra.com/v1/openai (PROVIDER_COVERAGE.md §1.1)
+	pr.providers["deepinfra"] = &ProviderConfig{
+		Name:            "deepinfra",
+		Endpoint:        "https://api.deepinfra.com/v1/openai",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "", // CONST-036: discovered from live /v1/models
+		RateLimits:      RateLimitConfig{RequestsPerMinute: 30, RequestsPerHour: 1000, BurstLimit: 5},
+		Timeouts:        TimeoutConfig{RequestTimeout: 60 * time.Second, StreamTimeout: 300 * time.Second, ConnectTimeout: 10 * time.Second},
+		RetryConfig:     RetryConfig{MaxRetries: 3, InitialDelay: 1 * time.Second, MaxDelay: 30 * time.Second, BackoffFactor: 2.0, RetryableErrors: []string{"429", "500", "502", "503", "504"}},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"openai_compatible":  true,
+			"env_var":            "DEEPINFRA_API_KEY",
+			"doc_url":            "https://docs.deepinfra.com/chat/overview",
+			"notes":              "Open-model host; token passed as api_key on the OpenAI-compatible path.",
+			"supported_models":   []string{},
+		},
+	}
+
+	// AI21 (Jamba) — https://api.ai21.com/studio/v1 (PROVIDER_COVERAGE.md §1.1)
+	pr.providers["ai21"] = &ProviderConfig{
+		Name:            "ai21",
+		Endpoint:        "https://api.ai21.com/studio/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "", // CONST-036: discovered from live /v1/models
+		RateLimits:      RateLimitConfig{RequestsPerMinute: 30, RequestsPerHour: 1000, BurstLimit: 5},
+		Timeouts:        TimeoutConfig{RequestTimeout: 60 * time.Second, StreamTimeout: 300 * time.Second, ConnectTimeout: 10 * time.Second},
+		RetryConfig:     RetryConfig{MaxRetries: 3, InitialDelay: 1 * time.Second, MaxDelay: 30 * time.Second, BackoffFactor: 2.0, RetryableErrors: []string{"429", "500", "502", "503", "504"}},
+		Features: map[string]interface{}{
+			"supports_streaming":       true,
+			"supports_functions":       false,
+			"supports_vision":          false,
+			"supports_acp":             true,
+			"openai_compatible":        true,
+			"supports_documents_field": true, // AI21 superset field, inert to a plain OpenAI client
+			"env_var":                  "AI21_API_KEY",
+			"doc_url":                  "https://docs.ai21.com/reference/jamba-1-6-api-ref",
+			"notes":                    "Jamba family; OpenAI-shaped /chat/completions + additive AI21 'documents' field (accepted-and-ignored by a plain client).",
+			"supported_models":         []string{},
+		},
+	}
+
+	// Reka — https://api.reka.ai/v1 (PROVIDER_COVERAGE.md §1.1)
+	pr.providers["reka"] = &ProviderConfig{
+		Name:            "reka",
+		Endpoint:        "https://api.reka.ai/v1",
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "", // CONST-036: discovered from live /v1/models
+		RateLimits:      RateLimitConfig{RequestsPerMinute: 30, RequestsPerHour: 1000, BurstLimit: 5},
+		Timeouts:        TimeoutConfig{RequestTimeout: 60 * time.Second, StreamTimeout: 300 * time.Second, ConnectTimeout: 10 * time.Second},
+		RetryConfig:     RetryConfig{MaxRetries: 3, InitialDelay: 1 * time.Second, MaxDelay: 30 * time.Second, BackoffFactor: 2.0, RetryableErrors: []string{"429", "500", "502", "503", "504"}},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false,
+			"supports_vision":    false,
+			"supports_acp":       true,
+			"openai_compatible":  true,
+			"env_var":            "REKA_API_KEY",
+			"doc_url":            "https://docs.reka.ai/chat/overview",
+			"notes":              "Multimodal chat; fully /chat/completions-compatible incl. streaming + JSON.",
+			"supported_models":   []string{},
+		},
+	}
+
+	// ---------------------------------------------------------------------
+	// HelixLLM — in-repo local coder (Phase A, providers-coverage
+	// EXPANSION_PLAN_v2.md §3 Phase A). The HelixLLM submodule's llama-server
+	// sidecar serves an OpenAI-compatible surface (/v1/chat/completions,
+	// /v1/models) with NO credential required (loopback-only local server) —
+	// LIVE-CONFIRMED this session: GET http://localhost:18434/v1/models
+	// returns a real model (/models/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf).
+	// CONST-036: NO hardcoded model list — supported_models is left EMPTY,
+	// the live model set is discovered from the coder's own GET /v1/models.
+	// CONST-040: capability flags are NOT asserted here — sourced from the
+	// real C4/C5 probe (verification.Verifier.Verify via
+	// llmverifier.Verifier.DetectModelFeatures), see helixllm_test.go.
+	// AuthType "bearer" matches this module's universal convention even
+	// though no key is required (ProbeProviderReachability always sends the
+	// Authorization header; an empty Bearer token is harmless against the
+	// local coder — confirmed live this session).
+	// ---------------------------------------------------------------------
+	pr.providers["helixllm"] = &ProviderConfig{
+		Name:            "helixllm",
+		Endpoint:        helixLLMEndpoint(),
+		AuthType:        "bearer",
+		StreamingFormat: "sse",
+		DefaultModel:    "", // CONST-036: discovered from live /v1/models
+		RateLimits:      RateLimitConfig{RequestsPerMinute: 120, RequestsPerHour: 5000, BurstLimit: 20},
+		Timeouts:        TimeoutConfig{RequestTimeout: 120 * time.Second, StreamTimeout: 600 * time.Second, ConnectTimeout: 5 * time.Second},
+		RetryConfig:     RetryConfig{MaxRetries: 2, InitialDelay: 1 * time.Second, MaxDelay: 10 * time.Second, BackoffFactor: 2.0, RetryableErrors: []string{"429", "500", "502", "503", "504"}},
+		Features: map[string]interface{}{
+			"supports_streaming": true,
+			"supports_functions": false, // CONST-040: real value sourced from the C4 probe, not hardcoded
+			"supports_vision":    false,
+			"supports_acp":       false,
+			"openai_compatible":  true,
+			"local_only":         true,
+			"env_var":            helixLLMLocalOpenAIEndpointEnv, // ENDPOINT override; no API key required
+			"doc_url":            "submodules/helix_llm/README.md",
+			"notes":              "In-repo HelixLLM llama-server sidecar (Qwen3-Coder-30B-A3B-Instruct, port 18434). No API key required (loopback). Base URL overridable via HELIX_LLM_LOCAL_OPENAI_ENDPOINT (same env var the sibling helix_agent HelixLLM provider adapter reads).",
+			"supported_models":   []string{},
 		},
 	}
 

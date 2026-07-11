@@ -380,6 +380,9 @@ func createTestVerificationResult(t *testing.T, db *Database, modelID int64) *Ve
 		SupportsMCPs:             true,
 		SupportsLSPs:             true,
 		SupportsACPs:             false,
+		SupportsRAG:              true,
+		SupportsSkills:           false,
+		SupportsPlugins:          true,
 		SupportsMultimodal:       false,
 		SupportsStreaming:        true,
 		SupportsJSONMode:         true,
@@ -465,6 +468,66 @@ func TestGetVerificationResult(t *testing.T) {
 	_, err = db.GetVerificationResult(9999)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "verification result not found")
+}
+
+// TestVerificationResult_CONST040CapabilityFields_RoundTrip proves the new
+// CONST-040 per-model capability booleans (SupportsRAG/Skills/Plugins) really
+// persist to SQLite and load back through EVERY read path — the explicit-column
+// scans (GetVerificationResult, ListVerificationResults), the SELECT vr.*
+// wildcard scan (GetLatestVerificationResults, which depends on physical column
+// order), and the UPDATE path. Mixed true/false values catch any bind/scan
+// field-swap. Real SQLite round-trip, no mocks (§11.4.69).
+func TestVerificationResult_CONST040CapabilityFields_RoundTrip(t *testing.T) {
+	db := setupTestDB(t)
+	defer cleanupTestDB(t, db)
+
+	model := createTestModelForVerification(t, db)
+	vr := createTestVerificationResult(t, db, model.ID)
+	// Helper seeds RAG=true, Skills=false, Plugins=true (mixed on purpose).
+	require.NoError(t, db.CreateVerificationResult(vr))
+	require.NotZero(t, vr.ID)
+
+	// Path 1: GetVerificationResult (explicit-column scan).
+	got, err := db.GetVerificationResult(vr.ID)
+	require.NoError(t, err)
+	assert.True(t, got.SupportsRAG, "SupportsRAG must round-trip true via GetVerificationResult")
+	assert.False(t, got.SupportsSkills, "SupportsSkills must round-trip false via GetVerificationResult")
+	assert.True(t, got.SupportsPlugins, "SupportsPlugins must round-trip true via GetVerificationResult")
+
+	// Path 2: ListVerificationResults (explicit-column scan, row loop).
+	list, err := db.ListVerificationResults(map[string]interface{}{"model_id": model.ID})
+	require.NoError(t, err)
+	var found *VerificationResult
+	for _, r := range list {
+		if r.ID == vr.ID {
+			found = r
+			break
+		}
+	}
+	require.NotNil(t, found, "created row must appear in ListVerificationResults")
+	assert.True(t, found.SupportsRAG)
+	assert.False(t, found.SupportsSkills)
+	assert.True(t, found.SupportsPlugins)
+
+	// Path 3: GetLatestVerificationResults (SELECT vr.* — physical column order).
+	latest, err := db.GetLatestVerificationResults([]int64{model.ID})
+	require.NoError(t, err)
+	require.NotEmpty(t, latest, "latest result must be returned for the model")
+	assert.True(t, latest[0].SupportsRAG, "SupportsRAG must round-trip via SELECT vr.*")
+	assert.False(t, latest[0].SupportsSkills, "SupportsSkills must round-trip via SELECT vr.*")
+	assert.True(t, latest[0].SupportsPlugins, "SupportsPlugins must round-trip via SELECT vr.*")
+
+	// Path 4: UPDATE — flip all three and confirm the new values persist.
+	got.SupportsRAG = false
+	got.SupportsSkills = true
+	got.SupportsPlugins = false
+	require.NoError(t, db.UpdateVerificationResult(got))
+
+	after, err := db.GetVerificationResult(vr.ID)
+	require.NoError(t, err)
+	assert.False(t, after.SupportsRAG, "SupportsRAG update must persist (true->false)")
+	assert.True(t, after.SupportsSkills, "SupportsSkills update must persist (false->true)")
+	assert.False(t, after.SupportsPlugins, "SupportsPlugins update must persist (true->false)")
 }
 
 func TestListVerificationResults(t *testing.T) {

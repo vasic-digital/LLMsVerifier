@@ -628,8 +628,8 @@ func (d *Database) CreateVerificationResult(verificationResult *VerificationResu
 	overall_score, code_capability_score, responsiveness_score,
 	reliability_score, feature_richness_score, value_proposition_score,
 	score_details, avg_latency_ms, p95_latency_ms, min_latency_ms,
-	max_latency_ms, throughput_rps, raw_request, raw_response, created_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	max_latency_ms, throughput_rps, raw_request, raw_response, created_at, supports_rag, supports_skills, supports_plugins
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := d.conn.Exec(query,
@@ -696,6 +696,9 @@ func (d *Database) CreateVerificationResult(verificationResult *VerificationResu
 		verificationResult.RawRequest,
 		verificationResult.RawResponse,
 		verificationResult.CreatedAt,
+		verificationResult.SupportsRAG,
+		verificationResult.SupportsSkills,
+		verificationResult.SupportsPlugins,
 	)
 
 	if err != nil {
@@ -730,7 +733,7 @@ func (d *Database) GetVerificationResult(id int64) (*VerificationResult, error) 
 			overall_score, code_capability_score, responsiveness_score,
 			reliability_score, feature_richness_score, value_proposition_score,
 			score_details, avg_latency_ms, p95_latency_ms, min_latency_ms,
-			max_latency_ms, throughput_rps, raw_request, raw_response, created_at
+			max_latency_ms, throughput_rps, raw_request, raw_response, created_at, supports_rag, supports_skills, supports_plugins
 		FROM verification_results WHERE id = ?
 	`
 
@@ -803,6 +806,9 @@ func (d *Database) GetVerificationResult(id int64) (*VerificationResult, error) 
 		&rawRequest,
 		&rawResponse,
 		&result.CreatedAt,
+		&result.SupportsRAG,
+		&result.SupportsSkills,
+		&result.SupportsPlugins,
 	)
 
 	if err != nil {
@@ -844,7 +850,7 @@ func (d *Database) ListVerificationResults(filters map[string]interface{}) ([]*V
 			overall_score, code_capability_score, responsiveness_score,
 			reliability_score, feature_richness_score, value_proposition_score,
 			score_details, avg_latency_ms, p95_latency_ms, min_latency_ms,
-			max_latency_ms, throughput_rps, raw_request, raw_response, created_at
+			max_latency_ms, throughput_rps, raw_request, raw_response, created_at, supports_rag, supports_skills, supports_plugins
 		FROM verification_results
 	`
 
@@ -964,6 +970,9 @@ func (d *Database) ListVerificationResults(filters map[string]interface{}) ([]*V
 			&rawRequest,
 			&rawResponse,
 			&result.CreatedAt,
+			&result.SupportsRAG,
+			&result.SupportsSkills,
+			&result.SupportsPlugins,
 		)
 
 		if err != nil {
@@ -1091,6 +1100,9 @@ func (d *Database) GetLatestVerificationResults(modelIDs []int64) ([]*Verificati
 			&rawRequest,
 			&rawResponse,
 			&result.CreatedAt,
+			&result.SupportsRAG,
+			&result.SupportsSkills,
+			&result.SupportsPlugins,
 		)
 
 		if err != nil {
@@ -1176,7 +1188,10 @@ func (d *Database) UpdateVerificationResult(verificationResult *VerificationResu
 			feature_richness_score = ?,
 			value_proposition_score = ?,
 			raw_request = ?,
-			raw_response = ?
+			raw_response = ?,
+			supports_rag = ?,
+			supports_skills = ?,
+			supports_plugins = ?
 		WHERE id = ?
 	`
 
@@ -1257,6 +1272,9 @@ func (d *Database) UpdateVerificationResult(verificationResult *VerificationResu
 		verificationResult.ValuePropositionScore,
 		rawRequest,
 		rawResponse,
+		verificationResult.SupportsRAG,
+		verificationResult.SupportsSkills,
+		verificationResult.SupportsPlugins,
 		verificationResult.ID,
 	)
 

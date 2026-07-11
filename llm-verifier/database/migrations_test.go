@@ -290,8 +290,9 @@ func TestSetupDefaultMigrations(t *testing.T) {
 	// Setup default migrations
 	mm.SetupDefaultMigrations()
 
-	// Should have 5 default migrations
-	assert.Len(t, mm.migrations, 5)
+	// Should have 6 default migrations (migration 6 adds the CONST-040
+	// supports_rag/skills/plugins capability columns).
+	assert.Len(t, mm.migrations, 6)
 
 	// Check migration versions
 	versions := []int{}
@@ -302,6 +303,8 @@ func TestSetupDefaultMigrations(t *testing.T) {
 	assert.Contains(t, versions, 2)
 	assert.Contains(t, versions, 3)
 	assert.Contains(t, versions, 4)
+	assert.Contains(t, versions, 5)
+	assert.Contains(t, versions, 6)
 }
 
 func TestMigrationError_Up(t *testing.T) {

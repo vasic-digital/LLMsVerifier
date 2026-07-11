@@ -64,6 +64,24 @@ func (v *Verifier) GetGlobalClient() *LLMClient {
 	return NewLLMClientWithTimeout(v.cfg.Global.BaseURL, v.cfg.Global.APIKey, nil, timeout)
 }
 
+// DetectModelFeatures builds a REAL LLM client from the verifier's configured
+// global endpoint + API key and runs the full feature-detection probe battery
+// (including the CONST-040 C4 RAG/Skills/Plugins probes) against modelName.
+//
+// It is the dispatch entry point the VerificationService (change C5,
+// 10b_code_exact_change_spec.md §3 C5) calls to obtain real, probe-sourced
+// capability outcomes to compose + persist into a database.VerificationResult.
+// A nil config is a programming error (the prober was constructed without one);
+// individual probe transport errors yield clean false verdicts inside
+// detectFeatures — never a faked positive (§11.4 / CONST-037).
+func (v *Verifier) DetectModelFeatures(modelName string) (*FeatureDetectionResult, error) {
+	if v == nil || v.cfg == nil {
+		return nil, fmt.Errorf("llmverifier: verifier has no config; cannot build client for model %q", modelName)
+	}
+	client := v.GetGlobalClient()
+	return v.detectFeatures(client, modelName)
+}
+
 // SummarizeConversation uses LLM to generate a summary of conversation messages
 func (v *Verifier) SummarizeConversation(messages []string) (*ConversationSummary, error) {
 	if len(messages) == 0 {
@@ -628,6 +646,15 @@ func (v *Verifier) detectFeatures(client *LLMClient, modelName string) (*Feature
 	acpSupported := v.TestACPs(client, modelName, ctx)
 	features.ACPs = acpSupported
 
+	// CONST-040 (C4): probe the three capabilities that previously had no
+	// producer — RAG (retrieval-augmented generation), Skills (agent-skill
+	// invocation), Plugins (plugin invocation). Each is a real wire call; a
+	// client error (e.g. missing API key / unreachable endpoint) yields a
+	// clean false verdict, never a faked positive.
+	features.RAG = v.TestRAG(client, modelName, ctx)
+	features.Skills = v.TestSkills(client, modelName, ctx)
+	features.Plugins = v.TestPlugins(client, modelName, ctx)
+
 	// Test for image generation capabilities
 	imageGenerationSupported := v.testImageGeneration(client, modelName, ctx)
 	features.ImageGeneration = imageGenerationSupported
@@ -731,8 +758,17 @@ func (v *Verifier) testToolUse(client *LLMClient, modelName string, ctx context.
 		ToolChoice: "auto",
 	}
 
-	_, err := client.ChatCompletion(ctx, req)
-	return err == nil
+	// §11.4 / CONST-039/040 — Tool-use support means the model actually
+	// INVOKES the tool, not merely that the request returned without error.
+	// Verify at least one real tool call landed in the response's
+	// `tool_calls` array (now carried by Message.ToolCalls). The former
+	// `return err == nil` PASSed for any model that answered in plain text
+	// and ignored the tool entirely — a §11.4 PASS-bluff.
+	resp, err := client.ChatCompletion(ctx, req)
+	if err != nil || len(resp.Choices) == 0 {
+		return false
+	}
+	return len(resp.Choices[0].Message.ToolCalls) > 0
 }
 
 // Tool represents a tool specification for function calling
@@ -1089,26 +1125,19 @@ func (v *Verifier) testParallelToolUse(client *LLMClient, modelName string, ctx 
 	}
 
 	resp, err := client.ChatCompletion(ctx, req)
-	if err != nil {
+	if err != nil || len(resp.Choices) == 0 {
 		return false, 0
 	}
 
-	// §11.4 / CONST-035 — Counting REAL tool calls requires
-	// parsing the OpenAI-shape `tool_calls` array on every
-	// Choice.Message, but this codebase's Message struct
-	// (llm_client.go:92) does NOT yet carry a ToolCalls field —
-	// extending the schema is a CONST-039 prerequisite tracked
-	// separately. Until the schema lands, return the honest
-	// sentinel (false, 0).
-	//
-	// Previously hardcoded `toolCallCount = 2` — the number of
-	// TOOLS we provided, not the number of tool CALLS in the
-	// response. Any caller asserting "model invokes >= 2 tools"
-	// PASSed against the fabricated count even when the model
-	// invoked 0 or 1 tool. §11.4 PASS-bluff at the parallel-tool-
-	// use detection layer.
-	_ = resp
-	return false, 0
+	// §11.4 / CONST-035/039/040 — Count the REAL tool calls the model
+	// returned in the OpenAI-shape `tool_calls` array (now carried by
+	// Message.ToolCalls, llm_client.go). Parallel tool use = the model
+	// invoked more than one tool in a single response. This replaces the
+	// former hardcoded `toolCallCount = 2` (the number of TOOLS we
+	// PROVIDED, not the number of tool CALLS returned) — a §11.4 PASS-
+	// bluff that reported success even when the model invoked 0 or 1 tool.
+	toolCallCount := len(resp.Choices[0].Message.ToolCalls)
+	return toolCallCount > 1, toolCallCount
 }
 
 // testBatchProcessing checks for batch processing capability
@@ -1478,6 +1507,108 @@ What errors or issues do you detect? Provide specific line numbers and suggestio
 }
 
 // testImageGeneration checks for image generation capabilities
+// TestRAG probes for retrieval-augmented-generation support (CONST-040 / C4).
+// It injects a document carrying a unique sentinel token into the prompt and
+// asks a question answerable ONLY from that injected context. A model that
+// genuinely grounds its answer in retrieved context echoes the sentinel; one
+// that ignores injected context does not. Positive-evidence shape (10b §3 C4):
+// a response citing the injected context. A client/transport error yields a
+// clean false (never a faked positive), so a missing key SKIPs cleanly.
+func (v *Verifier) TestRAG(client *LLMClient, modelName string, ctx context.Context) bool {
+	const sentinel = "zorblax-7742"
+	req := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role: "user",
+				Content: "Use ONLY the following retrieved document to answer. " +
+					"Document: \"The internal build code for project Helix is " + sentinel + ".\" " +
+					"Question: What is the internal build code for project Helix? " +
+					"Answer with the exact code from the document.",
+			},
+		},
+	}
+
+	resp, err := client.ChatCompletion(ctx, req)
+	if err != nil || len(resp.Choices) == 0 {
+		return false
+	}
+
+	// Grounded answer: the model reproduced the sentinel that exists ONLY in
+	// the injected context — evidence it retrieved-and-used the document.
+	return strings.Contains(strings.ToLower(resp.Choices[0].Message.Content), sentinel)
+}
+
+// TestSkills probes for agent-skill invocation support (CONST-040 / C4). It
+// advertises a named skill whose specification requires it to emit a unique
+// sentinel marker on invocation, and asks the model to use the skill and
+// include that marker. Grounded-sentinel oracle (same style as TestRAG): a
+// model that genuinely invokes/simulates the skill echoes the sentinel; a model
+// that merely repeats the word "skill" does NOT — so a bare keyword echo no
+// longer trips a false positive. Positive-evidence shape (10b §3 C4): a captured
+// skill invocation carrying the sentinel. A client/transport error yields a
+// clean false (never a faked positive), so a missing key SKIPs cleanly.
+func (v *Verifier) TestSkills(client *LLMClient, modelName string, ctx context.Context) bool {
+	const sentinel = "sk-marker-5591"
+	req := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role: "user",
+				Content: "You have access to a skill named \"code_formatter\" that reformats " +
+					"source code. Per its specification the skill ALWAYS prepends the exact " +
+					"marker " + sentinel + " to whatever it returns. Using that skill, format " +
+					"this snippet: def f(x):return x+1 — and include the skill's marker in your answer.",
+			},
+		},
+	}
+
+	resp, err := client.ChatCompletion(ctx, req)
+	if err != nil || len(resp.Choices) == 0 {
+		return false
+	}
+
+	// Grounded verdict: the model reproduced the skill's sentinel marker that a
+	// genuine invocation MUST emit — evidence it actually used the skill rather
+	// than merely echoing the word.
+	return strings.Contains(strings.ToLower(resp.Choices[0].Message.Content), sentinel)
+}
+
+// TestPlugins probes for plugin invocation support (CONST-040 / C4). It
+// advertises a named plugin whose API response carries a unique sentinel
+// station id, and asks the model to invoke it and report that id. Grounded-
+// sentinel oracle (same style as TestRAG): a model that genuinely invokes/
+// simulates the plugin echoes the sentinel; a model that merely repeats the
+// word "plugin" does NOT — so a bare keyword echo no longer trips a false
+// positive. Positive-evidence shape (10b §3 C4): a captured plugin call
+// carrying the sentinel. A client/transport error yields a clean false (never a
+// faked positive), so a missing key SKIPs cleanly.
+func (v *Verifier) TestPlugins(client *LLMClient, modelName string, ctx context.Context) bool {
+	const sentinel = "pl-station-3308"
+	req := ChatCompletionRequest{
+		Model: modelName,
+		Messages: []Message{
+			{
+				Role: "user",
+				Content: "You have access to a plugin named \"weather_lookup\" that returns the " +
+					"current weather for a city. Its API response always includes the exact " +
+					"station identifier " + sentinel + ". Invoke that plugin to get the weather " +
+					"in Paris and report the station identifier it returns.",
+			},
+		},
+	}
+
+	resp, err := client.ChatCompletion(ctx, req)
+	if err != nil || len(resp.Choices) == 0 {
+		return false
+	}
+
+	// Grounded verdict: the model reproduced the plugin's sentinel station id
+	// that a genuine invocation MUST return — evidence it actually called the
+	// plugin rather than merely echoing the word.
+	return strings.Contains(strings.ToLower(resp.Choices[0].Message.Content), sentinel)
+}
+
 func (v *Verifier) testImageGeneration(client *LLMClient, modelName string, ctx context.Context) bool {
 	// Image generation is typically handled by separate models like DALL-E
 	// But some models might be able to describe or suggest image generation

@@ -189,6 +189,9 @@ type FeatureDetectionResult struct {
 	MCPs             bool                 `json:"mcps"`
 	LSPs             bool                 `json:"lsps"`
 	ACPs             bool                 `json:"acps"`
+	RAG              bool                 `json:"rag"`     // CONST-040: retrieval-augmented generation (C4)
+	Skills           bool                 `json:"skills"`  // CONST-040: agent skills invocation (C4)
+	Plugins          bool                 `json:"plugins"` // CONST-040: plugin invocation (C4)
 	Multimodal       bool                 `json:"multimodal"`
 	Streaming        bool                 `json:"streaming"`
 	JSONMode         bool                 `json:"json_mode"`

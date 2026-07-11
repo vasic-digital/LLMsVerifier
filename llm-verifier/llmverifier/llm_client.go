@@ -92,6 +92,27 @@ type ChatCompletionRequest struct {
 type Message struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
+	// ToolCalls carries the OpenAI-shape `tool_calls` array a model returns
+	// when it invokes one or more functions. Without this field the array is
+	// silently dropped on unmarshal, so tool-calling verification (CONST-039/
+	// CONST-040) could never count real tool calls. omitempty keeps requests
+	// and non-tool responses byte-identical to before.
+	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
+}
+
+// ToolCall represents a single entry of an assistant message's `tool_calls`
+// array — an OpenAI-compatible function invocation returned by the model.
+type ToolCall struct {
+	ID       string           `json:"id"`
+	Type     string           `json:"type"`
+	Function ToolCallFunction `json:"function"`
+}
+
+// ToolCallFunction is the `function` object inside a ToolCall — the invoked
+// function's name and its JSON-encoded argument string.
+type ToolCallFunction struct {
+	Name      string `json:"name"`
+	Arguments string `json:"arguments"`
 }
 
 // ChatCompletionChoice represents a choice in the chat completion response
