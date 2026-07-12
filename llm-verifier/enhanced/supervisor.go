@@ -639,7 +639,7 @@ func (s *Supervisor) GetSystemStatus() map[string]interface{} {
 }
 
 // Helper functions for pointer values
-func intPtr(i int) *int          { return &i }
+func intPtr(i int) *int             { return &i }
 func float64Ptr(f float64) *float64 { return &f }
 
 // registerDefaultHandlers registers built-in task handlers
@@ -1180,14 +1180,14 @@ func (ai *AIAssistant) generateAnalysisResponse(message string) (string, error) 
 	// backend materialises the numeric placeholders against its own
 	// template syntax; NoopTranslator returns the message ID verbatim.
 	return trData("enhanced.supervisor.analysis.report", map[string]any{
-		"total":         total,
-		"passed":        passed,
-		"passed_pct":    float64(passed) / float64(total) * 100,
-		"failed":        failed,
-		"failed_pct":    float64(failed) / float64(total) * 100,
-		"avg_score":     avgScore,
-		"success_rate":  ai.getSuccessRateMessage(float64(passed) / float64(total)),
-		"score_quality": ai.getScoreMessage(avgScore),
+		"total":           total,
+		"passed":          passed,
+		"passed_pct":      float64(passed) / float64(total) * 100,
+		"failed":          failed,
+		"failed_pct":      float64(failed) / float64(total) * 100,
+		"avg_score":       avgScore,
+		"success_rate":    ai.getSuccessRateMessage(float64(passed) / float64(total)),
+		"score_quality":   ai.getScoreMessage(avgScore),
 		"recommendations": ai.getRecommendations(avgScore, failed),
 	}), nil
 }

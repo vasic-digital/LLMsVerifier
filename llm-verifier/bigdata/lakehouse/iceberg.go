@@ -13,25 +13,25 @@ import (
 
 // IcebergConfig holds Iceberg REST catalog configuration
 type IcebergConfig struct {
-	CatalogURI       string        `yaml:"catalog_uri" json:"catalog_uri"`
-	Warehouse        string        `yaml:"warehouse" json:"warehouse"`
-	S3Endpoint       string        `yaml:"s3_endpoint" json:"s3_endpoint"`
-	S3AccessKey      string        `yaml:"s3_access_key" json:"s3_access_key"`
-	S3SecretKey      string        `yaml:"s3_secret_key" json:"s3_secret_key"`
-	S3Region         string        `yaml:"s3_region" json:"s3_region"`
-	Timeout          time.Duration `yaml:"timeout" json:"timeout"`
-	Namespace        string        `yaml:"namespace" json:"namespace"`
+	CatalogURI  string        `yaml:"catalog_uri" json:"catalog_uri"`
+	Warehouse   string        `yaml:"warehouse" json:"warehouse"`
+	S3Endpoint  string        `yaml:"s3_endpoint" json:"s3_endpoint"`
+	S3AccessKey string        `yaml:"s3_access_key" json:"s3_access_key"`
+	S3SecretKey string        `yaml:"s3_secret_key" json:"s3_secret_key"`
+	S3Region    string        `yaml:"s3_region" json:"s3_region"`
+	Timeout     time.Duration `yaml:"timeout" json:"timeout"`
+	Namespace   string        `yaml:"namespace" json:"namespace"`
 }
 
 // DefaultIcebergConfig returns default Iceberg configuration
 func DefaultIcebergConfig() *IcebergConfig {
 	return &IcebergConfig{
-		CatalogURI:  "http://localhost:8181",
-		Warehouse:   "s3://llmsverifier-iceberg/warehouse",
-		S3Endpoint:  "http://localhost:9000",
-		S3Region:    "us-east-1",
-		Timeout:     30 * time.Second,
-		Namespace:   "llmsverifier",
+		CatalogURI: "http://localhost:8181",
+		Warehouse:  "s3://llmsverifier-iceberg/warehouse",
+		S3Endpoint: "http://localhost:9000",
+		S3Region:   "us-east-1",
+		Timeout:    30 * time.Second,
+		Namespace:  "llmsverifier",
 	}
 }
 
@@ -273,7 +273,7 @@ func (c *IcebergClient) CreateTable(ctx context.Context, tableName string, schem
 		"name":   tableName,
 		"schema": schema,
 		"properties": map[string]string{
-			"write.format.default": "parquet",
+			"write.format.default":            "parquet",
 			"write.parquet.compression-codec": "zstd",
 		},
 	}
@@ -372,7 +372,7 @@ func (c *IcebergClient) GetTable(ctx context.Context, tableName string) (*TableI
 	}
 
 	var result struct {
-		MetadataLocation string            `json:"metadata-location"`
+		MetadataLocation string `json:"metadata-location"`
 		Metadata         struct {
 			Schema     *TableSchema      `json:"schema"`
 			Properties map[string]string `json:"properties"`
@@ -473,10 +473,10 @@ func (c *IcebergClient) EnsureVerificationTables(ctx context.Context) error {
 
 // SnapshotInfo represents information about a table snapshot
 type SnapshotInfo struct {
-	SnapshotID    int64     `json:"snapshot-id"`
-	TimestampMS   int64     `json:"timestamp-ms"`
-	ManifestList  string    `json:"manifest-list"`
-	Summary       map[string]string `json:"summary"`
+	SnapshotID   int64             `json:"snapshot-id"`
+	TimestampMS  int64             `json:"timestamp-ms"`
+	ManifestList string            `json:"manifest-list"`
+	Summary      map[string]string `json:"summary"`
 }
 
 // ListSnapshots lists snapshots for a table

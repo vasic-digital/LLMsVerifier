@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"digital.vasic.llmsverifier/database"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"digital.vasic.llmsverifier/database"
 )
 
 func TestNewLatencyTracker(t *testing.T) {
@@ -376,8 +376,8 @@ func TestWeightedRouterCalculateProviderScore(t *testing.T) {
 
 	// Create provider in database
 	provider := &database.Provider{
-		Name:       "test-provider",
-		Endpoint:   "http://localhost:9999",
+		Name:        "test-provider",
+		Endpoint:    "http://localhost:9999",
 		Description: "Test",
 	}
 	err := db.CreateProvider(provider)
@@ -402,8 +402,8 @@ func TestWeightedRouterCalculateProviderScoreNoLatency(t *testing.T) {
 
 	// Create provider in database
 	provider := &database.Provider{
-		Name:       "test-provider",
-		Endpoint:   "http://localhost:9999",
+		Name:        "test-provider",
+		Endpoint:    "http://localhost:9999",
 		Description: "Test",
 	}
 	err := db.CreateProvider(provider)

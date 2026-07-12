@@ -494,15 +494,15 @@ type SAMLStatusCode struct {
 
 // SAMLAssertion represents a SAML assertion
 type SAMLAssertion struct {
-	XMLName            xml.Name            `xml:"Assertion"`
-	ID                 string              `xml:"ID,attr"`
-	Version            string              `xml:"Version,attr"`
-	IssueInstant       string              `xml:"IssueInstant,attr"`
-	Issuer             string              `xml:"Issuer"`
-	Subject            SAMLSubject         `xml:"Subject"`
-	Conditions         SAMLConditions      `xml:"Conditions"`
-	AuthnStatement     SAMLAuthnStatement  `xml:"AuthnStatement"`
-	AttributeStatement SAMLAttributeStmt   `xml:"AttributeStatement"`
+	XMLName            xml.Name           `xml:"Assertion"`
+	ID                 string             `xml:"ID,attr"`
+	Version            string             `xml:"Version,attr"`
+	IssueInstant       string             `xml:"IssueInstant,attr"`
+	Issuer             string             `xml:"Issuer"`
+	Subject            SAMLSubject        `xml:"Subject"`
+	Conditions         SAMLConditions     `xml:"Conditions"`
+	AuthnStatement     SAMLAuthnStatement `xml:"AuthnStatement"`
+	AttributeStatement SAMLAttributeStmt  `xml:"AttributeStatement"`
 }
 
 // SAMLSubject represents the subject of a SAML assertion
@@ -882,18 +882,18 @@ func sanitizeUserID(id string) string {
 func mapGroupsToRoles(groups []string) []RBACRole {
 	var roles []RBACRole
 	roleMap := map[string]RBACRole{
-		"admin":       RBACRoleAdmin,
-		"admins":      RBACRoleAdmin,
-		"administrator": RBACRoleAdmin,
+		"admin":          RBACRoleAdmin,
+		"admins":         RBACRoleAdmin,
+		"administrator":  RBACRoleAdmin,
 		"administrators": RBACRoleAdmin,
-		"operator":    RBACRoleOperator,
-		"operators":   RBACRoleOperator,
-		"analyst":     RBACRoleAnalyst,
-		"analysts":    RBACRoleAnalyst,
-		"viewer":      RBACRoleViewer,
-		"viewers":     RBACRoleViewer,
-		"readonly":    RBACRoleReadOnly,
-		"read-only":   RBACRoleReadOnly,
+		"operator":       RBACRoleOperator,
+		"operators":      RBACRoleOperator,
+		"analyst":        RBACRoleAnalyst,
+		"analysts":       RBACRoleAnalyst,
+		"viewer":         RBACRoleViewer,
+		"viewers":        RBACRoleViewer,
+		"readonly":       RBACRoleReadOnly,
+		"read-only":      RBACRoleReadOnly,
 	}
 
 	for _, group := range groups {

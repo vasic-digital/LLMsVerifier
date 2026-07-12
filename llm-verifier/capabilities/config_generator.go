@@ -26,13 +26,13 @@ func NewConfigGenerator(host string, port int) *ConfigGenerator {
 
 // GeneratedConfig represents a generated CLI agent configuration
 type GeneratedConfig struct {
-	Agent            string                 `json:"agent"`
-	GeneratedAt      time.Time              `json:"generated_at"`
-	ConfigPath       string                 `json:"config_path"`
-	Format           string                 `json:"format"`
-	Content          map[string]interface{} `json:"content"`
-	EnabledFeatures  []string               `json:"enabled_features"`
-	Recommendations  []string               `json:"recommendations,omitempty"`
+	Agent           string                 `json:"agent"`
+	GeneratedAt     time.Time              `json:"generated_at"`
+	ConfigPath      string                 `json:"config_path"`
+	Format          string                 `json:"format"`
+	Content         map[string]interface{} `json:"content"`
+	EnabledFeatures []string               `json:"enabled_features"`
+	Recommendations []string               `json:"recommendations,omitempty"`
 }
 
 // GenerateForAgent generates an optimized configuration for a specific CLI agent
@@ -43,11 +43,11 @@ func (cg *ConfigGenerator) GenerateForAgent(agentName string, providerCaps *Prov
 	}
 
 	config := &GeneratedConfig{
-		Agent:       agentName,
-		GeneratedAt: time.Now(),
-		ConfigPath:  agentCaps.ConfigPath,
-		Format:      agentCaps.ConfigFormat,
-		Content:     make(map[string]interface{}),
+		Agent:           agentName,
+		GeneratedAt:     time.Now(),
+		ConfigPath:      agentCaps.ConfigPath,
+		Format:          agentCaps.ConfigFormat,
+		Content:         make(map[string]interface{}),
 		EnabledFeatures: []string{},
 	}
 
@@ -455,7 +455,7 @@ func (cg *ConfigGenerator) generatePlandexConfig(config *GeneratedConfig, agent 
 // generateKiroConfig generates configuration for Kiro
 func (cg *ConfigGenerator) generateKiroConfig(config *GeneratedConfig, agent *CLIAgentCapabilities, provider *ProviderCapabilities) {
 	content := map[string]interface{}{
-		"ai_provider": "opencode",
+		"ai_provider":         "opencode",
 		"helixagent_endpoint": fmt.Sprintf("http://%s:%d/v1", cg.baseHost, cg.basePort),
 	}
 

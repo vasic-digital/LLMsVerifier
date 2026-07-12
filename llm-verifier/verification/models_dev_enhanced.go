@@ -14,12 +14,12 @@ import (
 
 // EnhancedModelsDevClient is a production-ready client for models.dev API
 type EnhancedModelsDevClient struct {
-	httpClient     *http.Client
-	baseURL        string
-	logger         *logging.Logger
-	cacheEnabled   bool
-	lastFetchTime  time.Time
-	cachedData     *ModelsDevEnhancedResponse
+	httpClient    *http.Client
+	baseURL       string
+	logger        *logging.Logger
+	cacheEnabled  bool
+	lastFetchTime time.Time
+	cachedData    *ModelsDevEnhancedResponse
 }
 
 // ModelsDevEnhancedResponse represents the full models.dev API structure
@@ -27,36 +27,36 @@ type ModelsDevEnhancedResponse map[string]ProviderData
 
 // ProviderData contains provider information and their models
 type ProviderData struct {
-	ID             string                  `json:"id"`
-	Env            []string                `json:"env"`
-	NPM            string                  `json:"npm"`
-	API            string                  `json:"api,omitempty"`
-	Name           string                  `json:"name"`
-	Doc            string                  `json:"doc"`
-	Models         map[string]ModelDetails `json:"models"`
-	LogoURL        string                  `json:"-"` // Computed field
+	ID      string                  `json:"id"`
+	Env     []string                `json:"env"`
+	NPM     string                  `json:"npm"`
+	API     string                  `json:"api,omitempty"`
+	Name    string                  `json:"name"`
+	Doc     string                  `json:"doc"`
+	Models  map[string]ModelDetails `json:"models"`
+	LogoURL string                  `json:"-"` // Computed field
 }
 
 // ModelDetails contains comprehensive model information
 type ModelDetails struct {
-	ID               string              `json:"id"`
-	Name             string              `json:"name"`
-	Family           string              `json:"family,omitempty"`
-	Attachment       bool                `json:"attachment"`
-	Reasoning        bool                `json:"reasoning"`
-	ToolCall         bool                `json:"tool_call"`
-	Temperature      bool                `json:"temperature"`
-	Knowledge        string              `json:"knowledge,omitempty"`
-	ReleaseDate      string              `json:"release_date"`
-	LastUpdated      string              `json:"last_updated"`
-	Modalities       ModelModalities     `json:"modalities"`
-	OpenWeights      bool                `json:"open_weights"`
-	Cost             ModelCost           `json:"cost"`
-	Limits           ModelLimits         `json:"limit"`
-	StructuredOutput bool                `json:"structured_output,omitempty"`
-	Status           string              `json:"status,omitempty"`
-	ContextOver200k  interface{}         `json:"context_over_200k,omitempty"`
-	Interleaved      interface{}         `json:"interleaved,omitempty"`
+	ID               string          `json:"id"`
+	Name             string          `json:"name"`
+	Family           string          `json:"family,omitempty"`
+	Attachment       bool            `json:"attachment"`
+	Reasoning        bool            `json:"reasoning"`
+	ToolCall         bool            `json:"tool_call"`
+	Temperature      bool            `json:"temperature"`
+	Knowledge        string          `json:"knowledge,omitempty"`
+	ReleaseDate      string          `json:"release_date"`
+	LastUpdated      string          `json:"last_updated"`
+	Modalities       ModelModalities `json:"modalities"`
+	OpenWeights      bool            `json:"open_weights"`
+	Cost             ModelCost       `json:"cost"`
+	Limits           ModelLimits     `json:"limit"`
+	StructuredOutput bool            `json:"structured_output,omitempty"`
+	Status           string          `json:"status,omitempty"`
+	ContextOver200k  interface{}     `json:"context_over_200k,omitempty"`
+	Interleaved      interface{}     `json:"interleaved,omitempty"`
 }
 
 // ModelModalities defines input/output modalities
@@ -67,13 +67,13 @@ type ModelModalities struct {
 
 // ModelCost contains pricing information
 type ModelCost struct {
-	Input              float64 `json:"input"`               // Cost per 1M input tokens (USD)
-	Output             float64 `json:"output"`              // Cost per 1M output tokens (USD)
-	Reasoning          float64 `json:"reasoning,omitempty"` // Cost per 1M reasoning tokens (USD)
-	CacheRead          float64 `json:"cache_read,omitempty"` // Cost per 1M cached read tokens (USD)
-	CacheWrite         float64 `json:"cache_write,omitempty"` // Cost per 1M cached write tokens (USD)
-	InputAudio         float64 `json:"input_audio,omitempty"` // Cost per 1M audio input tokens (USD)
-	OutputAudio        float64 `json:"output_audio,omitempty"` // Cost per 1M audio output tokens (USD)
+	Input       float64 `json:"input"`                  // Cost per 1M input tokens (USD)
+	Output      float64 `json:"output"`                 // Cost per 1M output tokens (USD)
+	Reasoning   float64 `json:"reasoning,omitempty"`    // Cost per 1M reasoning tokens (USD)
+	CacheRead   float64 `json:"cache_read,omitempty"`   // Cost per 1M cached read tokens (USD)
+	CacheWrite  float64 `json:"cache_write,omitempty"`  // Cost per 1M cached write tokens (USD)
+	InputAudio  float64 `json:"input_audio,omitempty"`  // Cost per 1M audio input tokens (USD)
+	OutputAudio float64 `json:"output_audio,omitempty"` // Cost per 1M audio output tokens (USD)
 }
 
 // ModelLimits contains token limit information
@@ -211,6 +211,16 @@ func (c *EnhancedModelsDevClient) GetProviderByID(ctx context.Context, providerI
 // 2. Provider/model path match (e.g., "openai/gpt-4")
 // 3. Fuzzy match on model name
 func (c *EnhancedModelsDevClient) FindModel(ctx context.Context, searchQuery string) ([]ModelMatch, error) {
+	// Fail fast on a blank query (see calculateMatchScore's doc comment for
+	// why this is not merely defensive: a malformed/empty external model ID
+	// -- e.g. a provider's `/v1/models` response containing `{"id":""}` --
+	// would otherwise reach Strategy 2 and "match" every model in the
+	// catalogue). Checked BEFORE the network fetch so garbage input doesn't
+	// also cost a wasted models.dev round trip.
+	if strings.TrimSpace(searchQuery) == "" {
+		return nil, fmt.Errorf("search query cannot be empty")
+	}
+
 	providers, err := c.FetchAllProviders(ctx)
 	if err != nil {
 		return nil, err
@@ -286,6 +296,21 @@ type ModelMatch struct {
 
 // calculateMatchScore calculates how well a model matches the search query
 func (c *EnhancedModelsDevClient) calculateMatchScore(query, providerID string, provider ProviderData, modelID string, model ModelDetails) float64 {
+	// An empty (or whitespace-only) query must never be treated as a
+	// substring match: strings.Contains(s, "") is ALWAYS true for any s, so
+	// without this guard every candidate model would score >= 1.7 (0.6+0.5+
+	// 0.4+0.2 from the four Contains checks below) against a blank query --
+	// comfortably above FindModel's 0.3 acceptance threshold. A blank query
+	// arises from real external input: FindModel is called with a
+	// provider-reported model ID (providers/model_provider_service.go:437)
+	// that is not validated non-empty first, so a malformed
+	// `{"id":""}` entry in a provider's `/v1/models` response would
+	// otherwise "match" every model in the entire models.dev catalogue and
+	// get enriched with an arbitrary unrelated model's metadata. Score 0
+	// unconditionally so the caller correctly treats this as "no match".
+	if strings.TrimSpace(query) == "" {
+		return 0.0
+	}
 	query = strings.ToLower(query)
 	modelIDLower := strings.ToLower(modelID)
 	modelNameLower := strings.ToLower(model.Name)
@@ -487,13 +512,13 @@ func (c *EnhancedModelsDevClient) GetProviderStats(ctx context.Context) (*Provid
 	}
 
 	stats := &ProviderStats{
-		TotalProviders:      len(providers),
-		TotalModels:         0,
-		ProvidersByNPM:      make(map[string]int),
-		ModelsByFeature:     make(map[string]int),
-		ModelsByModality:    make(map[string]int),
-		OpenWeightModels:    0,
-		RecentUpdates:       0,
+		TotalProviders:   len(providers),
+		TotalModels:      0,
+		ProvidersByNPM:   make(map[string]int),
+		ModelsByFeature:  make(map[string]int),
+		ModelsByModality: make(map[string]int),
+		OpenWeightModels: 0,
+		RecentUpdates:    0,
 	}
 
 	now := time.Now()
@@ -547,13 +572,13 @@ func (c *EnhancedModelsDevClient) GetProviderStats(ctx context.Context) (*Provid
 
 // ProviderStats contains aggregated statistics
 type ProviderStats struct {
-	TotalProviders      int
-	TotalModels         int
-	ProvidersByNPM      map[string]int
-	ModelsByFeature     map[string]int
-	ModelsByModality    map[string]int
-	OpenWeightModels    int
-	RecentUpdates       int
+	TotalProviders   int
+	TotalModels      int
+	ProvidersByNPM   map[string]int
+	ModelsByFeature  map[string]int
+	ModelsByModality map[string]int
+	OpenWeightModels int
+	RecentUpdates    int
 }
 
 // Helper function to parse dates

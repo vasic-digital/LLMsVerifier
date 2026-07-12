@@ -11,8 +11,8 @@ import (
 
 // ValidationError represents a schema validation error
 type ValidationError struct {
-	Field   string `json:"field"`
-	Message string `json:"message"`
+	Field   string      `json:"field"`
+	Message string      `json:"message"`
 	Value   interface{} `json:"value,omitempty"`
 }
 
@@ -24,9 +24,9 @@ type ValidationResult struct {
 
 // SchemaValidator provides JSON schema validation
 type SchemaValidator struct {
-	schemas      map[string]map[string]interface{}
+	schemas          map[string]map[string]interface{}
 	compiledPatterns map[string]*regexp.Regexp
-	mu           sync.RWMutex
+	mu               sync.RWMutex
 }
 
 // NewSchemaValidator creates a new schema validator

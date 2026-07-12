@@ -425,8 +425,8 @@ func (mmp *MultiModalProcessor) processVideo(ctx context.Context, content *Multi
 	// 3. Combine results
 
 	analysis := &ContentAnalysis{
-		Topics:     []string{},
-		Entities:   []Entity{},
+		Topics:   []string{},
+		Entities: []Entity{},
 		CustomFields: map[string]interface{}{
 			"content_type": "video",
 			"processing":   "frame_and_audio_analysis",
@@ -581,10 +581,10 @@ func NewImageProcessor(processor *MultiModalProcessor) *ImageProcessor {
 
 // OpenAIVisionRequest represents a vision request for OpenAI GPT-4V
 type OpenAIVisionRequest struct {
-	Model       string                   `json:"model"`
-	Messages    []OpenAIVisionMessage    `json:"messages"`
-	MaxTokens   int                      `json:"max_tokens,omitempty"`
-	Temperature float64                  `json:"temperature,omitempty"`
+	Model       string                `json:"model"`
+	Messages    []OpenAIVisionMessage `json:"messages"`
+	MaxTokens   int                   `json:"max_tokens,omitempty"`
+	Temperature float64               `json:"temperature,omitempty"`
 }
 
 // OpenAIVisionMessage represents a message with multimodal content
@@ -601,8 +601,8 @@ type OpenAIVisionTextContent struct {
 
 // OpenAIVisionImageContent represents image content in a vision message
 type OpenAIVisionImageContent struct {
-	Type     string                 `json:"type"`
-	ImageURL OpenAIVisionImageURL   `json:"image_url"`
+	Type     string               `json:"type"`
+	ImageURL OpenAIVisionImageURL `json:"image_url"`
 }
 
 // OpenAIVisionImageURL represents an image URL in vision content
@@ -1045,8 +1045,8 @@ func NewAudioProcessor(processor *MultiModalProcessor) *AudioProcessor {
 
 // OpenAIWhisperResponse represents a response from OpenAI Whisper API
 type OpenAIWhisperResponse struct {
-	Text     string `json:"text"`
-	Language string `json:"language,omitempty"`
+	Text     string  `json:"text"`
+	Language string  `json:"language,omitempty"`
 	Duration float64 `json:"duration,omitempty"`
 	Segments []struct {
 		ID               int     `json:"id"`
@@ -1645,8 +1645,8 @@ Respond with a JSON object in this exact format:
 	if len(visionResp.Choices) == 0 {
 		// No response from API - cannot determine safety, return unknown state
 		return &SafetyResult{
-			Score:  0.5, // Unknown/uncertain score
-			Safe:   false,
+			Score: 0.5, // Unknown/uncertain score
+			Safe:  false,
 			Issues: []SafetyIssue{{
 				Type:        "api_error",
 				Description: tr("multimodal.safety.no_api_response"),

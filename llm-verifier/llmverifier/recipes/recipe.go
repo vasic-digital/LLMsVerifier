@@ -22,11 +22,11 @@ type baseTest struct {
 	required bool
 }
 
-func (b *baseTest) ID() string                        { return b.id }
-func (b *baseTest) Name() string                      { return b.name }
+func (b *baseTest) ID() string                         { return b.id }
+func (b *baseTest) Name() string                       { return b.name }
 func (b *baseTest) Category() llmverifier.TestCategory { return b.category }
-func (b *baseTest) Weight() float64                   { return b.weight }
-func (b *baseTest) Required() bool                    { return b.required }
+func (b *baseTest) Weight() float64                    { return b.weight }
+func (b *baseTest) Required() bool                     { return b.required }
 
 // runWithClient is a helper that checks for nil client before running
 func runWithClient(ctx context.Context, client *llmverifier.LLMClient, fn func(context.Context, *llmverifier.LLMClient) (llmverifier.TestResult, error)) (llmverifier.TestResult, error) {
@@ -77,5 +77,5 @@ func sendChat(ctx context.Context, client *llmverifier.LLMClient, modelName, sys
 	return resp.Choices[0].Message.Content, nil
 }
 
-func intPtr(i int) *int       { return &i }
+func intPtr(i int) *int           { return &i }
 func floatPtr(f float64) *float64 { return &f }

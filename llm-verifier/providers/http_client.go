@@ -20,13 +20,13 @@ type HTTPClient struct {
 
 // HTTPClientConfig configures the HTTP client
 type HTTPClientConfig struct {
-	BaseURL       string
-	APIKey        string
-	Headers       map[string]string
-	Timeout       time.Duration
-	RetryConfig   *RetryConfig
-	MaxIdleConns  int
-	IdleTimeout   time.Duration
+	BaseURL      string
+	APIKey       string
+	Headers      map[string]string
+	Timeout      time.Duration
+	RetryConfig  *RetryConfig
+	MaxIdleConns int
+	IdleTimeout  time.Duration
 }
 
 // NewHTTPClient creates a new HTTP client for provider requests

@@ -13,10 +13,10 @@ import (
 
 // InMemoryPromptRegistry implements PromptRegistry with in-memory storage
 type InMemoryPromptRegistry struct {
-	mu       sync.RWMutex
-	prompts  map[string]map[string]*PromptVersion // name -> version -> prompt
-	active   map[string]string                    // name -> active version
-	logger   *log.Logger
+	mu      sync.RWMutex
+	prompts map[string]map[string]*PromptVersion // name -> version -> prompt
+	active  map[string]string                    // name -> active version
+	logger  *log.Logger
 }
 
 // NewInMemoryPromptRegistry creates a new in-memory prompt registry

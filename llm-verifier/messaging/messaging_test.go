@@ -12,12 +12,12 @@ import (
 
 // mockBroker is a mock message broker for testing.
 type mockBroker struct {
-	connected     bool
-	publishCalls  []publishCall
-	publishErr    error
-	connectErr    error
-	closeErr      error
-	mu            sync.Mutex
+	connected    bool
+	publishCalls []publishCall
+	publishErr   error
+	connectErr   error
+	closeErr     error
+	mu           sync.Mutex
 }
 
 type publishCall struct {

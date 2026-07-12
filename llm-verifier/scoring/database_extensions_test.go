@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
+	"digital.vasic.llmsverifier/database"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"digital.vasic.llmsverifier/database"
 )
 
 func TestNewScoringDatabaseExtensions(t *testing.T) {
@@ -141,8 +141,8 @@ func TestScoringDatabaseExtensions_GetLatestModelScore(t *testing.T) {
 	t.Run("score exists", func(t *testing.T) {
 		// Create a score first
 		modelScore := &ModelScore{
-			ModelID:   "score-model",
-			Score:     8.5,
+			ModelID: "score-model",
+			Score:   8.5,
 			Components: ScoreComponents{
 				SpeedScore:      7.0,
 				EfficiencyScore: 8.0,
@@ -192,8 +192,8 @@ func TestScoringDatabaseExtensions_GetModelScoresByRange(t *testing.T) {
 	// Create some scores
 	for i := 0; i < 3; i++ {
 		modelScore := &ModelScore{
-			ModelID:   "range-model",
-			Score:     float64(6 + i),
+			ModelID: "range-model",
+			Score:   float64(6 + i),
 			Components: ScoreComponents{
 				SpeedScore:      7.0,
 				EfficiencyScore: 8.0,

@@ -180,19 +180,31 @@ func canConnectToServer() bool {
 // compatible LLM-Verifier API server is reachable — as opposed to a real
 // CLI defect (panic, bad-flag parse, build error).
 //
-// Two distinct environment conditions count as "no compatible server":
+// Three distinct environment conditions count as "no compatible server":
 //
 //  1. Nothing is listening on the API port — surfaced as "connection
 //     refused" / "dial tcp".
 //  2. *Something* is listening but it is not an LLM-Verifier API server
 //     of the expected version — surfaced as an HTTP error response
 //     ("API error: 404", "404 page not found", "API error: 5xx").
+//  3. *Something unrelated* is listening on the configured port — a shared
+//     dev host commonly has other services bound to common ports like port
+//     8080 — and forces an HTTP-to-HTTPS redirect / presents a TLS
+//     certificate that is not valid for the requested host — surfaced by
+//     Go's HTTP client as a TLS handshake error ("tls: failed to verify certificate",
+//     "x509:", "certificate is not valid", "certificate signed by unknown
+//     authority"). This CLI never speaks TLS to its own API server (see
+//     the plain "http://" defaults in cmd/main.go and the absence of any
+//     ListenAndServeTLS in api/server.go), so a TLS failure while dialing
+//     the configured --server URL is proof-positive the listener on that
+//     port belongs to a foreign, incompatible service — not this project's
+//     server and not a CLI defect.
 //
-// Both are SKIP-OK: #HXV-001 environment gates per CONST-035 — the list
-// commands provably build and dispatch a real HTTP request; whether that
-// request lands on a matching backend is an infrastructure concern that
-// the integration suite (with a real server brought up) covers, not this
-// CLI automation test.
+// All three are SKIP-OK: #HXV-001 environment gates per CONST-035 — the
+// list commands provably build and dispatch a real HTTP request; whether
+// that request lands on a matching backend is an infrastructure concern
+// that the integration suite (with a real server brought up) covers, not
+// this CLI automation test.
 func serverUnavailable(output string) bool {
 	for _, marker := range []string{
 		"connection refused",
@@ -204,6 +216,11 @@ func serverUnavailable(output string) bool {
 		"API error: 503",
 		"no such host",
 		"i/o timeout",
+		"tls: failed to verify certificate",
+		"tls: failed to",
+		"x509:",
+		"certificate is not valid",
+		"certificate signed by unknown authority",
 	} {
 		if strings.Contains(output, marker) {
 			return true

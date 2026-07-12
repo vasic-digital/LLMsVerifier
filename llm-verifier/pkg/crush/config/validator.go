@@ -19,8 +19,8 @@ type ValidationError struct {
 
 // ValidationResult represents the result of a configuration validation
 type ValidationResult struct {
-	Valid    bool             `json:"valid"`
-	Errors   []ValidationError `json:"errors,omitempty"`
+	Valid    bool                `json:"valid"`
+	Errors   []ValidationError   `json:"errors,omitempty"`
 	Warnings []ValidationWarning `json:"warnings,omitempty"`
 }
 
@@ -79,7 +79,7 @@ func (sv *SchemaValidator) ValidateFromReader(r io.Reader) (*ValidationResult, e
 
 	// Basic validation
 	result := sv.validateStructure(&config)
-	
+
 	return result, nil
 }
 
@@ -178,7 +178,7 @@ func (sv *SchemaValidator) validateProviders(providers map[string]interface{}, e
 						Message: "at least one model must be configured",
 					})
 				}
-				
+
 				for i, model := range models {
 					if m, ok := model.(map[string]interface{}); ok {
 						sv.validateModel(name, i, m, errors)
@@ -201,7 +201,7 @@ func (sv *SchemaValidator) validateProviders(providers map[string]interface{}, e
 
 func (sv *SchemaValidator) validateModel(providerName string, index int, model map[string]interface{}, errors *[]ValidationError) {
 	prefix := fmt.Sprintf("providers.%s.models[%d]", providerName, index)
-	
+
 	requiredFields := []string{"id", "name", "cost_per_1m_in", "cost_per_1m_out", "context_window", "default_max_tokens"}
 	for _, field := range requiredFields {
 		if _, exists := model[field]; !exists {

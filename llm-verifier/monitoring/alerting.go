@@ -21,37 +21,37 @@ const (
 type AlertStatus string
 
 const (
-	AlertStatusActive      AlertStatus = "active"
+	AlertStatusActive       AlertStatus = "active"
 	AlertStatusAcknowledged AlertStatus = "acknowledged"
-	AlertStatusResolved    AlertStatus = "resolved"
+	AlertStatusResolved     AlertStatus = "resolved"
 )
 
 // Alert represents an alert
 type Alert struct {
-	ID          string        `json:"id"`
-	Name        string        `json:"name"`
-	Rule        string        `json:"rule"`
-	Severity    AlertSeverity `json:"severity"`
-	Message     string        `json:"message"`
-	Time        string        `json:"time"`
-	Active      bool          `json:"active"`
-	Status      AlertStatus   `json:"status"`
-	CreatedAt   time.Time     `json:"created_at"`
-	UpdatedAt   time.Time     `json:"updated_at"`
-	AcknowledgedAt *time.Time `json:"acknowledged_at,omitempty"`
-	ResolvedAt  *time.Time    `json:"resolved_at,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	ID             string                 `json:"id"`
+	Name           string                 `json:"name"`
+	Rule           string                 `json:"rule"`
+	Severity       AlertSeverity          `json:"severity"`
+	Message        string                 `json:"message"`
+	Time           string                 `json:"time"`
+	Active         bool                   `json:"active"`
+	Status         AlertStatus            `json:"status"`
+	CreatedAt      time.Time              `json:"created_at"`
+	UpdatedAt      time.Time              `json:"updated_at"`
+	AcknowledgedAt *time.Time             `json:"acknowledged_at,omitempty"`
+	ResolvedAt     *time.Time             `json:"resolved_at,omitempty"`
+	Metadata       map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // AlertRule defines conditions for triggering alerts
 type AlertRule struct {
-	ID          string        `json:"id"`
-	Name        string        `json:"name"`
-	Description string        `json:"description"`
-	Condition   string        `json:"condition"`
-	Threshold   float64       `json:"threshold"`
-	Severity    AlertSeverity `json:"severity"`
-	Enabled     bool          `json:"enabled"`
+	ID             string        `json:"id"`
+	Name           string        `json:"name"`
+	Description    string        `json:"description"`
+	Condition      string        `json:"condition"`
+	Threshold      float64       `json:"threshold"`
+	Severity       AlertSeverity `json:"severity"`
+	Enabled        bool          `json:"enabled"`
 	CooldownPeriod time.Duration `json:"cooldown_period"`
 	LastTriggered  time.Time     `json:"last_triggered"`
 }
@@ -137,37 +137,37 @@ func NewAlertManager(metricsTracker *MetricsTracker) *AlertManager {
 func (am *AlertManager) registerDefaultRules() {
 	// High error rate rule
 	am.AddRule(&AlertRule{
-		ID:          "high_error_rate",
-		Name:        "High Error Rate",
-		Description: "Triggers when API error rate exceeds threshold",
-		Condition:   "error_rate > threshold",
-		Threshold:   0.1, // 10% error rate
-		Severity:    AlertSeverityError,
-		Enabled:     true,
+		ID:             "high_error_rate",
+		Name:           "High Error Rate",
+		Description:    "Triggers when API error rate exceeds threshold",
+		Condition:      "error_rate > threshold",
+		Threshold:      0.1, // 10% error rate
+		Severity:       AlertSeverityError,
+		Enabled:        true,
 		CooldownPeriod: 5 * time.Minute,
 	})
 
 	// High response time rule
 	am.AddRule(&AlertRule{
-		ID:          "high_response_time",
-		Name:        "High Response Time",
-		Description: "Triggers when average response time exceeds threshold",
-		Condition:   "avg_response_time > threshold",
-		Threshold:   5000, // 5 seconds in ms
-		Severity:    AlertSeverityWarning,
-		Enabled:     true,
+		ID:             "high_response_time",
+		Name:           "High Response Time",
+		Description:    "Triggers when average response time exceeds threshold",
+		Condition:      "avg_response_time > threshold",
+		Threshold:      5000, // 5 seconds in ms
+		Severity:       AlertSeverityWarning,
+		Enabled:        true,
 		CooldownPeriod: 5 * time.Minute,
 	})
 
 	// Scheduler failure rate rule
 	am.AddRule(&AlertRule{
-		ID:          "scheduler_failures",
-		Name:        "Scheduler Job Failures",
-		Description: "Triggers when scheduler failure rate is high",
-		Condition:   "scheduler_failure_rate > threshold",
-		Threshold:   0.2, // 20% failure rate
-		Severity:    AlertSeverityError,
-		Enabled:     true,
+		ID:             "scheduler_failures",
+		Name:           "Scheduler Job Failures",
+		Description:    "Triggers when scheduler failure rate is high",
+		Condition:      "scheduler_failure_rate > threshold",
+		Threshold:      0.2, // 20% failure rate
+		Severity:       AlertSeverityError,
+		Enabled:        true,
 		CooldownPeriod: 10 * time.Minute,
 	})
 }

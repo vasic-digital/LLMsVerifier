@@ -279,7 +279,7 @@ func TestSchemaValidator_RegisterSchema(t *testing.T) {
 	sv := NewSchemaValidator()
 
 	schema := map[string]interface{}{
-		"type": "object",
+		"type":     "object",
 		"required": []interface{}{"name"},
 	}
 	sv.RegisterSchema("test_schema", schema)
@@ -293,7 +293,7 @@ func TestSchemaValidator_ValidateJSON(t *testing.T) {
 	sv := NewSchemaValidator()
 
 	schema := map[string]interface{}{
-		"type": "object",
+		"type":     "object",
 		"required": []interface{}{"name", "email"},
 		"properties": map[string]interface{}{
 			"name": map[string]interface{}{
@@ -673,11 +673,11 @@ func TestValidationLevel_Constants(t *testing.T) {
 
 func TestValidationResult_Struct(t *testing.T) {
 	result := ValidationResult{
-		Level:  LevelSyntax,
-		Passed: true,
-		Errors: []string{"error1"},
+		Level:    LevelSyntax,
+		Passed:   true,
+		Errors:   []string{"error1"},
 		Warnings: []string{"warning1"},
-		Score: 0.9,
+		Score:    0.9,
 		Metadata: map[string]interface{}{"key": "value"},
 	}
 

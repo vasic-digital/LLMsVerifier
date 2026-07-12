@@ -66,26 +66,26 @@ type NotificationManager struct {
 	maxRetries     int
 	retryDelay     time.Duration
 	// In-memory notification history for persistence
-	history        []*Notification
-	historyMux     sync.RWMutex
-	maxHistory     int
+	history    []*Notification
+	historyMux sync.RWMutex
+	maxHistory int
 }
 
 // Notification represents a notification to be sent
 type Notification struct {
-	ID          string                 `json:"id"`
-	Type        NotificationType       `json:"type"`
-	Channel     string                 `json:"channel"`
-	Priority    string                 `json:"priority"`
-	Title       string                 `json:"title"`
-	Message     string                 `json:"message"`
-	Data        map[string]interface{} `json:"data,omitempty"`
-	Recipient   string                 `json:"recipient"`
-	Sent        bool                   `json:"sent"`
-	Error       string                 `json:"error,omitempty"`
-	RetryCount  int                    `json:"retry_count"`
-	CreatedAt   time.Time              `json:"created_at"`
-	SentAt      *time.Time             `json:"sent_at,omitempty"`
+	ID         string                 `json:"id"`
+	Type       NotificationType       `json:"type"`
+	Channel    string                 `json:"channel"`
+	Priority   string                 `json:"priority"`
+	Title      string                 `json:"title"`
+	Message    string                 `json:"message"`
+	Data       map[string]interface{} `json:"data,omitempty"`
+	Recipient  string                 `json:"recipient"`
+	Sent       bool                   `json:"sent"`
+	Error      string                 `json:"error,omitempty"`
+	RetryCount int                    `json:"retry_count"`
+	CreatedAt  time.Time              `json:"created_at"`
+	SentAt     *time.Time             `json:"sent_at,omitempty"`
 }
 
 // NewNotificationManager creates a new notification manager
@@ -104,7 +104,6 @@ func NewNotificationManager(cfg *config.Config) *NotificationManager {
 		maxHistory:  1000, // Keep last 1000 notifications in memory
 	}
 }
-
 
 // SetEventManager sets the event manager for receiving events
 func (nm *NotificationManager) SetEventManager(em *events.EventManager) {

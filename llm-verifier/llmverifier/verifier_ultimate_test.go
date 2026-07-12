@@ -33,15 +33,15 @@ func TestVerifier_ExportIntegrationTests(t *testing.T) {
 	// Create test configuration for export
 	testConfig := &config.Config{
 		Global: config.GlobalConfig{
-			BaseURL:     mockExportServer.URL,
-			APIKey:      "export-key",
+			BaseURL:      mockExportServer.URL,
+			APIKey:       "export-key",
 			DefaultModel: "export-model",
 		},
 		LLMs: []config.LLMConfig{
 			{
 				Name:     "ExportTestLLM",
 				Endpoint: mockExportServer.URL,
-				APIKey:  "export-key",
+				APIKey:   "export-key",
 				Model:    "export-model",
 			},
 		},
@@ -61,7 +61,7 @@ func TestVerifier_ExportIntegrationTests(t *testing.T) {
 
 	// Test JSON export via buffer
 	var jsonBuffer bytes.Buffer
-	
+
 	// Manually serialize config since ExportJSON is not a method
 	configJson, err := json.MarshalIndent(testConfig, "", "  ")
 	if err != nil {
@@ -69,7 +69,7 @@ func TestVerifier_ExportIntegrationTests(t *testing.T) {
 	}
 
 	jsonBuffer.Write(configJson)
-	
+
 	jsonOutput := jsonBuffer.String()
 	if len(jsonOutput) == 0 {
 		t.Error("Expected JSON output")
@@ -103,8 +103,8 @@ func TestVerifier_ComprehensiveScoreScenarios(t *testing.T) {
 	highEndModel := VerificationResult{
 		ModelInfo: ModelInfo{
 			ID:                "gpt-4-turbo",
-			MaxOutputTokens:    4096,
-			ContextWindow:      ContextWindow{TotalMaxTokens: 128000},
+			MaxOutputTokens:   4096,
+			ContextWindow:     ContextWindow{TotalMaxTokens: 128000},
 			SupportsVision:    true,
 			SupportsAudio:     true,
 			SupportsReasoning: true,
@@ -126,17 +126,17 @@ func TestVerifier_ComprehensiveScoreScenarios(t *testing.T) {
 			BatchProcessing:  true,
 		},
 		CodeCapabilities: CodeCapabilityResult{
-			CodeGeneration:     true,
+			CodeGeneration:    true,
 			DebuggingAccuracy: 95.0,
 			PromptResponse: PromptResponseTest{
 				OverallSuccessRate: 92.3,
 			},
 		},
 		GenerativeCapabilities: GenerativeCapabilityResult{
-			CreativeWriting:        true,
-			Storytelling:          true,
-			OriginalityScore:       92.0,
-			CreativityScore:        90.0,
+			CreativeWriting:  true,
+			Storytelling:     true,
+			OriginalityScore: 92.0,
+			CreativityScore:  90.0,
 		},
 		Availability: AvailabilityResult{
 			Exists:     true,
@@ -171,9 +171,9 @@ func TestVerifier_ComprehensiveScoreScenarios(t *testing.T) {
 	// Test scenario 2: Basic model with minimal capabilities
 	basicModel := VerificationResult{
 		ModelInfo: ModelInfo{
-			ID:                "basic-model",
-			MaxOutputTokens:    1000,
-			ContextWindow:      ContextWindow{TotalMaxTokens: 4000},
+			ID:              "basic-model",
+			MaxOutputTokens: 1000,
+			ContextWindow:   ContextWindow{TotalMaxTokens: 4000},
 		},
 		FeatureDetection: FeatureDetectionResult{
 			CodeGeneration: true,
@@ -187,9 +187,9 @@ func TestVerifier_ComprehensiveScoreScenarios(t *testing.T) {
 			},
 		},
 		GenerativeCapabilities: GenerativeCapabilityResult{
-			CreativeWriting: false,
+			CreativeWriting:  false,
 			OriginalityScore: 40.0,
-			CreativityScore:   35.0,
+			CreativityScore:  35.0,
 		},
 		Availability: AvailabilityResult{
 			Exists:     true,
@@ -236,7 +236,7 @@ func TestVerifier_ComprehensiveScoreScenarios(t *testing.T) {
 func TestVerifier_RealWorldProviderSimulation(t *testing.T) {
 	// Mock server simulating different real-world provider behaviors
 	providerType := 0
-	
+
 	mockRealWorldServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		providerType = (providerType + 1) % 3
 		w.Header().Set("Content-Type", "application/json")
@@ -297,15 +297,15 @@ func TestVerifier_RealWorldProviderSimulation(t *testing.T) {
 			name: "Generic Provider",
 			cfg: &config.Config{
 				Global: config.GlobalConfig{
-					BaseURL:     mockRealWorldServer.URL,
-					APIKey:      "generic-key",
+					BaseURL:      mockRealWorldServer.URL,
+					APIKey:       "generic-key",
 					DefaultModel: "generic-model",
 				},
 				LLMs: []config.LLMConfig{
 					{
 						Name:     "Generic Provider",
 						Endpoint: mockRealWorldServer.URL,
-						APIKey:  "generic-key",
+						APIKey:   "generic-key",
 						Model:    "generic-model",
 					},
 				},
@@ -315,15 +315,15 @@ func TestVerifier_RealWorldProviderSimulation(t *testing.T) {
 			name: "Tool Using Provider",
 			cfg: &config.Config{
 				Global: config.GlobalConfig{
-					BaseURL:     mockRealWorldServer.URL,
-					APIKey:      "tool-key",
+					BaseURL:      mockRealWorldServer.URL,
+					APIKey:       "tool-key",
 					DefaultModel: "tool-model",
 				},
 				LLMs: []config.LLMConfig{
 					{
 						Name:     "Tool Provider",
 						Endpoint: mockRealWorldServer.URL,
-						APIKey:  "tool-key",
+						APIKey:   "tool-key",
 						Model:    "tool-model",
 					},
 				},
@@ -374,10 +374,10 @@ func TestVerifier_RealWorldProviderSimulation(t *testing.T) {
 func TestVerifier_AdvancedErrorScenarios(t *testing.T) {
 	// Server with various error scenarios
 	errorScenario := 0
-	
+
 	mockErrorServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		errorScenario = (errorScenario + 1) % 7
-		
+
 		switch errorScenario {
 		case 0: // Rate limit
 			w.WriteHeader(http.StatusTooManyRequests)
@@ -407,16 +407,16 @@ func TestVerifier_AdvancedErrorScenarios(t *testing.T) {
 
 	cfgError := &config.Config{
 		Global: config.GlobalConfig{
-			BaseURL:     mockErrorServer.URL,
-			APIKey:      "error-key",
+			BaseURL:      mockErrorServer.URL,
+			APIKey:       "error-key",
 			DefaultModel: "error-model",
-			Timeout:     500 * time.Millisecond, // Short timeout for testing
+			Timeout:      500 * time.Millisecond, // Short timeout for testing
 		},
 		LLMs: []config.LLMConfig{
 			{
 				Name:     "ErrorTestLLM",
 				Endpoint: mockErrorServer.URL,
-				APIKey:  "error-key",
+				APIKey:   "error-key",
 				Model:    "error-model",
 			},
 		},
@@ -454,10 +454,10 @@ func TestVerifier_AdvancedErrorScenarios(t *testing.T) {
 	// Test with network unavailable
 	cfgNetwork := &config.Config{
 		Global: config.GlobalConfig{
-			BaseURL:     "https://nonexistent.network.example.com",
-			APIKey:      "network-key",
+			BaseURL:      "https://nonexistent.network.example.com",
+			APIKey:       "network-key",
 			DefaultModel: "network-model",
-			Timeout:     100 * time.Millisecond,
+			Timeout:      100 * time.Millisecond,
 		},
 	}
 
@@ -496,7 +496,7 @@ func TestVerifier_PerformanceBoundaryTests(t *testing.T) {
 		mu.Unlock()
 		t.Logf("Perf request %d: path %s", currentCounter, r.URL.Path)
 		start := time.Now()
-		
+
 		// Simulate varying response times
 		switch {
 		case currentCounter%20 == 0:
@@ -509,10 +509,10 @@ func TestVerifier_PerformanceBoundaryTests(t *testing.T) {
 			// Normal response
 			time.Sleep(50 * time.Millisecond)
 		}
-		
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		
+
 		if r.URL.Path == "/models" {
 			// Return list of models for ListModels call
 			w.Write([]byte(`{
@@ -552,16 +552,16 @@ func TestVerifier_PerformanceBoundaryTests(t *testing.T) {
 
 	cfgPerf := &config.Config{
 		Global: config.GlobalConfig{
-			BaseURL:     mockPerfServer.URL,
-			APIKey:      "perf-key",
+			BaseURL:      mockPerfServer.URL,
+			APIKey:       "perf-key",
 			DefaultModel: "perf-model",
-			Timeout:     3 * time.Second,
+			Timeout:      3 * time.Second,
 		},
 		LLMs: []config.LLMConfig{
 			{
 				Name:     "PerformanceTestLLM",
 				Endpoint: mockPerfServer.URL,
-				APIKey:  "perf-key",
+				APIKey:   "perf-key",
 				Model:    "perf-model",
 			},
 		},
@@ -591,7 +591,7 @@ func TestVerifier_PerformanceBoundaryTests(t *testing.T) {
 	// Verify performance metrics
 	if len(results) > 0 {
 		result := results[0]
-		
+
 		if result.ResponseTime.MeasurementCount < 10 {
 			t.Errorf("Should have made multiple measurements, got %d", result.ResponseTime.MeasurementCount)
 		}
@@ -605,7 +605,7 @@ func TestVerifier_PerformanceBoundaryTests(t *testing.T) {
 			var totalLatency time.Duration
 			maxLatency := time.Duration(0)
 			minLatency := latencies[0]
-			
+
 			for _, latency := range latencies {
 				totalLatency += latency
 				if latency > maxLatency {
@@ -615,9 +615,9 @@ func TestVerifier_PerformanceBoundaryTests(t *testing.T) {
 					minLatency = latency
 				}
 			}
-			
+
 			avgLatency := totalLatency / time.Duration(len(latencies))
-			
+
 			t.Logf("Performance test: Duration=%v, Requests=%d, Avg Latency=%v, Min=%v, Max=%v",
 				duration, len(latencies), avgLatency, minLatency, maxLatency)
 		}
@@ -676,15 +676,15 @@ func TestVerifier_DataIntegrityTests(t *testing.T) {
 
 	cfgConsistency := &config.Config{
 		Global: config.GlobalConfig{
-			BaseURL:     mockConsistencyServer.URL,
-			APIKey:      "consistency-key",
+			BaseURL:      mockConsistencyServer.URL,
+			APIKey:       "consistency-key",
 			DefaultModel: "consistency-model",
 		},
 		LLMs: []config.LLMConfig{
 			{
 				Name:     "ConsistencyTestLLM",
 				Endpoint: mockConsistencyServer.URL,
-				APIKey:  "consistency-key",
+				APIKey:   "consistency-key",
 				Model:    "consistency-model",
 			},
 		},
@@ -712,14 +712,14 @@ func TestVerifier_DataIntegrityTests(t *testing.T) {
 	// Verify consistency across rounds
 	for i, results := range allResults {
 		t.Logf("Round %d: %d results", i, len(results))
-		
+
 		if len(results) == 0 {
 			t.Errorf("Round %d: Expected at least one result", i)
 			continue
 		}
 
 		result := results[0]
-		
+
 		// Basic consistency checks
 		if result.ModelInfo.ID == "" {
 			t.Errorf("Round %d: Missing model ID", i)
@@ -772,15 +772,15 @@ func TestVerifier_ConfigurationEdgeCases(t *testing.T) {
 	// Test with very long configuration values
 	longConfig := &config.Config{
 		Global: config.GlobalConfig{
-			BaseURL:     strings.Repeat("https://example.com/", 10),
-			APIKey:      strings.Repeat("test-key-", 10),
+			BaseURL:      strings.Repeat("https://example.com/", 10),
+			APIKey:       strings.Repeat("test-key-", 10),
 			DefaultModel: strings.Repeat("model-", 10),
 		},
 		LLMs: []config.LLMConfig{
 			{
 				Name:     strings.Repeat("LLM-", 10),
 				Endpoint: strings.Repeat("https://endpoint.com/", 10),
-				APIKey:  strings.Repeat("key-", 10),
+				APIKey:   strings.Repeat("key-", 10),
 				Model:    strings.Repeat("model-", 10),
 			},
 		},
@@ -796,23 +796,59 @@ func TestVerifier_ConfigurationEdgeCases(t *testing.T) {
 // Helper function to count detected features
 func countDetectedFeatures(features FeatureDetectionResult) int {
 	count := 0
-	if features.ToolUse { count++ }
-	if features.FunctionCalling { count++ }
-	if features.CodeGeneration { count++ }
-	if features.CodeCompletion { count++ }
-	if features.CodeExplanation { count++ }
-	if features.CodeReview { count++ }
-	if features.Embeddings { count++ }
-	if features.Reranking { count++ }
-	if features.ImageGeneration { count++ }
-	if features.AudioGeneration { count++ }
-	if features.VideoGeneration { count++ }
-	if features.Multimodal { count++ }
-	if features.Streaming { count++ }
-	if features.JSONMode { count++ }
-	if features.StructuredOutput { count++ }
-	if features.Reasoning { count++ }
-	if features.ParallelToolUse { count++ }
-	if features.BatchProcessing { count++ }
+	if features.ToolUse {
+		count++
+	}
+	if features.FunctionCalling {
+		count++
+	}
+	if features.CodeGeneration {
+		count++
+	}
+	if features.CodeCompletion {
+		count++
+	}
+	if features.CodeExplanation {
+		count++
+	}
+	if features.CodeReview {
+		count++
+	}
+	if features.Embeddings {
+		count++
+	}
+	if features.Reranking {
+		count++
+	}
+	if features.ImageGeneration {
+		count++
+	}
+	if features.AudioGeneration {
+		count++
+	}
+	if features.VideoGeneration {
+		count++
+	}
+	if features.Multimodal {
+		count++
+	}
+	if features.Streaming {
+		count++
+	}
+	if features.JSONMode {
+		count++
+	}
+	if features.StructuredOutput {
+		count++
+	}
+	if features.Reasoning {
+		count++
+	}
+	if features.ParallelToolUse {
+		count++
+	}
+	if features.BatchProcessing {
+		count++
+	}
 	return count
 }

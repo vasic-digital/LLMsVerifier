@@ -12,8 +12,8 @@ import (
 
 func TestConfig_Structure(t *testing.T) {
 	config := &Config{
-		Plugin:     []string{"plugin1", "plugin2"},
-		Enterprise: &EnterpriseConfig{URL: "https://enterprise.example.com"},
+		Plugin:       []string{"plugin1", "plugin2"},
+		Enterprise:   &EnterpriseConfig{URL: "https://enterprise.example.com"},
 		Instructions: []string{"instruction1"},
 		Provider: map[string]ProviderConfig{
 			"openai": {Model: "gpt-4"},

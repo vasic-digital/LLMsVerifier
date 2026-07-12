@@ -29,42 +29,42 @@ func (md *ModelDisplayName) FormatWithFeatureSuffixesAndLLMsVerifier(modelName s
 	// Remove any existing suffixes first
 	cleanName := md.naming.RemoveScoreSuffix(modelName)
 	cleanName = md.removeFeatureSuffixes(cleanName)
-	
+
 	// Build suffix list
 	var suffixes []string
-	
+
 	// Extract features based on modelInfo type (map or struct)
 	features := md.extractFeatures(modelInfo)
-	
+
 	// Add feature-based suffixes in consistent order
 	// Order: technical features, cost, licensing, performance
 	if features.supportsBrotli {
 		suffixes = append(suffixes, "(brotli)")
 	}
-	
+
 	if features.supportsHTTP3 {
 		suffixes = append(suffixes, "(http3)")
 	}
-	
+
 	if features.supportsToon {
 		suffixes = append(suffixes, "(toon)")
 	}
-	
+
 	if features.isOpenSource {
 		suffixes = append(suffixes, "(open source)")
 	}
-	
+
 	if features.isFree {
 		suffixes = append(suffixes, "(free to use)")
 	}
-	
+
 	if features.isFast {
 		suffixes = append(suffixes, "(fast)")
 	}
-	
+
 	// Add mandatory LLMsVerifier suffix as the final suffix
 	suffixes = append(suffixes, "(llmsvd)")
-	
+
 	// Build final name
 	return fmt.Sprintf("%s %s", cleanName, strings.Join(suffixes, " "))
 }
@@ -85,7 +85,7 @@ type ModelFeatures struct {
 // extractFeatures extracts feature information from model data
 func (md *ModelDisplayName) extractFeatures(modelInfo interface{}) ModelFeatures {
 	features := ModelFeatures{}
-	
+
 	// Handle map[string]interface{} type
 	if modelMap, ok := modelInfo.(map[string]interface{}); ok {
 		// Check for boolean flags
@@ -94,25 +94,25 @@ func (md *ModelDisplayName) extractFeatures(modelInfo interface{}) ModelFeatures
 				features.supportsBrotli = boolVal
 			}
 		}
-		
+
 		if val, exists := modelMap["supports_http3"]; exists {
 			if boolVal, ok := val.(bool); ok {
 				features.supportsHTTP3 = boolVal
 			}
 		}
-		
+
 		if val, exists := modelMap["supports_toon"]; exists {
 			if boolVal, ok := val.(bool); ok {
 				features.supportsToon = boolVal
 			}
 		}
-		
+
 		if val, exists := modelMap["open_weights"]; exists {
 			if boolVal, ok := val.(bool); ok {
 				features.isOpenSource = boolVal
 			}
 		}
-		
+
 		// Check for cost information
 		if cost, exists := modelMap["cost"]; exists {
 			if costMap, ok := cost.(map[string]interface{}); ok {
@@ -130,7 +130,7 @@ func (md *ModelDisplayName) extractFeatures(modelInfo interface{}) ModelFeatures
 				}
 			}
 		}
-		
+
 		// Check response time for "fast" flag
 		if val, exists := modelMap["response_time_ms"]; exists {
 			if responseTime, ok := val.(float64); ok {
@@ -139,10 +139,10 @@ func (md *ModelDisplayName) extractFeatures(modelInfo interface{}) ModelFeatures
 			}
 		}
 	}
-	
+
 	// Handle struct type (if needed in future)
 	// Add struct field extraction here
-	
+
 	return features
 }
 
@@ -155,7 +155,7 @@ func (md *ModelDisplayName) removeFeatureSuffixes(name string) string {
 		"(experimental)", "(beta)", "(prod)", "(stable)",
 		"(deprecated)", "(legacy)", "(llmsvd)",
 	}
-	
+
 	for _, suffix := range suffixes {
 		name = strings.ReplaceAll(name, " "+suffix, "")
 		// Also handle case where it's the only suffix
@@ -164,7 +164,7 @@ func (md *ModelDisplayName) removeFeatureSuffixes(name string) string {
 			name = strings.TrimSpace(name)
 		}
 	}
-	
+
 	return name
 }
 
@@ -191,19 +191,19 @@ func GetAllFeatureSuffixes() []string {
 
 // FormatModelNameWithScoreAndFeatures formats a model name with both score and feature suffixes
 func (md *ModelDisplayName) FormatModelNameWithScoreAndFeatures(
-	modelName string, 
-	score float64, 
+	modelName string,
+	score float64,
 	modelInfo interface{},
 	includeScore bool,
 ) string {
 	// Start with feature formatting
 	nameWithFeatures := md.FormatWithFeatureSuffixes(modelName, modelInfo)
-	
+
 	// Add score suffix if requested
 	if includeScore {
 		return md.naming.AddScoreSuffix(nameWithFeatures, score)
 	}
-	
+
 	return nameWithFeatures
 }
 
@@ -211,20 +211,20 @@ func (md *ModelDisplayName) FormatModelNameWithScoreAndFeatures(
 func (md *ModelDisplayName) ParseFeatureSuffixes(modelName string) []string {
 	var found []string
 	allSuffixes := GetAllFeatureSuffixes()
-	
+
 	for _, suffix := range allSuffixes {
 		if strings.Contains(modelName, suffix) {
 			found = append(found, suffix)
 		}
 	}
-	
+
 	return found
 }
 
 // HasFeatureSuffix checks if a model name has specific feature suffixes
 func (md *ModelDisplayName) HasFeatureSuffix(modelName string, suffixes ...string) bool {
 	allFeatures := md.ParseFeatureSuffixes(modelName)
-	
+
 	for _, toCheck := range suffixes {
 		for _, found := range allFeatures {
 			if found == toCheck {
@@ -232,20 +232,20 @@ func (md *ModelDisplayName) HasFeatureSuffix(modelName string, suffixes ...strin
 			}
 		}
 	}
-	
+
 	return false
 }
 
 // ValidateFeatureSuffix validates that a suffix is in the allowed list
 func (md *ModelDisplayName) ValidateFeatureSuffix(suffix string) (valid bool, suggestion string) {
 	allSuffixes := GetAllFeatureSuffixes()
-	
+
 	for _, validSuffix := range allSuffixes {
 		if suffix == validSuffix {
 			return true, ""
 		}
 	}
-	
+
 	// If not found, return false with suggested format
 	return false, "Unknown suffix. Use one of: " + strings.Join(allSuffixes, ", ")
 }

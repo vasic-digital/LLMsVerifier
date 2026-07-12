@@ -15,15 +15,15 @@ import (
 type Subscription struct {
 	mu sync.Mutex
 
-	id       string
-	topic    string
-	groupID  string
-	handler  messaging.MessageHandler
-	reader   *kafka.Reader
-	metrics  *messaging.BrokerMetrics
-	logger   *logrus.Logger
-	active   bool
-	closeCh  chan struct{}
+	id      string
+	topic   string
+	groupID string
+	handler messaging.MessageHandler
+	reader  *kafka.Reader
+	metrics *messaging.BrokerMetrics
+	logger  *logrus.Logger
+	active  bool
+	closeCh chan struct{}
 }
 
 // consume reads messages from Kafka and processes them.

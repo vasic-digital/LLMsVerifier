@@ -228,8 +228,8 @@ func (p *HTTPBenchmarkProvider) GetName() string {
 // endpoint. Only the fields the spec strictly requires are populated
 // — every OpenAI-compatible server accepts the minimum form.
 type httpChatCompletionsRequest struct {
-	Model    string                       `json:"model"`
-	Messages []httpChatCompletionMessage  `json:"messages"`
+	Model    string                      `json:"model"`
+	Messages []httpChatCompletionMessage `json:"messages"`
 }
 
 type httpChatCompletionMessage struct {

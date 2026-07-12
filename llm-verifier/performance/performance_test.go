@@ -516,7 +516,7 @@ func TestQueryStatStruct(t *testing.T) {
 	stat := QueryStat{
 		Query:     "SELECT * FROM models",
 		Count:     100,
-		TotalTime:  10 * time.Second,
+		TotalTime: 10 * time.Second,
 		AvgTime:   100 * time.Millisecond,
 		LastRun:   now,
 		SlowCount: 5,
@@ -529,8 +529,8 @@ func TestQueryStatStruct(t *testing.T) {
 
 func TestContains(t *testing.T) {
 	tests := []struct {
-		s       string
-		substr  string
+		s        string
+		substr   string
 		contains bool
 	}{
 		{"hello world", "world", true},
@@ -549,8 +549,8 @@ func TestContains(t *testing.T) {
 
 func TestContainsSubstring(t *testing.T) {
 	tests := []struct {
-		s       string
-		substr  string
+		s        string
+		substr   string
 		contains bool
 	}{
 		{"hello world", "world", true},

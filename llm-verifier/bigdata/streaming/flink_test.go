@@ -101,10 +101,10 @@ func TestNewFlinkClient(t *testing.T) {
 
 	t.Run("with custom config", func(t *testing.T) {
 		config := &FlinkConfig{
-			JobManagerHost:  "flink.example.com",
-			JobManagerPort:  6123,
-			WebUIPort:       8082,
-			RequestTimeout:  60 * time.Second,
+			JobManagerHost: "flink.example.com",
+			JobManagerPort: 6123,
+			WebUIPort:      8082,
+			RequestTimeout: 60 * time.Second,
 		}
 		client, err := NewFlinkClient(config)
 		require.NoError(t, err)

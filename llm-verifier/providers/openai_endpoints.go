@@ -1024,8 +1024,8 @@ type CompletionRequest struct {
 	Model       string   `json:"model"`
 	Prompt      string   `json:"prompt"`
 	MaxTokens   int      `json:"max_tokens,omitempty"`
-	Temperature float64   `json:"temperature,omitempty"`
-	TopP        float64   `json:"top_p,omitempty"`
+	Temperature float64  `json:"temperature,omitempty"`
+	TopP        float64  `json:"top_p,omitempty"`
 	Stream      bool     `json:"stream,omitempty"`
 	Logprobs    *bool    `json:"logprobs,omitempty"`
 	Echo        bool     `json:"echo,omitempty"`
@@ -1059,36 +1059,36 @@ type ModerationRequest struct {
 
 // ModerationResponse represents response from moderations
 type ModerationResponse struct {
-	ID     string `json:"id"`
-	Object string `json:"object"`
-	Model  string `json:"model"`
+	ID      string `json:"id"`
+	Object  string `json:"object"`
+	Model   string `json:"model"`
 	Results []struct {
-		Flagged bool `json:"flagged"`
+		Flagged    bool `json:"flagged"`
 		Categories struct {
-			Sexual             bool `json:"sexual"`
-			Hate              bool `json:"hate"`
-			Harassment         bool `json:"harassment"`
-			SelfHarm          bool `json:"self-harm"`
-			SexualMinors       bool `json:"sexual/minors"`
-			HateThreatening   bool `json:"hate/threatening"`
-			ViolenceGraphic   bool `json:"violence/graphic"`
-			SelfHarmIntent    bool `json:"self-harm/intent"`
-			SelfHarmInstructions bool `json:"self-harm/instructions"`
+			Sexual                bool `json:"sexual"`
+			Hate                  bool `json:"hate"`
+			Harassment            bool `json:"harassment"`
+			SelfHarm              bool `json:"self-harm"`
+			SexualMinors          bool `json:"sexual/minors"`
+			HateThreatening       bool `json:"hate/threatening"`
+			ViolenceGraphic       bool `json:"violence/graphic"`
+			SelfHarmIntent        bool `json:"self-harm/intent"`
+			SelfHarmInstructions  bool `json:"self-harm/instructions"`
 			HarassmentThreatening bool `json:"harassment/threatening"`
-			Violence          bool `json:"violence"`
+			Violence              bool `json:"violence"`
 		} `json:"categories"`
 		CategoryScores struct {
-			Sexual             float64 `json:"sexual"`
-			Hate              float64 `json:"hate"`
-			Harassment         float64 `json:"harassment"`
-			SelfHarm          float64 `json:"self-harm"`
-			SexualMinors       float64 `json:"sexual/minors"`
-			HateThreatening   float64 `json:"hate/threatening"`
-			ViolenceGraphic   float64 `json:"violence/graphic"`
-			SelfHarmIntent    float64 `json:"self-harm/intent"`
-			SelfHarmInstructions float64 `json:"self-harm/instructions"`
+			Sexual                float64 `json:"sexual"`
+			Hate                  float64 `json:"hate"`
+			Harassment            float64 `json:"harassment"`
+			SelfHarm              float64 `json:"self-harm"`
+			SexualMinors          float64 `json:"sexual/minors"`
+			HateThreatening       float64 `json:"hate/threatening"`
+			ViolenceGraphic       float64 `json:"violence/graphic"`
+			SelfHarmIntent        float64 `json:"self-harm/intent"`
+			SelfHarmInstructions  float64 `json:"self-harm/instructions"`
 			HarassmentThreatening float64 `json:"harassment/threatening"`
-			Violence          float64 `json:"violence"`
+			Violence              float64 `json:"violence"`
 		} `json:"category_scores"`
 	} `json:"results"`
 }
@@ -1109,8 +1109,8 @@ type ImageRequest struct {
 type ImageResponse struct {
 	Created int64 `json:"created"`
 	Data    []struct {
-		URL          string `json:"url,omitempty"`
-		B64JSON      string `json:"b64_json,omitempty"`
+		URL           string `json:"url,omitempty"`
+		B64JSON       string `json:"b64_json,omitempty"`
 		RevisedPrompt string `json:"revised_prompt,omitempty"`
 	} `json:"data"`
 }
@@ -1156,90 +1156,90 @@ type TranscriptionResponse struct {
 
 // SpeechRequest represents request for text-to-speech
 type SpeechRequest struct {
-	Model       string  `json:"model"`
-	Input       string  `json:"input"`
-	Voice       string  `json:"voice"`
+	Model          string  `json:"model"`
+	Input          string  `json:"input"`
+	Voice          string  `json:"voice"`
 	ResponseFormat string  `json:"response_format,omitempty"`
-	Speed       float64 `json:"speed,omitempty"`
+	Speed          float64 `json:"speed,omitempty"`
 }
 
 // FineTuningJobRequest represents request for fine-tuning
 type FineTuningJobRequest struct {
-	TrainingFile  string  `json:"training_file"`
-	ValidationFile string  `json:"validation_file,omitempty"`
-	Model         string  `json:"model"`
+	TrainingFile    string `json:"training_file"`
+	ValidationFile  string `json:"validation_file,omitempty"`
+	Model           string `json:"model"`
 	Hyperparameters struct {
-		BatchSize      int    `json:"batch_size,omitempty"`
+		BatchSize              int     `json:"batch_size,omitempty"`
 		LearningRateMultiplier float64 `json:"learning_rate_multiplier,omitempty"`
-		NEpochs       int    `json:"n_epochs,omitempty"`
+		NEpochs                int     `json:"n_epochs,omitempty"`
 	} `json:"hyperparameters,omitempty"`
 	IntegrationSuffix string `json:"integration_suffix,omitempty"`
-	Seed           int64  `json:"seed,omitempty"`
+	Seed              int64  `json:"seed,omitempty"`
 }
 
 // FineTuningJobResponse represents response from fine-tuning
 type FineTuningJobResponse struct {
-	ID           string `json:"id"`
-	Object       string `json:"object"`
-	Model        string `json:"model"`
-	CreatedAt    int64  `json:"created_at"`
-	FinishedAt   *int64 `json:"finished_at,omitempty"`
-	TrainingFile string `json:"training_file"`
-	ValidationFile *string `json:"validation_file,omitempty"`
-	TrainedTokens *int   `json:"trained_tokens,omitempty"`
+	ID              string  `json:"id"`
+	Object          string  `json:"object"`
+	Model           string  `json:"model"`
+	CreatedAt       int64   `json:"created_at"`
+	FinishedAt      *int64  `json:"finished_at,omitempty"`
+	TrainingFile    string  `json:"training_file"`
+	ValidationFile  *string `json:"validation_file,omitempty"`
+	TrainedTokens   *int    `json:"trained_tokens,omitempty"`
 	Hyperparameters struct {
-		BatchSize      int    `json:"batch_size"`
+		BatchSize              int     `json:"batch_size"`
 		LearningRateMultiplier float64 `json:"learning_rate_multiplier"`
-		NEpochs       int    `json:"n_epochs"`
+		NEpochs                int     `json:"n_epochs"`
 	} `json:"hyperparameters"`
-	OrganizationID string `json:"organization_id,omitempty"`
-	Status        string `json:"status"`
+	OrganizationID   string  `json:"organization_id,omitempty"`
+	Status           string  `json:"status"`
 	ValidationFileID *string `json:"validation_file_id,omitempty"`
-	TrainingFileID string `json:"training_file_id"`
-	Error         *struct {
+	TrainingFileID   string  `json:"training_file_id"`
+	Error            *struct {
 		Code    string `json:"code"`
 		Message string `json:"message"`
 		Param   string `json:"param"`
 	} `json:"error,omitempty"`
-	UserProvidedSuffix string `json:"user_provided_suffix,omitempty"`
-	TrainedModel     *string `json:"trained_model,omitempty"`
-	Integrations     []struct {
+	UserProvidedSuffix string  `json:"user_provided_suffix,omitempty"`
+	TrainedModel       *string `json:"trained_model,omitempty"`
+	Integrations       []struct {
 		Type     string `json:"type"`
 		Workflow string `json:"workflow"`
 	} `json:"integrations,omitempty"`
-	Seed int64 `json:"seed,omitempty"`
+	Seed             int64 `json:"seed,omitempty"`
 	EstimatedMetrics struct {
-		FullLoss           float64 `json:"full_loss"`
-		TrainingLoss       float64 `json:"training_loss"`
-		TrainingPrecision  float64 `json:"training_precision"`
+		FullLoss          float64 `json:"full_loss"`
+		TrainingLoss      float64 `json:"training_loss"`
+		TrainingPrecision float64 `json:"training_precision"`
 		ValidationLoss    float64 `json:"validation_loss"`
 	} `json:"estimated_metrics,omitempty"`
 }
 
 // FineTuningJobsResponse represents response from listing fine-tuning jobs
 type FineTuningJobsResponse struct {
-	Object string `json:"object"`
-	Data   []FineTuningJobResponse `json:"data"`
-	HasMore bool `json:"has_more"`
+	Object  string                  `json:"object"`
+	Data    []FineTuningJobResponse `json:"data"`
+	HasMore bool                    `json:"has_more"`
 }
 
 // ModelsResponse represents response from listing models
 type ModelsResponse struct {
-	Object string        `json:"object"`
+	Object string      `json:"object"`
 	Data   []ModelInfo `json:"data"`
 }
 
 // AssistantRequest represents request for creating assistant
 type AssistantRequest struct {
-	Model            string                 `json:"model,omitempty"`
-	Name             string                 `json:"name,omitempty"`
-	Description       string                 `json:"description,omitempty"`
-	Instructions     string                 `json:"instructions,omitempty"`
-	Tools            []interface{}          `json:"tools,omitempty"`
-	ToolResources    map[string]interface{} `json:"tool_resources,omitempty"`
-	Temperature      float64               `json:"temperature,omitempty"`
-	TopP             float64               `json:"top_p,omitempty"`
-	ResponseFormat   interface{}           `json:"response_format,omitempty"`
+	Model          string                 `json:"model,omitempty"`
+	Name           string                 `json:"name,omitempty"`
+	Description    string                 `json:"description,omitempty"`
+	Instructions   string                 `json:"instructions,omitempty"`
+	Tools          []interface{}          `json:"tools,omitempty"`
+	ToolResources  map[string]interface{} `json:"tool_resources,omitempty"`
+	Temperature    float64                `json:"temperature,omitempty"`
+	TopP           float64                `json:"top_p,omitempty"`
+	ResponseFormat interface{}            `json:"response_format,omitempty"`
 }
 
 // AssistantResponse represents response from assistant
@@ -1252,53 +1252,53 @@ type AssistantResponse struct {
 	Model          string                 `json:"model"`
 	Instructions   *string                `json:"instructions,omitempty"`
 	Tools          []interface{}          `json:"tools,omitempty"`
-	ToolResources map[string]interface{} `json:"tool_resources,omitempty"`
+	ToolResources  map[string]interface{} `json:"tool_resources,omitempty"`
 	Temperature    *float64               `json:"temperature,omitempty"`
 	TopP           *float64               `json:"top_p,omitempty"`
-	ResponseFormat interface{}           `json:"response_format,omitempty"`
+	ResponseFormat interface{}            `json:"response_format,omitempty"`
 }
 
 // AssistantsResponse represents response from listing assistants
 type AssistantsResponse struct {
-	Object string            `json:"object"`
-	Data   []AssistantResponse `json:"data"`
-	HasMore bool              `json:"has_more"`
+	Object  string              `json:"object"`
+	Data    []AssistantResponse `json:"data"`
+	HasMore bool                `json:"has_more"`
 }
 
 // ThreadRequest represents request for creating thread
 type ThreadRequest struct {
 	Messages []struct {
-		Role         string                 `json:"role"`
-		Content      []interface{}          `json:"content"`
-		FileIds      []string               `json:"file_ids,omitempty"`
-		Metadata     map[string]interface{} `json:"metadata,omitempty"`
+		Role     string                 `json:"role"`
+		Content  []interface{}          `json:"content"`
+		FileIds  []string               `json:"file_ids,omitempty"`
+		Metadata map[string]interface{} `json:"metadata,omitempty"`
 	} `json:"messages,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // ThreadResponse represents response from thread
 type ThreadResponse struct {
-	ID        string `json:"id"`
-	Object    string `json:"object"`
-	CreatedAt int64  `json:"created_at"`
+	ID        string                 `json:"id"`
+	Object    string                 `json:"object"`
+	CreatedAt int64                  `json:"created_at"`
 	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // FileResponse represents response from file upload
 type FileResponse struct {
-	ID           string `json:"id"`
-	Object       string `json:"object"`
-	Bytes        int64  `json:"bytes"`
-	CreatedAt    int64  `json:"created_at"`
-	Filename     string `json:"filename"`
-	Purpose      string `json:"purpose"`
+	ID        string `json:"id"`
+	Object    string `json:"object"`
+	Bytes     int64  `json:"bytes"`
+	CreatedAt int64  `json:"created_at"`
+	Filename  string `json:"filename"`
+	Purpose   string `json:"purpose"`
 }
 
 // FilesResponse represents response from listing files
 type FilesResponse struct {
-	Object string `json:"object"`
-	Data   []FileResponse `json:"data"`
-	HasMore bool `json:"has_more"`
+	Object  string         `json:"object"`
+	Data    []FileResponse `json:"data"`
+	HasMore bool           `json:"has_more"`
 }
 
 // DeleteFileResponse represents response from file deletion

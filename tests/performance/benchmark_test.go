@@ -23,7 +23,7 @@ func BenchmarkModelDiscovery(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Simulate network latency
 		time.Sleep(50 * time.Millisecond)
-		
+
 		response := map[string]interface{}{
 			"data": generateMockModels(100), // 100 models per provider
 		}
@@ -34,7 +34,7 @@ func BenchmarkModelDiscovery(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		client := &http.Client{Timeout: 10 * time.Second}
-		
+
 		for pb.Next() {
 			resp, err := client.Get(fmt.Sprintf("%s/v1/models", server.URL))
 			if err != nil {
@@ -50,11 +50,11 @@ func BenchmarkModelVerification(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Simulate model verification processing time
 		time.Sleep(100 * time.Millisecond)
-		
+
 		response := map[string]interface{}{
-			"success":     true,
-			"score":       8.5,
-			"modelId":     "test-model",
+			"success":      true,
+			"score":        8.5,
+			"modelId":      "test-model",
 			"responseTime": 95.5,
 		}
 		json.NewEncoder(w).Encode(response)
@@ -69,9 +69,9 @@ func BenchmarkModelVerification(b *testing.B) {
 			"prompt":  "Test verification prompt",
 		}
 		jsonData, _ := json.Marshal(verificationData)
-		
+
 		for pb.Next() {
-			resp, err := client.Post(fmt.Sprintf("%s/v1/verify", server.URL), 
+			resp, err := client.Post(fmt.Sprintf("%s/v1/verify", server.URL),
 				"application/json", strings.NewReader(string(jsonData)))
 			if err != nil {
 				b.Fatal(err)
@@ -93,7 +93,7 @@ func BenchmarkConcurrentOperations(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		client := &http.Client{Timeout: 10 * time.Second}
-		
+
 		var wg sync.WaitGroup
 		for pb.Next() {
 			wg.Add(1)
@@ -114,7 +114,7 @@ func BenchmarkConcurrentOperations(b *testing.B) {
 func BenchmarkConfigurationLoading(b *testing.B) {
 	// Create large configuration
 	largeConfig := generateLargeConfiguration(1000) // 1000 models
-	
+
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -128,7 +128,7 @@ func BenchmarkConfigurationLoading(b *testing.B) {
 // Benchmark memory usage with large model sets
 func BenchmarkMemoryUsage(b *testing.B) {
 	b.ReportAllocs()
-	
+
 	for i := 0; i < b.N; i++ {
 		// Create large dataset
 		models := make([]map[string]interface{}, 10000)
@@ -163,7 +163,7 @@ func BenchmarkDatabaseOperations(b *testing.B) {
 			_ = model
 		}
 	})
-	
+
 	b.Run("Query", func(b *testing.B) {
 		// Pre-populate data
 		models := make([]map[string]interface{}, 1000)
@@ -173,7 +173,7 @@ func BenchmarkDatabaseOperations(b *testing.B) {
 				"name": fmt.Sprintf("Model %d", i),
 			}
 		}
-		
+
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
@@ -191,7 +191,7 @@ func BenchmarkDatabaseOperations(b *testing.B) {
 // Test performance under load
 func TestPerformanceUnderLoad(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping performance test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping performance test in short mode") // SKIP-OK: #short-mode
 	}
 
 	// Test with increasing load
@@ -258,7 +258,7 @@ func TestPerformanceUnderLoad(t *testing.T) {
 // Test response time consistency
 func TestResponseTimeConsistency(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping performance test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping performance test in short mode") // SKIP-OK: #short-mode
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -269,7 +269,7 @@ func TestResponseTimeConsistency(t *testing.T) {
 	defer server.Close()
 
 	responseTimes := make([]time.Duration, 100)
-	
+
 	for i := 0; i < 100; i++ {
 		start := time.Now()
 		resp, err := http.Get(fmt.Sprintf("%s/test", server.URL))
@@ -277,14 +277,14 @@ func TestResponseTimeConsistency(t *testing.T) {
 		resp.Body.Close()
 		responseTimes[i] = time.Since(start)
 	}
-	
+
 	// Calculate statistics
 	var total time.Duration
 	for _, rt := range responseTimes {
 		total += rt
 	}
 	average := total / time.Duration(len(responseTimes))
-	
+
 	// Check consistency (standard deviation should be low)
 	var variance float64
 	for _, rt := range responseTimes {
@@ -303,7 +303,7 @@ func TestResponseTimeConsistency(t *testing.T) {
 // Benchmark cache performance
 func BenchmarkCachePerformance(b *testing.B) {
 	cache := make(map[string]interface{})
-	
+
 	// Pre-populate cache
 	for i := 0; i < 1000; i++ {
 		key := fmt.Sprintf("model-%d", i)
@@ -312,7 +312,7 @@ func BenchmarkCachePerformance(b *testing.B) {
 			"name": fmt.Sprintf("Model %d", i),
 		}
 	}
-	
+
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -327,14 +327,14 @@ func BenchmarkCachePerformance(b *testing.B) {
 // Benchmark JSON serialization/deserialization
 func BenchmarkJSONSerialization(b *testing.B) {
 	model := map[string]interface{}{
-		"id":          "test-model",
-		"name":        "Test Model",
-		"provider":    "test-provider",
-		"maxTokens":   8192,
-		"contextWindow": 128000,
+		"id":             "test-model",
+		"name":           "Test Model",
+		"provider":       "test-provider",
+		"maxTokens":      8192,
+		"contextWindow":  128000,
 		"supportsBrotli": true,
-		"supportsHTTP3": true,
-		"score":       8.5,
+		"supportsHTTP3":  true,
+		"score":          8.5,
 		"metadata": map[string]interface{}{
 			"cost": map[string]interface{}{
 				"input":  0.01,
@@ -347,7 +347,7 @@ func BenchmarkJSONSerialization(b *testing.B) {
 			},
 		},
 	}
-	
+
 	b.Run("Marshal", func(b *testing.B) {
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
@@ -357,12 +357,12 @@ func BenchmarkJSONSerialization(b *testing.B) {
 			}
 		}
 	})
-	
+
 	b.Run("Unmarshal", func(b *testing.B) {
 		jsonData, _ := json.Marshal(model)
 		b.ReportAllocs()
 		b.ResetTimer()
-		
+
 		for i := 0; i < b.N; i++ {
 			var result map[string]interface{}
 			err := json.Unmarshal(jsonData, &result)
@@ -376,19 +376,19 @@ func BenchmarkJSONSerialization(b *testing.B) {
 // Test memory efficiency
 func TestMemoryEfficiency(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping performance test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping performance test in short mode") // SKIP-OK: #short-mode
 	}
 
 	// Test with different data sizes
 	sizes := []int{100, 1000, 10000}
-	
+
 	for _, size := range sizes {
 		t.Run(fmt.Sprintf("Size_%d", size), func(t *testing.T) {
 			// Measure memory before
 			var m1 runtime.MemStats
 			runtime.GC()
 			runtime.ReadMemStats(&m1)
-			
+
 			// Create large dataset
 			models := make([]map[string]interface{}, size)
 			for i := 0; i < size; i++ {
@@ -399,7 +399,7 @@ func TestMemoryEfficiency(t *testing.T) {
 					"metadata": generateLargeMetadata(),
 				}
 			}
-			
+
 			// Measure memory after - no GC to avoid reclaiming our test data
 			var m2 runtime.MemStats
 			runtime.ReadMemStats(&m2)
@@ -432,18 +432,18 @@ func TestMemoryEfficiency(t *testing.T) {
 // Benchmark string operations
 func BenchmarkStringOperations(b *testing.B) {
 	modelName := "GPT-4 (llmsvd) (brotli) (http3) (SC:8.5)"
-	
+
 	b.Run("ParseSuffixes", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			parts := strings.Split(modelName, " ")
 			_ = parts
 		}
 	})
-	
+
 	b.Run("GenerateDisplayName", func(b *testing.B) {
 		suffixes := []string{"llmsvd", "brotli", "http3", "SC:8.5"}
 		b.ResetTimer()
-		
+
 		for i := 0; i < b.N; i++ {
 			displayName := "GPT-4"
 			for _, suffix := range suffixes {
@@ -470,7 +470,7 @@ func generateMockModels(count int) []map[string]interface{} {
 
 func generateLargeConfiguration(modelCount int) string {
 	config := map[string]interface{}{
-		"$schema": "https://opencode.sh/schema.json",
+		"$schema":  "https://opencode.sh/schema.json",
 		"username": "testuser",
 		"provider": map[string]interface{}{
 			"test-provider": map[string]interface{}{
@@ -482,7 +482,7 @@ func generateLargeConfiguration(modelCount int) string {
 			},
 		},
 	}
-	
+
 	jsonData, _ := json.Marshal(config)
 	return string(jsonData)
 }
@@ -510,11 +510,11 @@ func generateLargeMetadata() map[string]interface{} {
 		},
 		"features": []string{"streaming", "batching", "caching", "retry"},
 		"capabilities": map[string]interface{}{
-			"maxTokens":       8192,
-			"contextWindow":   128000,
-			"supportsImages":  true,
-			"supportsAudio":   false,
-			"supportsVideo":   false,
+			"maxTokens":      8192,
+			"contextWindow":  128000,
+			"supportsImages": true,
+			"supportsAudio":  false,
+			"supportsVideo":  false,
 		},
 	}
 }

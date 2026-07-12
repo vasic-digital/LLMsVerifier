@@ -23,54 +23,54 @@ func NewEnvResolver(strict bool) *EnvResolver {
 func (er *EnvResolver) ResolveInString(s string) (string, error) {
 	// Pattern to match ${VAR} or ${VAR:-default}
 	pattern := regexp.MustCompile(`\$\{([^}]+)\}`)
-	
+
 	result := pattern.ReplaceAllStringFunc(s, func(match string) string {
 		// Extract content between ${ and }
 		content := match[2 : len(match)-1]
-		
+
 		// Check for default value: VAR:-default
 		if idx := strings.Index(content, ":-"); idx != -1 {
 			varName := content[:idx]
 			defaultValue := content[idx+2:]
-			
+
 			if value := os.Getenv(varName); value != "" {
 				return value
 			}
 			return defaultValue
 		}
-		
+
 		// Simple variable: VAR
 		varName := content
 		value := os.Getenv(varName)
-		
+
 		if value == "" && er.strict {
 			// In strict mode, return the original to indicate error
 			return match
 		}
-		
+
 		return value
 	})
-	
+
 	// Also support $VAR format (without braces)
 	pattern2 := regexp.MustCompile(`\$([A-Z_][A-Z0-9_]*)`)
 	result = pattern2.ReplaceAllStringFunc(result, func(match string) string {
 		varName := match[1:]
 		value := os.Getenv(varName)
-		
+
 		if value == "" && er.strict {
 			return match
 		}
-		
+
 		return value
 	})
-	
+
 	return result, nil
 }
 
 // ResolveInMap resolves environment variables in a map
 func (er *EnvResolver) ResolveInMap(m map[string]interface{}) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
-	
+
 	for key, value := range m {
 		resolvedValue, err := er.ResolveInterface(value)
 		if err != nil {
@@ -78,7 +78,7 @@ func (er *EnvResolver) ResolveInMap(m map[string]interface{}) (map[string]interf
 		}
 		result[key] = resolvedValue
 	}
-	
+
 	return result, nil
 }
 
@@ -99,7 +99,7 @@ func (er *EnvResolver) ResolveInterface(value interface{}) (interface{}, error) 
 // ResolveInSlice resolves environment variables in a slice
 func (er *EnvResolver) ResolveInSlice(slice []interface{}) ([]interface{}, error) {
 	result := make([]interface{}, len(slice))
-	
+
 	for i, value := range slice {
 		resolvedValue, err := er.ResolveInterface(value)
 		if err != nil {
@@ -107,7 +107,7 @@ func (er *EnvResolver) ResolveInSlice(slice []interface{}) ([]interface{}, error
 		}
 		result[i] = resolvedValue
 	}
-	
+
 	return result, nil
 }
 
@@ -118,26 +118,26 @@ func (er *EnvResolver) ResolveConfig(config *Config) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal config: %w", err)
 	}
-	
+
 	// Resolve in string
 	resolvedJSON, err := er.ResolveInString(string(data))
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve env vars: %w", err)
 	}
-	
+
 	// Check for unresolved placeholders in strict mode
 	if er.strict {
 		if strings.Contains(resolvedJSON, "${") {
 			return nil, fmt.Errorf("unresolved environment variable placeholders found in config")
 		}
 	}
-	
+
 	// Unmarshal back to Config
 	var resolvedConfig Config
 	if err := json.Unmarshal([]byte(resolvedJSON), &resolvedConfig); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal resolved config: %w", err)
 	}
-	
+
 	return &resolvedConfig, nil
 }
 
@@ -149,21 +149,21 @@ func LoadAndResolveConfig(path string, strict bool) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
-	
+
 	// Resolve environment variables
 	resolver := NewEnvResolver(strict)
 	resolvedConfig, err := resolver.ResolveConfig(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve env vars: %w", err)
 	}
-	
+
 	return resolvedConfig, nil
 }
 
 // ValidateEnvVars checks if all required environment variables are set
 func ValidateEnvVars(config *Config) []string {
 	var missingVars []string
-	
+
 	// Check provider options for env var references
 	for providerName, provider := range config.Provider {
 		for key, value := range provider.Options {
@@ -175,8 +175,8 @@ func ValidateEnvVars(config *Config) []string {
 					if len(matches) > 1 {
 						varName := matches[1]
 						if os.Getenv(varName) == "" {
-							missingVars = append(missingVars, 
-								fmt.Sprintf("Provider '%s' option '%s' references unset env var: %s", 
+							missingVars = append(missingVars,
+								fmt.Sprintf("Provider '%s' option '%s' references unset env var: %s",
 									providerName, key, varName))
 						}
 					}
@@ -184,6 +184,6 @@ func ValidateEnvVars(config *Config) []string {
 			}
 		}
 	}
-	
+
 	return missingVars
 }

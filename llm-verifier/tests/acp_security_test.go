@@ -13,7 +13,7 @@ import (
 // TestACPsInputValidation tests input validation and sanitization
 func TestACPsInputValidation(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping security test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping security test in short mode") // SKIP-OK: #short-mode
 	}
 
 	cfg := &config.Config{
@@ -70,7 +70,7 @@ func TestACPsInputValidation(t *testing.T) {
 // TestACPsInjectionPrevention tests prevention of various injection attacks
 func TestACPsInjectionPrevention(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping injection prevention test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping injection prevention test in short mode") // SKIP-OK: #short-mode
 	}
 
 	cfg := &config.Config{
@@ -121,7 +121,7 @@ func TestACPsInjectionPrevention(t *testing.T) {
 // TestACPsAuthenticationSecurity tests authentication and authorization security
 func TestACPsAuthenticationSecurity(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping authentication security test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping authentication security test in short mode") // SKIP-OK: #short-mode
 	}
 
 	cfg := &config.Config{
@@ -172,7 +172,7 @@ func TestACPsAuthenticationSecurity(t *testing.T) {
 // TestACPsRateLimiting tests rate limiting and throttling
 func TestACPsRateLimiting(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping rate limiting test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping rate limiting test in short mode") // SKIP-OK: #short-mode
 	}
 
 	cfg := &config.Config{
@@ -205,7 +205,7 @@ func TestACPsRateLimiting(t *testing.T) {
 // TestACPsDataPrivacy tests data privacy and sanitization
 func TestACPsDataPrivacy(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping data privacy test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping data privacy test in short mode") // SKIP-OK: #short-mode
 	}
 
 	cfg := &config.Config{
@@ -251,7 +251,7 @@ func TestACPsDataPrivacy(t *testing.T) {
 // TestACPsNetworkSecurity tests network security aspects
 func TestACPsNetworkSecurity(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping network security test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping network security test in short mode") // SKIP-OK: #short-mode
 	}
 
 	cfg := &config.Config{
@@ -314,7 +314,7 @@ func TestACPsNetworkSecurity(t *testing.T) {
 // TestACPsErrorHandlingSecurity tests secure error handling
 func TestACPsErrorHandlingSecurity(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping error handling security test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping error handling security test in short mode") // SKIP-OK: #short-mode
 	}
 
 	cfg := &config.Config{

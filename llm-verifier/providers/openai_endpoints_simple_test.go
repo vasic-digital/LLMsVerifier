@@ -48,9 +48,9 @@ func TestOpenAIEndpoint_BasicStreaming(t *testing.T) {
 
 	t.Run("StreamingSupport", func(t *testing.T) {
 		request := OpenAIChatRequest{
-			Model: "gpt-3.5-turbo",
+			Model:    "gpt-3.5-turbo",
 			Messages: []Message{{Role: "user", Content: "Hello"}},
-			Stream: true,
+			Stream:   true,
 		}
 
 		respChan, errChan := adapter.StreamChatCompletion(context.Background(), request)
@@ -78,7 +78,7 @@ func TestOpenAIEndpoint_ValidationError(t *testing.T) {
 
 	t.Run("ValidationError", func(t *testing.T) {
 		request := OpenAIChatRequest{
-			Model: "", // Empty model should fail validation
+			Model:    "", // Empty model should fail validation
 			Messages: []Message{{Role: "user", Content: "Hello"}},
 		}
 
@@ -95,12 +95,12 @@ func TestOpenAIEndpoint_NetworkError(t *testing.T) {
 
 	t.Run("NetworkError", func(t *testing.T) {
 		request := OpenAIChatRequest{
-			Model: "gpt-3.5-turbo",
+			Model:    "gpt-3.5-turbo",
 			Messages: []Message{{Role: "user", Content: "Hello"}},
 		}
 
 		respChan, errChan := adapter.StreamChatCompletion(context.Background(), request)
-		
+
 		// Should receive error
 		select {
 		case err := <-errChan:
@@ -119,7 +119,7 @@ func TestOpenAIEndpoint_CorrectHeaders(t *testing.T) {
 		// Verify headers
 		assert.Equal(t, "Bearer test-key", r.Header.Get("Authorization"))
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		
+
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status": "ok"}`))
 	}))
@@ -129,16 +129,17 @@ func TestOpenAIEndpoint_CorrectHeaders(t *testing.T) {
 
 	t.Run("CorrectHeaders", func(t *testing.T) {
 		request := OpenAIChatRequest{
-			Model: "gpt-3.5-turbo",
+			Model:    "gpt-3.5-turbo",
 			Messages: []Message{{Role: "user", Content: "Hello"}},
 		}
 
 		respChan, errChan := adapter.StreamChatCompletion(context.Background(), request)
 		assert.NotNil(t, respChan)
 		assert.NotNil(t, errChan)
-		
+
 		// Drain channels to avoid blocking
-		for range respChan {}
+		for range respChan {
+		}
 		select {
 		case <-errChan:
 		default:

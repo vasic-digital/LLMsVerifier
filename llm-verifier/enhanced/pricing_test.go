@@ -224,7 +224,7 @@ func TestDetectGenericPricing(t *testing.T) {
 			name:         "Large model pattern",
 			providerName: "unknown",
 			modelID:      "model-large-v1",
-			expectedMin:  2.0,  // Updated for 2025 pricing
+			expectedMin:  2.0, // Updated for 2025 pricing
 			expectedMax:  5.0,
 		},
 		{
@@ -245,7 +245,7 @@ func TestDetectGenericPricing(t *testing.T) {
 			name:         "Default model",
 			providerName: "unknown",
 			modelID:      "regular-model",
-			expectedMin:  0.5,  // Updated for 2025 pricing
+			expectedMin:  0.5, // Updated for 2025 pricing
 			expectedMax:  2.0,
 		},
 	}

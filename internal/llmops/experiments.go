@@ -13,11 +13,11 @@ import (
 
 // InMemoryExperimentManager implements ExperimentManager
 type InMemoryExperimentManager struct {
-	mu            sync.RWMutex
-	experiments   map[string]*Experiment
-	assignments   map[string]map[string]string // expID -> userID -> variantID
-	metrics       map[string]map[string][]float64 // expID -> variantID+metric -> values
-	logger        *log.Logger
+	mu          sync.RWMutex
+	experiments map[string]*Experiment
+	assignments map[string]map[string]string    // expID -> userID -> variantID
+	metrics     map[string]map[string][]float64 // expID -> variantID+metric -> values
+	logger      *log.Logger
 }
 
 // NewInMemoryExperimentManager creates a new experiment manager

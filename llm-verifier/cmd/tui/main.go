@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"digital.vasic.llmsverifier/client"
 	"digital.vasic.llmsverifier/tui"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 func main() {

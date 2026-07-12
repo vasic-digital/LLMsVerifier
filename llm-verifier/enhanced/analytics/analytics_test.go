@@ -318,7 +318,6 @@ func TestPrometheusExporter(t *testing.T) {
 	}
 }
 
-
 func TestAnalyticsEngineBasic(t *testing.T) {
 	mockContextMgr := &mockContextManager{}
 	mockVerifier := &mockVerifier{}
@@ -328,7 +327,7 @@ func TestAnalyticsEngineBasic(t *testing.T) {
 		MaxTimeSeriesSize: 100,
 		BatchSize:         10,
 		FlushInterval:     time.Minute,
-		EnablePredictions:  false,
+		EnablePredictions: false,
 	}
 
 	engine := NewAnalyticsEngine(config, mockContextMgr, mockVerifier)
@@ -371,7 +370,6 @@ func TestAnalyticsEngineBasic(t *testing.T) {
 		t.Errorf("Expected time series name 'test_counter', got '%s'", result.TimeSeries[0].Name)
 	}
 }
-
 
 func TestAnalyticsEngineWithProcessors(t *testing.T) {
 

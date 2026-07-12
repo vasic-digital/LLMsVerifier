@@ -16,7 +16,7 @@ func TestVerifier_SummarizeConversation_Fixed(t *testing.T) {
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		
+
 		// Mock response for summarization
 		response := `{
 			"id": "test",
@@ -39,12 +39,12 @@ func TestVerifier_SummarizeConversation_Fixed(t *testing.T) {
 
 	cfg := &config.Config{
 		Global: config.GlobalConfig{
-			BaseURL:         mockServer.URL,
-			APIKey:          "test-key",
-			DefaultModel:    "gpt-4",
-			MaxRetries:      3,
-			RequestDelay:    100 * time.Millisecond,
-			Timeout:         30 * time.Second,
+			BaseURL:      mockServer.URL,
+			APIKey:       "test-key",
+			DefaultModel: "gpt-4",
+			MaxRetries:   3,
+			RequestDelay: 100 * time.Millisecond,
+			Timeout:      30 * time.Second,
 		},
 		Concurrency: 1,
 		Timeout:     30 * time.Second,
@@ -248,7 +248,7 @@ func TestVerifier_checkOverload_HighConcurrency_Fixed(t *testing.T) {
 	if !overloaded {
 		t.Log("Note: Model detected as overloaded with fake API")
 	}
-	t.Logf("Overload detection results: overloaded=%v, avgLatency=%v, throughput=%v", 
+	t.Logf("Overload detection results: overloaded=%v, avgLatency=%v, throughput=%v",
 		overloaded, responseTime.AverageLatency, responseTime.Throughput)
 }
 
@@ -289,7 +289,7 @@ func TestVerifier_Verify_LargeNumberOfModels_Fixed(t *testing.T) {
 func TestVerifier_EdgeCases_Fixed(t *testing.T) {
 	tests := []struct {
 		name   string
-		config  *config.Config
+		config *config.Config
 		testFn func(*Verifier, *testing.T)
 	}{
 		{
@@ -371,7 +371,7 @@ func TestVerifier_FeatureDetection_Fixed(t *testing.T) {
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		
+
 		response := `{
 			"id": "test",
 			"object": "chat.completion",
@@ -427,7 +427,7 @@ func TestVerifier_LanguageSpecificTests_Fixed(t *testing.T) {
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		
+
 		response := `{
 			"id": "test",
 			"object": "chat.completion",

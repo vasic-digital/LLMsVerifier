@@ -132,7 +132,7 @@ func TestInMemoryVectorDB_SearchWithLimit(t *testing.T) {
 	ctx := context.Background()
 
 	for i := 0; i < 10; i++ {
-		db.Store(ctx, &Document{ID: string(rune('a'+i)), Vector: Vector{float64(i) / 10}})
+		db.Store(ctx, &Document{ID: string(rune('a' + i)), Vector: Vector{float64(i) / 10}})
 	}
 
 	query := Vector{0.5}

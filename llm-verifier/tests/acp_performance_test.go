@@ -16,7 +16,7 @@ import (
 // TestACPsPerformanceBaseline establishes performance baselines for ACP detection
 func TestACPsPerformanceBaseline(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping performance test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping performance test in short mode") // SKIP-OK: #short-mode
 	}
 
 	cfg := &config.Config{
@@ -67,7 +67,7 @@ func TestACPsPerformanceBaseline(t *testing.T) {
 // TestACPsConcurrentPerformance tests ACP detection under concurrent load
 func TestACPsConcurrentPerformance(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping concurrent performance test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping concurrent performance test in short mode") // SKIP-OK: #short-mode
 	}
 
 	cfg := &config.Config{
@@ -140,7 +140,7 @@ func TestACPsConcurrentPerformance(t *testing.T) {
 // TestACPsMemoryUsage tests memory consumption during ACP detection
 func TestACPsMemoryUsage(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping memory usage test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping memory usage test in short mode") // SKIP-OK: #short-mode
 	}
 
 	cfg := &config.Config{
@@ -197,7 +197,7 @@ func TestACPsMemoryUsage(t *testing.T) {
 // TestACPsResourceLimits tests behavior under resource constraints
 func TestACPsResourceLimits(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping resource limits test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping resource limits test in short mode") // SKIP-OK: #short-mode
 	}
 
 	cfg := &config.Config{
@@ -249,7 +249,7 @@ func TestACPsResourceLimits(t *testing.T) {
 // TestACPsScalability tests ACP detection scalability
 func TestACPsScalability(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping scalability test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping scalability test in short mode") // SKIP-OK: #short-mode
 	}
 
 	cfg := &config.Config{

@@ -439,15 +439,15 @@ func (a *AnthropicAdapter) discoverAvailableModels(ctx context.Context) []struct
 		Created int64
 	}{
 		// Claude 3.5 family (latest)
-		{ID: "claude-3-5-sonnet-latest", Created: 1729036800},    // Oct 2024
-		{ID: "claude-3-5-sonnet-20241022", Created: 1729555200},  // Oct 2024
-		{ID: "claude-3-5-haiku-latest", Created: 1730419200},     // Nov 2024
-		{ID: "claude-3-5-haiku-20241022", Created: 1729555200},   // Oct 2024
+		{ID: "claude-3-5-sonnet-latest", Created: 1729036800},   // Oct 2024
+		{ID: "claude-3-5-sonnet-20241022", Created: 1729555200}, // Oct 2024
+		{ID: "claude-3-5-haiku-latest", Created: 1730419200},    // Nov 2024
+		{ID: "claude-3-5-haiku-20241022", Created: 1729555200},  // Oct 2024
 		// Claude 3 family
-		{ID: "claude-3-opus-latest", Created: 1709251200},        // Feb 2024
-		{ID: "claude-3-opus-20240229", Created: 1709251200},      // Feb 2024
-		{ID: "claude-3-sonnet-20240229", Created: 1709251200},    // Feb 2024
-		{ID: "claude-3-haiku-20240307", Created: 1709856000},     // Mar 2024
+		{ID: "claude-3-opus-latest", Created: 1709251200},     // Feb 2024
+		{ID: "claude-3-opus-20240229", Created: 1709251200},   // Feb 2024
+		{ID: "claude-3-sonnet-20240229", Created: 1709251200}, // Feb 2024
+		{ID: "claude-3-haiku-20240307", Created: 1709856000},  // Mar 2024
 	}
 
 	var availableModels []struct {

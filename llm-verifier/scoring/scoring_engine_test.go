@@ -60,9 +60,9 @@ func TestScoringEngineBasic(t *testing.T) {
 
 	mockClient := NewMockModelsDevClient()
 	logger := setupTestLogger()
-	
+
 	engine := NewScoringEngine(db, mockClient, logger)
-	
+
 	// Add a test model
 	testModel := createTestModel()
 	err := db.CreateModel(testModel)
@@ -77,7 +77,7 @@ func TestScoringEngineBasic(t *testing.T) {
 	// Test score calculation
 	ctx := context.Background()
 	config := DefaultScoringConfig()
-	
+
 	score, err := engine.CalculateComprehensiveScore(ctx, "gpt-4", config)
 	if err != nil {
 		t.Fatalf("Failed to calculate score: %v", err)
@@ -132,11 +132,11 @@ func TestScoreComponents(t *testing.T) {
 
 	// Create a test provider to satisfy foreign key constraints
 	testProvider := &database.Provider{
-		Name:     "Test Provider",
-		Endpoint: "https://api.test.com/v1",
+		Name:        "Test Provider",
+		Endpoint:    "https://api.test.com/v1",
 		Description: "Test provider for scoring tests",
-		Website:  "https://test.com",
-		IsActive: true,
+		Website:     "https://test.com",
+		IsActive:    true,
 	}
 	err := db.CreateProvider(testProvider)
 	if err != nil {
@@ -145,94 +145,94 @@ func TestScoreComponents(t *testing.T) {
 
 	mockClient := NewMockModelsDevClient()
 	logger := setupTestLogger()
-	
+
 	engine := NewScoringEngine(db, mockClient, logger)
-	
+
 	// Test different model configurations
 	testCases := []struct {
-		name           string
-		model          database.Model
-		devModel       ModelsDevModel
-		expectedHigh   []string // Components expected to have high scores
-		expectedLow    []string // Components expected to have low scores
+		name         string
+		model        database.Model
+		devModel     ModelsDevModel
+		expectedHigh []string // Components expected to have high scores
+		expectedLow  []string // Components expected to have low scores
 	}{
 		{
 			name: "Fast Expensive Model",
 			model: database.Model{
-				ProviderID:     testProvider.ID,
-				ModelID:        "fast-model",
-				Name:           "Fast Model",
-				ParameterCount: int64Ptr(1000000000), // 1B parameters
-				IsMultimodal:     false,
-				SupportsReasoning: false,
-				ReleaseDate:      timePtr(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
+				ProviderID:         testProvider.ID,
+				ModelID:            "fast-model",
+				Name:               "Fast Model",
+				ParameterCount:     int64Ptr(1000000000), // 1B parameters
+				IsMultimodal:       false,
+				SupportsReasoning:  false,
+				ReleaseDate:        timePtr(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
 				TrainingDataCutoff: timePtr(time.Date(2023, 12, 1, 0, 0, 0, 0, time.UTC)),
 			},
 			devModel: ModelsDevModel{
-				ModelID:             "fast-model",
-				InputCostPer1M:      10.0,  // Expensive
-				OutputCostPer1M:     30.0,  // Expensive
-				ContextLimit:        128000,
-				ToolCall:            true,
-				Reasoning:           false,
-				StructuredOutput:     true,
-				ReleaseDate:         "2024-01-01",
-				LastUpdated:         "2024-01-15",
+				ModelID:          "fast-model",
+				InputCostPer1M:   10.0, // Expensive
+				OutputCostPer1M:  30.0, // Expensive
+				ContextLimit:     128000,
+				ToolCall:         true,
+				Reasoning:        false,
+				StructuredOutput: true,
+				ReleaseDate:      "2024-01-01",
+				LastUpdated:      "2024-01-15",
 			},
 			expectedHigh: []string{"capability"}, // Should have good capability score
-			expectedLow:  []string{"cost"},        // Should have poor cost score
+			expectedLow:  []string{"cost"},       // Should have poor cost score
 		},
 		{
 			name: "Slow Cheap Model",
 			model: database.Model{
-				ProviderID:     testProvider.ID,
-				ModelID:        "slow-model",
-				Name:           "Slow Model",
-				ParameterCount: int64Ptr(10000000000), // 10B parameters
-				IsMultimodal:     false,
-				SupportsReasoning: false,
-				ReleaseDate:      timePtr(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)),
+				ProviderID:         testProvider.ID,
+				ModelID:            "slow-model",
+				Name:               "Slow Model",
+				ParameterCount:     int64Ptr(10000000000), // 10B parameters
+				IsMultimodal:       false,
+				SupportsReasoning:  false,
+				ReleaseDate:        timePtr(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)),
 				TrainingDataCutoff: timePtr(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
 			},
 			devModel: ModelsDevModel{
-				ModelID:             "slow-model",
-				InputCostPer1M:      0.1,   // Cheap
-				OutputCostPer1M:     0.3,   // Cheap
-				ContextLimit:        32000, // Smaller context
-				ToolCall:            false,
-				Reasoning:           false,
-				StructuredOutput:     false,
-				ReleaseDate:         "2023-01-01", // Older
-				LastUpdated:         "2023-06-01",
+				ModelID:          "slow-model",
+				InputCostPer1M:   0.1,   // Cheap
+				OutputCostPer1M:  0.3,   // Cheap
+				ContextLimit:     32000, // Smaller context
+				ToolCall:         false,
+				Reasoning:        false,
+				StructuredOutput: false,
+				ReleaseDate:      "2023-01-01", // Older
+				LastUpdated:      "2023-06-01",
 			},
-			expectedHigh: []string{"cost"},        // Should have good cost score
-			expectedLow:  []string{"capability"},  // Should have poor capability score
+			expectedHigh: []string{"cost"},       // Should have good cost score
+			expectedLow:  []string{"capability"}, // Should have poor capability score
 		},
 		{
 			name: "Efficient Small Model",
 			model: database.Model{
-				ProviderID:     testProvider.ID,
-				ModelID:        "efficient-model",
-				Name:           "Efficient Model",
-				ParameterCount: int64Ptr(100000000), // 100M parameters
-				IsMultimodal:     true,
-				SupportsReasoning: true,
-				ReleaseDate:      timePtr(time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)),
+				ProviderID:         testProvider.ID,
+				ModelID:            "efficient-model",
+				Name:               "Efficient Model",
+				ParameterCount:     int64Ptr(100000000), // 100M parameters
+				IsMultimodal:       true,
+				SupportsReasoning:  true,
+				ReleaseDate:        timePtr(time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)),
 				TrainingDataCutoff: timePtr(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
 			},
 			devModel: ModelsDevModel{
-				ModelID:             "efficient-model",
-				InputCostPer1M:      0.5,   // Moderate cost
-				OutputCostPer1M:     1.5,   // Moderate cost
-				ContextLimit:        64000, // Good context
-				ToolCall:            true,
-				Reasoning:           true,
-				StructuredOutput:     true,
-				ReleaseDate:         "2024-06-01", // Recent
-				LastUpdated:         "2024-06-15",
+				ModelID:          "efficient-model",
+				InputCostPer1M:   0.5,   // Moderate cost
+				OutputCostPer1M:  1.5,   // Moderate cost
+				ContextLimit:     64000, // Good context
+				ToolCall:         true,
+				Reasoning:        true,
+				StructuredOutput: true,
+				ReleaseDate:      "2024-06-01", // Recent
+				LastUpdated:      "2024-06-15",
 			},
 			expectedHigh: []string{"efficiency", "recency"}, // Should have good efficiency and recency
-			expectedLow:  []string{},                         // Should be balanced
+			expectedLow:  []string{},                        // Should be balanced
 		},
 	}
 
@@ -250,7 +250,7 @@ func TestScoreComponents(t *testing.T) {
 			// Calculate score
 			ctx := context.Background()
 			config := DefaultScoringConfig()
-			
+
 			score, err := engine.CalculateComprehensiveScore(ctx, tc.model.ModelID, config)
 			if err != nil {
 				t.Fatalf("Failed to calculate score: %v", err)
@@ -359,11 +359,11 @@ func TestModelNaming(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			result := naming.AddScoreSuffix(tc.modelName, tc.score)
-			
+
 			if result != tc.expectedResult {
 				t.Errorf("Expected result '%s', got '%s'", tc.expectedResult, result)
 			}
-			
+
 			if !contains(result, tc.shouldContain) {
 				t.Errorf("Result should contain '%s', got '%s'", tc.shouldContain, result)
 			}
@@ -410,11 +410,11 @@ func TestScoreExtraction(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			score, found := naming.ExtractScoreFromName(tc.modelName)
-			
+
 			if found != tc.expectedFound {
 				t.Errorf("Expected found=%v, got %v", tc.expectedFound, found)
 			}
-			
+
 			if found && math.Abs(score-tc.expectedScore) > 0.01 {
 				t.Errorf("Expected score %f, got %f", tc.expectedScore, score)
 			}
@@ -427,10 +427,10 @@ func TestBatchModelNaming(t *testing.T) {
 	naming := NewModelNaming()
 
 	modelScores := map[string]float64{
-		"GPT-4":       8.5,
-		"Claude-3":    7.8,
-		"Gemini Pro":  7.2,
-		"Llama-2":     6.9,
+		"GPT-4":      8.5,
+		"Claude-3":   7.8,
+		"Gemini Pro": 7.2,
+		"Llama-2":    6.9,
 	}
 
 	results := naming.BatchUpdateModelNames(modelScores)
@@ -458,10 +458,10 @@ func TestScoreSuffixFormatter(t *testing.T) {
 	formatter := NewScoreSuffixFormatter()
 
 	testCases := []struct {
-		name                string
-		score               float64
-		includeDescription  bool
-		shouldContain       []string
+		name               string
+		score              float64
+		includeDescription bool
+		shouldContain      []string
 	}{
 		{
 			name:               "High score with description",
@@ -492,7 +492,7 @@ func TestScoreSuffixFormatter(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			result := formatter.FormatForDisplay(tc.score, tc.includeDescription)
-			
+
 			for _, expected := range tc.shouldContain {
 				if !contains(result, expected) {
 					t.Errorf("Expected result to contain '%s', got '%s'", expected, result)
@@ -556,9 +556,9 @@ func BenchmarkScoreCalculation(b *testing.B) {
 
 	mockClient := NewMockModelsDevClient()
 	logger := setupBenchmarkLogger()
-	
+
 	engine := NewScoringEngine(db, mockClient, logger)
-	
+
 	// Create test model
 	testModel := createTestModel()
 	err := db.CreateModel(testModel)
@@ -616,20 +616,20 @@ func setupTestDatabase(t *testing.T) *database.Database {
 	if err != nil {
 		t.Fatalf("Failed to create test database: %v", err)
 	}
-	
+
 	// Create a test provider to satisfy foreign key constraints
 	testProvider := &database.Provider{
-		Name:     "OpenAI",
-		Endpoint: "https://api.openai.com/v1",
+		Name:        "OpenAI",
+		Endpoint:    "https://api.openai.com/v1",
 		Description: "OpenAI test provider",
-		Website:  "https://openai.com",
-		IsActive: true,
+		Website:     "https://openai.com",
+		IsActive:    true,
 	}
 	err = db.CreateProvider(testProvider)
 	if err != nil {
 		t.Fatalf("Failed to create test provider: %v", err)
 	}
-	
+
 	return db
 }
 
@@ -738,9 +738,9 @@ func timePtr(t time.Time) *time.Time {
 }
 
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && s[len(s)-len(substr):] == substr || 
-		   len(s) > len(substr) && s[:len(substr)] == substr ||
-		   len(substr) < len(s) && findSubstring(s, substr)
+	return len(s) >= len(substr) && s[len(s)-len(substr):] == substr ||
+		len(s) > len(substr) && s[:len(substr)] == substr ||
+		len(substr) < len(s) && findSubstring(s, substr)
 }
 
 func findSubstring(s, substr string) bool {

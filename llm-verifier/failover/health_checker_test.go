@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"digital.vasic.llmsverifier/database"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"digital.vasic.llmsverifier/database"
 )
 
 func setupTestHealthCheckerDB(t *testing.T) *database.Database {
@@ -119,7 +119,8 @@ func TestHealthCheckerStop(t *testing.T) {
 	hc.Stop()
 
 }
-	// Should not panic
+
+// Should not panic
 func TestHealthCheckerStartStop(t *testing.T) {
 	// Start and stop multiple times - should create new instances each time
 	for i := 0; i < 3; i++ {
@@ -181,8 +182,12 @@ func TestHealthCheckerGetHealthyProvidersEmpty(t *testing.T) {
 
 	healthy := hc.GetHealthyProviders()
 
-	if healthy != nil { assert.NotNil(t, healthy) }
-	if healthy != nil { assert.Equal(t, 0, len(healthy)) }
+	if healthy != nil {
+		assert.NotNil(t, healthy)
+	}
+	if healthy != nil {
+		assert.Equal(t, 0, len(healthy))
+	}
 }
 
 func TestHealthCheckerPerformHealthChecks(t *testing.T) {
@@ -463,8 +468,8 @@ func TestHealthCheckerWithDatabaseProvider(t *testing.T) {
 
 	// Create provider
 	provider := &database.Provider{
-		Name:       "test-provider",
-		Endpoint:   "http://localhost:9999/api",
+		Name:        "test-provider",
+		Endpoint:    "http://localhost:9999/api",
 		Description: "Test provider",
 	}
 	err := db.CreateProvider(provider)

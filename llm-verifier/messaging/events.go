@@ -176,15 +176,15 @@ type ProviderHealthEvent struct {
 
 // ProviderScoredEvent represents a provider scoring result.
 type ProviderScoredEvent struct {
-	ProviderID       string    `json:"provider_id"`
-	ProviderName     string    `json:"provider_name"`
-	OverallScore     float64   `json:"overall_score"`
-	ResponseSpeed    float64   `json:"response_speed_score"`
-	ModelEfficiency  float64   `json:"model_efficiency_score"`
-	CostEffectiveness float64  `json:"cost_effectiveness_score"`
-	Capability       float64   `json:"capability_score"`
-	Recency          float64   `json:"recency_score"`
-	Timestamp        time.Time `json:"timestamp"`
+	ProviderID        string    `json:"provider_id"`
+	ProviderName      string    `json:"provider_name"`
+	OverallScore      float64   `json:"overall_score"`
+	ResponseSpeed     float64   `json:"response_speed_score"`
+	ModelEfficiency   float64   `json:"model_efficiency_score"`
+	CostEffectiveness float64   `json:"cost_effectiveness_score"`
+	Capability        float64   `json:"capability_score"`
+	Recency           float64   `json:"recency_score"`
+	Timestamp         time.Time `json:"timestamp"`
 }
 
 // ModelRankedEvent represents a model ranking update.
@@ -201,12 +201,12 @@ type ModelRankedEvent struct {
 
 // TeamSelectedEvent represents an AI debate team selection.
 type TeamSelectedEvent struct {
-	TeamID       string            `json:"team_id"`
-	TeamSize     int               `json:"team_size"`
-	PrimaryLLMs  []TeamMember      `json:"primary_llms"`
-	FallbackLLMs []TeamMember      `json:"fallback_llms"`
+	TeamID            string       `json:"team_id"`
+	TeamSize          int          `json:"team_size"`
+	PrimaryLLMs       []TeamMember `json:"primary_llms"`
+	FallbackLLMs      []TeamMember `json:"fallback_llms"`
 	SelectionCriteria string       `json:"selection_criteria"`
-	Timestamp    time.Time         `json:"timestamp"`
+	Timestamp         time.Time    `json:"timestamp"`
 }
 
 // TeamMember represents a member of the AI debate team.

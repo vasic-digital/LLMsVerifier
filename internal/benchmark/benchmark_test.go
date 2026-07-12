@@ -17,10 +17,10 @@ type MockLLMProviderForBenchmark struct {
 func NewMockLLMProviderForBenchmark() *MockLLMProviderForBenchmark {
 	return &MockLLMProviderForBenchmark{
 		responses: map[string]string{
-			"default":     "The answer is B",
-			"binary":      "B",
-			"math":        "18",
-			"code":        "def has_close_elements(numbers, threshold): return any(abs(a-b) < threshold for i, a in enumerate(numbers) for b in numbers[i+1:])",
+			"default": "The answer is B",
+			"binary":  "B",
+			"math":    "18",
+			"code":    "def has_close_elements(numbers, threshold): return any(abs(a-b) < threshold for i, a in enumerate(numbers) for b in numbers[i+1:])",
 		},
 	}
 }

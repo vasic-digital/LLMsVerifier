@@ -7,10 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"digital.vasic.llmsverifier/logging"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"digital.vasic.llmsverifier/logging"
 )
 
 func init() {

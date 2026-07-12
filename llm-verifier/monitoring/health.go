@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"digital.vasic.llmsverifier/database"
+	"github.com/gin-gonic/gin"
 )
 
 // HealthStatus represents the health status of a component
@@ -127,6 +127,9 @@ type HealthChecker struct {
 	mu             sync.RWMutex
 	ctx            context.Context
 	cancel         context.CancelFunc
+	// wg tracks the background ticker goroutine spawned by Start so Stop
+	// can block until it has genuinely exited (see Stop's doc comment).
+	wg sync.WaitGroup
 }
 
 // NewHealthChecker creates a new health checker
@@ -151,7 +154,9 @@ func NewHealthChecker(db *database.Database) *HealthChecker {
 
 // Start begins health monitoring
 func (hc *HealthChecker) Start(interval time.Duration) {
+	hc.wg.Add(1)
 	go func() {
+		defer hc.wg.Done()
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 
@@ -169,9 +174,28 @@ func (hc *HealthChecker) Start(interval time.Duration) {
 	log.Printf("Health monitoring started with %v interval", interval)
 }
 
-// Stop stops health monitoring
+// Stop stops health monitoring. It blocks until the background ticker
+// goroutine started by Start has genuinely exited before returning.
+//
+// ROOT CAUSE (independent-audit finding, 2026-07-10): the pre-fix Stop only
+// called hc.cancel() and returned immediately -- it did NOT wait for the
+// Start goroutine to observe <-hc.ctx.Done() and return. If that goroutine
+// was mid-flight inside checkAllComponents() (which can call
+// checkSchedulerHealth -> tr(), a package-level i18n read) when Stop was
+// called, the goroutine kept running for up to one more checkAllComponents
+// call AFTER Stop had already logged "Health monitoring stopped" and
+// returned control to the caller. In monitoring's own test suite this
+// leaked goroutine from TestHealthCheckerLongRunning was still alive when
+// the NEXT sequential test (TestHealthChecker_DatabaseMessages_Routed)
+// called withFakeMonitorTranslator (which mutates the same package-level
+// i18n state tr() reads) -- confirmed under `go test -race ./monitoring/...`
+// (WARNING: DATA RACE, tr() read vs withFakeMonitorTranslator write). A
+// Stop() that does not actually guarantee the monitor has stopped before
+// returning is itself a §11.4.14 test-playback-cleanup violation (leaves
+// the target in a non-quiescent state) independent of the race it exposed.
 func (hc *HealthChecker) Stop() {
 	hc.cancel()
+	hc.wg.Wait()
 	log.Println("Health monitoring stopped")
 }
 

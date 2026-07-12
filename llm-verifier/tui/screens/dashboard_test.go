@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/bubbletea"
 	"digital.vasic.llmsverifier/client"
+	"github.com/charmbracelet/bubbletea"
 )
 
 func TestNewDashboardScreen(t *testing.T) {
@@ -40,9 +40,9 @@ func TestDashboardScreenUpdate(t *testing.T) {
 	screen := NewDashboardScreen(client)
 
 	tests := []struct {
-		name        string
-		msg         tea.Msg
-		expectCmd   bool
+		name      string
+		msg       tea.Msg
+		expectCmd bool
 	}{
 		{"Window size", tea.WindowSizeMsg{Width: 100, Height: 50}, false},
 		{"Refresh key", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}}, true},

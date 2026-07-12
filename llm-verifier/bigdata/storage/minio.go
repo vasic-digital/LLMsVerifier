@@ -15,31 +15,31 @@ import (
 
 // MinIOConfig holds MinIO connection configuration
 type MinIOConfig struct {
-	Endpoint        string        `yaml:"endpoint" json:"endpoint"`
-	AccessKey       string        `yaml:"access_key" json:"access_key"`
-	SecretKey       string        `yaml:"secret_key" json:"secret_key"`
-	UseSSL          bool          `yaml:"use_ssl" json:"use_ssl"`
-	Region          string        `yaml:"region" json:"region"`
-	ConnectTimeout  time.Duration `yaml:"connect_timeout" json:"connect_timeout"`
-	RequestTimeout  time.Duration `yaml:"request_timeout" json:"request_timeout"`
-	VerificationBucket string     `yaml:"verification_bucket" json:"verification_bucket"`
-	ModelsBucket    string        `yaml:"models_bucket" json:"models_bucket"`
-	LogsBucket      string        `yaml:"logs_bucket" json:"logs_bucket"`
+	Endpoint           string        `yaml:"endpoint" json:"endpoint"`
+	AccessKey          string        `yaml:"access_key" json:"access_key"`
+	SecretKey          string        `yaml:"secret_key" json:"secret_key"`
+	UseSSL             bool          `yaml:"use_ssl" json:"use_ssl"`
+	Region             string        `yaml:"region" json:"region"`
+	ConnectTimeout     time.Duration `yaml:"connect_timeout" json:"connect_timeout"`
+	RequestTimeout     time.Duration `yaml:"request_timeout" json:"request_timeout"`
+	VerificationBucket string        `yaml:"verification_bucket" json:"verification_bucket"`
+	ModelsBucket       string        `yaml:"models_bucket" json:"models_bucket"`
+	LogsBucket         string        `yaml:"logs_bucket" json:"logs_bucket"`
 }
 
 // DefaultMinIOConfig returns default MinIO configuration
 func DefaultMinIOConfig() *MinIOConfig {
 	return &MinIOConfig{
-		Endpoint:        "localhost:9000",
-		AccessKey:       "minioadmin",
-		SecretKey:       "minioadmin123",
-		UseSSL:          false,
-		Region:          "us-east-1",
-		ConnectTimeout:  30 * time.Second,
-		RequestTimeout:  60 * time.Second,
+		Endpoint:           "localhost:9000",
+		AccessKey:          "minioadmin",
+		SecretKey:          "minioadmin123",
+		UseSSL:             false,
+		Region:             "us-east-1",
+		ConnectTimeout:     30 * time.Second,
+		RequestTimeout:     60 * time.Second,
 		VerificationBucket: "llmsverifier-results",
-		ModelsBucket:    "llmsverifier-models",
-		LogsBucket:      "llmsverifier-logs",
+		ModelsBucket:       "llmsverifier-models",
+		LogsBucket:         "llmsverifier-logs",
 	}
 }
 
@@ -62,10 +62,10 @@ func (c *MinIOConfig) Validate() error {
 
 // MinIOClient wraps the MinIO client for LLMsVerifier storage
 type MinIOClient struct {
-	config      *MinIOConfig
-	client      *minio.Client
-	mu          sync.RWMutex
-	connected   bool
+	config    *MinIOConfig
+	client    *minio.Client
+	mu        sync.RWMutex
+	connected bool
 }
 
 // NewMinIOClient creates a new MinIO client

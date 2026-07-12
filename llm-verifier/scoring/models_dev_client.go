@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"time"
 
+	"digital.vasic.llmsverifier/logging"
 	"github.com/andybalholm/brotli"
 	"github.com/quic-go/quic-go/http3"
-	"digital.vasic.llmsverifier/logging"
 )
 
 // ModelsDevClient handles API calls to models.dev with HTTP/3 and Brotli support
@@ -32,49 +32,49 @@ type ModelsDevAPIResponse struct {
 
 // ModelsDevModel represents a single model from models.dev
 type ModelsDevModel struct {
-	Provider            string                `json:"provider"`
-	Model               string                `json:"model"`
-	Family              string                `json:"family"`
-	ProviderID          string                `json:"provider_id"`
-	ModelID             string                `json:"model_id"`
-	ToolCall            bool                  `json:"tool_call"`
-	Reasoning           bool                  `json:"reasoning"`
-	Input               float64               `json:"input"`
-	Output              float64               `json:"output"`
-	InputCostPer1M      float64               `json:"input_cost_per_1m_tokens"`
-	OutputCostPer1M     float64               `json:"output_cost_per_1m_tokens"`
-	ReasoningCostPer1M  float64               `json:"reasoning_cost_per_1m_tokens"`
-	CacheReadCostPer1M  float64               `json:"cache_read_cost_per_1m_tokens"`
-	CacheWriteCostPer1M float64               `json:"cache_write_cost_per_1m_tokens"`
-	AudioInputCostPer1M float64               `json:"audio_input_cost_per_1m_tokens"`
-	AudioOutputCostPer1M float64              `json:"audio_output_cost_per_1m_tokens"`
-	ContextLimit        int                   `json:"context_limit"`
-	InputLimit          int                   `json:"input_limit"`
-	OutputLimit         int                   `json:"output_limit"`
-	StructuredOutput    bool                  `json:"structured_output"`
-	Temperature         bool                  `json:"temperature"`
-	Weights             string                `json:"weights"`
-	Knowledge           string                `json:"knowledge"`
-	ReleaseDate         string                `json:"release_date"`
-	LastUpdated         string                `json:"last_updated"`
-	AdditionalData      ModelsDevAdditionalData `json:"additional_data,omitempty"`
+	Provider             string                  `json:"provider"`
+	Model                string                  `json:"model"`
+	Family               string                  `json:"family"`
+	ProviderID           string                  `json:"provider_id"`
+	ModelID              string                  `json:"model_id"`
+	ToolCall             bool                    `json:"tool_call"`
+	Reasoning            bool                    `json:"reasoning"`
+	Input                float64                 `json:"input"`
+	Output               float64                 `json:"output"`
+	InputCostPer1M       float64                 `json:"input_cost_per_1m_tokens"`
+	OutputCostPer1M      float64                 `json:"output_cost_per_1m_tokens"`
+	ReasoningCostPer1M   float64                 `json:"reasoning_cost_per_1m_tokens"`
+	CacheReadCostPer1M   float64                 `json:"cache_read_cost_per_1m_tokens"`
+	CacheWriteCostPer1M  float64                 `json:"cache_write_cost_per_1m_tokens"`
+	AudioInputCostPer1M  float64                 `json:"audio_input_cost_per_1m_tokens"`
+	AudioOutputCostPer1M float64                 `json:"audio_output_cost_per_1m_tokens"`
+	ContextLimit         int                     `json:"context_limit"`
+	InputLimit           int                     `json:"input_limit"`
+	OutputLimit          int                     `json:"output_limit"`
+	StructuredOutput     bool                    `json:"structured_output"`
+	Temperature          bool                    `json:"temperature"`
+	Weights              string                  `json:"weights"`
+	Knowledge            string                  `json:"knowledge"`
+	ReleaseDate          string                  `json:"release_date"`
+	LastUpdated          string                  `json:"last_updated"`
+	AdditionalData       ModelsDevAdditionalData `json:"additional_data,omitempty"`
 }
 
 // ModelsDevAdditionalData contains extra information about the model
 type ModelsDevAdditionalData struct {
-	ParameterCount      int64    `json:"parameter_count,omitempty"`
-	Architecture        string   `json:"architecture,omitempty"`
-	TrainingDataCutoff  string   `json:"training_data_cutoff,omitempty"`
-	OpenWeights         bool     `json:"open_weights,omitempty"`
-	Multimodal          bool     `json:"multimodal,omitempty"`
-	Vision              bool     `json:"vision,omitempty"`
-	Audio               bool     `json:"audio,omitempty"`
-	Video               bool     `json:"video,omitempty"`
-	Languages           []string `json:"languages,omitempty"`
-	Tags                []string `json:"tags,omitempty"`
-	License             string   `json:"license,omitempty"`
-	DocumentationURL    string   `json:"documentation_url,omitempty"`
-	APIEndpoint         string   `json:"api_endpoint,omitempty"`
+	ParameterCount     int64    `json:"parameter_count,omitempty"`
+	Architecture       string   `json:"architecture,omitempty"`
+	TrainingDataCutoff string   `json:"training_data_cutoff,omitempty"`
+	OpenWeights        bool     `json:"open_weights,omitempty"`
+	Multimodal         bool     `json:"multimodal,omitempty"`
+	Vision             bool     `json:"vision,omitempty"`
+	Audio              bool     `json:"audio,omitempty"`
+	Video              bool     `json:"video,omitempty"`
+	Languages          []string `json:"languages,omitempty"`
+	Tags               []string `json:"tags,omitempty"`
+	License            string   `json:"license,omitempty"`
+	DocumentationURL   string   `json:"documentation_url,omitempty"`
+	APIEndpoint        string   `json:"api_endpoint,omitempty"`
 }
 
 // ClientConfig holds configuration for the ModelsDevClient
@@ -252,7 +252,7 @@ func (c *ModelsDevClient) doRequest(ctx context.Context, client *http.Client, en
 	} else {
 		req.Header.Set("Accept-Encoding", "gzip, deflate")
 	}
-	
+
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", "LLM-Verifier/1.0")
 
@@ -262,7 +262,7 @@ func (c *ModelsDevClient) doRequest(ctx context.Context, client *http.Client, en
 // GetProviderLogo fetches the provider logo SVG
 func (c *ModelsDevClient) GetProviderLogo(ctx context.Context, providerID string) (string, error) {
 	endpoint := fmt.Sprintf("%s/logos/%s.svg", c.baseURL, providerID)
-	
+
 	req, err := http.NewRequestWithContext(ctx, "GET", endpoint, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
@@ -292,30 +292,30 @@ func (c *ModelsDevClient) GetProviderLogo(ctx context.Context, providerID string
 // ConvertToInternalModel converts ModelsDevModel to internal Model format
 func (c *ModelsDevClient) ConvertToInternalModel(devModel ModelsDevModel) *Model {
 	return &Model{
-		ProviderID:          devModel.ProviderID,
-		ModelID:             devModel.ModelID,
-		Name:                devModel.Model,
-		Description:         fmt.Sprintf("%s model from %s", devModel.Model, devModel.Provider),
-		Family:              devModel.Family,
-		SupportsToolCall:    devModel.ToolCall,
-		SupportsReasoning:   devModel.Reasoning,
-		InputCostPer1M:      devModel.InputCostPer1M,
-		OutputCostPer1M:     devModel.OutputCostPer1M,
-		ReasoningCostPer1M:  devModel.ReasoningCostPer1M,
-		CacheReadCostPer1M:  devModel.CacheReadCostPer1M,
-		CacheWriteCostPer1M: devModel.CacheWriteCostPer1M,
-		AudioInputCostPer1M: devModel.AudioInputCostPer1M,
-		AudioOutputCostPer1M: devModel.AudioOutputCostPer1M,
-		ContextLimit:        devModel.ContextLimit,
-		InputLimit:          devModel.InputLimit,
-		OutputLimit:         devModel.OutputLimit,
+		ProviderID:               devModel.ProviderID,
+		ModelID:                  devModel.ModelID,
+		Name:                     devModel.Model,
+		Description:              fmt.Sprintf("%s model from %s", devModel.Model, devModel.Provider),
+		Family:                   devModel.Family,
+		SupportsToolCall:         devModel.ToolCall,
+		SupportsReasoning:        devModel.Reasoning,
+		InputCostPer1M:           devModel.InputCostPer1M,
+		OutputCostPer1M:          devModel.OutputCostPer1M,
+		ReasoningCostPer1M:       devModel.ReasoningCostPer1M,
+		CacheReadCostPer1M:       devModel.CacheReadCostPer1M,
+		CacheWriteCostPer1M:      devModel.CacheWriteCostPer1M,
+		AudioInputCostPer1M:      devModel.AudioInputCostPer1M,
+		AudioOutputCostPer1M:     devModel.AudioOutputCostPer1M,
+		ContextLimit:             devModel.ContextLimit,
+		InputLimit:               devModel.InputLimit,
+		OutputLimit:              devModel.OutputLimit,
 		SupportsStructuredOutput: devModel.StructuredOutput,
-		SupportsTemperature: devModel.Temperature,
-		Weights:             devModel.Weights,
-		KnowledgeCutoff:     devModel.Knowledge,
-		ReleaseDate:         devModel.ReleaseDate,
-		LastUpdated:         devModel.LastUpdated,
-		AdditionalData:      devModel.AdditionalData,
+		SupportsTemperature:      devModel.Temperature,
+		Weights:                  devModel.Weights,
+		KnowledgeCutoff:          devModel.Knowledge,
+		ReleaseDate:              devModel.ReleaseDate,
+		LastUpdated:              devModel.LastUpdated,
+		AdditionalData:           devModel.AdditionalData,
 	}
 }
 

@@ -3,9 +3,9 @@ package scoring
 import (
 	"testing"
 
+	"digital.vasic.llmsverifier/database"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"digital.vasic.llmsverifier/database"
 )
 
 func TestNewDatabaseIntegration(t *testing.T) {

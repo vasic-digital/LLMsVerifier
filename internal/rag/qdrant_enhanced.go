@@ -13,21 +13,21 @@ import (
 
 // SearchResult represents a search result
 type SearchResult struct {
-	ID         string                 `json:"id"`
-	Content    string                 `json:"content"`
-	Score      float64                `json:"score"`
-	Metadata   map[string]interface{} `json:"metadata,omitempty"`
-	Source     string                 `json:"source,omitempty"` // "dense", "sparse", "hybrid"
+	ID       string                 `json:"id"`
+	Content  string                 `json:"content"`
+	Score    float64                `json:"score"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Source   string                 `json:"source,omitempty"` // "dense", "sparse", "hybrid"
 }
 
 // SearchOptions configures search behavior
 type SearchOptions struct {
-	TopK          int     `json:"top_k"`
-	MinScore      float64 `json:"min_score"`
-	DenseWeight   float64 `json:"dense_weight"`
-	SparseWeight  float64 `json:"sparse_weight"`
-	UseReranker   bool    `json:"use_reranker"`
-	Filters       map[string]interface{} `json:"filters,omitempty"`
+	TopK         int                    `json:"top_k"`
+	MinScore     float64                `json:"min_score"`
+	DenseWeight  float64                `json:"dense_weight"`
+	SparseWeight float64                `json:"sparse_weight"`
+	UseReranker  bool                   `json:"use_reranker"`
+	Filters      map[string]interface{} `json:"filters,omitempty"`
 }
 
 // DefaultSearchOptions returns default options
@@ -481,9 +481,9 @@ func (r *EnhancedQdrantRetriever) fusionWeighted(dense, sparse []*SearchResult, 
 
 // QdrantRAGPipeline provides a complete RAG pipeline
 type QdrantRAGPipeline struct {
-	retriever   *EnhancedQdrantRetriever
-	debateEval  DebateEvaluator
-	logger      *log.Logger
+	retriever  *EnhancedQdrantRetriever
+	debateEval DebateEvaluator
+	logger     *log.Logger
 }
 
 // NewQdrantRAGPipeline creates a new RAG pipeline
@@ -520,7 +520,7 @@ func tokenize(text string) []string {
 	words := strings.Fields(text)
 	var tokens []string
 	for _, w := range words {
-		w = strings.Trim(w, ".,!?;:\"'()[]{}") 
+		w = strings.Trim(w, ".,!?;:\"'()[]{}")
 		if len(w) > 0 {
 			tokens = append(tokens, w)
 		}

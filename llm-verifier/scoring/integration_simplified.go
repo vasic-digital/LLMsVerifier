@@ -106,10 +106,10 @@ func (ss *ScoringSystem) Start(ctx context.Context) error {
 // Stop gracefully shuts down the scoring system
 func (ss *ScoringSystem) Stop() error {
 	ss.logger.Info("Stopping scoring system", map[string]any{})
-	
+
 	close(ss.shutdown)
 	ss.backgroundWorkers.Wait()
-	
+
 	return nil
 }
 
@@ -149,7 +149,7 @@ func (ss *ScoringSystem) BatchCalculateScores(ctx context.Context, modelIDs []st
 		wg.Add(1)
 		go func(mid string) {
 			defer wg.Done()
-			
+
 			sem <- struct{}{}
 			defer func() { <-sem }()
 
@@ -184,7 +184,7 @@ func (ss *ScoringSystem) UpdateModelNameWithScore(modelID string, score float64)
 
 	// Update model name with score suffix
 	updatedName := ss.modelNaming.AddScoreSuffix(model.Name, score)
-	
+
 	// Update in database
 	model.Name = updatedName
 	if err := ss.engine.dbIntegration.db.UpdateModel(model); err != nil {
@@ -240,9 +240,9 @@ func (ss *ScoringSystem) GetModelScore(modelID string) (*ComprehensiveScore, err
 
 	// Convert to ComprehensiveScore
 	return &ComprehensiveScore{
-		ModelID:         modelID,
-		ModelName:       model.Name,
-		OverallScore:    score.Score,
+		ModelID:      modelID,
+		ModelName:    model.Name,
+		OverallScore: score.Score,
 		Components: ScoreComponents{
 			SpeedScore:      score.Components.SpeedScore,
 			EfficiencyScore: score.Components.EfficiencyScore,
@@ -266,13 +266,13 @@ func (ss *ScoringSystem) GetModelRankings(category string, limit int) ([]ModelRa
 	rankings := make([]ModelRanking, 0, len(scores))
 	for i, score := range scores {
 		ranking := ModelRanking{
-			Rank:          i + 1,
-			ModelID:       score.ModelID,
-			ModelName:     fmt.Sprintf("Model %s", score.ModelID),
-			OverallScore:  score.Score,
-			ScoreSuffix:   score.ScoreSuffix,
-			Category:      category,
-			LastUpdated:   score.LastCalculated,
+			Rank:         i + 1,
+			ModelID:      score.ModelID,
+			ModelName:    fmt.Sprintf("Model %s", score.ModelID),
+			OverallScore: score.Score,
+			ScoreSuffix:  score.ScoreSuffix,
+			Category:     category,
+			LastUpdated:  score.LastCalculated,
 		}
 
 		// Add component scores based on category
@@ -302,11 +302,11 @@ func (ss *ScoringSystem) GetScoreDistribution() (ScoreDistribution, error) {
 	// This would query the database for score statistics
 	// For now, return a placeholder
 	return ScoreDistribution{
-		TotalModels:   100,
-		AverageScore:  7.5,
-		MedianScore:   7.8,
-		MinScore:      2.1,
-		MaxScore:      9.8,
+		TotalModels:  100,
+		AverageScore: 7.5,
+		MedianScore:  7.8,
+		MinScore:     2.1,
+		MaxScore:     9.8,
 		ScoreRanges: []ScoreRange{
 			{Min: 9.0, Max: 10.0, Count: 5, Percentage: 5.0},
 			{Min: 8.0, Max: 8.9, Count: 15, Percentage: 15.0},
@@ -320,11 +320,11 @@ func (ss *ScoringSystem) GetScoreDistribution() (ScoreDistribution, error) {
 
 // ScoreDistribution represents the distribution of model scores
 type ScoreDistribution struct {
-	TotalModels int          `json:"total_models"`
-	AverageScore float64     `json:"average_score"`
-	MedianScore  float64     `json:"median_score"`
-	MinScore     float64     `json:"min_score"`
-	MaxScore     float64     `json:"max_score"`
+	TotalModels  int          `json:"total_models"`
+	AverageScore float64      `json:"average_score"`
+	MedianScore  float64      `json:"median_score"`
+	MinScore     float64      `json:"min_score"`
+	MaxScore     float64      `json:"max_score"`
 	ScoreRanges  []ScoreRange `json:"score_ranges"`
 }
 
@@ -364,7 +364,7 @@ func (ss *ScoringSystem) backgroundSyncLoop(ctx context.Context) {
 
 func (ss *ScoringSystem) performBackgroundSync(ctx context.Context) {
 	ss.logger.Info("Starting background sync with models.dev", map[string]any{})
-	
+
 	if err := ss.syncAllModelsWithModelsDev(ctx, false); err != nil {
 		ss.logger.Info("Background sync failed", map[string]any{"error": err})
 	} else {
@@ -398,7 +398,7 @@ func (ss *ScoringSystem) scoreMonitoringLoop(ctx context.Context) {
 
 func (ss *ScoringSystem) performScoreRecalculation(ctx context.Context) {
 	ss.logger.Info("Starting background score recalculation", map[string]any{})
-	
+
 	// For now, just log that we're starting recalculation
 	// In a full implementation, this would query models needing recalculation
 	ss.logger.Info("Background score recalculation completed", map[string]any{})

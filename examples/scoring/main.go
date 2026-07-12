@@ -121,7 +121,7 @@ func main() {
 	fmt.Println("===================================")
 
 	ctx := context.Background()
-	
+
 	// Calculate scores for each model
 	for _, model := range models {
 		score, err := scoringEngine.CalculateComprehensiveScore(ctx, model.ModelID, config)
@@ -147,12 +147,12 @@ func main() {
 	fmt.Println("=====================================")
 
 	naming := scoring.NewModelNaming()
-	
+
 	// Simulate updating model names with scores
 	modelScores := map[string]float64{
-		"GPT-4":         8.5,
+		"GPT-4":           8.5,
 		"Claude 3 Sonnet": 7.8,
-		"Llama 2 70B":   6.9,
+		"Llama 2 70B":     6.9,
 	}
 
 	for modelName, score := range modelScores {

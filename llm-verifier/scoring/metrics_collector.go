@@ -8,27 +8,27 @@ import (
 // MetricsCollector collects and manages system metrics
 type MetricsCollector struct {
 	config MonitoringConfig
-	
+
 	// Score metrics
 	scoreCalculationsTotal int64
 	scoreCalculationErrors int64
 	scoreChanges           []ScoreChangeMetric
-	
+
 	// API metrics
 	apiRequestsTotal  int64
 	apiRequestsFailed int64
 	apiResponseTimes  []time.Duration
-	
+
 	// Database metrics
 	dbOperationsTotal  int64
 	dbOperationsFailed int64
 	dbLatencies        []time.Duration
-	
+
 	// Performance metrics
-	memoryUsage    []MemoryMetric
-	cpuUsage       []CPUMetric
-	diskUsage      []DiskMetric
-	
+	memoryUsage []MemoryMetric
+	cpuUsage    []CPUMetric
+	diskUsage   []DiskMetric
+
 	mu sync.RWMutex
 }
 
@@ -62,13 +62,13 @@ type DiskMetric struct {
 // NewMetricsCollector creates a new metrics collector
 func NewMetricsCollector(config MonitoringConfig) MetricsCollector {
 	return MetricsCollector{
-		config:         config,
-		scoreChanges:   make([]ScoreChangeMetric, 0, 1000),
+		config:           config,
+		scoreChanges:     make([]ScoreChangeMetric, 0, 1000),
 		apiResponseTimes: make([]time.Duration, 0, 1000),
-		dbLatencies:    make([]time.Duration, 0, 1000),
-		memoryUsage:    make([]MemoryMetric, 0, 1000),
-		cpuUsage:       make([]CPUMetric, 0, 1000),
-		diskUsage:      make([]DiskMetric, 0, 1000),
+		dbLatencies:      make([]time.Duration, 0, 1000),
+		memoryUsage:      make([]MemoryMetric, 0, 1000),
+		cpuUsage:         make([]CPUMetric, 0, 1000),
+		diskUsage:        make([]DiskMetric, 0, 1000),
 	}
 }
 
@@ -95,7 +95,7 @@ func (mc *MetricsCollector) RecordScoreChange(modelID string, change float64) {
 	}
 
 	mc.scoreChanges = append(mc.scoreChanges, metric)
-	
+
 	// Keep only recent metrics
 	mc.trimScoreChanges()
 }
@@ -111,7 +111,7 @@ func (mc *MetricsCollector) RecordAPIPerformance(apiName string, responseTime ti
 	}
 
 	mc.apiResponseTimes = append(mc.apiResponseTimes, responseTime)
-	
+
 	// Keep only recent metrics
 	mc.trimAPIResponseTimes()
 }
@@ -127,7 +127,7 @@ func (mc *MetricsCollector) RecordDatabasePerformance(operation string, latency 
 	}
 
 	mc.dbLatencies = append(mc.dbLatencies, latency)
-	
+
 	// Keep only recent metrics
 	mc.trimDatabaseLatencies()
 }

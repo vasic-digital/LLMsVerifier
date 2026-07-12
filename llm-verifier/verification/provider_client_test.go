@@ -78,7 +78,7 @@ func TestProviderServiceInterface_Types(t *testing.T) {
 
 func TestModelInfo_Struct(t *testing.T) {
 	features := map[string]interface{}{
-		"max_tokens": 4096,
+		"max_tokens":      4096,
 		"supports_vision": true,
 	}
 

@@ -195,14 +195,14 @@ type QueueOption func(*QueueConfig)
 // DefaultQueueConfig returns a QueueConfig with sensible defaults.
 func DefaultQueueConfig(name string) *QueueConfig {
 	return &QueueConfig{
-		Name:       name,
-		Durable:    true,
-		Exclusive:  false,
-		AutoDelete: false,
-		MessageTTL: 24 * time.Hour,
-		MaxLength:  1000000,
+		Name:        name,
+		Durable:     true,
+		Exclusive:   false,
+		AutoDelete:  false,
+		MessageTTL:  24 * time.Hour,
+		MaxLength:   1000000,
 		MaxPriority: 10,
-		Arguments:  make(map[string]interface{}),
+		Arguments:   make(map[string]interface{}),
 	}
 }
 
@@ -285,14 +285,14 @@ func WithQueueArgument(key string, value interface{}) QueueOption {
 // NewTask creates a new Task with default values.
 func NewTask(taskType string, payload []byte) *Task {
 	return &Task{
-		ID:        generateUUID(),
-		Type:      taskType,
-		Payload:   payload,
-		Priority:  PriorityNormal,
+		ID:         generateUUID(),
+		Type:       taskType,
+		Payload:    payload,
+		Priority:   PriorityNormal,
 		MaxRetries: 3,
-		CreatedAt: time.Now(),
-		Status:    TaskStatusPending,
-		Metadata:  make(map[string]string),
+		CreatedAt:  time.Now(),
+		Status:     TaskStatusPending,
+		Metadata:   make(map[string]string),
 	}
 }
 

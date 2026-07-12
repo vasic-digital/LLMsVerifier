@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	llmverifier "digital.vasic.llmsverifier/llmverifier"
+	"github.com/google/uuid"
 )
 
 // TestSuite represents a custom test suite
@@ -311,9 +311,9 @@ func (tsb *TestSuiteBuilder) AddLoadTestCase(name string, concurrentUsers, durat
 			"users":    concurrentUsers,
 			"duration": duration,
 		}),
-		Type: TestCaseTypeLoad,
-		Priority:    TestPriorityHigh,
-		Category:    "performance",
+		Type:     TestCaseTypeLoad,
+		Priority: TestPriorityHigh,
+		Category: "performance",
 		Configuration: TestConfig{
 			MaxTokens:  500,
 			Timeout:    time.Duration(duration) * time.Second,
@@ -560,7 +560,7 @@ func (tse *TestSuiteExecutor) executeTestCase(ctx context.Context, testCase Test
 }
 
 // Helper functions for test suite pointer values
-func testIntPtr(i int) *int          { return &i }
+func testIntPtr(i int) *int             { return &i }
 func testFloat64Ptr(f float64) *float64 { return &f }
 
 // executeBasicTest executes a basic test using real LLM provider

@@ -84,12 +84,12 @@ func (t *streamingTest) Run(ctx context.Context, client *llmverifier.LLMClient) 
 			Score:     score,
 			Timestamp: time.Now(),
 			Details: map[string]any{
-				"test":            "streaming_reliability",
-				"model":           modelName,
-				"total_requests":  totalRequests,
-				"success_count":   successCount,
-				"responses":       responses,
-				"errors":          errors,
+				"test":           "streaming_reliability",
+				"model":          modelName,
+				"total_requests": totalRequests,
+				"success_count":  successCount,
+				"responses":      responses,
+				"errors":         errors,
 			},
 		}, nil
 	})

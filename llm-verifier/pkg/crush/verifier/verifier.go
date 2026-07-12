@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	crush_config "digital.vasic.llmsverifier/pkg/crush/config"
 	"digital.vasic.llmsverifier/database"
+	crush_config "digital.vasic.llmsverifier/pkg/crush/config"
 )
 
 // CrushVerifier handles verification of Crush configurations and setups
@@ -28,37 +28,37 @@ func NewCrushVerifier(db *database.Database, configPath string) *CrushVerifier {
 
 // VerificationResult represents the result of a configuration verification
 type VerificationResult struct {
-	ConfigFile      string                                   `json:"config_file"`
-	Valid           bool                                     `json:"valid"`
-	Errors          []crush_config.ValidationError           `json:"errors,omitempty"`
-	Warnings        []crush_config.ValidationWarning         `json:"warnings,omitempty"`
-	ProviderStatus  map[string]ProviderVerificationStatus    `json:"provider_status,omitempty"`
-	ModelStatus     map[string]map[string]ModelVerificationStatus `json:"model_status,omitempty"`
-	LspStatus       map[string]LspVerificationStatus         `json:"lsp_status,omitempty"`
-	OverallScore    float64                                  `json:"overall_score"`
+	ConfigFile     string                                        `json:"config_file"`
+	Valid          bool                                          `json:"valid"`
+	Errors         []crush_config.ValidationError                `json:"errors,omitempty"`
+	Warnings       []crush_config.ValidationWarning              `json:"warnings,omitempty"`
+	ProviderStatus map[string]ProviderVerificationStatus         `json:"provider_status,omitempty"`
+	ModelStatus    map[string]map[string]ModelVerificationStatus `json:"model_status,omitempty"`
+	LspStatus      map[string]LspVerificationStatus              `json:"lsp_status,omitempty"`
+	OverallScore   float64                                       `json:"overall_score"`
 }
 
 // ProviderVerificationStatus represents the verification status of a provider
 type ProviderVerificationStatus struct {
-	Name         string  `json:"name"`
-	Type         string  `json:"type"`
-	Configured   bool    `json:"configured"`
-	HasAPIKey    bool    `json:"has_api_key"`
-	ModelCount   int     `json:"model_count"`
-	Verified     bool    `json:"verified"`
-	Error        string  `json:"error,omitempty"`
-	Score        float64 `json:"score"`
+	Name       string  `json:"name"`
+	Type       string  `json:"type"`
+	Configured bool    `json:"configured"`
+	HasAPIKey  bool    `json:"has_api_key"`
+	ModelCount int     `json:"model_count"`
+	Verified   bool    `json:"verified"`
+	Error      string  `json:"error,omitempty"`
+	Score      float64 `json:"score"`
 }
 
 // ModelVerificationStatus represents the verification status of a model
 type ModelVerificationStatus struct {
-	ID               string  `json:"id"`
-	Name             string  `json:"name"`
-	Configured       bool    `json:"configured"`
-	HasCostInfo      bool    `json:"has_cost_info"`
-	HasContextInfo   bool    `json:"has_context_info"`
-	HasFeatureFlags  bool    `json:"has_feature_flags"`
-	Score            float64 `json:"score"`
+	ID              string  `json:"id"`
+	Name            string  `json:"name"`
+	Configured      bool    `json:"configured"`
+	HasCostInfo     bool    `json:"has_cost_info"`
+	HasContextInfo  bool    `json:"has_context_info"`
+	HasFeatureFlags bool    `json:"has_feature_flags"`
+	Score           float64 `json:"score"`
 }
 
 // LspVerificationStatus represents the verification status of an LSP server
@@ -104,7 +104,7 @@ func (v *CrushVerifier) VerifyConfiguration() (*VerificationResult, error) {
 	for name, provider := range cfg.Providers {
 		status := v.VerifyProvider(name, &provider)
 		result.ProviderStatus[name] = status
-		
+
 		// Verify models for this provider
 		result.ModelStatus[name] = make(map[string]ModelVerificationStatus)
 		for _, model := range provider.Models {
@@ -195,9 +195,9 @@ func (v *CrushVerifier) VerifyProvider(name string, provider *crush_config.Provi
 
 func (v *CrushVerifier) VerifyModel(model *crush_config.Model) ModelVerificationStatus {
 	status := ModelVerificationStatus{
-		ID:          model.ID,
-		Name:        model.Name,
-		Configured:  true,
+		ID:         model.ID,
+		Name:       model.Name,
+		Configured: true,
 	}
 
 	// Check configurations
@@ -310,7 +310,7 @@ func GetVerificationStatus(db *database.Database) (map[string]interface{}, error
 // VerifyAllConfigurations verifies all Crush configurations in a project
 func VerifyAllConfigurations(db *database.Database, projectPath string) error {
 	verifier := NewCrushVerifier(db, filepath.Join(projectPath, "crush.json"))
-	
+
 	results, err := verifier.VerifySetup(projectPath)
 	if err != nil {
 		return fmt.Errorf("verification failed: %w", err)

@@ -39,11 +39,11 @@ func TestFeatureSuffixes(t *testing.T) {
 // TestFormatModelNameWithSuffixes tests model name formatting with feature suffixes
 func TestFormatModelNameWithSuffixes(t *testing.T) {
 	tests := []struct {
-		name          string
-		modelID       string
-		result        VerificationResult
-		isVerified    bool
-		wantContains  []string
+		name           string
+		modelID        string
+		result         VerificationResult
+		isVerified     bool
+		wantContains   []string
 		wantNotContain []string
 	}{
 		{
@@ -236,17 +236,17 @@ func TestDetectToonSupport(t *testing.T) {
 // TestCrushModelFeatureFlags tests that Crush model has all feature flags
 func TestCrushModelFeatureFlags(t *testing.T) {
 	model := CrushModel{
-		ID:                "test-model",
-		Name:              "test-model (brotli) (http3) (streaming) (llmsvd)",
-		ContextWindow:     128000,
-		DefaultMaxTokens:  4096,
-		CanReason:         true,
+		ID:                  "test-model",
+		Name:                "test-model (brotli) (http3) (streaming) (llmsvd)",
+		ContextWindow:       128000,
+		DefaultMaxTokens:    4096,
+		CanReason:           true,
 		SupportsAttachments: true,
-		SupportsHTTP3:     true,
-		SupportsToon:      true,
-		SupportsBrotli:    true,
-		SupportsStreaming: true,
-		Verified:          true,
+		SupportsHTTP3:       true,
+		SupportsToon:        true,
+		SupportsBrotli:      true,
+		SupportsStreaming:   true,
+		Verified:            true,
 	}
 
 	// Marshal and unmarshal to verify JSON tags
@@ -309,9 +309,9 @@ func TestExportCrushConfigWithFeatures(t *testing.T) {
 		},
 		{
 			ModelInfo: ModelInfo{
-				ID:           "dall-e-3",
-				Endpoint:     "https://api.openai.com/v1",
-				SupportsToon: true,
+				ID:            "dall-e-3",
+				Endpoint:      "https://api.openai.com/v1",
+				SupportsToon:  true,
 				ContextWindow: ContextWindow{TotalMaxTokens: 4000},
 			},
 			FeatureDetection: FeatureDetectionResult{
@@ -675,8 +675,8 @@ func TestOpenCodeProviderWithModels(t *testing.T) {
 		},
 		{
 			ModelInfo: ModelInfo{
-				ID:       "test-model-2",
-				Endpoint: "https://api.openai.com/v1",
+				ID:            "test-model-2",
+				Endpoint:      "https://api.openai.com/v1",
 				ContextWindow: ContextWindow{TotalMaxTokens: 64000},
 			},
 			FeatureDetection: FeatureDetectionResult{
@@ -1124,12 +1124,12 @@ func TestOpenCodeFileValidation(t *testing.T) {
 				"baseUrl":  "https://api.anthropic.com/v1",
 				"models": []map[string]interface{}{
 					{
-						"id":               "claude-3-opus",
-						"name":             "claude-3-opus (brotli) (llmsvd)",
-						"context_window":   200000,
-						"supports_brotli":  true,
-						"supports_http3":   false,
-						"verified":         true,
+						"id":              "claude-3-opus",
+						"name":            "claude-3-opus (brotli) (llmsvd)",
+						"context_window":  200000,
+						"supports_brotli": true,
+						"supports_http3":  false,
+						"verified":        true,
 					},
 				},
 			},
@@ -1139,8 +1139,8 @@ func TestOpenCodeFileValidation(t *testing.T) {
 			"task":  map[string]interface{}{"model": "anthropic.claude-3-opus", "maxTokens": 5000},
 			"title": map[string]interface{}{"model": "anthropic.claude-3-opus", "maxTokens": 80},
 		},
-		"data":       map[string]interface{}{"directory": ".opencode"},
-		"debug":      false,
+		"data":        map[string]interface{}{"directory": ".opencode"},
+		"debug":       false,
 		"autoCompact": true,
 	}
 

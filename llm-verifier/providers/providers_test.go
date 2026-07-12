@@ -333,10 +333,10 @@ func TestErrorHandlerHandleErrorNotRetryable(t *testing.T) {
 
 func TestNewRecoveryStrategies(t *testing.T) {
 	retryConfig := RetryConfig{
-		MaxRetries:      3,
-		InitialDelay:    1 * time.Second,
-		MaxDelay:        30 * time.Second,
-		BackoffFactor:   2.0,
+		MaxRetries:    3,
+		InitialDelay:  1 * time.Second,
+		MaxDelay:      30 * time.Second,
+		BackoffFactor: 2.0,
 	}
 	strategies := NewRecoveryStrategies("openai", retryConfig)
 	assert.NotNil(t, strategies)
@@ -466,10 +466,10 @@ func TestPow(t *testing.T) {
 
 func TestCalculateRetryDelayWithRetryAfter(t *testing.T) {
 	retryConfig := RetryConfig{
-		MaxRetries:      3,
-		InitialDelay:    1 * time.Second,
-		MaxDelay:        30 * time.Second,
-		BackoffFactor:   2.0,
+		MaxRetries:    3,
+		InitialDelay:  1 * time.Second,
+		MaxDelay:      30 * time.Second,
+		BackoffFactor: 2.0,
 	}
 	handler := NewErrorHandler("openai", retryConfig)
 	delay := handler.calculateRetryDelay(0, 5*time.Second)
@@ -478,10 +478,10 @@ func TestCalculateRetryDelayWithRetryAfter(t *testing.T) {
 
 func TestCalculateRetryDelayExponentialBackoff(t *testing.T) {
 	retryConfig := RetryConfig{
-		MaxRetries:      5,
-		InitialDelay:    1 * time.Second,
-		MaxDelay:        30 * time.Second,
-		BackoffFactor:   2.0,
+		MaxRetries:    5,
+		InitialDelay:  1 * time.Second,
+		MaxDelay:      30 * time.Second,
+		BackoffFactor: 2.0,
 	}
 	handler := NewErrorHandler("openai", retryConfig)
 	delay := handler.calculateRetryDelay(1, 0)
@@ -490,10 +490,10 @@ func TestCalculateRetryDelayExponentialBackoff(t *testing.T) {
 
 func TestCalculateRetryDelayMaxDelayCap(t *testing.T) {
 	retryConfig := RetryConfig{
-		MaxRetries:      10,
-		InitialDelay:    1 * time.Second,
-		MaxDelay:        5 * time.Second,
-		BackoffFactor:   3.0,
+		MaxRetries:    10,
+		InitialDelay:  1 * time.Second,
+		MaxDelay:      5 * time.Second,
+		BackoffFactor: 3.0,
 	}
 	handler := NewErrorHandler("openai", retryConfig)
 	delay := handler.calculateRetryDelay(10, 0)

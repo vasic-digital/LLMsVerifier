@@ -213,7 +213,7 @@ func TestModelComparisonEngine_createMetricComparison(t *testing.T) {
 		}
 		result := engine.createMetricComparison("Latency", "Response time", values, false)
 
-		assert.Equal(t, 50.0, result.BestValue) // Lower is better, so best is 50
+		assert.Equal(t, 50.0, result.BestValue)       // Lower is better, so best is 50
 		assert.Equal(t, "model-b", result.Ranking[0]) // Best should be first
 	})
 }

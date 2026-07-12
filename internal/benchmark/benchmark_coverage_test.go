@@ -136,9 +136,9 @@ func TestVerifierAdapterForBenchmark_SelectBestProvider_WithHealthCheck(t *testi
 
 type emptyVerifier struct{}
 
-func (e *emptyVerifier) GetProviderScore(name string) float64  { return 0 }
-func (e *emptyVerifier) IsProviderHealthy(name string) bool    { return false }
-func (e *emptyVerifier) GetTopProviders(count int) []string    { return nil }
+func (e *emptyVerifier) GetProviderScore(name string) float64 { return 0 }
+func (e *emptyVerifier) IsProviderHealthy(name string) bool   { return false }
+func (e *emptyVerifier) GetTopProviders(count int) []string   { return nil }
 
 func TestVerifierAdapterForBenchmark_SelectBestProvider_Empty(t *testing.T) {
 	adapter := NewVerifierAdapterForBenchmark(&emptyVerifier{}, nil)

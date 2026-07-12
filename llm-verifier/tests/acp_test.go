@@ -147,7 +147,7 @@ func TestACPsAPIValidation(t *testing.T) {
 // TestACPsDatabaseIntegration tests ACP fields in database operations
 func TestACPsDatabaseIntegration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping database integration test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping database integration test in short mode") // SKIP-OK: #short-mode
 	}
 
 	// Test database field mapping for ACP support
@@ -172,12 +172,12 @@ func TestACPsDatabaseIntegration(t *testing.T) {
 					OwnedBy: model.provider,
 				},
 				FeatureDetection: llmverifier.FeatureDetectionResult{
-					ACPs:             model.acpSupport,
-					MCPs:             true,
-					LSPs:             true,
-					ToolUse:          true,
-					FunctionCalling:  true,
-					CodeGeneration:   true,
+					ACPs:            model.acpSupport,
+					MCPs:            true,
+					LSPs:            true,
+					ToolUse:         true,
+					FunctionCalling: true,
+					CodeGeneration:  true,
 				},
 			}
 

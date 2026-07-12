@@ -242,8 +242,8 @@ func TestAnalyzeIntent(t *testing.T) {
 		message  string
 		expected string
 	}{
-		{"Can you help me?", "help"},   // Contains "?" and "help"
-		{"What is the status", "status"}, // No "?", contains "status"
+		{"Can you help me?", "help"},      // Contains "?" and "help"
+		{"What is the status", "status"},  // No "?", contains "status"
 		{"How are the systems", "status"}, // No "?", contains "how are"
 		{"Suggest a model", "suggest"},
 		{"Recommend something", "suggest"},

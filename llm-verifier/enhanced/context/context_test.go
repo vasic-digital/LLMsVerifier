@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -27,8 +28,31 @@ func (m *MockVerifier) SummarizeConversation(messages []string) (*llmverifier.Co
 	}, nil
 }
 
-// MockStorage implements mock storage for testing
+// MockStorage implements mock storage for testing.
+//
+// ROOT CAUSE (independent-audit finding, 2026-07-10): MockStorage's `data`
+// map was read/written with no synchronization. HybridStorage.SaveContext
+// (enhanced/context/storage.go) deliberately replicates to every replica
+// backend CONCURRENTLY via unsynchronized goroutines (fire-and-forget async
+// replication, by design -- the caller is not meant to block on replica
+// writes), and HybridStorage.LoadContext similarly fires a background
+// restore-to-primary goroutine on a replica hit. Any ContextStorage
+// implementation MUST therefore tolerate concurrent SaveContext/LoadContext/
+// DeleteContext/ListConversations calls -- exactly like a real backing store
+// (SQL database, Redis, etc.) would via its own internal locking/connection
+// pooling. A bare, unsynchronized map does NOT satisfy that implicit
+// contract: confirmed under `go test -race` (WARNING: DATA RACE,
+// MockStorage.SaveContext's map write vs MockStorage.LoadContext's map read,
+// TestHybridStorage_SaveContext / TestHybridStorage_LoadContext_
+// FallbackToReplica). A test relying on `time.Sleep` to "wait for" the async
+// replication goroutine does NOT establish a happens-before edge under Go's
+// memory model, so the race is real even though the sleep usually makes it
+// look correct. Fixed here (test-only change; HybridStorage's intentional
+// async-replication design in storage.go is untouched) by guarding MockStorage
+// with a mutex, matching what any real, well-behaved concurrent-safe backend
+// must already do.
 type MockStorage struct {
+	mu   sync.RWMutex
 	data map[string][]byte
 }
 
@@ -39,11 +63,15 @@ func NewMockStorage() *MockStorage {
 }
 
 func (m *MockStorage) SaveContext(ctx context.Context, conversationID string, data []byte) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.data[conversationID] = data
 	return nil
 }
 
 func (m *MockStorage) LoadContext(ctx context.Context, conversationID string) ([]byte, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	if data, exists := m.data[conversationID]; exists {
 		return data, nil
 	}
@@ -51,11 +79,15 @@ func (m *MockStorage) LoadContext(ctx context.Context, conversationID string) ([
 }
 
 func (m *MockStorage) DeleteContext(ctx context.Context, conversationID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	delete(m.data, conversationID)
 	return nil
 }
 
 func (m *MockStorage) ListConversations(ctx context.Context) ([]string, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	var conversations []string
 	for id := range m.data {
 		conversations = append(conversations, id)

@@ -27,8 +27,8 @@ func TestModelNaming_GenerateScoreSuffix(t *testing.T) {
 		{"medium score", 7.3, "(SC:7.3)"},
 		{"low score", 3.2, "(SC:3.2)"},
 		{"zero score", 0.0, "(SC:0.0)"},
-		{"rounded score", 8.55, "(SC:8.6)"},   // Rounds to 8.6
-		{"rounded down", 8.54, "(SC:8.5)"},    // Rounds to 8.5
+		{"rounded score", 8.55, "(SC:8.6)"}, // Rounds to 8.6
+		{"rounded down", 8.54, "(SC:8.5)"},  // Rounds to 8.5
 	}
 
 	for _, tc := range testCases {
@@ -52,7 +52,7 @@ func TestModelNaming_AddScoreSuffix(t *testing.T) {
 		{"model with spaces", "Claude 3 Opus", 9.0, "Claude 3 Opus (SC:9.0)"},
 		{"model with existing suffix", "GPT-4 (SC:7.0)", 8.5, "GPT-4 (SC:8.5)"},
 		{"model with trailing space", "GPT-4 ", 8.5, "GPT-4 (SC:8.5)"},
-		{"empty model name", "", 8.0, " (SC:8.0)"},  // Empty string trimmed + space + suffix
+		{"empty model name", "", 8.0, " (SC:8.0)"}, // Empty string trimmed + space + suffix
 	}
 
 	for _, tc := range testCases {
@@ -74,7 +74,7 @@ func TestModelNaming_RemoveScoreSuffix(t *testing.T) {
 		{"with suffix", "GPT-4 (SC:8.5)", "GPT-4"},
 		{"without suffix", "GPT-4", "GPT-4"},
 		{"with suffix and spaces", "Claude 3 Opus (SC:9.0)", "Claude 3 Opus"},
-		{"multiple spaces before suffix", "GPT-4  (SC:8.5)", "GPT-4"},  // Trailing spaces removed
+		{"multiple spaces before suffix", "GPT-4  (SC:8.5)", "GPT-4"}, // Trailing spaces removed
 		{"integer score suffix", "Model (SC:9.0)", "Model"},
 	}
 
@@ -189,9 +189,9 @@ func TestModelNaming_BatchUpdateModelNames(t *testing.T) {
 	mn := NewModelNaming()
 
 	modelScores := map[string]float64{
-		"GPT-4":         8.5,
-		"Claude 3":      9.0,
-		"Gemini Pro":    7.8,
+		"GPT-4":            8.5,
+		"Claude 3":         9.0,
+		"Gemini Pro":       7.8,
 		"Llama 2 (SC:5.0)": 8.2, // Should update existing
 	}
 

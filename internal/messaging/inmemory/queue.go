@@ -26,9 +26,9 @@ type Queue struct {
 	messages *priorityQueue
 
 	// Metrics
-	enqueued   int64
-	dequeued   int64
-	expired    int64
+	enqueued int64
+	dequeued int64
+	expired  int64
 }
 
 // NewQueue creates a new Queue with the given parameters.

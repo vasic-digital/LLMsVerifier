@@ -44,9 +44,9 @@ var providerCapabilitySeeds = map[string]*ProviderCapabilities{
 		},
 		Protocols: []ProtocolType{ProtocolOpenAI},
 		Auth: AuthCapability{
-			Types:        []AuthType{AuthBearer},
-			DefaultType:  AuthBearer,
-			EnvVarName:   "OPENAI_API_KEY",
+			Types:       []AuthType{AuthBearer},
+			DefaultType: AuthBearer,
+			EnvVarName:  "OPENAI_API_KEY",
 		},
 		Model_: ModelCapability{
 			Vision:           true,
@@ -587,8 +587,8 @@ var cliAgentCapabilities = map[string]*CLIAgentCapabilities{
 			Supported: false,
 		},
 		Caching: CachingCapability{
-			Supported: true,
-			Types:     []CachingType{CachingPrompt},
+			Supported:  true,
+			Types:      []CachingType{CachingPrompt},
 			TTLDefault: 24 * time.Hour,
 		},
 		Protocols:     []ProtocolType{ProtocolOpenAI, ProtocolAnthropic, ProtocolMCP},
@@ -597,9 +597,9 @@ var cliAgentCapabilities = map[string]*CLIAgentCapabilities{
 		ToolCount:     28,
 		Tools:         []string{"Bash", "Read", "Write", "Edit", "Glob", "Grep", "Git", "Diff", "Test", "Lint", "Symbols", "References", "Definition", "PR", "Issue", "Workflow"},
 		Extended: ExtendedCapabilities{
-			PlanActModes:   true,
-			AutoApproval:   true,
-			Checkpointing:  true,
+			PlanActModes:  true,
+			AutoApproval:  true,
+			Checkpointing: true,
 		},
 	},
 
@@ -923,10 +923,10 @@ var cliAgentCapabilities = map[string]*CLIAgentCapabilities{
 		ToolCount:     8,
 		Tools:         []string{"Bash", "Read", "Write", "Edit", "Memory"},
 		Extended: ExtendedCapabilities{
-			Sandboxing:   true,
-			SandboxTypes: []string{"docker", "podman", "seatbelt"},
+			Sandboxing:    true,
+			SandboxTypes:  []string{"docker", "podman", "seatbelt"},
 			Checkpointing: true,
-			AutoApproval: true,
+			AutoApproval:  true,
 		},
 	},
 

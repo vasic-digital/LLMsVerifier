@@ -72,10 +72,10 @@ func TestRecommendations_Routed(t *testing.T) {
 			score    float64
 			failures int
 		}{
-			{50, 3},  // low score + failures
-			{95, 0},  // good score, no failures
-			{70, 0},  // low score, no failures
-			{95, 2},  // good score, failures
+			{50, 3}, // low score + failures
+			{95, 0}, // good score, no failures
+			{70, 0}, // low score, no failures
+			{95, 2}, // good score, failures
 		}
 		for _, c := range cases {
 			recs := ai.getRecommendations(c.score, c.failures)

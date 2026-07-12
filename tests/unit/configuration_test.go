@@ -86,7 +86,7 @@ func TestConfiguration_LoadFromFile(t *testing.T) {
 			},
 		},
 		{
-			name: "Empty configuration",
+			name:          "Empty configuration",
 			configContent: `{}`,
 			expectError:   false,
 			validateFunc: func(t *testing.T, cfg *opencodeConfig.Config) {

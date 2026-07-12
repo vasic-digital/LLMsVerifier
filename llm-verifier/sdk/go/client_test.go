@@ -151,9 +151,9 @@ func TestLogin(t *testing.T) {
 		assert.Equal(t, "user", data["username"])
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(AuthResponse{
-			Token: "new-token",
+			Token:     "new-token",
 			ExpiresAt: "2024-01-01T00:00:00Z",
-			User: User{ID: 1, Username: "user", Email: "user@example.com", Role: "admin"},
+			User:      User{ID: 1, Username: "user", Email: "user@example.com", Role: "admin"},
 		})
 	}))
 	defer server.Close()

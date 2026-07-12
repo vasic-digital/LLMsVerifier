@@ -150,22 +150,29 @@ func (cvs *CodeVerificationService) VerifyModelCodeVisibility(ctx context.Contex
 	// RELAXED VERIFICATION: Allow models that respond at all, not just affirmative responses
 	result.CodeVisibility = result.ResponseAnalysis.ConfidenceScore > 0.3 // Lower threshold
 	result.AffirmativeConfirmation = result.ResponseAnalysis.ContainsAffirmative
-	result.VerificationScore = max(result.ResponseAnalysis.ConfidenceScore, 0.7) // Minimum 0.7 score
+	// The 0.7 floor is a "reasonable minimum" ONLY for a model that actually
+	// demonstrated code visibility (CodeVisibility == true). Applying it
+	// unconditionally -- as the previous code did -- forced EVERY model,
+	// including one that denied seeing the code on every sample
+	// (ConfidenceScore == 0.0, CodeVisibility == false), up to a 0.7 score.
+	// That inflated score is persisted verbatim by
+	// CodeVerificationIntegration.storeVerificationResult into the
+	// database.VerificationResult's OverallScore/CodeQualityScore/
+	// CodeCapabilityScore (each VerificationScore*10) WITHOUT re-checking
+	// Status or CodeVisibility -- a code-blind, verification-FAILED model
+	// would be ranked/filtered/exported as a 7.0/10 model. Only float the
+	// score up to the floor once code visibility is actually established;
+	// a failed/blind model keeps its true (low) measured confidence.
+	if result.CodeVisibility {
+		result.VerificationScore = max(result.ResponseAnalysis.ConfidenceScore, 0.7) // Minimum 0.7 score for verified models
+	} else {
+		result.VerificationScore = result.ResponseAnalysis.ConfidenceScore
+	}
 
 	// Apply timeout penalty for slow responses
 	avgResponseTime := cvs.calculateAverageResponseTime(verificationResponses)
-	if avgResponseTime > 20000 {
-		timeoutPenalty := 0.0
-		if avgResponseTime > 60000 {
-			timeoutPenalty = 0.4
-		} else if avgResponseTime > 45000 {
-			timeoutPenalty = 0.3
-		} else if avgResponseTime > 30000 {
-			timeoutPenalty = 0.2
-		} else {
-			timeoutPenalty = 0.1
-		}
-		result.VerificationScore = max(result.VerificationScore-timeoutPenalty, 0.3)
+	if adjustedScore, timeoutPenalty, applied := applyVerificationTimeoutPenalty(result.VerificationScore, avgResponseTime, result.CodeVisibility); applied {
+		result.VerificationScore = adjustedScore
 		if cvs.logger != nil {
 			cvs.logger.Warning(fmt.Sprintf("Applied timeout penalty to model %s: avg response time=%dms, penalty=%.2f, adjusted score=%.2f",
 				modelID, avgResponseTime, timeoutPenalty, result.VerificationScore), nil)
@@ -214,6 +221,48 @@ func max(a, b float64) float64 {
 		return a
 	}
 	return b
+}
+
+// applyVerificationTimeoutPenalty computes the timeout-penalised
+// VerificationScore for a slow model. Extracted to a pure function so the
+// score-floor-for-a-failed-model bug class (fixed above for the initial 0.7
+// floor) is independently unit-testable without a real 20s+ HTTP round trip.
+//
+// The 0.3 post-penalty floor exists to avoid needlessly zeroing out a model
+// that DID demonstrate code visibility (codeVisible == true) but was merely
+// slow to respond. It MUST NOT be applied when the model never demonstrated
+// code visibility in the first place (codeVisible == false) -- otherwise a
+// blind-AND-slow model (score already 0.0) would be bumped from 0.0 up to
+// 0.3 by the very act of being slow, the identical inflate-a-failed-model's
+// score bluff. For codeVisible == false the penalised score is clamped at 0
+// (a score can never go negative) instead of floored at 0.3.
+//
+// Returns the adjusted score, the penalty magnitude that was applied (for
+// logging), and whether any penalty was applied at all (avgResponseTimeMs <=
+// 20000 is a no-op).
+func applyVerificationTimeoutPenalty(score float64, avgResponseTimeMs int64, codeVisible bool) (adjusted float64, penalty float64, applied bool) {
+	if avgResponseTimeMs <= 20000 {
+		return score, 0, false
+	}
+
+	switch {
+	case avgResponseTimeMs > 60000:
+		penalty = 0.4
+	case avgResponseTimeMs > 45000:
+		penalty = 0.3
+	case avgResponseTimeMs > 30000:
+		penalty = 0.2
+	default:
+		penalty = 0.1
+	}
+
+	adjusted = score - penalty
+	if codeVisible {
+		adjusted = max(adjusted, 0.3)
+	} else if adjusted < 0 {
+		adjusted = 0
+	}
+	return adjusted, penalty, true
 }
 
 // TestCodeSample represents a code sample for testing

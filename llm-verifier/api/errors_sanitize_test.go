@@ -496,9 +496,9 @@ func TestSanitizeEmail(t *testing.T) {
 
 func TestSanitizeURL(t *testing.T) {
 	tests := []struct {
-		name         string
-		input        string
-		expectedURL  string
+		name          string
+		input         string
+		expectedURL   string
 		expectedValid bool
 	}{
 		{"valid https", "https://example.com/path", "https://example.com/path", true},

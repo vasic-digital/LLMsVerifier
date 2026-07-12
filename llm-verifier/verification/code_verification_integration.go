@@ -32,15 +32,15 @@ func NewCodeVerificationIntegration(verificationService *CodeVerificationService
 
 // VerificationResult represents the result of verification integration
 type VerificationResult struct {
-	ProviderID       string                     `json:"provider_id"`
-	ModelID          string                     `json:"model_id"`
-	VerificationID   string                     `json:"verification_id"`
-	Status           string                     `json:"status"`
-	CodeVisibility   bool                       `json:"code_visibility"`
-	ToolSupport      bool                       `json:"tool_support"`
-	VerificationScore float64                   `json:"verification_score"`
-	VerifiedAt       time.Time                  `json:"verified_at"`
-	ErrorMessage     string                     `json:"error_message,omitempty"`
+	ProviderID        string    `json:"provider_id"`
+	ModelID           string    `json:"model_id"`
+	VerificationID    string    `json:"verification_id"`
+	Status            string    `json:"status"`
+	CodeVisibility    bool      `json:"code_visibility"`
+	ToolSupport       bool      `json:"tool_support"`
+	VerificationScore float64   `json:"verification_score"`
+	VerifiedAt        time.Time `json:"verified_at"`
+	ErrorMessage      string    `json:"error_message,omitempty"`
 }
 
 // VerifyAllModelsWithCodeSupport verifies all models that support code generation
@@ -58,7 +58,7 @@ func (cvi *CodeVerificationIntegration) VerifyAllModelsWithCodeSupport(ctx conte
 		wg.Add(1)
 		go func(pid string) {
 			defer wg.Done()
-			
+
 			models, err := cvi.providerService.GetModels(pid)
 			if err != nil {
 				cvi.logger.Error(fmt.Sprintf("Failed to get models for provider %s: %v", pid, err), nil)
@@ -116,7 +116,7 @@ func (cvi *CodeVerificationIntegration) shouldVerifyModel(model ModelInfo) bool 
 	// Check model name for coding-related keywords
 	modelName := strings.ToLower(model.Name + " " + model.ID)
 	codeKeywords := []string{"code", "coder", "gpt-4", "claude", "deepseek", "mistral", "llama", "codestral", "programming", "development"}
-	
+
 	for _, keyword := range codeKeywords {
 		if strings.Contains(modelName, keyword) {
 			return true
@@ -251,36 +251,36 @@ func (cvi *CodeVerificationIntegration) storeVerificationResult(result *CodeVeri
 
 	// Create verification result
 	verificationResult := &database.VerificationResult{
-		ModelID:                  model.ID,
-		VerificationType:         "code_visibility_verification",
-		StartedAt:                result.TestedAt,
-		CompletedAt:              result.CompletedAt,
-		Status:                   result.Status,
-		ModelExists:              ptrBool(true),
-		Responsive:               ptrBool(result.Status == "verified"),
-		LatencyMs:                ptrInt(2000), // Placeholder - should be calculated from actual response time
-		SupportsCodeGeneration:   result.CodeVisibility,
-		SupportsCodeCompletion:   result.CodeVisibility,
-		SupportsCodeReview:       result.CodeVisibility,
-		SupportsCodeExplanation:  result.CodeVisibility,
-		CodeDebugging:            result.CodeVisibility,
-		CodeOptimization:         result.ToolSupport,
-		TestGeneration:           result.ToolSupport,
-		DocumentationGeneration:  result.ToolSupport,
-		Refactoring:              result.ToolSupport,
-		ErrorResolution:          result.CodeVisibility,
-		ArchitectureDesign:       result.ToolSupport,
-		SecurityAssessment:       result.ToolSupport,
-		PatternRecognition:       result.CodeVisibility,
-		DebuggingAccuracy:        result.VerificationScore,
-		CodeQualityScore:         result.VerificationScore * 10,
-		OverallScore:             result.VerificationScore * 10,
-		CodeCapabilityScore:      result.VerificationScore * 10,
-		ResponsivenessScore:      8.0,
-		ReliabilityScore:         result.VerificationScore * 8,
-		FeatureRichnessScore:     result.VerificationScore * 9,
-		ScoreDetails:             fmt.Sprintf("Code visibility verification score: %.2f", result.VerificationScore),
-		CreatedAt:                time.Now(),
+		ModelID:                 model.ID,
+		VerificationType:        "code_visibility_verification",
+		StartedAt:               result.TestedAt,
+		CompletedAt:             result.CompletedAt,
+		Status:                  result.Status,
+		ModelExists:             ptrBool(true),
+		Responsive:              ptrBool(result.Status == "verified"),
+		LatencyMs:               ptrInt(2000), // Placeholder - should be calculated from actual response time
+		SupportsCodeGeneration:  result.CodeVisibility,
+		SupportsCodeCompletion:  result.CodeVisibility,
+		SupportsCodeReview:      result.CodeVisibility,
+		SupportsCodeExplanation: result.CodeVisibility,
+		CodeDebugging:           result.CodeVisibility,
+		CodeOptimization:        result.ToolSupport,
+		TestGeneration:          result.ToolSupport,
+		DocumentationGeneration: result.ToolSupport,
+		Refactoring:             result.ToolSupport,
+		ErrorResolution:         result.CodeVisibility,
+		ArchitectureDesign:      result.ToolSupport,
+		SecurityAssessment:      result.ToolSupport,
+		PatternRecognition:      result.CodeVisibility,
+		DebuggingAccuracy:       result.VerificationScore,
+		CodeQualityScore:        result.VerificationScore * 10,
+		OverallScore:            result.VerificationScore * 10,
+		CodeCapabilityScore:     result.VerificationScore * 10,
+		ResponsivenessScore:     8.0,
+		ReliabilityScore:        result.VerificationScore * 8,
+		FeatureRichnessScore:    result.VerificationScore * 9,
+		ScoreDetails:            fmt.Sprintf("Code visibility verification score: %.2f", result.VerificationScore),
+		CreatedAt:               time.Now(),
 	}
 
 	if result.ErrorMessage != "" {

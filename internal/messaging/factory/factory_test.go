@@ -352,8 +352,8 @@ func TestFromConfigBytesInvalidConfig(t *testing.T) {
 			Enabled: true,
 		},
 		RabbitMQ: messaging.RabbitMQConfig{
-			Host: "",  // Invalid: empty host
-			Port: 0,   // Invalid: zero port
+			Host: "", // Invalid: empty host
+			Port: 0,  // Invalid: zero port
 		},
 		Kafka: messaging.KafkaConfig{
 			Brokers:  []string{}, // Invalid: no brokers

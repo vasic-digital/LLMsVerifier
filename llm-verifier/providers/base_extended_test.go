@@ -89,10 +89,10 @@ func TestRecoveryStrategies_ExecuteWithRetry_FunctionError(t *testing.T) {
 
 func TestRecoveryStrategies_FallbackRecovery_FirstSuccess(t *testing.T) {
 	retryConfig := RetryConfig{
-		MaxRetries:      3,
-		InitialDelay:    10 * time.Millisecond,
-		MaxDelay:        100 * time.Millisecond,
-		BackoffFactor:   2.0,
+		MaxRetries:    3,
+		InitialDelay:  10 * time.Millisecond,
+		MaxDelay:      100 * time.Millisecond,
+		BackoffFactor: 2.0,
 	}
 	strategies := NewRecoveryStrategies("test", retryConfig)
 
@@ -119,10 +119,10 @@ func TestRecoveryStrategies_FallbackRecovery_FirstSuccess(t *testing.T) {
 
 func TestRecoveryStrategies_FallbackRecovery_SecondEndpoint(t *testing.T) {
 	retryConfig := RetryConfig{
-		MaxRetries:      3,
-		InitialDelay:    10 * time.Millisecond,
-		MaxDelay:        100 * time.Millisecond,
-		BackoffFactor:   2.0,
+		MaxRetries:    3,
+		InitialDelay:  10 * time.Millisecond,
+		MaxDelay:      100 * time.Millisecond,
+		BackoffFactor: 2.0,
 	}
 	strategies := NewRecoveryStrategies("test", retryConfig)
 
@@ -151,10 +151,10 @@ func TestRecoveryStrategies_FallbackRecovery_SecondEndpoint(t *testing.T) {
 
 func TestRecoveryStrategies_FallbackRecovery_AllFail(t *testing.T) {
 	retryConfig := RetryConfig{
-		MaxRetries:      3,
-		InitialDelay:    10 * time.Millisecond,
-		MaxDelay:        100 * time.Millisecond,
-		BackoffFactor:   2.0,
+		MaxRetries:    3,
+		InitialDelay:  10 * time.Millisecond,
+		MaxDelay:      100 * time.Millisecond,
+		BackoffFactor: 2.0,
 	}
 	strategies := NewRecoveryStrategies("test", retryConfig)
 
@@ -192,10 +192,10 @@ func (m *mockCircuitBreaker) Call(fn func() error) error {
 
 func TestRecoveryStrategies_CircuitBreakerRecovery_MockSuccess(t *testing.T) {
 	retryConfig := RetryConfig{
-		MaxRetries:      3,
-		InitialDelay:    10 * time.Millisecond,
-		MaxDelay:        100 * time.Millisecond,
-		BackoffFactor:   2.0,
+		MaxRetries:    3,
+		InitialDelay:  10 * time.Millisecond,
+		MaxDelay:      100 * time.Millisecond,
+		BackoffFactor: 2.0,
 	}
 	strategies := NewRecoveryStrategies("test", retryConfig)
 
@@ -215,10 +215,10 @@ func TestRecoveryStrategies_CircuitBreakerRecovery_MockSuccess(t *testing.T) {
 
 func TestRecoveryStrategies_CircuitBreakerRecovery_MockCircuitOpen(t *testing.T) {
 	retryConfig := RetryConfig{
-		MaxRetries:      3,
-		InitialDelay:    10 * time.Millisecond,
-		MaxDelay:        100 * time.Millisecond,
-		BackoffFactor:   2.0,
+		MaxRetries:    3,
+		InitialDelay:  10 * time.Millisecond,
+		MaxDelay:      100 * time.Millisecond,
+		BackoffFactor: 2.0,
 	}
 	strategies := NewRecoveryStrategies("test", retryConfig)
 
@@ -520,8 +520,8 @@ func TestBaseAdapter_AddHeaderInitializesMap(t *testing.T) {
 func TestBaseAdapter_FullInitialization(t *testing.T) {
 	client := &http.Client{Timeout: 60 * time.Second}
 	headers := map[string]string{
-		"Authorization":  "Bearer token",
-		"Content-Type":   "application/json",
+		"Authorization":   "Bearer token",
+		"Content-Type":    "application/json",
 		"X-Custom-Header": "custom-value",
 	}
 

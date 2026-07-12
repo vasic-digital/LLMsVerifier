@@ -18,11 +18,11 @@ import (
 
 // EnterpriseJWTClaims represents JWT token claims for enterprise users
 type EnterpriseJWTClaims struct {
-	UserID    string     `json:"user_id"`
-	Username  string     `json:"username"`
-	Email     string     `json:"email"`
-	Roles     []RBACRole `json:"roles"`
-	TenantID  string     `json:"tenant_id,omitempty"`
+	UserID   string     `json:"user_id"`
+	Username string     `json:"username"`
+	Email    string     `json:"email"`
+	Roles    []RBACRole `json:"roles"`
+	TenantID string     `json:"tenant_id,omitempty"`
 	jwt.RegisteredClaims
 }
 

@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"digital.vasic.llmsverifier/database"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"digital.vasic.llmsverifier/database"
 )
 
 func setupTestLoggingDB(t *testing.T) *database.Database {
@@ -74,7 +74,7 @@ func TestNewLogger(t *testing.T) {
 		"file_path":     "/tmp/test_logs.log",
 		"max_size":      5,
 		"max_backups":   3,
-		"compress":       false,
+		"compress":      false,
 	}
 
 	logger, err := NewLogger(db, config)
@@ -195,7 +195,7 @@ func TestLoggerLog(t *testing.T) {
 	db := setupTestLoggingDB(t)
 
 	logger, err := NewLogger(db, map[string]any{
-		"file_path": "/tmp/test_log.log",
+		"file_path":     "/tmp/test_log.log",
 		"console_level": "debug",
 	})
 	require.NoError(t, err)
@@ -271,7 +271,7 @@ func TestLoggerRotateLogFile(t *testing.T) {
 	db := setupTestLoggingDB(t)
 
 	logger, err := NewLogger(db, map[string]any{
-		"file_path": "/tmp/test_rotate.log",
+		"file_path":   "/tmp/test_rotate.log",
 		"max_backups": 2,
 	})
 	require.NoError(t, err)

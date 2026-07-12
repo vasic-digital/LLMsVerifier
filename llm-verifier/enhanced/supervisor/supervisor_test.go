@@ -62,19 +62,19 @@ func TestSupervisorConfigValidateZeroHealthCheck(t *testing.T) {
 
 // MockPlugin for testing
 type MockPlugin struct {
-	name        string
-	version     string
-	description string
+	name         string
+	version      string
+	description  string
 	capabilities []string
-	initErr     error
-	execErr     error
-	execResult  interface{}
+	initErr      error
+	execErr      error
+	execResult   interface{}
 }
 
-func (m *MockPlugin) Name() string                                         { return m.name }
-func (m *MockPlugin) Version() string                                      { return m.version }
-func (m *MockPlugin) Description() string                                  { return m.description }
-func (m *MockPlugin) Initialize(config map[string]interface{}) error       { return m.initErr }
+func (m *MockPlugin) Name() string                                   { return m.name }
+func (m *MockPlugin) Version() string                                { return m.version }
+func (m *MockPlugin) Description() string                            { return m.description }
+func (m *MockPlugin) Initialize(config map[string]interface{}) error { return m.initErr }
 func (m *MockPlugin) Execute(ctx context.Context, input interface{}) (interface{}, error) {
 	if m.execErr != nil {
 		return nil, m.execErr
@@ -84,8 +84,8 @@ func (m *MockPlugin) Execute(ctx context.Context, input interface{}) (interface{
 	}
 	return map[string]interface{}{"result": "success"}, nil
 }
-func (m *MockPlugin) Shutdown() error                                      { return nil }
-func (m *MockPlugin) GetCapabilities() []string                            { return m.capabilities }
+func (m *MockPlugin) Shutdown() error           { return nil }
+func (m *MockPlugin) GetCapabilities() []string { return m.capabilities }
 
 func TestNewPluginManager(t *testing.T) {
 	pm := NewPluginManager(log.Default())
@@ -96,9 +96,9 @@ func TestNewPluginManager(t *testing.T) {
 func TestPluginManagerRegisterPlugin(t *testing.T) {
 	pm := NewPluginManager(log.Default())
 	plugin := &MockPlugin{
-		name:        "test_plugin",
-		version:     "1.0.0",
-		description: "Test plugin",
+		name:         "test_plugin",
+		version:      "1.0.0",
+		description:  "Test plugin",
 		capabilities: []string{"test"},
 	}
 
@@ -109,9 +109,9 @@ func TestPluginManagerRegisterPlugin(t *testing.T) {
 func TestPluginManagerRegisterDuplicatePlugin(t *testing.T) {
 	pm := NewPluginManager(log.Default())
 	plugin := &MockPlugin{
-		name:        "test_plugin",
-		version:     "1.0.0",
-		description: "Test plugin",
+		name:         "test_plugin",
+		version:      "1.0.0",
+		description:  "Test plugin",
 		capabilities: []string{"test"},
 	}
 
@@ -124,9 +124,9 @@ func TestPluginManagerRegisterDuplicatePlugin(t *testing.T) {
 func TestPluginManagerExecutePlugin(t *testing.T) {
 	pm := NewPluginManager(log.Default())
 	plugin := &MockPlugin{
-		name:        "test_plugin",
-		version:     "1.0.0",
-		description: "Test plugin",
+		name:         "test_plugin",
+		version:      "1.0.0",
+		description:  "Test plugin",
 		capabilities: []string{"test"},
 	}
 
@@ -150,9 +150,9 @@ func TestPluginManagerExecutePluginNotFound(t *testing.T) {
 func TestPluginManagerExecutePluginDisabled(t *testing.T) {
 	pm := NewPluginManager(log.Default())
 	plugin := &MockPlugin{
-		name:        "test_plugin",
-		version:     "1.0.0",
-		description: "Test plugin",
+		name:         "test_plugin",
+		version:      "1.0.0",
+		description:  "Test plugin",
 		capabilities: []string{"test"},
 	}
 
@@ -168,9 +168,9 @@ func TestPluginManagerExecutePluginDisabled(t *testing.T) {
 func TestPluginManagerEnablePlugin(t *testing.T) {
 	pm := NewPluginManager(log.Default())
 	plugin := &MockPlugin{
-		name:        "test_plugin",
-		version:     "1.0.0",
-		description: "Test plugin",
+		name:         "test_plugin",
+		version:      "1.0.0",
+		description:  "Test plugin",
 		capabilities: []string{"test"},
 	}
 
@@ -189,9 +189,9 @@ func TestPluginManagerEnablePluginNotFound(t *testing.T) {
 func TestPluginManagerDisablePlugin(t *testing.T) {
 	pm := NewPluginManager(log.Default())
 	plugin := &MockPlugin{
-		name:        "test_plugin",
-		version:     "1.0.0",
-		description: "Test plugin",
+		name:         "test_plugin",
+		version:      "1.0.0",
+		description:  "Test plugin",
 		capabilities: []string{"test"},
 	}
 

@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"digital.vasic.llmsverifier/database"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"digital.vasic.llmsverifier/database"
 )
 
 func setupTestFailoverDB(t *testing.T) *database.Database {

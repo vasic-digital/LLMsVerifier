@@ -410,16 +410,16 @@ func TestModel_JSON(t *testing.T) {
 
 func TestVerificationResult_JSON(t *testing.T) {
 	result := &VerificationResult{
-		ID:                      1,
-		ModelID:                 1,
-		VerificationType:        "full",
-		Status:                  "completed",
-		SupportsCodeGeneration:  true,
-		SupportsStreaming:       true,
-		OverallScore:            88.0,
-		CodeLanguageSupport:     []string{"go", "python"},
-		AvgLatencyMs:            250,
-		P95LatencyMs:            500,
+		ID:                     1,
+		ModelID:                1,
+		VerificationType:       "full",
+		Status:                 "completed",
+		SupportsCodeGeneration: true,
+		SupportsStreaming:      true,
+		OverallScore:           88.0,
+		CodeLanguageSupport:    []string{"go", "python"},
+		AvgLatencyMs:           250,
+		P95LatencyMs:           500,
 	}
 
 	data, err := json.Marshal(result)

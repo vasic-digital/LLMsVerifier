@@ -26,9 +26,9 @@ func TestOpenAIAdapter_OptimizeRequest(t *testing.T) {
 	adapter := NewOpenAIAdapter()
 
 	tests := []struct {
-		name     string
-		request  *LLMRequest
-		checkFn  func(t *testing.T, result *LLMRequest)
+		name    string
+		request *LLMRequest
+		checkFn func(t *testing.T, result *LLMRequest)
 	}{
 		{
 			name: "optimize code request temperature",
@@ -187,9 +187,9 @@ func TestDeepSeekAdapter_OptimizeRequest(t *testing.T) {
 	adapter := NewDeepSeekAdapter()
 
 	tests := []struct {
-		name     string
-		request  *LLMRequest
-		checkFn  func(t *testing.T, result *LLMRequest)
+		name    string
+		request *LLMRequest
+		checkFn func(t *testing.T, result *LLMRequest)
 	}{
 		{
 			name: "set default max tokens",

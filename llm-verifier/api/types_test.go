@@ -38,17 +38,17 @@ type ModelScore struct {
 }
 
 type ScoreComponents struct {
-	ResponseSpeed   float64 `json:"response_speed"`
-	ModelEfficiency float64 `json:"model_efficiency"`
+	ResponseSpeed     float64 `json:"response_speed"`
+	ModelEfficiency   float64 `json:"model_efficiency"`
 	CostEffectiveness float64 `json:"cost_effectiveness"`
-	Capability      float64 `json:"capability"`
-	Recency         float64 `json:"recency"`
+	Capability        float64 `json:"capability"`
+	Recency           float64 `json:"recency"`
 }
 
 type ScoreWeights struct {
-	ResponseSpeed   float64 `json:"response_speed"`
-	ModelEfficiency float64 `json:"model_efficiency"`
+	ResponseSpeed     float64 `json:"response_speed"`
+	ModelEfficiency   float64 `json:"model_efficiency"`
 	CostEffectiveness float64 `json:"cost_effectiveness"`
-	Capability      float64 `json:"capability"`
-	Recency         float64 `json:"recency"`
+	Capability        float64 `json:"capability"`
+	Recency           float64 `json:"recency"`
 }

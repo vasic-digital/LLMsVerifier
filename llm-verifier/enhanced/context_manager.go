@@ -212,7 +212,7 @@ func (cm *ContextManager) Shutdown() {
 	// Protect against double close
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
-	
+
 	select {
 	case <-cm.stopCh:
 		// Already closed

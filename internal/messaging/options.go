@@ -219,19 +219,19 @@ type SubscribeOption func(*SubscribeOptions)
 // DefaultSubscribeOptions returns default subscribe options.
 func DefaultSubscribeOptions() *SubscribeOptions {
 	return &SubscribeOptions{
-		AutoAck:          false,
-		Exclusive:        false,
-		PrefetchCount:    10,
-		StartOffset:      "latest",
-		MaxConcurrency:   1,
-		RequeueOnFailure: true,
-		MaxRetries:       3,
-		RetryBackoff:     1 * time.Second,
-		MaxRetryBackoff:  30 * time.Second,
-		SessionTimeout:   30 * time.Second,
+		AutoAck:           false,
+		Exclusive:         false,
+		PrefetchCount:     10,
+		StartOffset:       "latest",
+		MaxConcurrency:    1,
+		RequeueOnFailure:  true,
+		MaxRetries:        3,
+		RetryBackoff:      1 * time.Second,
+		MaxRetryBackoff:   30 * time.Second,
+		SessionTimeout:    30 * time.Second,
 		HeartbeatInterval: 10 * time.Second,
-		RebalanceTimeout: 60 * time.Second,
-		Headers:          make(map[string]string),
+		RebalanceTimeout:  60 * time.Second,
+		Headers:           make(map[string]string),
 	}
 }
 

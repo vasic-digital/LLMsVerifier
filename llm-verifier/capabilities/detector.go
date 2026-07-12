@@ -151,8 +151,8 @@ func (d *Detector) detectModels(ctx context.Context, caps *ProviderCapabilities,
 // Query queries capabilities with specific requirements
 func (d *Detector) Query(ctx context.Context, query *CapabilityQuery) (*CapabilityQueryResult, error) {
 	result := &CapabilityQueryResult{
-		Query:       query,
-		Matches:     false,
+		Query:        query,
+		Matches:      false,
 		PartialMatch: 0.0,
 	}
 
@@ -285,14 +285,14 @@ func (d *Detector) Query(ctx context.Context, query *CapabilityQuery) (*Capabili
 // GetCapabilityMatrix generates a complete capability matrix
 func (d *Detector) GetCapabilityMatrix() *CapabilityMatrix {
 	matrix := &CapabilityMatrix{
-		GeneratedAt:  time.Now(),
-		Providers:    make(map[string]*ProviderCapabilities),
-		CLIAgents:    make(map[string]*CLIAgentCapabilities),
-		ByStreaming:  make(map[StreamingType][]string),
-		ByProtocol:   make(map[ProtocolType][]string),
+		GeneratedAt:   time.Now(),
+		Providers:     make(map[string]*ProviderCapabilities),
+		CLIAgents:     make(map[string]*CLIAgentCapabilities),
+		ByStreaming:   make(map[StreamingType][]string),
+		ByProtocol:    make(map[ProtocolType][]string),
 		ByCompression: make(map[CompressionType][]string),
-		ByCaching:    make(map[CachingType][]string),
-		ByAuth:       make(map[AuthType][]string),
+		ByCaching:     make(map[CachingType][]string),
+		ByAuth:        make(map[AuthType][]string),
 	}
 
 	// Add all providers
@@ -391,10 +391,10 @@ func getProviderStreamEndpoint(provider string) string {
 
 func getProviderModelsEndpoint(provider string) string {
 	endpoints := map[string]string{
-		"openai":    "https://api.openai.com/v1/models",
-		"deepseek":  "https://api.deepseek.com/v1/models",
-		"groq":      "https://api.groq.com/openai/v1/models",
-		"mistral":   "https://api.mistral.ai/v1/models",
+		"openai":   "https://api.openai.com/v1/models",
+		"deepseek": "https://api.deepseek.com/v1/models",
+		"groq":     "https://api.groq.com/openai/v1/models",
+		"mistral":  "https://api.mistral.ai/v1/models",
 	}
 	return endpoints[provider]
 }

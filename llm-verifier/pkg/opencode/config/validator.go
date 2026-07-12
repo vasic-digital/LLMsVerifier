@@ -19,8 +19,8 @@ type ValidationError struct {
 
 // ValidationResult represents the result of a configuration validation
 type ValidationResult struct {
-	Valid    bool             `json:"valid"`
-	Errors   []ValidationError `json:"errors,omitempty"`
+	Valid    bool                `json:"valid"`
+	Errors   []ValidationError   `json:"errors,omitempty"`
 	Warnings []ValidationWarning `json:"warnings,omitempty"`
 }
 
@@ -77,7 +77,7 @@ func (sv *SchemaValidator) ValidateFromReader(r io.Reader) (*ValidationResult, e
 
 	// Basic validation
 	result := sv.validateStructure(config)
-	
+
 	return result, nil
 }
 
@@ -172,7 +172,7 @@ func (sv *SchemaValidator) validateAgents(agents map[string]interface{}, errors 
 			// Validate agent structure
 			hasModel := a["model"] != nil
 			hasPrompt := a["prompt"] != nil
-			
+
 			if !hasModel && !hasPrompt {
 				*errors = append(*errors, ValidationError{
 					Field:   fmt.Sprintf("agent.%s", name),
@@ -227,7 +227,7 @@ func (sv *SchemaValidator) validateOpenCodeDirectoryStructure(dir string) error 
 func stripJSONCComments(content string) string {
 	var result strings.Builder
 	lines := strings.Split(content, "\n")
-	
+
 	for _, line := range lines {
 		// Remove single line comments
 		if idx := strings.Index(line, "//"); idx >= 0 {
@@ -245,7 +245,7 @@ func stripJSONCComments(content string) string {
 		result.WriteString(line)
 		result.WriteString("\n")
 	}
-	
+
 	return result.String()
 }
 
@@ -278,7 +278,7 @@ func CreateDefaultConfig() *Config {
 		},
 		Agent: map[string]AgentConfig{
 			"build": {
-				Model: "openai/gpt-4",
+				Model:  "openai/gpt-4",
 				Prompt: "You are a build agent. Help the user with development tasks.",
 			},
 		},

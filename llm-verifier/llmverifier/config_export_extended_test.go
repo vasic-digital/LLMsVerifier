@@ -420,8 +420,8 @@ func TestCategorizeModel_Extended(t *testing.T) {
 			expected: "specialized",
 		},
 		{
-			name: "General model",
-			result: VerificationResult{},
+			name:     "General model",
+			result:   VerificationResult{},
 			expected: "general",
 		},
 	}
