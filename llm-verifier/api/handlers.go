@@ -80,6 +80,16 @@ func (s *Server) ListModelsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// HXC-135: batch-resolve the latest completed VerificationResult per model
+	// so the CONST-040 capability flags (MCP/LSP/ACP/RAG/Skills/Plugins) can be
+	// sourced from the verifier's own computed data — never hardcoded — with a
+	// single query instead of N+1 lookups.
+	modelIDs := make([]int64, 0, len(models))
+	for _, model := range models {
+		modelIDs = append(modelIDs, model.ID)
+	}
+	latestByModel := latestVerificationResultsByModelID(s.database, modelIDs)
+
 	// Transform models to API response format
 	modelResponses := make([]map[string]any, 0, len(models))
 	for _, model := range models {
@@ -92,7 +102,7 @@ func (s *Server) ListModelsHandler(w http.ResponseWriter, r *http.Request) {
 		// Build capabilities list from model features
 		capabilities := buildCapabilitiesList(model)
 
-		modelResponses = append(modelResponses, map[string]any{
+		resp := map[string]any{
 			// HXC-134: the model id MUST be emitted as text end-to-end —
 			// database.Model.ID is an internal int64 primary key, but every
 			// consumer's wire contract (helix_code's
@@ -113,13 +123,72 @@ func (s *Server) ListModelsHandler(w http.ResponseWriter, r *http.Request) {
 			"deprecated":   model.Deprecated,
 			"created_at":   model.CreatedAt,
 			"updated_at":   model.UpdatedAt,
-		})
+		}
+		// HXC-135 / CONST-040: publish the six advanced-capability indicators
+		// sourced from the model's latest computed VerificationResult.
+		addCapabilityFields(resp, latestByModel[model.ID])
+		modelResponses = append(modelResponses, resp)
 	}
 
 	json.NewEncoder(w).Encode(map[string]any{
 		"models": modelResponses,
 		"count":  len(modelResponses),
 	})
+}
+
+// addCapabilityFields publishes the six CONST-040 advanced-capability
+// indicators (MCP, LSP, ACP, RAG/embedding-retrieval, Skills, Plugins) into
+// resp, sourced from vr — the model's latest COMPLETED database.VerificationResult
+// (the verifier's own computed source of truth; see verification/verification.go's
+// Verify, which sets these six fields from the real C4 capability probes:
+// SupportsMCPs/SupportsLSPs/SupportsACPs/SupportsRAG/SupportsSkills/
+// SupportsPlugins). Field names follow the verifier's OWN canonical DB/JSON
+// tag convention (database.go: "supports_mcps"/"supports_lsps"/"supports_acps"
+// for MCP/LSP/ACP — plural, matching the historical DB column names — and
+// "supports_rag"/"supports_skills"/"supports_plugins" for the rest), NOT a
+// consumer-specific schema (CONST-069 decoupling).
+//
+// vr is nil when the model has no completed verification result yet — in
+// that case every flag is published as its honest zero value (false, "not
+// yet verified as supporting"), never a fabricated true (CONST-036/037/040:
+// LLMsVerifier is the sole source of truth; no hardcoded capability flags).
+func addCapabilityFields(resp map[string]any, vr *database.VerificationResult) {
+	if vr == nil {
+		resp["supports_mcps"] = false
+		resp["supports_lsps"] = false
+		resp["supports_acps"] = false
+		resp["supports_rag"] = false
+		resp["supports_skills"] = false
+		resp["supports_plugins"] = false
+		return
+	}
+	resp["supports_mcps"] = vr.SupportsMCPs
+	resp["supports_lsps"] = vr.SupportsLSPs
+	resp["supports_acps"] = vr.SupportsACPs
+	resp["supports_rag"] = vr.SupportsRAG
+	resp["supports_skills"] = vr.SupportsSkills
+	resp["supports_plugins"] = vr.SupportsPlugins
+}
+
+// latestVerificationResultsByModelID batch-resolves the latest completed
+// database.VerificationResult per model id via a single query, returning a
+// map for O(1) per-model lookup. Any error is treated as "no completed
+// verification result available yet" (honest empty map) rather than failing
+// the whole listing response — capability flags degrade to their honest false
+// default per addCapabilityFields, they never block model listing/retrieval.
+func latestVerificationResultsByModelID(db *database.Database, modelIDs []int64) map[int64]*database.VerificationResult {
+	out := make(map[int64]*database.VerificationResult, len(modelIDs))
+	if db == nil || len(modelIDs) == 0 {
+		return out
+	}
+	results, err := db.GetLatestVerificationResults(modelIDs)
+	if err != nil {
+		return out
+	}
+	for _, r := range results {
+		out[r.ModelID] = r
+	}
+	return out
 }
 
 // buildCapabilitiesList builds a list of capabilities from model features
@@ -242,6 +311,10 @@ func (s *Server) GetModelHandler(w http.ResponseWriter, r *http.Request) {
 		"created_at":             model.CreatedAt,
 		"updated_at":             model.UpdatedAt,
 	}
+	// HXC-135 / CONST-040: publish the six advanced-capability indicators
+	// sourced from the model's latest computed VerificationResult.
+	latest := latestVerificationResultsByModelID(s.database, []int64{model.ID})
+	addCapabilityFields(response, latest[model.ID])
 
 	json.NewEncoder(w).Encode(response)
 }
@@ -354,7 +427,7 @@ func (s *Server) VerifyModelHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	json.NewEncoder(w).Encode(map[string]any{
+	resp := map[string]any{
 		"status": status,
 		// HXC-134: emit the model id as text end-to-end (see the identical
 		// note in ListModelsHandler above); modelID is the int64 parsed from
@@ -368,7 +441,15 @@ func (s *Server) VerifyModelHandler(w http.ResponseWriter, r *http.Request) {
 		"verification_id":     verificationResult.ID,
 		"started_at":          verificationResult.StartedAt,
 		"completed_at":        completedAt,
-	})
+	}
+	// HXC-135 / CONST-040: publish the six advanced-capability indicators
+	// sourced from the model's latest computed VerificationResult (this run's
+	// own result if it was the capability-probing verification.Verifier path,
+	// or the most recent prior completed one otherwise — never fabricated).
+	latest := latestVerificationResultsByModelID(s.database, []int64{modelID})
+	addCapabilityFields(resp, latest[modelID])
+
+	json.NewEncoder(w).Encode(resp)
 }
 
 // ListProvidersHandler handles listing all providers
