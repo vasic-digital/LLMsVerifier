@@ -323,6 +323,94 @@ func TestGetModelHandler_InvalidID(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
+// HXC-134 regression guards: the central model-verifier service MUST report
+// each model's "id" as a JSON STRING end-to-end, never a bare JSON number.
+// Root cause (§11.4.102 FACT, not guess): database.Model.ID is int64
+// (database/database.go), and ListModelsHandler/GetModelHandler previously
+// wrote "id": model.ID straight into the map[string]any response, so
+// encoding/json emitted a bare number (e.g. "id":1). helix_code's consumer
+// contract — internal/verifier/types.go VerifiedModel.ID string `json:"id"`,
+// documented as communicating with LLMsVerifier "via REST API" — cannot
+// decode a bare JSON number into a Go string field
+// ("json: cannot unmarshal number into Go struct field ... of type string"),
+// so helix_code/internal/verifier/client.go had to grow an explicit
+// RawID json.RawMessage workaround in unmarshalModelArray (see that file's
+// doc comment) for the LIST endpoint only — GetModelByID (single-model
+// endpoint, decoding directly into VerifiedModel) had NO such workaround and
+// would fail outright. Reproduce-first (§11.4.115): before the fix these
+// guards fail with a JSON string-quote mismatch / decode error; after the
+// fix (strconv.FormatInt(model.ID, 10)) they pass, and the server itself now
+// emits the correct type so the client-side workaround becomes unnecessary.
+func TestListModelsHandler_ModelIDIsString(t *testing.T) {
+	db, cleanup := setupIntegrationTestDB(t)
+	defer cleanup()
+
+	provider := &database.Provider{Name: "TestProvider", Endpoint: "https://api.test.com/v1", IsActive: true}
+	require.NoError(t, db.CreateProvider(provider))
+
+	model := &database.Model{ProviderID: provider.ID, ModelID: "gpt-4o", Name: "GPT-4o", VerificationStatus: "verified"}
+	require.NoError(t, db.CreateModel(model))
+
+	server := createTestServerWithDB(t, db)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/models", nil)
+	w := httptest.NewRecorder()
+	server.ListModelsHandler(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Raw wire-format proof: "id" must be JSON-quoted (a string), never a
+	// bare number.
+	body := w.Body.String()
+	assert.NotContains(t, body, `"id":1,`, "model id must not be emitted as a bare JSON number")
+	assert.Contains(t, body, `"id":"1"`, "model id must be emitted as a JSON string")
+
+	// Consumer-contract proof: decode through a struct shaped exactly like
+	// helix_code's internal/verifier.VerifiedModel (ID string `json:"id"`)
+	// nested in the real-server envelope; this MUST succeed with no type
+	// error, and the value MUST round-trip as the string "1".
+	var envelope struct {
+		Models []struct {
+			ID string `json:"id"`
+		} `json:"models"`
+	}
+	err := json.Unmarshal(w.Body.Bytes(), &envelope)
+	require.NoError(t, err, "response must decode cleanly into a client with a string-typed id field")
+	require.Len(t, envelope.Models, 1)
+	assert.Equal(t, "1", envelope.Models[0].ID)
+}
+
+func TestGetModelHandler_ModelIDIsString(t *testing.T) {
+	db, cleanup := setupIntegrationTestDB(t)
+	defer cleanup()
+
+	provider := &database.Provider{Name: "TestProvider", Endpoint: "https://api.test.com/v1", IsActive: true}
+	require.NoError(t, db.CreateProvider(provider))
+
+	model := &database.Model{ProviderID: provider.ID, ModelID: "gpt-4o", Name: "GPT-4o", VerificationStatus: "verified"}
+	require.NoError(t, db.CreateModel(model))
+
+	server := createTestServerWithDB(t, db)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/models/1", nil)
+	w := httptest.NewRecorder()
+	server.GetModelHandler(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	body := w.Body.String()
+	assert.NotContains(t, body, `"id":1,`, "model id must not be emitted as a bare JSON number")
+	assert.Contains(t, body, `"id":"1"`, "model id must be emitted as a JSON string")
+
+	// Consumer-contract proof: helix_code's GetModelByID decodes DIRECTLY
+	// into VerifiedModel (ID string `json:"id"`) with no numeric-tolerant
+	// workaround — this decode must succeed with no type error.
+	var decoded struct {
+		ID string `json:"id"`
+	}
+	err := json.Unmarshal(w.Body.Bytes(), &decoded)
+	require.NoError(t, err, "response must decode cleanly into a client with a string-typed id field")
+	assert.Equal(t, "1", decoded.ID)
+}
+
 // ==================== ListProviders Tests ====================
 
 func TestListProvidersHandler_EmptyDatabase(t *testing.T) {
@@ -641,7 +729,15 @@ func TestVerifyModelHandler_Success(t *testing.T) {
 	assert.Equal(t, "verified", response["status"])
 	assert.Equal(t, "verified", response["verification_status"])
 	assert.InDelta(t, 0.91, response["score"], 1e-9)
-	assert.Equal(t, float64(1), response["model_id"])
+	// §11.4.120 reconciliation (HXC-134): this assertion previously asserted
+	// the OLD bluff behaviour — "model_id" emitted as a bare JSON number
+	// (float64(1) once decoded into map[string]interface{}). The HXC-134 fix
+	// makes "model_id" a JSON string end-to-end (matching helix_code's
+	// internal/verifier.VerificationResult.ModelID string `json:"model_id"`
+	// contract, which previously failed to decode this exact field). The
+	// gate now asserts the NEW correct string type; see
+	// TestVerifyModelHandler_ModelIDIsString below for the RED->GREEN proof.
+	assert.Equal(t, "1", response["model_id"])
 	assert.Equal(t, "Test Model", response["model_name"])
 	assert.NotNil(t, response["verification_id"])
 	assert.NotNil(t, response["completed_at"])
@@ -735,6 +831,50 @@ func TestVerifyModelHandler_InvalidID(t *testing.T) {
 	server.VerifyModelHandler(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+// TestVerifyModelHandler_ModelIDIsString is the HXC-134 regression guard for
+// the verify endpoint: "model_id" MUST be emitted as a JSON string end-to-end,
+// matching helix_code's internal/verifier.VerificationResult.ModelID string
+// `json:"model_id"` contract. Root cause + reproduce-first: before the fix
+// VerifyModelHandler wrote "model_id": modelID where modelID is int64 (parsed
+// from the URL path via strconv.ParseInt), producing a bare JSON number that
+// fails to decode into VerificationResult.ModelID (a string) — this is what
+// helix_code/internal/verifier/client.go's VerifyModel does via a direct
+// json.NewDecoder(...).Decode(&raw) with NO numeric-tolerant workaround, so
+// on-demand verification would fail outright with "the id... breaks how
+// verified models are matched" (HXC-134's exact reported symptom).
+func TestVerifyModelHandler_ModelIDIsString(t *testing.T) {
+	db, cleanup := setupIntegrationTestDB(t)
+	defer cleanup()
+
+	provider := &database.Provider{Name: "TestProvider", Endpoint: "https://api.test.com/v1", IsActive: true}
+	require.NoError(t, db.CreateProvider(provider))
+
+	model := &database.Model{ProviderID: provider.ID, ModelID: "gpt-4o", Name: "GPT-4o", VerificationStatus: "pending"}
+	require.NoError(t, db.CreateModel(model))
+
+	server := createTestServerWithDB(t, db)
+	server.verifier = &stubModelVerifier{status: "verified", score: 0.91}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/models/1/verify", nil)
+	w := httptest.NewRecorder()
+	server.VerifyModelHandler(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	body := w.Body.String()
+	assert.NotContains(t, body, `"model_id":1,`, "verify response model_id must not be emitted as a bare JSON number")
+	assert.Contains(t, body, `"model_id":"1"`, "verify response model_id must be emitted as a JSON string")
+
+	// Consumer-contract proof: helix_code's VerificationResult declares
+	// ModelID string `json:"model_id"`; decoding through that exact shape
+	// must succeed with no type error.
+	var decoded struct {
+		ModelID string `json:"model_id"`
+	}
+	err := json.Unmarshal(w.Body.Bytes(), &decoded)
+	require.NoError(t, err, "response must decode cleanly into a client with a string-typed model_id field")
+	assert.Equal(t, "1", decoded.ModelID)
 }
 
 // ==================== Health Handler Tests ====================

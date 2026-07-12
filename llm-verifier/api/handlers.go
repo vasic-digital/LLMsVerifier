@@ -93,7 +93,14 @@ func (s *Server) ListModelsHandler(w http.ResponseWriter, r *http.Request) {
 		capabilities := buildCapabilitiesList(model)
 
 		modelResponses = append(modelResponses, map[string]any{
-			"id":           model.ID,
+			// HXC-134: the model id MUST be emitted as text end-to-end —
+			// database.Model.ID is an internal int64 primary key, but every
+			// consumer's wire contract (helix_code's
+			// internal/verifier.VerifiedModel.ID, this package's own
+			// pkg/api.Model.ID) declares it a string. Convert at the JSON
+			// boundary so the internal storage type stays int64 while the
+			// emitted type is consistently string.
+			"id":           strconv.FormatInt(model.ID, 10),
 			"model_id":     model.ModelID,
 			"name":         model.Name,
 			"provider":     providerName,
@@ -201,7 +208,9 @@ func (s *Server) GetModelHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := map[string]any{
-		"id":                     model.ID,
+		// HXC-134: emit the model id as text end-to-end (see the identical
+		// note in ListModelsHandler above).
+		"id":                     strconv.FormatInt(model.ID, 10),
 		"model_id":               model.ModelID,
 		"name":                   model.Name,
 		"provider":               providerName,
@@ -346,8 +355,11 @@ func (s *Server) VerifyModelHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	json.NewEncoder(w).Encode(map[string]any{
-		"status":              status,
-		"model_id":            modelID,
+		"status": status,
+		// HXC-134: emit the model id as text end-to-end (see the identical
+		// note in ListModelsHandler above); modelID is the int64 parsed from
+		// the URL path.
+		"model_id":            strconv.FormatInt(modelID, 10),
 		"model_name":          model.Name,
 		"verification_status": status,
 		"score":               score,
