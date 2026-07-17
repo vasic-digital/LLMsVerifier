@@ -36,14 +36,18 @@ func chatCompletionJSON(t *testing.T, w http.ResponseWriter, content string) {
 
 const testSentinel = "SENTINEL-XYZ-42"
 
-// TestRun_Round1 is table-driven over the three anti-bluff scenarios plus the
-// happy path, using a mock OpenAI-compatible server per case.
+// TestRun_Round1 is table-driven over the anti-bluff scenarios plus the
+// happy path, using a mock OpenAI-compatible server per case. It pins the
+// frozen exit-code contract: 0 pass, 1 genuine negative determination
+// (including definitive provider rejections HTTP 401/402/403/404 and prompt
+// echo / bluff), 3 transient/infra (HTTP 429/5xx, empty body).
 func TestRun_Round1(t *testing.T) {
 	cases := []struct {
 		name       string
 		content    string // 200 body content (when status==200 && !emptyBody)
 		status     int
 		emptyBody  bool
+		fixture    string // fixture content; empty -> default short fixture
 		wantExit   int
 		wantR1Pass bool
 		wantReason bool
@@ -79,6 +83,45 @@ func TestRun_Round1(t *testing.T) {
 			wantR1Pass: false,
 			wantReason: true,
 		},
+		{
+			name:       "http 401 -> definitive rejection, genuine fail (exit 1)",
+			status:     401,
+			wantExit:   1,
+			wantR1Pass: false,
+			wantReason: true,
+		},
+		{
+			name:       "http 402 -> depleted credits, genuine fail (exit 1)",
+			status:     402,
+			wantExit:   1,
+			wantR1Pass: false,
+			wantReason: true,
+		},
+		{
+			name:       "http 404 -> model not found, genuine fail (exit 1)",
+			status:     404,
+			wantExit:   1,
+			wantR1Pass: false,
+			wantReason: true,
+		},
+		{
+			name:       "http 429 -> rate limit is transient infra (exit 3)",
+			status:     429,
+			wantExit:   3,
+			wantR1Pass: false,
+			wantReason: true,
+		},
+		{
+			name: "prompt echo / bluff -> sentinel plus verbatim fixture slice, genuine fail (exit 1)",
+			content: "package demo\n\nfunc Add(a, b int) int { return a + b }\n" +
+				"func Sub(a, b int) int { return a - b }\n" + testSentinel,
+			status: 200,
+			fixture: "package demo\n\nfunc Add(a, b int) int { return a + b }\n" +
+				"func Sub(a, b int) int { return a - b }\n",
+			wantExit:   1,
+			wantR1Pass: false,
+			wantReason: true,
+		},
 	}
 
 	for _, tc := range cases {
@@ -100,8 +143,13 @@ func TestRun_Round1(t *testing.T) {
 			}))
 			defer srv.Close()
 
+			fixtureContent := tc.fixture
+			if fixtureContent == "" {
+				fixtureContent = "package demo\nfunc Add(a, b int) int { return a + b }\n"
+			}
+
 			dir := t.TempDir()
-			fixture := writeTemp(t, dir, "fixture.txt", "package demo\nfunc Add(a, b int) int { return a + b }\n")
+			fixture := writeTemp(t, dir, "fixture.txt", fixtureContent)
 			prompt := writeTemp(t, dir, "prompt.txt",
 				"Read this code:\n{{FIXTURE_CONTENT}}\nIf you can see it, reply with the token {{SENTINEL}}.")
 
@@ -409,6 +457,194 @@ func TestRun_Round2ModelCallInfraError(t *testing.T) {
 	}
 }
 
+// TestRun_Round2JudgeDefinitiveRejection verifies the frozen invariant that
+// ALL judge-call failures stay exit 3 regardless of status code: even a
+// definitive rejection (HTTP 402 — depleted judge credits) must NEVER demote
+// the model-under-test to exit 1.
+func TestRun_Round2JudgeDefinitiveRejection(t *testing.T) {
+	const sentinel = "TOK-J402"
+
+	modelSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		var req chatRequest
+		_ = json.Unmarshal(body, &req)
+		if len(req.Messages) >= 2 {
+			chatCompletionJSON(t, w, "A description of the code.")
+			return
+		}
+		chatCompletionJSON(t, w, "Visible: "+sentinel)
+	}))
+	defer modelSrv.Close()
+
+	// Judge returns HTTP 402 -> still an infra error (exit 3), never exit 1.
+	judgeSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusPaymentRequired)
+	}))
+	defer judgeSrv.Close()
+
+	dir := t.TempDir()
+	fixture := writeTemp(t, dir, "fixture.txt", "x := 1\n")
+	prompt := writeTemp(t, dir, "prompt.txt", "{{FIXTURE_CONTENT}} reply {{SENTINEL}}")
+
+	t.Setenv("SCV_MODEL_KEY", "model-key")
+	t.Setenv("SCV_JUDGE_KEY", "judge-key")
+
+	args := []string{
+		"--base-url", modelSrv.URL, "--model", "m", "--api-key-env", "SCV_MODEL_KEY",
+		"--fixture", fixture, "--prompt", prompt, "--sentinel", sentinel, "--timeout", "10",
+		"--judge-base-url", judgeSrv.URL, "--judge-model", "jm", "--judge-api-key-env", "SCV_JUDGE_KEY",
+	}
+
+	var stdout, stderr bytes.Buffer
+	exit := run(args, &stdout, &stderr)
+	if exit != 3 {
+		t.Fatalf("exit = %d, want 3 (judge-call failures are ALWAYS infra, even HTTP 402)\nstdout=%s\nstderr=%s", exit, stdout.String(), stderr.String())
+	}
+
+	var rep report
+	if err := json.Unmarshal(stdout.Bytes(), &rep); err != nil {
+		t.Fatalf("bad json: %v\nout=%s", err, stdout.String())
+	}
+	if !rep.Round1.Pass {
+		t.Errorf("round1 should still pass")
+	}
+	if rep.Round2.Skipped {
+		t.Errorf("round2 must not be skipped when judge flags given")
+	}
+	if rep.Round2.Pass == nil || *rep.Round2.Pass {
+		t.Errorf("round2 must be a hard fail on judge error, got %v", rep.Round2.Pass)
+	}
+	if rep.Round2.Reason == "" {
+		t.Errorf("expected a reason on round2 failure")
+	}
+	if rep.Overall {
+		t.Errorf("overall must be false when round2 fails")
+	}
+}
+
+// TestRun_Round2ModelCallDefinitiveRejection verifies that a definitive
+// provider rejection (HTTP 402) on the round-2 MODEL-UNDER-TEST describe call
+// is a genuine negative determination -> exit 1, because depleted billing
+// credits are a deterministic state, not transient infra.
+func TestRun_Round2ModelCallDefinitiveRejection(t *testing.T) {
+	const sentinel = "TOK-M402"
+
+	modelSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		var req chatRequest
+		_ = json.Unmarshal(body, &req)
+		if len(req.Messages) >= 2 {
+			// Round-2 describe call: definitive rejection.
+			w.WriteHeader(http.StatusPaymentRequired)
+			return
+		}
+		chatCompletionJSON(t, w, "Visible: "+sentinel)
+	}))
+	defer modelSrv.Close()
+
+	judgeSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		chatCompletionJSON(t, w, "3")
+	}))
+	defer judgeSrv.Close()
+
+	dir := t.TempDir()
+	fixture := writeTemp(t, dir, "fixture.txt", "x := 1\n")
+	prompt := writeTemp(t, dir, "prompt.txt", "{{FIXTURE_CONTENT}} reply {{SENTINEL}}")
+
+	t.Setenv("SCV_MODEL_KEY", "model-key")
+	t.Setenv("SCV_JUDGE_KEY", "judge-key")
+
+	args := []string{
+		"--base-url", modelSrv.URL, "--model", "m", "--api-key-env", "SCV_MODEL_KEY",
+		"--fixture", fixture, "--prompt", prompt, "--sentinel", sentinel, "--timeout", "10",
+		"--judge-base-url", judgeSrv.URL, "--judge-model", "jm", "--judge-api-key-env", "SCV_JUDGE_KEY",
+	}
+
+	var stdout, stderr bytes.Buffer
+	exit := run(args, &stdout, &stderr)
+	if exit != 1 {
+		t.Fatalf("exit = %d, want 1 (definitive provider rejection on the model-under-test call)\nstdout=%s\nstderr=%s", exit, stdout.String(), stderr.String())
+	}
+
+	var rep report
+	if err := json.Unmarshal(stdout.Bytes(), &rep); err != nil {
+		t.Fatalf("bad json: %v\nout=%s", err, stdout.String())
+	}
+	if !rep.Round1.Pass {
+		t.Errorf("round1 should still pass")
+	}
+	if rep.Round2.Pass == nil || *rep.Round2.Pass {
+		t.Errorf("round2 must be a hard fail, got %v", rep.Round2.Pass)
+	}
+	if rep.Overall {
+		t.Errorf("overall must be false")
+	}
+}
+
+// TestEchoBluffDetected pins the echo/bluff guard semantics: any >=60-rune
+// verbatim slice of the (whitespace-normalized) fixture appearing in the
+// response marks it as a prompt echo; anything shorter or absent does not.
+func TestEchoBluffDetected(t *testing.T) {
+	fixture := "package demo\n\nfunc Add(a, b int) int { return a + b }\nfunc Sub(a, b int) int { return a - b }\n"
+	normFixture := normalizeWhitespace(fixture)
+	if len([]rune(normFixture)) < echoBluffRunes+1 {
+		t.Fatalf("test fixture must normalize to more than %d runes, got %d", echoBluffRunes, len([]rune(normFixture)))
+	}
+	overlap60 := string([]rune(normFixture)[:echoBluffRunes])
+	overlap59 := string([]rune(normFixture)[:echoBluffRunes-1])
+
+	cases := []struct {
+		name     string
+		response string
+		fixture  string
+		want     bool
+	}{
+		{
+			name:     "verbatim echo of the whole fixture",
+			response: fixture + " SENTINEL-XYZ-42",
+			fixture:  fixture,
+			want:     true,
+		},
+		{
+			name:     "whitespace-reformatted echo is still caught",
+			response: "package demo   func Add(a, b int) int { return a + b }   func Sub(a, b int) int { return a - b } SENTINEL-XYZ-42",
+			fixture:  fixture,
+			want:     true,
+		},
+		{
+			name:     "exactly 60-rune overlap",
+			response: overlap60,
+			fixture:  fixture,
+			want:     true,
+		},
+		{
+			name:     "59-rune overlap is below the echo threshold",
+			response: overlap59,
+			fixture:  fixture,
+			want:     false,
+		},
+		{
+			name:     "no fixture overlap",
+			response: "I can see the code. SENTINEL-XYZ-42",
+			fixture:  fixture,
+			want:     false,
+		},
+		{
+			name:     "fixture shorter than 60 runes never triggers",
+			response: "x := 1 x := 1 x := 1 SENTINEL-XYZ-42",
+			fixture:  "x := 1\n",
+			want:     false,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := echoBluffDetected(tc.response, tc.fixture); got != tc.want {
+				t.Errorf("echoBluffDetected(%q, %q) = %v, want %v", tc.response, tc.fixture, got, tc.want)
+			}
+		})
+	}
+}
+
 // TestRun_Round1ConnectionRefused verifies a round-1 call that cannot even
 // reach a server (connection refused on a closed port) is an infra error ->
 // exit 3, exercising the network-error branch of chatComplete distinctly from
@@ -550,5 +786,80 @@ func TestParseScore(t *testing.T) {
 		if ok != tc.wantOK || (ok && got != tc.want) {
 			t.Errorf("parseScore(%q) = (%d,%v), want (%d,%v)", tc.in, got, ok, tc.want, tc.wantOK)
 		}
+	}
+}
+
+// TestChatCompletionsURL pins the base-URL resolution rule: a base already
+// ending in /chat/completions is used verbatim, a base ending in a version
+// segment /v[0-9]+ gets /chat/completions appended (never a doubled /v1),
+// anything else gets /v1/chat/completions appended.
+func TestChatCompletionsURL(t *testing.T) {
+	cases := []struct {
+		name string
+		base string
+		want string
+	}{
+		{
+			name: "bare host gets /v1/chat/completions",
+			base: "https://api.deepseek.com",
+			want: "https://api.deepseek.com/v1/chat/completions",
+		},
+		{
+			name: "bare host with trailing slash",
+			base: "https://api.deepseek.com/",
+			want: "https://api.deepseek.com/v1/chat/completions",
+		},
+		{
+			name: "/v1 base gets only /chat/completions",
+			base: "https://api.deepseek.com/v1",
+			want: "https://api.deepseek.com/v1/chat/completions",
+		},
+		{
+			name: "/v1 base with trailing slash",
+			base: "https://api.deepseek.com/v1/",
+			want: "https://api.deepseek.com/v1/chat/completions",
+		},
+		{
+			name: "/v4 versioned path (z.ai coding endpoint)",
+			base: "https://api.z.ai/api/coding/paas/v4",
+			want: "https://api.z.ai/api/coding/paas/v4/chat/completions",
+		},
+		{
+			name: "/v12 multi-digit version segment",
+			base: "https://example.com/api/v12",
+			want: "https://example.com/api/v12/chat/completions",
+		},
+		{
+			name: "base already ending in /chat/completions is used verbatim",
+			base: "https://example.com/v1/chat/completions",
+			want: "https://example.com/v1/chat/completions",
+		},
+		{
+			name: "/chat/completions with trailing slash",
+			base: "https://example.com/v1/chat/completions/",
+			want: "https://example.com/v1/chat/completions",
+		},
+		{
+			name: "unversioned path gets /v1/chat/completions",
+			base: "https://example.com/api",
+			want: "https://example.com/api/v1/chat/completions",
+		},
+		{
+			name: "non-numeric version-ish suffix is not a version segment",
+			base: "https://example.com/v1beta",
+			want: "https://example.com/v1beta/v1/chat/completions",
+		},
+		{
+			name: "bare /v without digits is not a version segment",
+			base: "https://example.com/v",
+			want: "https://example.com/v/v1/chat/completions",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := chatCompletionsURL(tc.base); got != tc.want {
+				t.Errorf("chatCompletionsURL(%q) = %q, want %q", tc.base, got, tc.want)
+			}
+		})
 	}
 }

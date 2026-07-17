@@ -245,7 +245,9 @@ func getProviderEndpoint(provider string) string {
 		"sambanova":       "https://api.sambanova.ai/v1/models",
 
 		// Special API providers
-		"huggingface": "https://api-inference.huggingface.co/models",
+		// HuggingFace: api-inference.huggingface.co is dead (HTTP 410); the
+		// OpenAI-compatible router serves /v1/models.
+		"huggingface": "https://router.huggingface.co/v1/models",
 		"cohere":      "https://api.cohere.com/v2/models",
 		"replicate":   "https://api.replicate.com/v1/models",
 		"nlpcloud":    "https://api.nlpcloud.com/v1/models",
@@ -305,7 +307,9 @@ func getModelEndpoint(provider, modelID string) string {
 		"sambanova":       "https://api.sambanova.ai/v1/chat/completions",
 
 		// Special API providers
-		"huggingface": "https://api-inference.huggingface.co/models/" + modelID,
+		// HuggingFace: api-inference.huggingface.co is dead (HTTP 410); the
+		// OpenAI-compatible router takes the model id in the request body.
+		"huggingface": "https://router.huggingface.co/v1/chat/completions",
 		"cohere":      "https://api.cohere.com/v2/chat",
 		"replicate":   "https://api.replicate.com/v1/predictions",
 		"nlpcloud":    "https://api.nlpcloud.com/v1/gpu",

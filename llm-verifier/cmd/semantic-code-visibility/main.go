@@ -17,9 +17,12 @@
 // Behaviour:
 //
 //	Round 1 (sentinel): interpolate the prompt template ({{FIXTURE_CONTENT}} ->
-//	fixture contents, {{SENTINEL}} -> sentinel), POST it to
-//	{base-url}/v1/chat/completions, and pass iff the reply contains the exact
-//	sentinel substring.
+//	fixture contents, {{SENTINEL}} -> sentinel), POST it to the provider's
+//	chat-completions endpoint (resolved from --base-url by chatCompletionsURL:
+//	a base already ending in /chat/completions is used verbatim, a base ending
+//	in a version segment /v[0-9]+ gets /chat/completions appended, anything
+//	else gets /v1/chat/completions appended), and pass iff the reply contains
+//	the exact sentinel substring.
 //
 //	Round 2 (judge, optional): only attempted when round 1 passes AND a full
 //	judge flag set (--judge-base-url/--judge-model/--judge-api-key-env) is given.
@@ -28,34 +31,43 @@
 //	Without judge flags, round 2 is reported "skipped" (never "failed").
 //
 // Anti-bluff: a transport error, timeout, non-200 status, or empty body ALWAYS
-// yields pass=false with a reason — never a false pass. The bearer token is
-// read ONLY from the env var named by --api-key-env (never taken as a flag
-// value, never echoed into argv or the JSON output).
+// yields pass=false with a reason — never a false pass. A round-1 reply that
+// contains the sentinel but ALSO regurgitates a >=60-character verbatim slice
+// of the fixture is treated as a prompt echo / bluff (genuine failure), not a
+// pass. The bearer token is read ONLY from the env var named by --api-key-env
+// (never taken as a flag value, never echoed into argv or the JSON output).
 //
 // Exit codes:
 //
 //	0  overall pass (round 1 passed, and round 2 passed or was skipped).
 //	1  genuine verification failure — a round-1 or round-2 API call
 //	   COMPLETED and yielded a real negative determination: the sentinel was
-//	   not reflected back, or the judge score was below --judge-threshold.
+//	   not reflected back, the reply was a prompt echo / bluff, or the judge
+//	   score was below --judge-threshold. This ALSO covers definitive
+//	   provider rejections on the MODEL-UNDER-TEST calls (round 1 and the
+//	   round-2 description call): HTTP 401, 402, 403, 404. Auth failure,
+//	   depleted billing credits, and model-not-found are deterministic
+//	   states, not transient infra — the model genuinely cannot work.
 //	2  usage/config error — missing/invalid flags, unreadable fixture or
 //	   prompt files, unset --api-key-env, etc.
 //	3  infra/transport error — a round-1 or round-2 model/judge API call did
-//	   NOT complete: non-2xx status, network/timeout error, or empty
-//	   response/content. This is distinct from exit 1: it means the verifier
-//	   could not reach a determination at all, so a transient judge 429/5xx
-//	   must never be mistaken for a real failure.
+//	   NOT complete: HTTP 429 or 5xx, network/timeout error, or empty
+//	   response/content. CRITICAL: ALL failures of the JUDGE call (round-2
+//	   grading) stay exit 3 regardless of status code — a broken judge must
+//	   never demote the model-under-test.
 package main
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -98,8 +110,9 @@ type chatResponse struct {
 
 // round1Result is the sentinel-visibility outcome. infra is unexported (never
 // serialized) and is true iff Pass=false because the round-1 API call could
-// not complete (transport error, non-2xx, empty body/content) rather than
-// because it completed and genuinely lacked the sentinel.
+// not complete (transport error, HTTP 429/5xx, empty body/content) rather
+// than because it completed and genuinely lacked the sentinel, echoed the
+// prompt, or was definitively rejected by the provider (HTTP 401/402/403/404).
 type round1Result struct {
 	Pass     bool   `json:"pass"`
 	Observed string `json:"observed"`
@@ -132,8 +145,11 @@ func main() {
 }
 
 // run is the testable entry point. Exit codes: 0 overall pass, 1 genuine
-// verification fail (completed call, real negative verdict), 2 usage/config
-// error, 3 infra/transport error (a model or judge call could not complete).
+// verification fail (completed call with a real negative verdict, prompt
+// echo / bluff, or a definitive provider rejection — HTTP 401/402/403/404 —
+// on a model-under-test call), 2 usage/config error, 3 infra/transport error
+// (a model or judge call could not complete: HTTP 429/5xx, timeout,
+// transport, empty body; judge-call failures are ALWAYS exit 3).
 // See the package doc comment above for the full table.
 func run(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("semantic-code-visibility", flag.ContinueOnError)
@@ -257,9 +273,16 @@ func run(args []string, stdout, stderr io.Writer) int {
 	}, 256)
 	if err != nil {
 		// Anti-bluff: any failed/empty call is a fail with a reason, never a pass.
-		// This is an infra/transport failure (exit 3), not a genuine
-		// determination (exit 1) — the call never completed.
-		rep.Round1 = round1Result{Pass: false, Observed: "", Reason: err.Error(), infra: true}
+		// A definitive provider rejection (HTTP 401/402/403/404) is a genuine
+		// negative determination (exit 1): auth failure, depleted billing
+		// credits, and model-not-found are deterministic states, not transient
+		// infra. Everything else (429/5xx/timeout/transport/empty) is an
+		// infra/transport failure (exit 3) — the call never completed.
+		if isDefinitiveRejection(err) {
+			rep.Round1 = round1Result{Pass: false, Observed: "", Reason: "provider definitively rejected the request: " + err.Error()}
+		} else {
+			rep.Round1 = round1Result{Pass: false, Observed: "", Reason: err.Error(), infra: true}
+		}
 	} else {
 		rep.Round1 = round1Result{
 			Pass:     strings.Contains(r1Content, *sentinel),
@@ -267,6 +290,13 @@ func run(args []string, stdout, stderr io.Writer) int {
 		}
 		if !rep.Round1.Pass {
 			rep.Round1.Reason = "sentinel not found in response"
+		} else if echoBluffDetected(r1Content, string(fixtureBytes)) {
+			// Echo/bluff guard: a reply that contains the sentinel AND a
+			// >=60-char verbatim slice of the fixture merely regurgitated the
+			// prompt back — it never demonstrated code visibility. That is a
+			// genuine negative determination (exit 1), not a pass.
+			rep.Round1.Pass = false
+			rep.Round1.Reason = "prompt echo / bluff: reply contains the sentinel plus a verbatim slice of the fixture"
 		}
 	}
 
@@ -311,10 +341,14 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return 0
 	}
 	// Anti-bluff exit-code precision: an infra/transport failure (the model or
-	// judge call could not complete) is a different class of non-pass than a
-	// genuine verification failure (sentinel not reflected / judge score below
-	// threshold). Exit 3 means "the verifier could not reach a determination";
-	// exit 1 means "the verifier reached a determination and it was negative."
+	// judge call could not complete: HTTP 429/5xx, timeout, transport, empty
+	// body) is a different class of non-pass than a genuine verification
+	// failure (sentinel not reflected, prompt echo / bluff, judge score below
+	// threshold, or a definitive provider rejection — HTTP 401/402/403/404 —
+	// on a model-under-test call). Exit 3 means "the verifier could not reach
+	// a determination"; exit 1 means "the verifier reached a determination and
+	// it was negative." Judge-call failures are ALWAYS infra (exit 3),
+	// regardless of status code: a broken judge never demotes the model.
 	if rep.Round1.infra || (!rep.Round2.Skipped && rep.Round2.infra) {
 		return 3
 	}
@@ -346,10 +380,11 @@ func runRound2(ctx context.Context, hc *http.Client, p round2Params) round2Resul
 		f := false
 		return round2Result{Pass: &f, Skipped: false, Reason: reason, infra: true}
 	}
-	// fail marks a genuine determination (exit 1): the call completed but the
-	// content could not be turned into a usable verdict (e.g. the judge's
-	// reply had no parseable score) — the call succeeded, so this is not an
-	// infra failure.
+	// fail marks a genuine determination (exit 1): either the call completed
+	// but the content could not be turned into a usable verdict (e.g. the
+	// judge's reply had no parseable score), or the model-under-test call was
+	// definitively rejected by the provider (HTTP 401/402/403/404) — both are
+	// real negative determinations, not infra failures.
 	fail := func(reason string) round2Result {
 		f := false
 		return round2Result{Pass: &f, Skipped: false, Reason: reason}
@@ -362,10 +397,18 @@ func runRound2(ctx context.Context, hc *http.Client, p round2Params) round2Resul
 		{Role: "user", Content: p.round2Instr},
 	}, 512)
 	if err != nil {
+		// This is a MODEL-UNDER-TEST call: a definitive provider rejection
+		// (HTTP 401/402/403/404) is a genuine negative determination (exit 1),
+		// not transient infra.
+		if isDefinitiveRejection(err) {
+			return fail("round-2 model call definitively rejected by provider: " + err.Error())
+		}
 		return failInfra("round-2 model call failed: " + err.Error())
 	}
 
-	// Ask the judge to score the description.
+	// Ask the judge to score the description. ALL judge-call failures are
+	// infra (exit 3) regardless of status code — a broken judge must never
+	// demote the model-under-test.
 	judgePrompt := strings.ReplaceAll(p.judgePrompt, "{{FIXTURE_CONTENT}}", p.fixture)
 	judgePrompt = strings.ReplaceAll(judgePrompt, "{{DESCRIPTION}}", description)
 	judgeReply, err := chatComplete(ctx, hc, p.judgeBaseURL, p.judgeKey, p.judgeModel, []chatMessage{
@@ -388,12 +431,42 @@ func runRound2(ctx context.Context, hc *http.Client, p round2Params) round2Resul
 	return res
 }
 
-// chatComplete POSTs an OpenAI-compatible chat completion to
-// {baseURL}/v1/chat/completions with an Authorization: Bearer header and
-// returns choices[0].message.content. It treats transport errors, non-200
-// statuses, empty bodies, and empty content as errors (anti-bluff).
+// versionPathSegmentRe matches a trailing API-version path segment such as
+// /v1, /v4, or /v12 at the end of a (slash-trimmed) base URL.
+var versionPathSegmentRe = regexp.MustCompile(`/v[0-9]+$`)
+
+// chatCompletionsURL resolves the chat-completions endpoint for a provider
+// base URL. Provider bases come in three shapes:
+//
+//   - a base already ending in /chat/completions is used verbatim (no doubled
+//     suffix);
+//   - a base ending in a version segment /v[0-9]+ (e.g. /v1, /v4, /v12) gets
+//     /chat/completions appended — e.g. https://api.z.ai/api/coding/paas/v4 ->
+//     https://api.z.ai/api/coding/paas/v4/chat/completions (NOT .../paas/v4/v1/...);
+//   - anything else (bare host or unversioned path) gets /v1/chat/completions
+//     appended.
+//
+// Trailing slashes on the base are always trimmed first.
+func chatCompletionsURL(base string) string {
+	b := strings.TrimRight(base, "/")
+	if strings.HasSuffix(b, "/chat/completions") {
+		return b
+	}
+	if versionPathSegmentRe.MatchString(b) {
+		return b + "/chat/completions"
+	}
+	return b + "/v1/chat/completions"
+}
+
+// chatComplete POSTs an OpenAI-compatible chat completion to the endpoint
+// resolved by chatCompletionsURL(baseURL) with an Authorization: Bearer header
+// and returns choices[0].message.content. It treats transport errors, non-200
+// statuses, empty bodies, and empty content as errors (anti-bluff). A non-200
+// status is returned as a *statusError so callers can classify definitive
+// provider rejections (401/402/403/404) separately from transient ones
+// (429/5xx) via isDefinitiveRejection.
 func chatComplete(ctx context.Context, hc *http.Client, baseURL, apiKey, model string, messages []chatMessage, maxTokens int) (string, error) {
-	url := strings.TrimRight(baseURL, "/") + "/v1/chat/completions"
+	url := chatCompletionsURL(baseURL)
 	payload, err := json.Marshal(chatRequest{Model: model, Messages: messages, MaxTokens: maxTokens})
 	if err != nil {
 		return "", fmt.Errorf("marshal request: %w", err)
@@ -417,7 +490,7 @@ func chatComplete(ctx context.Context, hc *http.Client, baseURL, apiKey, model s
 		return "", fmt.Errorf("read response body: %w", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("non-200 status %d: %s", resp.StatusCode, firstNChars(string(body), 200))
+		return "", &statusError{Status: resp.StatusCode, Body: firstNChars(string(body), 200)}
 	}
 	if len(bytes.TrimSpace(body)) == 0 {
 		return "", fmt.Errorf("empty response body")
@@ -435,6 +508,63 @@ func chatComplete(ctx context.Context, hc *http.Client, baseURL, apiKey, model s
 		return "", fmt.Errorf("response message content was empty")
 	}
 	return content, nil
+}
+
+// statusError is a non-200 provider response. Carrying the status code (and a
+// truncated body for diagnostics) lets callers split deterministic rejections
+// from transient infra failures instead of lumping every non-2xx together.
+type statusError struct {
+	Status int
+	Body   string
+}
+
+func (e *statusError) Error() string {
+	return fmt.Sprintf("non-200 status %d: %s", e.Status, e.Body)
+}
+
+// isDefinitiveRejection reports whether err is a definitive provider rejection
+// (HTTP 401, 402, 403, 404): auth failure, depleted billing credits, and
+// model-not-found are deterministic states — retrying cannot help — so they
+// count as a genuine negative determination (exit 1) on model-under-test
+// calls, unlike HTTP 429/5xx/timeout/transport failures (exit 3).
+func isDefinitiveRejection(err error) bool {
+	var se *statusError
+	if errors.As(err, &se) {
+		switch se.Status {
+		case http.StatusUnauthorized, http.StatusPaymentRequired, http.StatusForbidden, http.StatusNotFound:
+			return true
+		}
+	}
+	return false
+}
+
+// echoBluffRunes is the minimum verbatim rune overlap with the fixture that
+// marks a sentinel-containing reply as a prompt echo / bluff.
+const echoBluffRunes = 60
+
+// echoBluffDetected reports whether the response regurgitates a >=60-rune
+// verbatim slice of the fixture — the signature of a model that echoed the
+// prompt back (sentinel included) instead of demonstrating that it can see
+// the code. Whitespace runs are normalized to a single space on both sides
+// before comparing, so re-wrapped or re-indented echoes are still caught.
+func echoBluffDetected(response, fixture string) bool {
+	normResp := normalizeWhitespace(response)
+	fixRunes := []rune(normalizeWhitespace(fixture))
+	if len(fixRunes) < echoBluffRunes {
+		// Fixture too short for a reliable echo signature.
+		return false
+	}
+	for i := 0; i+echoBluffRunes <= len(fixRunes); i++ {
+		if strings.Contains(normResp, string(fixRunes[i:i+echoBluffRunes])) {
+			return true
+		}
+	}
+	return false
+}
+
+// normalizeWhitespace collapses every whitespace run to a single space.
+func normalizeWhitespace(s string) string {
+	return strings.Join(strings.Fields(s), " ")
 }
 
 // interpolate applies the same {{FIXTURE_CONTENT}}/{{SENTINEL}} substitutions

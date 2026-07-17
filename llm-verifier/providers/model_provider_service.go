@@ -180,7 +180,9 @@ func (mps *ModelProviderService) getAllProviderConfigs() map[string]providerConf
 	return map[string]providerConfig{
 		"openai":      {BaseURL: "https://api.openai.com/v1", APIKey: os.Getenv("OPENAI_API_KEY")},
 		"anthropic":   {BaseURL: "https://api.anthropic.com/v1", APIKey: os.Getenv("ANTHROPIC_API_KEY")},
-		"huggingface": {BaseURL: "https://api-inference.huggingface.co", APIKey: os.Getenv("HUGGINGFACE_API_KEY")},
+		// HuggingFace's old api-inference endpoint is dead (HTTP 410); the
+		// OpenAI-compatible router is the current base URL.
+		"huggingface": {BaseURL: "https://router.huggingface.co/v1", APIKey: os.Getenv("HUGGINGFACE_API_KEY")},
 		"groq":        {BaseURL: "https://api.groq.com/openai/v1", APIKey: os.Getenv("GROQ_API_KEY")},
 		"gemini":      {BaseURL: "https://generativelanguage.googleapis.com/v1", APIKey: os.Getenv("GEMINI_API_KEY")},
 		"deepseek":    {BaseURL: "https://api.deepseek.com/v1", APIKey: os.Getenv("DEEPSEEK_API_KEY")},
