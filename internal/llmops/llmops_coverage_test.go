@@ -3,6 +3,7 @@ package llmops
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -268,4 +269,62 @@ func TestInMemoryContinuousEvaluator_Resolve_Alert(t *testing.T) {
 	got, err := alertMgr.Get(ctx, alert.ID)
 	require.NoError(t, err)
 	assert.True(t, got.Resolved)
+}
+
+// TestInMemoryContinuousEvaluator_ConcurrentStartRunGetRun_NoRace is the
+// explicit regression guard for the executeRun↔GetRun data race (fixed by
+// moving the nil-debateEval `run.Status` write inside the mutex). It hammers
+// StartRun (whose background executeRun mutates run.Status) and GetRun (which
+// reads run.Status/Results) concurrently across many runs. Under `-race` this
+// reproduces the pre-fix write/read race; it MUST stay green.
+func TestInMemoryContinuousEvaluator_ConcurrentStartRunGetRun_NoRace(t *testing.T) {
+	evaluator := NewInMemoryContinuousEvaluator(nil, nil, nil, nil)
+	ctx := context.Background()
+
+	dataset := &Dataset{Name: "D"}
+	require.NoError(t, evaluator.CreateDataset(ctx, dataset))
+	require.NoError(t, evaluator.AddSamples(ctx, dataset.ID,
+		[]*DatasetSample{{Input: "Q", ExpectedOutput: "A"}}))
+
+	const n = 50
+	ids := make([]string, n)
+	for i := 0; i < n; i++ {
+		run := &EvaluationRun{Name: "Run", Dataset: dataset.ID}
+		require.NoError(t, evaluator.CreateRun(ctx, run))
+		ids[i] = run.ID
+	}
+
+	var wg sync.WaitGroup
+	for _, id := range ids {
+		id := id
+		wg.Add(2)
+		// Writer: StartRun launches executeRun (background) which mutates run.Status.
+		go func() { defer wg.Done(); _ = evaluator.StartRun(ctx, id) }()
+		// Reader: GetRun reads run.Status/Results concurrently with that mutation.
+		go func() {
+			defer wg.Done()
+			for i := 0; i < 20; i++ {
+				if r, err := evaluator.GetRun(ctx, id); err == nil {
+					_ = r.Status
+				}
+			}
+		}()
+	}
+	wg.Wait()
+
+	// Every run reaches the honest terminal Failed state (debateEval is nil).
+	for _, id := range ids {
+		var got *EvaluationRun
+		for i := 0; i < 50; i++ {
+			var err error
+			got, err = evaluator.GetRun(ctx, id)
+			require.NoError(t, err)
+			if got.Status == EvaluationStatusFailed || got.Status == EvaluationStatusCompleted {
+				break
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+		require.NotNil(t, got)
+		assert.Equal(t, EvaluationStatusFailed, got.Status)
+	}
 }

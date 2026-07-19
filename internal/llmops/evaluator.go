@@ -139,9 +139,13 @@ func (e *InMemoryContinuousEvaluator) executeRun(ctx context.Context, run *Evalu
 	// Mark the run failed and bail out — caller MUST inject a real
 	// debateEval before kicking off the run.
 	if e.debateEval == nil {
-		run.Status = EvaluationStatusFailed
 		results.Metrics["error_debate_eval_nil"] = -1
+		// Mutate the shared run record ONLY under the lock: GetRun reads
+		// run.Status/Results concurrently, so the status write must not race with
+		// it (the prior code set run.Status here, outside the lock — a data race
+		// the -race detector flags between executeRun and GetRun).
 		e.mu.Lock()
+		run.Status = EvaluationStatusFailed
 		run.Results = results
 		e.mu.Unlock()
 		return
