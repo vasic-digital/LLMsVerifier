@@ -83,6 +83,13 @@
   - Caching detection (Anthropic, DashScope, prompt caching)
   - Optimized CLI agent configuration generation
 
+### Credit-Aware Model Selection
+- [Credit-Aware Selection Guide](docs/CREDIT_AWARE_SELECTION.md) - Pick the strongest model an account can actually afford
+  - Free / paid / **unknown** affordability from observed pricing (a zero price is never assumed free)
+  - Credit available / exhausted / **unknown**, with the signal that determined it (balance endpoint, probe response, operator declaration)
+  - Credit available => strongest paid; no credit => strongest free; unknown => the caller's policy, never a guess
+  - Live balance-endpoint reader and probe-verdict adapter over the existing verification pipeline
+
 ## 🚀 Quick Start
 
 ### Prerequisites

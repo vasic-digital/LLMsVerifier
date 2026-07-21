@@ -29,6 +29,11 @@ llm-verifier/cmd/fixed-ultimate-challenge/*
 llm-verifier/cmd/model-verification/model-verification
 crush_config_converter
 llm-verifier/cmd/cmd
+# Layer-3 semantic driver binary. Production builds it to the CONSUMING
+# project's own cache via `go build -o <cache>/semantic-code-visibility`; a bare
+# `go build ./cmd/semantic-code-visibility/` run from llm-verifier/ drops a
+# ~9.6MB copy here instead. CONST-053 — no versioned build artefacts.
+llm-verifier/semantic-code-visibility
 llm-verifier/final-build
 llm-verifier/main
 llm-verifier/run_challenges
