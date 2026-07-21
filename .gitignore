@@ -27,6 +27,9 @@ ultimate-challenge*
 llm-verifier/cmd/ultimate-challenge/ultimate-challenge*
 llm-verifier/cmd/fixed-ultimate-challenge/*
 llm-verifier/cmd/model-verification/model-verification
+# Stray root-level build artefacts (Auto-commit re-adds them; BFG-purged 2025-12-29). CONST-053.
+llm-verifier/fixed-challenge
+llm-verifier/model-verification
 crush_config_converter
 llm-verifier/cmd/cmd
 # Layer-3 semantic driver binary. Production builds it to the CONSUMING
