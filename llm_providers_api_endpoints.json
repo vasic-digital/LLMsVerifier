@@ -113,5 +113,15 @@
     "models_endpoint": "https://api.vercel.ai/v1/models",
     "chat_endpoint": "https://api.vercel.ai/v1/chat/completions",
     "docs_url": "https://vercel.com/docs/ai"
+  },
+  "opencode": {
+    "models_endpoint": "https://opencode.ai/zen/v1/models",
+    "chat_endpoint": "https://opencode.ai/zen/v1/chat/completions",
+    "docs_url": "https://opencode.ai/docs/zen"
+  },
+  "opencode-go": {
+    "models_endpoint": "https://opencode.ai/zen/go/v1/models",
+    "chat_endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+    "docs_url": "https://opencode.ai/docs/go"
   }
 }
