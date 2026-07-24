@@ -124,5 +124,10 @@
     "models_endpoint": "https://opencode.ai/zen/go/v1/models",
     "chat_endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
     "docs_url": "https://opencode.ai/docs/go"
+  },
+  "hyper": {
+    "models_endpoint": "https://hyper.charm.land/v1/models",
+    "chat_endpoint": "https://hyper.charm.land/v1/chat/completions",
+    "docs_url": "https://hyper.charm.land/"
   }
 }
