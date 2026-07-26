@@ -1,4 +1,4 @@
-## INHERITED FROM Helix Constitution
+## INHERITED FROM constitution/CLAUDE.md
 
 This module is a submodule of a Helix-family project (e.g.
 any consuming project) that includes the Helix

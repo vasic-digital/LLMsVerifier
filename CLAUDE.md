@@ -21,9 +21,9 @@ Canonical reference: <https://github.com/HelixDevelopment/HelixConstitution>
 
 # CLAUDE.md - LLMsVerifier AI Agent Manual
 
-## INHERITED FROM HelixConstitution/CLAUDE.md
+## INHERITED FROM constitution/CLAUDE.md
 
-All rules in `HelixConstitution/CLAUDE.md` (and the `HelixConstitution/Constitution.md`
+All rules in `constitution/CLAUDE.md` (and the `constitution/Constitution.md`
 it references) apply unconditionally. The project-specific rules below extend them.
 Rules below MUST NOT weaken any inherited clause.
 
