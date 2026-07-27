@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -147,27 +148,19 @@ func (cvs *CodeVerificationService) VerifyModelCodeVisibility(ctx context.Contex
 
 	// Analyze all responses
 	result.ResponseAnalysis = cvs.analyzeVerificationResponses(verificationResponses)
-	// RELAXED VERIFICATION: Allow models that respond at all, not just affirmative responses
-	result.CodeVisibility = result.ResponseAnalysis.ConfidenceScore > 0.3 // Lower threshold
+	// STRICT VERIFICATION: code visibility requires real confidence (> 0.5),
+	// which a bare affirmative without any code-specific content cannot reach.
+	// A model that merely responds — or parrots "Yes, I can see it" — does NOT
+	// demonstrate code visibility and must fail the gate.
+	result.CodeVisibility = result.ResponseAnalysis.ConfidenceScore > 0.5
 	result.AffirmativeConfirmation = result.ResponseAnalysis.ContainsAffirmative
-	// The 0.7 floor is a "reasonable minimum" ONLY for a model that actually
-	// demonstrated code visibility (CodeVisibility == true). Applying it
-	// unconditionally -- as the previous code did -- forced EVERY model,
-	// including one that denied seeing the code on every sample
-	// (ConfidenceScore == 0.0, CodeVisibility == false), up to a 0.7 score.
-	// That inflated score is persisted verbatim by
-	// CodeVerificationIntegration.storeVerificationResult into the
-	// database.VerificationResult's OverallScore/CodeQualityScore/
-	// CodeCapabilityScore (each VerificationScore*10) WITHOUT re-checking
-	// Status or CodeVisibility -- a code-blind, verification-FAILED model
-	// would be ranked/filtered/exported as a 7.0/10 model. Only float the
-	// score up to the floor once code visibility is actually established;
-	// a failed/blind model keeps its true (low) measured confidence.
-	if result.CodeVisibility {
-		result.VerificationScore = max(result.ResponseAnalysis.ConfidenceScore, 0.7) // Minimum 0.7 score for verified models
-	} else {
-		result.VerificationScore = result.ResponseAnalysis.ConfidenceScore
-	}
+	// Report the real computed score. There is intentionally NO score floor —
+	// not even a conditional one: flooring to 0.7 (in any form) makes every
+	// strict gate downstream of VerificationScore vacuous and certifies
+	// sub-threshold models as high-scoring. A code-blind, verification-failed
+	// model keeps its true (low) measured confidence; a visible model reports
+	// its real confidence, which a strict >= 0.7 gate can meaningfully check.
+	result.VerificationScore = result.ResponseAnalysis.ConfidenceScore
 
 	// Apply timeout penalty for slow responses
 	avgResponseTime := cvs.calculateAverageResponseTime(verificationResponses)
@@ -380,29 +373,48 @@ func (cvs *CodeVerificationService) makeVerificationRequest(ctx context.Context,
 	return apiResponse.Choices[0].Message.Content, nil
 }
 
+// affirmativePatterns / negativePatterns match whole words/phrases only (\b
+// word boundaries). Bare substring matching let the keyword "no" match inside
+// "not", "know", and "cannot", so affirmative answers containing those words
+// were misclassified as negative — and, conversely, a denial like "I cannot
+// see it" contains the substring "can see" only across the "cannot" boundary,
+// which word boundaries reject.
+var (
+	affirmativePatterns = compileKeywordPatterns([]string{"yes", "i can see", "i see", "visible", "can see"})
+	negativePatterns    = compileKeywordPatterns([]string{"no", "cannot see", "can't see", "not visible", "do not see"})
+)
+
+// compileKeywordPatterns wraps each keyword in \b word boundaries so matching
+// is whole-word/whole-phrase. regexp.QuoteMeta keeps multi-word phrases and
+// apostrophes literal.
+func compileKeywordPatterns(keywords []string) []*regexp.Regexp {
+	patterns := make([]*regexp.Regexp, 0, len(keywords))
+	for _, keyword := range keywords {
+		patterns = append(patterns, regexp.MustCompile(`\b`+regexp.QuoteMeta(keyword)+`\b`))
+	}
+	return patterns
+}
+
+// matchesAnyPattern reports whether any of the precompiled word-boundary
+// patterns matches the (already lower-cased) response.
+func matchesAnyPattern(responseLower string, patterns []*regexp.Regexp) bool {
+	for _, pattern := range patterns {
+		if pattern.MatchString(responseLower) {
+			return true
+		}
+	}
+	return false
+}
+
 // analyzeCodeResponse analyzes the model's response for code visibility confirmation
 func (cvs *CodeVerificationService) analyzeCodeResponse(response string, sample TestCodeSample) CodeResponseAnalysis {
 	responseLower := strings.ToLower(response)
 
-	// Check for affirmative responses
-	affirmativeKeywords := []string{"yes", "i can see", "i see", "visible", "can see"}
-	containsAffirmative := false
-	for _, keyword := range affirmativeKeywords {
-		if strings.Contains(responseLower, keyword) {
-			containsAffirmative = true
-			break
-		}
-	}
+	// Check for affirmative responses (whole-word/phrase matching)
+	containsAffirmative := matchesAnyPattern(responseLower, affirmativePatterns)
 
-	// Check for negative responses
-	negativeKeywords := []string{"no", "cannot see", "can't see", "not visible", "do not see"}
-	containsNegative := false
-	for _, keyword := range negativeKeywords {
-		if strings.Contains(responseLower, keyword) {
-			containsNegative = true
-			break
-		}
-	}
+	// Check for negative responses (whole-word/phrase matching)
+	containsNegative := matchesAnyPattern(responseLower, negativePatterns)
 
 	// Detect code references
 	codeReferences := cvs.extractCodeReferences(response, sample)
@@ -484,16 +496,20 @@ func (cvs *CodeVerificationService) calculateUnderstandingLevel(affirmative bool
 	return "none"
 }
 
-// calculateConfidenceScore calculates a confidence score for the verification
+// calculateConfidenceScore calculates a confidence score for the verification.
+// Weights are calibrated so a bare affirmative with zero code-specific content
+// ("Yes, I can see it") tops out at 0.4 — BELOW the 0.5 strict-verification
+// threshold. Reaching 0.5 requires actual evidence: code references and/or a
+// demonstrated understanding level.
 func (cvs *CodeVerificationService) calculateConfidenceScore(affirmative, negative bool, codeRefCount int, understandingLevel string) float64 {
 	score := 0.0
 
 	if affirmative {
-		score += 0.5
+		score += 0.3
 	}
 
 	if !negative {
-		score += 0.2
+		score += 0.1
 	}
 
 	// Add score based on code references

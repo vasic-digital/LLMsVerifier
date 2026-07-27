@@ -93,7 +93,7 @@ func TestGetModelEndpoint(t *testing.T) {
 	}{
 		{"openai", "gpt-4", "https://api.openai.com/v1/chat/completions"},
 		{"anthropic", "claude-3-opus", "https://api.anthropic.com/v1/messages"},
-		{"huggingface", "model-name", "https://api-inference.huggingface.co/models/model-name"},
+		{"huggingface", "model-name", "https://router.huggingface.co/v1/chat/completions"},
 		{"google", "gemini-pro", "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"},
 		{"cohere", "command", "https://api.cohere.com/v2/chat"},
 		{"openrouter", "gpt-4", "https://openrouter.ai/api/v1/chat/completions"},
@@ -122,7 +122,7 @@ func TestGetProviderEndpoint(t *testing.T) {
 	}{
 		{"openai", "https://api.openai.com/v1/models"},
 		{"anthropic", "https://api.anthropic.com/v1/models"},
-		{"huggingface", "https://api-inference.huggingface.co/models"},
+		{"huggingface", "https://router.huggingface.co/v1/models"},
 		{"google", "https://generativelanguage.googleapis.com/v1/models"},
 		{"cohere", "https://api.cohere.com/v2/models"},
 		{"openrouter", "https://openrouter.ai/api/v1/models"},

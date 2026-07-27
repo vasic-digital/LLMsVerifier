@@ -2786,7 +2786,7 @@ func getProviderEndpoint(provider string) string {
 		"perplexity":  "https://api.perplexity.ai",
 		"azure":       "https://your-resource.openai.azure.com",
 		"bedrock":     "https://bedrock.us-east-1.amazonaws.com",
-		"huggingface": "https://api-inference.huggingface.co",
+		"huggingface": "https://router.huggingface.co/v1",
 		"replicate":   "https://api.replicate.com/v1",
 		"chutes":      "https://api.chutes.ai/v1",
 		"siliconflow": "https://api.siliconflow.cn/v1",

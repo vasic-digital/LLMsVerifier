@@ -265,6 +265,176 @@ func TestCodeVerificationService_AnalyzeCodeResponse_Negative(t *testing.T) {
 	assert.True(t, analysis.ContainsNegative)
 }
 
+// TestCodeVerificationService_AnalyzeCodeResponse_WordBoundaries pins the
+// word-boundary keyword matching: the bare keyword "no" must NOT match inside
+// "know"/"not"/"now", and "can see" must NOT match across the "cannot"
+// boundary. Bare substring matching misclassified all of these.
+func TestCodeVerificationService_AnalyzeCodeResponse_WordBoundaries(t *testing.T) {
+	logger := createTestLogger()
+	httpClient := createTestHTTPClient()
+	cvs := NewCodeVerificationService(httpClient, logger)
+
+	sample := TestCodeSample{Code: "def test(): pass", Language: "python"}
+
+	tests := []struct {
+		name            string
+		response        string
+		wantAffirmative bool
+		wantNegative    bool
+	}{
+		{"plain affirmative", "Yes, I can see your code", true, false},
+		{"know is not no", "I know the answer", false, false},
+		{"now is not no", "Yes, I see it now", true, false},
+		{"note is not no", "Yes, I note the code", true, false},
+		{"cannot see is negative, not affirmative", "I cannot see it", false, true},
+		{"explicit no is negative", "No, I cannot see your code", false, true},
+		{"not visible is negative", "The code is not visible to me", true, true},
+		{"do not see is negative", "I do not see any code here", false, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			analysis := cvs.analyzeCodeResponse(tt.response, sample)
+			assert.Equal(t, tt.wantAffirmative, analysis.ContainsAffirmative,
+				"ContainsAffirmative for %q", tt.response)
+			assert.Equal(t, tt.wantNegative, analysis.ContainsNegative,
+				"ContainsNegative for %q", tt.response)
+		})
+	}
+}
+
+// TestCodeVerificationService_AnalyzeCodeResponse_BareAffirmativeBelowThreshold
+// pins the strict-verification calibration: a bare "Yes, I can see it" with
+// zero code-specific content must NOT reach the 0.5 confidence threshold on
+// its own — otherwise a bluffing model passes the gate by parroting the
+// requested confirmation phrase.
+func TestCodeVerificationService_AnalyzeCodeResponse_BareAffirmativeBelowThreshold(t *testing.T) {
+	logger := createTestLogger()
+	httpClient := createTestHTTPClient()
+	cvs := NewCodeVerificationService(httpClient, logger)
+
+	sample := TestCodeSample{Code: "def test(): pass", Language: "python"}
+
+	analysis := cvs.analyzeCodeResponse("Yes, I can see it.", sample)
+
+	assert.True(t, analysis.ContainsAffirmative)
+	assert.False(t, analysis.ContainsNegative)
+	assert.Empty(t, analysis.CodeReferences)
+	assert.Less(t, analysis.ConfidenceScore, 0.5,
+		"a bare affirmative with no code-specific content must stay below the 0.5 strict threshold")
+}
+
+// TestCodeVerificationService_AnalyzeCodeResponse_CodeSpecificContentAboveThreshold
+// pins the positive side of the calibration: an affirmative answer that
+// references code elements and the language crosses the 0.5 threshold.
+func TestCodeVerificationService_AnalyzeCodeResponse_CodeSpecificContentAboveThreshold(t *testing.T) {
+	logger := createTestLogger()
+	httpClient := createTestHTTPClient()
+	cvs := NewCodeVerificationService(httpClient, logger)
+
+	sample := TestCodeSample{Code: "def test(): pass", Language: "python"}
+
+	analysis := cvs.analyzeCodeResponse(
+		"Yes, I can see your Python code. It defines a function called test.", sample)
+
+	assert.True(t, analysis.ContainsAffirmative)
+	assert.False(t, analysis.ContainsNegative)
+	assert.NotEmpty(t, analysis.CodeReferences)
+	assert.Greater(t, analysis.ConfidenceScore, 0.5,
+		"an affirmative with code-specific content must cross the 0.5 strict threshold")
+}
+
+// TestCodeVerificationService_CalculateConfidenceScore_BareAffirmative pins the
+// weight calibration at the unit level: affirmative + not-negative alone = 0.4.
+func TestCodeVerificationService_CalculateConfidenceScore_BareAffirmative(t *testing.T) {
+	logger := createTestLogger()
+	httpClient := createTestHTTPClient()
+	cvs := NewCodeVerificationService(httpClient, logger)
+
+	score := cvs.calculateConfidenceScore(true, false, 0, "none")
+	assert.InDelta(t, 0.4, score, 1e-9,
+		"affirmative + not-negative with no code evidence must be exactly 0.4 (< 0.5 threshold)")
+}
+
+// TestCodeVerificationService_VerifyModelCodeVisibility_BareAffirmativeFails is
+// the end-to-end strict-gate test: a model that answers every sample with a
+// bare "Yes, I can see it." (zero code-specific content) must NOT be verified,
+// and the reported score must be the real computed score (no 0.7 floor).
+func TestCodeVerificationService_VerifyModelCodeVisibility_BareAffirmativeFails(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := map[string]interface{}{
+			"choices": []map[string]interface{}{
+				{
+					"message": map[string]string{
+						"content": "Yes, I can see it.",
+					},
+				},
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	logger := createTestLogger()
+	httpClient := createTestHTTPClient()
+	cvs := NewCodeVerificationService(httpClient, logger)
+
+	mockProvider := NewMockProviderClient(server.URL, "test-api-key", server.Client())
+
+	result, err := cvs.VerifyModelCodeVisibility(context.Background(), "bluff-model", "test-provider", mockProvider)
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.False(t, result.CodeVisibility,
+		"a bare affirmative with no code-specific content must not establish code visibility")
+	assert.Equal(t, "failed", result.Status,
+		"a model that only parrots the confirmation phrase must fail strict verification")
+	assert.Less(t, result.VerificationScore, 0.5,
+		"the real computed score must be reported (below the 0.5 threshold), with no floor")
+	assert.Equal(t, result.ResponseAnalysis.ConfidenceScore, result.VerificationScore,
+		"VerificationScore must equal the real ConfidenceScore (no hard score floor)")
+}
+
+// TestCodeVerificationService_VerifyModelCodeVisibility_RealScoreReported pins
+// the floor removal on the positive path: a genuinely confident model reports
+// its real computed score, which here is BELOW the old 0.7 hard floor — if the
+// floor still existed, VerificationScore would read 0.7 instead.
+func TestCodeVerificationService_VerifyModelCodeVisibility_RealScoreReported(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := map[string]interface{}{
+			"choices": []map[string]interface{}{
+				{
+					"message": map[string]string{
+						"content": "Yes, I can see your Python code. It defines a fibonacci function that uses recursion to calculate the nth Fibonacci number.",
+					},
+				},
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	logger := createTestLogger()
+	httpClient := createTestHTTPClient()
+	cvs := NewCodeVerificationService(httpClient, logger)
+
+	mockProvider := NewMockProviderClient(server.URL, "test-api-key", server.Client())
+
+	result, err := cvs.VerifyModelCodeVisibility(context.Background(), "test-model", "test-provider", mockProvider)
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, "verified", result.Status)
+	assert.True(t, result.CodeVisibility)
+	assert.Greater(t, result.VerificationScore, 0.5)
+	assert.Equal(t, result.ResponseAnalysis.ConfidenceScore, result.VerificationScore,
+		"VerificationScore must be the real computed score, not max(score, 0.7)")
+	assert.NotEqual(t, 0.7, result.VerificationScore,
+		"the old 0.7 hard floor must be gone")
+}
+
 func TestCodeVerificationService_DetectLanguageUnderstanding(t *testing.T) {
 	logger := createTestLogger()
 	httpClient := createTestHTTPClient()

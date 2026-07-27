@@ -1414,3 +1414,25 @@ validation.rule.model_performance_drift.desc:
   other: "Check for significant changes in model performance over time"
 validation.rule.provider_outage_pattern.desc:
   other: "Check for patterns indicating provider outages"
+
+# CONST-046 — selection package: credit-aware model-selection decision
+# reasons. Decision.ReasonID carries the stable message ID; Decision.Reason
+# carries the rendering under the active translator.
+llmsverifier_selection_reason_paid_credit_available:
+  other: "Credit is available; selected the strongest paid model."
+llmsverifier_selection_reason_free_credit_exhausted:
+  other: "Credit is exhausted; selected the strongest free model."
+llmsverifier_selection_reason_free_unknown_credit:
+  other: "Credit state is unknown; policy prefers free, so the strongest free model was selected."
+llmsverifier_selection_reason_paid_unknown_credit:
+  other: "Credit state is unknown; policy prefers paid, so the strongest paid model was selected."
+llmsverifier_selection_reason_fell_back_to_free:
+  other: "No paid candidate was available; fell back to the strongest free model."
+llmsverifier_selection_reason_fell_back_to_paid:
+  other: "No free candidate was available; fell back to a paid model as the policy allows."
+llmsverifier_selection_reason_no_candidates:
+  other: "No candidate models were supplied."
+llmsverifier_selection_reason_no_eligible_candidate:
+  other: "No candidate was eligible for the resolved branch under this policy."
+llmsverifier_selection_reason_unknown_credit_rejected:
+  other: "Credit state is unknown and the policy refuses to select without a determination."
