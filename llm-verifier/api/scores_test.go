@@ -100,14 +100,19 @@ func TestScoresHandler_EmptyDatabaseReportsNoScores(t *testing.T) {
 // TestScoresHandler_PublishesVerifiedModelsOnScaleOf100 proves the aggregate
 // and the unit conversion, both on real rows.
 //
-// overall_score is stored 0-10; the published contract is 0-100. A provider
-// with models scoring 7.0 and 9.0 must therefore publish 80, not 8.
+// overall_score is stored 0-1 (the verify endpoint persists the 0-1
+// VerificationScore verbatim); the published contract is 0-100. A provider
+// with models scoring 0.7 and 0.9 must therefore publish 80 — not 8 (the
+// under-report a 0-10 reading of the stored scale produces) and not 0.8.
+//
+// The values here are deliberately in the range the live verify path actually
+// writes: a real run against a local model stored 0.96 and must publish 96.
 func TestScoresHandler_PublishesVerifiedModelsOnScaleOf100(t *testing.T) {
 	s, db := newScoresTestServer(t)
 
 	id := seedProvider(t, db, "openrouter")
-	seedModel(t, db, id, "model-a", "verified", 7.0)
-	seedModel(t, db, id, "model-b", "verified", 9.0)
+	seedModel(t, db, id, "model-a", "verified", 0.7)
+	seedModel(t, db, id, "model-b", "verified", 0.9)
 
 	code, body := getScores(t, s)
 
@@ -120,10 +125,39 @@ func TestScoresHandler_PublishesVerifiedModelsOnScaleOf100(t *testing.T) {
 		t.Fatalf("provider openrouter missing from scores %v", body.Scores)
 	}
 	if got.Total != 80.0 {
-		t.Errorf("total = %v, want 80 (mean of 7.0 and 9.0 on a 0-10 scale, published on 0-100)", got.Total)
+		t.Errorf("total = %v, want 80 (mean of 0.7 and 0.9 stored on 0-1, published on 0-100)", got.Total)
 	}
 	if got.ModelCount != 2 {
 		t.Errorf("model_count = %d, want 2", got.ModelCount)
+	}
+}
+
+// TestScoresHandler_MatchesLiveVerifyPathScale pins the exact value observed
+// from a real verification run, so a future change to the stored scale cannot
+// silently shift what consumers receive.
+//
+// A live verify of a local model returned VerificationScore 0.96, which
+// api/handlers.go persists verbatim to models.overall_score. The published
+// score for that provider must be 96 — the value the consuming gateway ranks
+// against its own 0-100 table.
+func TestScoresHandler_MatchesLiveVerifyPathScale(t *testing.T) {
+	s, db := newScoresTestServer(t)
+
+	id := seedProvider(t, db, "llamacpp")
+	seedModel(t, db, id, "/models/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf", "verified", 0.96)
+
+	code, body := getScores(t, s)
+
+	if code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", code, http.StatusOK)
+	}
+	got, ok := body.Scores["llamacpp"]
+	if !ok {
+		t.Fatalf("provider llamacpp missing from scores %v", body.Scores)
+	}
+	if got.Total != 96.0 {
+		t.Errorf("total = %v, want 96: a stored VerificationScore of 0.96 must publish as 96 "+
+			"on the 0-100 consumer contract", got.Total)
 	}
 }
 
@@ -140,10 +174,10 @@ func TestScoresHandler_ExcludesUnverifiedAndOmitsUnscoredProviders(t *testing.T)
 	s, db := newScoresTestServer(t)
 
 	verified := seedProvider(t, db, "scored-provider")
-	seedModel(t, db, verified, "good", "verified", 8.0)
+	seedModel(t, db, verified, "good", "verified", 0.8)
 	// Same provider, but these must not drag the average: not verified.
-	seedModel(t, db, verified, "pending-model", "pending", 10.0)
-	seedModel(t, db, verified, "failed-model", "failed", 10.0)
+	seedModel(t, db, verified, "pending-model", "pending", 1.0)
+	seedModel(t, db, verified, "failed-model", "failed", 1.0)
 
 	// A provider whose only model was never verified must not appear at all.
 	unscored := seedProvider(t, db, "unmeasured-provider")

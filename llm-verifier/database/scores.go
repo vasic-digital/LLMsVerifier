@@ -7,12 +7,21 @@ type ProviderScore struct {
 	Provider string
 	// Total is the provider's aggregate score on a 0-100 scale.
 	//
-	// Scale note: models.overall_score is stored on a 0-10 scale (see
-	// verification/code_verification_integration.go, which computes it as
-	// VerificationScore * 10 from a 0-1 VerificationScore and divides by 10 to
-	// convert back). Consumers of the scoring API work on 0-100, so the value
-	// is normalised here, once, rather than leaving every caller to guess the
-	// unit.
+	// Scale note. models.overall_score is stored on a 0-1 scale: the verify
+	// endpoint (api/handlers.go, `model.OverallScore = score`) persists the
+	// VerificationScore returned by providers.ModelVerificationService
+	// verbatim, and that value is 0-1 (see its 0.0 / 0.3 / 0.5 thresholds).
+	// Consumers of the scoring API work on 0-100, so the value is normalised
+	// here, once, rather than leaving every caller to guess the unit.
+	//
+	// Do not confuse this with verification/code_verification_integration.go,
+	// which multiplies the same VerificationScore by 10 — that builds a
+	// separate code-capability record on a 0-10 scale (alongside
+	// ResponsivenessScore: 8.0 and friends) and never writes this column.
+	// Reading that path as authoritative for models.overall_score produces a
+	// silent 10x under-report, which is exactly what a first cut of this file
+	// did until a real verification run (score 0.96) showed 9.6 published
+	// where 96 was expected.
 	Total float64
 	// ModelCount is how many verified, scored models the average is drawn from.
 	// Exposed so a consumer can weigh a provider scored from one model
@@ -60,7 +69,7 @@ func (d *Database) ProviderScores() ([]ProviderScore, error) {
 		if err := rows.Scan(&s.Provider, &avg, &s.ModelCount); err != nil {
 			return nil, err
 		}
-		s.Total = avg * 10.0 // 0-10 (stored) -> 0-100 (published)
+		s.Total = avg * 100.0 // 0-1 (stored) -> 0-100 (published)
 		scores = append(scores, s)
 	}
 	if err := rows.Err(); err != nil {
