@@ -372,7 +372,7 @@ func TestAllProviders(t *testing.T) {
 		baseURL string
 	}{
 		{"openai", "OPENAI_API_KEY", "https://api.openai.com/v1"},
-		{"huggingface", "HUGGINGFACE_API_KEY", "https://api-inference.huggingface.co"},
+		{"huggingface", "HUGGINGFACE_API_KEY", "https://router.huggingface.co/v1"},
 		{"anthropic", "ANTHROPIC_API_KEY", "https://api.anthropic.com/v1"},
 		{"groq", "GROQ_API_KEY", "https://api.groq.com/openai/v1"},
 		{"deepseek", "DEEPSEEK_API_KEY", "https://api.deepseek.com/v1"},

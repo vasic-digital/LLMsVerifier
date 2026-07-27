@@ -7,6 +7,7 @@
   "chutes": {
     "models_endpoint": "https://llm.chutes.ai/v1/models",
     "chat_endpoint": "https://llm.chutes.ai/v1/chat/completions",
+    "vision_endpoint": "https://llm.chutes.ai/v1/chat/completions",
     "docs_url": "https://docs.chutes.ai/"
   },
   "siliconflow": {
@@ -113,5 +114,20 @@
     "models_endpoint": "https://api.vercel.ai/v1/models",
     "chat_endpoint": "https://api.vercel.ai/v1/chat/completions",
     "docs_url": "https://vercel.com/docs/ai"
+  },
+  "opencode": {
+    "models_endpoint": "https://opencode.ai/zen/v1/models",
+    "chat_endpoint": "https://opencode.ai/zen/v1/chat/completions",
+    "docs_url": "https://opencode.ai/docs/zen"
+  },
+  "opencode-go": {
+    "models_endpoint": "https://opencode.ai/zen/go/v1/models",
+    "chat_endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+    "docs_url": "https://opencode.ai/docs/go"
+  },
+  "hyper": {
+    "models_endpoint": "https://hyper.charm.land/v1/models",
+    "chat_endpoint": "https://hyper.charm.land/v1/chat/completions",
+    "docs_url": "https://hyper.charm.land/"
   }
 }

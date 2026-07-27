@@ -1,5 +1,14 @@
 package providers
 
+// Deprecated: RelaxedVerificationService is NOT used by any production code
+// path — only its own tests (relaxed_verification_test.go,
+// providers_extended_test.go) reference it. VerifyModelRelaxed marks every
+// model from a "reputable" provider (and even unknown providers) as verified
+// without making any API call, which is a verification bluff; the strict
+// CodeVerificationService path (verification/code_verification.go) is the real
+// gate. This file is retained only to keep those tests compiling — do not wire
+// it into new code.
+
 import (
 	"context"
 	"fmt"
