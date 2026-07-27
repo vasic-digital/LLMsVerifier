@@ -29,29 +29,34 @@ func NewServer(cfg *config.Config, db *database.Database) *Server {
 	}
 }
 
-// Router returns the HTTP router for testing purposes
-func (s *Server) Router() http.Handler {
+// routes builds the API mux.
+//
+// Single definition on purpose: Router() (used by tests) and Start() (used in
+// production) previously each declared their own copy of the route table, so a
+// route added to one silently did not exist in the other -- tests could pass
+// against endpoints the real server never served, and vice versa. Both now go
+// through here, so they cannot disagree.
+func (s *Server) routes() *http.ServeMux {
 	mux := http.NewServeMux()
 
-	// Register API endpoints
 	mux.HandleFunc("/api/health", s.HealthHandler)
 	mux.HandleFunc("/api/models", s.ListModelsHandler)
 	mux.HandleFunc("/api/models/", s.GetModelHandler)
 	mux.HandleFunc("/api/models/{id}/verify", s.VerifyModelHandler)
 	mux.HandleFunc("/api/providers", s.ProvidersHandler)
+	mux.HandleFunc("/api/scores", s.ScoresHandler)
 
 	return mux
 }
 
+// Router returns the HTTP router for testing purposes
+func (s *Server) Router() http.Handler {
+	return s.routes()
+}
+
 // Start starts the HTTP server on the specified port
 func (s *Server) Start(port string) error {
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/api/health", s.HealthHandler)
-	mux.HandleFunc("/api/models", s.ListModelsHandler)
-	mux.HandleFunc("/api/models/", s.GetModelHandler)
-	mux.HandleFunc("/api/models/{id}/verify", s.VerifyModelHandler)
-	mux.HandleFunc("/api/providers", s.ProvidersHandler)
+	mux := s.routes()
 
 	if port == "" {
 		port = "8080"
