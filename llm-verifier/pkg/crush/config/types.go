@@ -3,6 +3,8 @@ package crush_config
 import (
 	"encoding/json"
 	"os"
+
+	"digital.vasic.llmsverifier/pkg/helixendpoint"
 )
 
 // Config represents the complete Crush configuration structure matching the official schema
@@ -218,7 +220,12 @@ func SaveConfig(config *Config, path string) error {
 	return loader.SaveToFile(config, path)
 }
 
-// CreateDefaultConfig creates a default Crush configuration for HelixAgent
+// CreateDefaultConfig creates a default Crush configuration for HelixAgent.
+//
+// HXC-250: the provider base URL is RESOLVED from the consuming project's
+// injected endpoint (see package helixendpoint), never hardcoded here. Callers
+// holding an explicit endpoint should use CreateHelixAgentConfig, which
+// overrides the resolved default.
 func CreateDefaultConfig() *Config {
 	return &Config{
 		Schema: "https://charm.land/crush.json",
@@ -227,7 +234,7 @@ func CreateDefaultConfig() *Config {
 				ID:      "helixagent",
 				Name:    "HelixAgent",
 				Type:    "openai-compat",
-				BaseURL: "http://localhost:8100/v1",
+				BaseURL: helixendpoint.JoinPath(helixendpoint.DefaultBaseURL(), "v1"),
 				Models: []Model{
 					{
 						ID:                  "helixagent-debate",

@@ -177,6 +177,152 @@ branding:
   position: "final"  # Always appears as final suffix
 ```
 
+### HelixAgent Endpoint Configuration
+
+The configurations this project generates for CLI agents contain URLs pointing at a
+**HelixAgent** deployment — the MCP / ACP / LSP / embeddings / vision endpoints those
+agents call at runtime. LLMsVerifier is shared infrastructure and cannot know where
+your HelixAgent listens, so that endpoint is **injected by the consuming deployment**
+and never baked into this repository. Injection happens through environment variables
+resolved at generation time by `llm-verifier/pkg/helixendpoint`.
+
+| Variable | Expects | Example |
+|----------|---------|---------|
+| `HELIX_AGENT_BASE_URL` | A **complete base URL**, used verbatim (any trailing slash is trimmed). The only way to express a non-`http://` scheme, a path prefix, or any form this project should not try to reconstruct. | `https://agent.internal.example/helix` |
+| `HELIX_AGENT_HOST` | **Host only** — a hostname or IP literal, **never `host:port`**. IPv6 literals are given bare (`::1`) and bracketed automatically in emitted URLs. | `agent.internal.example` |
+| `HELIX_AGENT_PORT` | **Port only** — an integer in the 1–65535 range. | `7061` |
+
+Resolution order, highest precedence first:
+
+1. `HELIX_AGENT_BASE_URL` — used verbatim.
+2. `HELIX_AGENT_HOST` / `HELIX_AGENT_PORT` — composed into `http://host:port`.
+3. A documented loopback **placeholder**, `http://localhost:8100`.
+
+See `.env.example` at the repository root for a copy-ready, commented listing.
+
+#### Which variable reaches which generated artifact
+
+The three-step order above is the contract of `helixendpoint.DefaultBaseURL()`, and
+not every generator consumes that function. The two injection styles are therefore
+**not interchangeable**:
+
+| Generated artifact | Resolves through | Honours `HELIX_AGENT_BASE_URL` | Honours `HELIX_AGENT_HOST` / `_PORT` |
+|--------------------|------------------|--------------------------------|--------------------------------------|
+| Crush default provider `base_url` (`pkg/crush/config.CreateDefaultConfig`) | `DefaultBaseURL()` | **Yes** | Yes — as the step-2 fallback |
+| CLI-agent MCP servers, skills and extensions (`pkg/cliagents`) | `Host()` + `Port()` | **No** | **Yes** |
+
+**Set `HELIX_AGENT_HOST` + `HELIX_AGENT_PORT` if you want one injection to reach every
+generated artifact.** Reach for `HELIX_AGENT_BASE_URL` when you additionally need a
+scheme or path a host/port pair cannot express — and set the host/port pair alongside
+it, otherwise the CLI-agent configs keep pointing at the placeholder while the Crush
+provider follows your base URL. That mistake is not silent: resolving the endpoint
+with `HELIX_AGENT_BASE_URL` set and no usable `HELIX_AGENT_HOST` prints a warning to
+stderr (see **Diagnostics on stderr** below).
+
+#### What zero configuration actually produces
+
+With none of the three variables set, every generated endpoint resolves to
+`http://localhost:8100`. Two points deserve to be explicit:
+
+- **Behaviour is unchanged by the switch to injection.** The placeholder is
+  byte-identical to the literal that was previously hardcoded, so a deployment that
+  sets nothing generates exactly the configs it generated before.
+- **The placeholder is not a working HelixAgent endpoint.** It is a syntactically
+  valid last resort so a zero-configuration call still produces a parseable config —
+  not a claim about any deployment. On the reference deployment, `:8100` is served by
+  LLMsVerifier itself, which is exactly why configs built on the old hardcoded default
+  pointed clients at the wrong service. HelixAgent's own default port is `7061` at the
+  time of writing — its current default, not a contract, and deliberately not what
+  this project falls back to. **Inject your real endpoint rather than relying on the
+  placeholder.**
+
+#### Injection gotchas
+
+- **Host and port fall back independently.** Setting only `HELIX_AGENT_PORT` leaves
+  the host at `localhost`; setting only `HELIX_AGENT_HOST` leaves the port at `8100`.
+- **`HELIX_AGENT_HOST` must not carry a port.** `agent.internal.example:7061` is
+  rejected as malformed and the host falls back to `localhost` — a colon is accepted
+  only inside a genuine IPv6 literal. Rejecting beats re-interpreting, which would
+  emit a nonsense host into every generated config. Use `HELIX_AGENT_BASE_URL` when
+  you want host and port in one string. The rejection warns on stderr.
+- **A malformed port falls back while the host is still honoured.** A non-numeric or
+  out-of-range `HELIX_AGENT_PORT` with a valid host yields
+  `http://agent.internal.example:8100` and a stderr warning, not an error.
+- **IPv6 is handled for you.** A bare `::1` is bracketed (`http://[::1]:7061`) and a
+  zone ID is percent-encoded per RFC 6874 (`fe80::1%eth0` → `fe80::1%25eth0`).
+- **`HELIX_AGENT_BASE_URL` is not validated.** It is taken verbatim with trailing
+  slashes trimmed; a value consisting only of separators (`/`) is treated as unset.
+- **Host/port always compose an `http://` URL.** TLS requires `HELIX_AGENT_BASE_URL`.
+- **Nothing here loads a `.env` file.** The values are read from the *process*
+  environment when configs are generated, so export them in the generating shell or
+  supply them through your container / unit environment (`environment:` or `env_file:`
+  in Compose, `Environment=` in a systemd unit).
+- **Programmatic callers bypass the environment entirely.**
+  `cliagents.GeneratorConfig.HelixAgentHost` / `HelixAgentPort` and
+  `helixendpoint.BaseURL(host, port)` take an explicit endpoint; a caller already
+  holding a configured host/port should pass it directly and never consult the
+  fallbacks.
+
+#### Diagnostics on stderr
+
+Three of the fallbacks above are reached only when you *did* inject something and it
+could not be used. Each of those prints a warning to stderr:
+
+| Condition | The warning tells you |
+|-----------|-----------------------|
+| `HELIX_AGENT_HOST` is set but is not a usable host (typically a `host:port` value) | the rejected value, and that the placeholder host is used instead |
+| `HELIX_AGENT_PORT` is set but is not an integer in 1–65535 | the rejected value, and that the placeholder port is used instead |
+| `HELIX_AGENT_BASE_URL` is set while `HELIX_AGENT_HOST` does not resolve | that only the Crush provider `base_url` will follow it, while the CLI-agent URLs fall back to the placeholder |
+
+What that means in practice:
+
+- **They are warnings, not errors.** Generated output is byte-identical whether or
+  not one is printed, and zero-configuration generation keeps working. They exist
+  because a silent fallback is indistinguishable from a correct run — the third case
+  in particular leaves the CLI-agent artifacts on the placeholder, which is exactly
+  the failure this injection mechanism was introduced to remove.
+- **Leaving a variable unset is never warned about.** Zero configuration is a
+  supported mode; only a value you supplied and that was then rejected warns.
+- **Once per distinct message per process.** The endpoint is re-resolved once per
+  generated artifact, so warnings are de-duplicated — but by message, so a second,
+  different misconfiguration is still reported rather than hidden behind the first.
+- **The value of `HELIX_AGENT_BASE_URL` is never echoed**, because a URL can carry
+  userinfo; only the variable is named.
+- **Rejected host and port values are quoted only when they cannot carry a
+  credential.** You normally need to see the value to fix the typo, so it is quoted —
+  but a value reaches these warnings precisely *because* it is not the shape the
+  variable expects, and the likeliest wrong paste is the URL that belongs in
+  `HELIX_AGENT_BASE_URL`. A rejected value is therefore withheld, and printed as
+  `<value withheld: may carry credentials>`, when it contains `@`, `/` (so any
+  `://` URL), `?`, `#`, any percent-escape (a `%` followed by two hex digits, so an
+  encoded `%40`/`%3A` is caught at any encoding depth — `%25` is itself an escape),
+  or a `:` whose right-hand side is not a plain port number — i.e. anything shaped
+  like `user:pass@host`,
+  `https://…`, `?token=…`, or a bare `user:pass` pair. Ordinary mistakes such as
+  `agent.internal:7061` or `not-a-port` are still shown in full.
+  This matches on *structure*, not secrecy: an unstructured token pasted into
+  `HELIX_AGENT_PORT` (say `sk-live-abc123`) is indistinguishable from a mistyped
+  port and is still echoed. Keep secrets out of these two variables.
+
+The resolution rules — including every fallback and every warning above — are covered
+by unit tests:
+
+```bash
+cd llm-verifier && go test -count=1 ./pkg/helixendpoint/...
+```
+
+The split between the two injection styles is pinned in both directions (base URL
+reaches Crush; base URL does *not* reach the CLI-agent surfaces) by:
+
+```bash
+cd llm-verifier && go test -count=1 \
+  -run TestHXC250Extend_BaseURLReachesCrushButNotCLIAgents ./pkg/cliagents/
+```
+
+To confirm what a given injection produced, generate a configuration (see
+**Configuration Management** below) and inspect the `base_url` field of the provider
+entry and the `url` fields of the `helixagent-*` MCP servers in the generated file.
+
 ### Configuration Management
 
 The LLM Verifier includes tools for managing LLM configurations for different platforms:

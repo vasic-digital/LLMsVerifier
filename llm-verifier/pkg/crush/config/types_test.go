@@ -9,6 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"digital.vasic.llmsverifier/pkg/helixendpoint"
 )
 
 // ==================== Type Structure Tests ====================
@@ -829,19 +831,42 @@ func TestValidationResult_Structure(t *testing.T) {
 
 // ==================== CreateDefaultConfig Tests ====================
 
+// HXC-250 §11.4.120 reconciliation: the BaseURL assertion previously pinned the
+// hardcoded endpoint literal — the behaviour HXC-250 removes. It now asserts
+// the RESOLVED endpoint, with the env controlled explicitly so an injected
+// ambient environment cannot flip the verdict, plus a positive check that
+// injection actually reaches the provider config.
 func TestCreateDefaultConfig(t *testing.T) {
+	t.Setenv(helixendpoint.EnvBaseURL, "")
+	t.Setenv(helixendpoint.EnvHost, "")
+	t.Setenv(helixendpoint.EnvPort, "")
+
 	config := CreateDefaultConfig()
 
 	assert.Equal(t, "https://charm.land/crush.json", config.Schema)
 	assert.Contains(t, config.Providers, "helixagent")
 	assert.Equal(t, "openai-compat", config.Providers["helixagent"].Type)
-	assert.Equal(t, "http://localhost:8100/v1", config.Providers["helixagent"].BaseURL)
+	assert.Equal(t,
+		helixendpoint.JoinPath(helixendpoint.DefaultBaseURL(), "v1"),
+		config.Providers["helixagent"].BaseURL)
 	assert.Contains(t, config.Models, "default")
 	assert.Equal(t, "helixagent-debate", config.Models["default"].Model)
 	assert.Equal(t, "helixagent", config.Models["default"].Provider)
 	assert.NotNil(t, config.Tools)
 	assert.NotNil(t, config.Tools.LS)
 	assert.NotNil(t, config.Tools.Grep)
+}
+
+// TestCreateDefaultConfig_FollowsInjectedEndpoint is the positive half of the
+// §11.4.120 reconciliation: proving the provider config genuinely follows an
+// injected endpoint, so the reconciled assertion above cannot pass vacuously.
+func TestCreateDefaultConfig_FollowsInjectedEndpoint(t *testing.T) {
+	t.Setenv(helixendpoint.EnvBaseURL, "")
+	t.Setenv(helixendpoint.EnvHost, "agent.internal")
+	t.Setenv(helixendpoint.EnvPort, "7061")
+
+	config := CreateDefaultConfig()
+	assert.Equal(t, "http://agent.internal:7061/v1", config.Providers["helixagent"].BaseURL)
 }
 
 func TestCreateHelixAgentConfig(t *testing.T) {
