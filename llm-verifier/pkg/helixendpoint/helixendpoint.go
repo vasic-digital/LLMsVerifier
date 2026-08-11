@@ -394,8 +394,12 @@ func hostFallbackWarnings(rawHost string, baseURLSet bool) []string {
 	if trimmed := strings.TrimSpace(rawHost); trimmed != "" {
 		out = append(out, fmt.Sprintf(
 			"%s=%s is not a usable URL host, so the placeholder host %q is used instead. "+
+				"This variable takes a BARE host — no scheme, path, query, fragment, userinfo or port. "+
 				"A colon is accepted only inside a genuine IPv6 literal, so a \"host:port\" value is "+
-				"rejected rather than re-interpreted; use %s to inject host and port as one string.",
+				"rejected rather than re-interpreted, and a value carrying \"/\", \"?\", \"#\" or \"@\" is "+
+				"rejected for the same reason: appending the port after one of those puts it in the "+
+				"wrong URL component and the address silently points elsewhere. "+
+				"Use %s to inject host and port as one string.",
 			EnvHost, renderRejected(trimmed), DefaultHost, EnvBaseURL))
 	}
 
@@ -439,12 +443,20 @@ func portFallbackWarning(rawPort string) string {
 // Host returns the injected HelixAgent host, or DefaultHost when unset, blank,
 // or malformed.
 //
-// "Malformed" specifically includes the plausible operator mistake of putting
-// the port in the host variable (HELIX_AGENT_HOST="agent.internal:7061"): a
-// colon is only accepted in a genuine IPv6 literal. Rejecting rather than
-// re-interpreting keeps this from silently emitting a nonsense host into every
-// generated config, and matches Port's fallback-on-malformed-input philosophy.
-// A consumer that means "host and port together" has EnvBaseURL for that.
+// "Malformed" specifically includes the plausible operator mistake of pasting
+// something that is not a BARE host. Two shapes, one rule:
+//
+//   - the port in the host variable (HELIX_AGENT_HOST="agent.internal:7061") — a
+//     colon is only accepted in a genuine IPv6 literal;
+//   - a value carrying "/", "?", "#" or "@" (HXC-269) — a path, query, fragment
+//     or userinfo. Appending ":<port>" after any of those puts the port in the
+//     wrong URL component, so the address parses cleanly and points somewhere
+//     else entirely. See normalizeHost for the measured enumeration.
+//
+// Rejecting rather than re-interpreting keeps this from silently emitting a
+// nonsense host into every generated config, and matches Port's
+// fallback-on-malformed-input philosophy. A consumer that means "host and port
+// together" has EnvBaseURL for that.
 //
 // Every fallback taken here after the consumer injected SOMETHING warns once on
 // stderr; see the silent-fallback diagnostics block above.
@@ -479,6 +491,52 @@ func normalizeHost(host string) (string, bool) {
 		host = host[1 : len(host)-1]
 	}
 	if host == "" {
+		return "", false
+	}
+
+	// HXC-269: a host is a BARE host — never a URL fragment carrying a path,
+	// query, fragment or userinfo. Each of the four bytes below is an RFC 3986
+	// gen-delim that ENDS the host component, so appending ":<port>" after one of
+	// them puts the port in the wrong component entirely. MEASURED over the whole
+	// printable ASCII range against BaseURL + url.Parse: these four are the
+	// complete set of bytes that normalizeHost accepted while producing a URL that
+	// still PARSES and is therefore silently wrong —
+	//
+	//	"?"  "hx?yz" -> "http://hx?yz:7061"  host "hx", port EMPTY, query "yz:7061"
+	//	"#"  "hx#yz" -> "http://hx#yz:7061"  host "hx", port EMPTY, fragment "yz:7061"
+	//	"/"  "hx/yz" -> "http://hx/yz:7061"  host "hx", port EMPTY, path "/yz:7061"
+	//	"@"  "hx@yz" -> "http://hx@yz:7061"  host "yz" — the WRONG host — userinfo "hx"
+	//
+	// The first three lose the port; the fourth keeps it and redirects the host,
+	// which is worse. All four are silent: every standard parser accepts the
+	// result, so nothing downstream can notice.
+	//
+	// REJECT rather than strip or re-interpret, for three reasons. (1) Consistency:
+	// this function ALREADY rejects the sibling mistakes — a "host:port" value and a
+	// scheme-ful URL — rather than re-interpreting them, and Host's doc gives the
+	// reason ("keeps this from silently emitting a nonsense host into every
+	// generated config"); these four are the same mistake through a different byte.
+	// (2) Stripping would silently discard what the operator wrote, which is the
+	// very silent-misdirection class this rejection exists to end. (3) Preserving
+	// the extra components is not even expressible here: BaseURL returns
+	// "scheme://authority" and callers JoinPath onto it, so a preserved query would
+	// produce "http://h:7061?x" and then "http://h:7061?x/v1" — broken either way.
+	// A consumer that means host-and-port-together has EnvBaseURL, which the
+	// rejection message names.
+	//
+	// Rejecting also closes a credential leak this same acceptance opened, and that
+	// is not a side benefit but the sharper half of the defect: because the value
+	// was ACCEPTED, no diagnostic fired, so a "gw.example?token=<secret>" pasted
+	// into EnvHost was written VERBATIM into every generated artifact on disk.
+	// Rejected, it now reaches the host diagnostic, where renderRejected withholds
+	// it — all four bytes are clause-1 markers of mayCarryCredentials, so the
+	// rejection message announces the redaction instead of echoing the secret.
+	//
+	// Honest boundary (§11.4.6): this closes the SILENT class only. Eight further
+	// bytes (space, "[", "\\", "^", "`", "{", "|", "}") are still accepted here and
+	// make url.Parse FAIL — a loud, visible error rather than a wrong address, so a
+	// different defect class and deliberately out of scope; see the report.
+	if strings.ContainsAny(host, "/?#@") {
 		return "", false
 	}
 
@@ -550,6 +608,13 @@ func parsePort(raw string) (int, bool) {
 // fmt.Sprintf("http://%s:%d") produces. An already-bracketed host is left
 // alone. A blank host falls back to DefaultHost; a port outside the valid TCP
 // range falls back to DefaultPort.
+//
+// A host that is not a BARE host — one carrying a port, scheme, path, query,
+// fragment or userinfo — also falls back to DefaultHost rather than being
+// re-interpreted (HXC-269; see normalizeHost). That fallback is what guarantees
+// this function's contract: the returned port is ALWAYS the port argument, in
+// the authority component where a parser will find it, never displaced into a
+// query, fragment or path by a delimiter smuggled in through the host.
 func BaseURL(host string, port int) string {
 	normalized, ok := normalizeHost(host)
 	if !ok {

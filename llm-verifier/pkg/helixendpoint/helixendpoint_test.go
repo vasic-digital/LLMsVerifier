@@ -476,22 +476,37 @@ var credentialBearingValues = []struct {
 	// clause fires and the "@" alone stands between it and the terminal.
 	{"token-as-username authority, only marker is @", syntheticSecret + "@gw.example:7061", true},
 
-	// "/" — a bare path paste, no scheme and no authority-delimiter. normalizeHost
-	// ACCEPTS it (no colon, no zone marker), so the host path stays silent and only
-	// the port diagnostic can leak it; the assertion below pins that silence rather
-	// than skipping the case.
-	{"bare-path paste, only marker is /", "gw.example/" + syntheticSecret, false},
+	// The next three flipped from reachesHostWarning=false to true when HXC-269
+	// taught normalizeHost to reject "/", "?", "#" and "@" (§11.4.120 reconciliation
+	// — the fixtures below recorded a FACT about normalizeHost, and that fact
+	// changed). The comment at the false-branch assertion predicted this exactly:
+	// "if normalizeHost later starts rejecting this shape, the value would begin
+	// reaching stderr and this fails rather than quietly passing." It did, and it
+	// did — the three subtests failed on the change rather than passing silently.
+	//
+	// The flip is a STRENGTHENING, not a loosening, and this is the sharper half of
+	// HXC-269. While these shapes were ACCEPTED, no diagnostic fired at all, so the
+	// value was not merely un-redacted on stderr — it was written VERBATIM into
+	// every generated config artifact on disk (measured: DefaultMCPServers() emitted
+	// "http://gw.example?token=<secret>:8100/v1/mcp" for six MCP entries). Rejected,
+	// each now reaches the host diagnostic, where its clause-1 marker makes
+	// mayCarryCredentials withhold it. So each moved from "silently embedded in
+	// output files" to "withheld from the one message that mentions it".
+	//
+	// Each therefore now answers for its marker in BOTH diagnostics rather than the
+	// port one alone, which is a strictly larger claim than the fixture made before.
+
+	// "/" — a bare path paste, no scheme and no authority-delimiter.
+	{"bare-path paste, only marker is /", "gw.example/" + syntheticSecret, true},
 
 	// "#" — a fragment-carried token with the scheme stripped off. The scheme-ful
 	// sibling above ("fragment token") also carries "/" twice over, which is why it
-	// cannot prove this marker. Host-accepted for the same reason as the "/" case.
-	{"schemeless fragment token, only marker is #", "gw.example#access_token=" + syntheticSecret, false},
+	// cannot prove this marker.
+	{"schemeless fragment token, only marker is #", "gw.example#access_token=" + syntheticSecret, true},
 
 	// "?" — the fourth member, and the one that already had its isolating fixture
-	// before the block above was written. Accepted by normalizeHost (no colon, no
-	// zone marker), so the host path reports nothing at all — asserted below rather
-	// than skipped.
-	{"query-string token, no scheme", "gw.example?token=" + syntheticSecret, false},
+	// before the block above was written.
+	{"query-string token, no scheme", "gw.example?token=" + syntheticSecret, true},
 
 	// ---- One bound each: the four bounds of isLowerHexDigit's two ranges ----
 	//
@@ -616,6 +631,16 @@ func TestFallbackWarningsRedactCredentialBearingValues(t *testing.T) {
 				// honest: if normalizeHost later starts rejecting this shape, the
 				// value would begin reaching stderr and this fails rather than
 				// quietly passing.
+				//
+				// NO fixture currently takes this branch: HXC-269 taught
+				// normalizeHost to reject the last three that did ("/", "#", "?"),
+				// and the branch did exactly what the paragraph above promised —
+				// all three FAILED on the change rather than passing quietly. It is
+				// retained rather than deleted because it is the guard any FUTURE
+				// accepted-shape fixture needs, and because an accepted shape is
+				// precisely the case that leaks into generated files rather than
+				// onto stderr. Honest note so nobody reads it as covered: with the
+				// table as it stands this branch is unexercised.
 				if got != "" {
 					t.Fatalf("expected no host warning for an accepted value, got %q", got)
 				}
