@@ -30,6 +30,53 @@
 // Callers that already hold a configured host/port (for example a generator
 // config field populated by the consuming project) should pass it to BaseURL
 // directly and never consult the env fallbacks.
+//
+// # Second responsibility: host:port composition for FOREIGN services (HXC-268)
+//
+// Besides resolving the HelixAgent endpoint, this package owns the module's
+// host:port COMPOSITION rules, because they are the same rules wherever an
+// address is built: bracket an IPv6 literal per RFC 3986 §3.2.2, and do not
+// double-bracket one the caller already bracketed. Before HXC-268 those rules
+// were re-implemented per call site, which is wrong for every IPv6 host.
+//
+// The census is 31 sites across both modules of this repository — 24 routed
+// through this package by HXC-268, and 7 tracked for follow-up under HXC-280
+// (see below). It reached 31 only after four corrections (15 -> 26 -> 30 -> 31),
+// and the reason is worth recording, because it is a fact about SEARCHING rather
+// than about this package: each earlier count was taken by looking for the shape
+// the known sites used. The 31st was found only by sweeping IDIOM FAMILIES
+// deliberately — it composes its authority with "+=" and a local intToString
+// helper, so it is invisible to every fmt.Sprintf-shaped search, including the
+// ones that found the other thirty. A census of this defect class is only as
+// complete as the set of idioms it enumerates.
+//
+// The 7 deferred sites are NOT servable by either builder here: they carry
+// userinfo in the authority (an AMQP URI, Postgres and MySQL DSNs) or belong to
+// foreign services whose URL needs no placeholder fallback (a vector database, a
+// log-analysis collector, a stream processor). BaseURL substitutes a host and
+// DialAddress is not a URL, so both would be wrong; HXC-280 covers them with a
+// defaults-free builder. One of them (the AMQP URI) lives in the ROOT module,
+// but the deferral is about semantics, not reachability: importing this
+// package across the module seam is mechanically available (the root go.mod
+// already requires and replaces digital.vasic.llmsverifier, and other
+// root-module files already import its subpackages) — the reason neither
+// builder here serves it is that the AMQP URI needs userinfo (user:pass@) and
+// a trailing vhost path segment, and neither BaseURL nor DialAddress composes
+// either.
+//
+// Two builders, deliberately separate, because their fallback semantics differ
+// and confusing them is itself a defect:
+//
+//   - BaseURL — for the HelixAgent endpoint THIS package resolves. Applies the
+//     DefaultHost/DefaultPort placeholder fallback and RFC 6874 zone encoding.
+//   - DialAddress — for net.Dial-style addresses of services this package does
+//     NOT own (LDAP directories, SMTP relays). NO placeholder fallback, no zone
+//     encoding, no scheme; a bad host fails loudly at dial time rather than being
+//     silently redirected at the HelixAgent port.
+//
+// So this package is not "HelixAgent-only" — it is the module's single
+// address-composition chokepoint, and DialAddress lives here rather than beside
+// each dialer precisely so the bracketing rules cannot drift apart.
 package helixendpoint
 
 import (
@@ -477,19 +524,69 @@ func Host() string {
 	return DefaultHost
 }
 
+// unbracket trims surrounding whitespace and strips one layer of IPv6 literal
+// brackets, so "[::1]" becomes "::1".
+//
+// It exists because net.JoinHostPort brackets UNCONDITIONALLY whenever the host
+// contains a colon: handing it an already-bracketed literal emits "[[::1]]:389",
+// which net.SplitHostPort then rejects outright ("missing port in address") and
+// url.Parse reads as an invalid IP-literal. Both address builders in this package
+// end in JoinHostPort, so both need this trim, and it lives here — once — rather
+// than being restated at each of them (§11.4.74: one chokepoint, no parallel copy
+// that can drift out of agreement with the other).
+//
+// One layer only: "[[::1]]" is not a host an operator can mean, so a repeated
+// strip would be inventing an interpretation rather than accepting one.
+func unbracket(host string) string {
+	host = strings.TrimSpace(host)
+	if len(host) > 1 && host[0] == '[' && host[len(host)-1] == ']' {
+		host = host[1 : len(host)-1]
+	}
+	return host
+}
+
+// DialAddress builds a "host:port" address for net.Dial-style consumers
+// (net.Dial, smtp.SendMail, tls.Dial, ldap.Dial), bracketing an IPv6 literal per
+// RFC 3986 §3.2.2 so "fe80::1" + port 389 yields "[fe80::1]:389" and not the
+// unusable "fe80::1:389" that fmt.Sprintf("%s:%d") produces. An already-bracketed
+// host is left alone rather than double-bracketed.
+//
+// # Why this is NOT BaseURL
+//
+// Three deliberate differences, each of which would be a defect if borrowed from
+// the URL path:
+//
+//  1. NO placeholder fallback. BaseURL substitutes DefaultHost/DefaultPort for an
+//     unusable value, which is right for the HelixAgent endpoint this package
+//     resolves. A dial address belongs to a service this package does not own — an
+//     LDAP directory, an SMTP relay — so substituting the HelixAgent placeholder
+//     would silently redirect a mail or directory client to the placeholder HOST.
+//     Note what that does and does not mean: BaseURL falls back on host and port
+//     INDEPENDENTLY, and DefaultPort replaces only a port outside 1-65535, so the
+//     usual outcome is this service's OWN port on the WRONG machine — a connection
+//     that may well succeed against something else entirely, which is worse than
+//     one that fails. The host and port are passed through as given instead; a
+//     wrong one fails loudly at dial time, which is the correct outcome and the
+//     honest one (§11.4.6).
+//  2. NO RFC 6874 zone encoding. BaseURL percent-encodes a zone ID
+//     ("fe80::1%eth0" -> "fe80::1%25eth0") because a URL must stay parseable. The
+//     net package expects the zone RAW, so encoding it here would break exactly
+//     the addresses it was meant to preserve.
+//  3. NO scheme. The result is an authority, not a URL.
+//
+// What it DOES share with BaseURL is the bracketing rule and the unbracket trim
+// above — the two facts that were getting reimplemented per call site.
+func DialAddress(host string, port int) string {
+	return net.JoinHostPort(unbracket(host), strconv.Itoa(port))
+}
+
 // normalizeHost validates and canonicalises a host for URL construction.
 // It reports false when the input cannot be a valid URL host.
 //
 // Returned IPv6 hosts carry any zone ID percent-encoded per RFC 6874
 // ("fe80::1%eth0" -> "fe80::1%25eth0") so the resulting URL stays parseable.
 func normalizeHost(host string) (string, bool) {
-	host = strings.TrimSpace(host)
-
-	// An already-bracketed IPv6 literal is unwrapped: net.JoinHostPort brackets
-	// unconditionally, so passing it through would emit "[[::1]]".
-	if len(host) > 1 && host[0] == '[' && host[len(host)-1] == ']' {
-		host = host[1 : len(host)-1]
-	}
+	host = unbracket(host)
 	if host == "" {
 		return "", false
 	}

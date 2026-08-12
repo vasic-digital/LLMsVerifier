@@ -1,6 +1,6 @@
 package cliagents
 
-import "fmt"
+import "digital.vasic.llmsverifier/pkg/helixendpoint"
 
 // FormatterPreferences defines preferred formatters per language
 type FormatterPreferences map[string]string
@@ -65,8 +65,9 @@ func DefaultFormattersConfig(helixAgentHost string, helixAgentPort int) Formatte
 		DefaultLineLength: 88,
 		DefaultIndentSize: 4,
 		UseTabs:           false,
-		ServiceURL:        fmt.Sprintf("http://%s:%d/v1/format", helixAgentHost, helixAgentPort),
-		Timeout:           30,
+		ServiceURL: helixendpoint.JoinPath(
+			helixendpoint.BaseURL(helixAgentHost, helixAgentPort), "v1/format"),
+		Timeout: 30,
 		Preferences: FormatterPreferences{
 			"python":     "ruff",  // 30x faster than black
 			"javascript": "biome", // 35x faster than prettier

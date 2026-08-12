@@ -5,6 +5,8 @@ import (
 	"net/smtp"
 	"strings"
 	"time"
+
+	"digital.vasic.llmsverifier/pkg/helixendpoint"
 )
 
 // EmailNotifier handles email notifications
@@ -48,6 +50,22 @@ func (en *EmailNotifier) SendNotification(event *Event) error {
 	return en.sendEmail(subject, body)
 }
 
+// dialAddress returns the "host:port" this notifier hands to smtp.SendMail.
+//
+// HXC-268: composed through helixendpoint.DialAddress rather than
+// fmt.Sprintf("%s:%d") so an IPv6 literal is bracketed per RFC 3986 §3.2.2 —
+// unbracketed, "::1" + ":587" concatenates to "::1:587", which is not the address
+// that was configured.
+//
+// DialAddress, not BaseURL: this value is handed to smtp.SendMail and is never
+// URL-parsed, so it must carry no scheme, no RFC 6874 zone encoding, and — above
+// all — no HelixAgent placeholder fallback, which would silently redirect the
+// mail client to the placeholder HOST while keeping this relay's own port, so it
+// would dial the wrong machine instead of failing on a bad host.
+func (en *EmailNotifier) dialAddress() string {
+	return helixendpoint.DialAddress(en.smtpServer, en.smtpPort)
+}
+
 // sendEmail sends the actual email
 func (en *EmailNotifier) sendEmail(subject, body string) error {
 	// Construct the email message
@@ -61,7 +79,7 @@ func (en *EmailNotifier) sendEmail(subject, body string) error {
 	auth := smtp.PlainAuth("", en.username, en.password, en.smtpServer)
 
 	// Send the email
-	addr := fmt.Sprintf("%s:%d", en.smtpServer, en.smtpPort)
+	addr := en.dialAddress()
 	err := smtp.SendMail(addr, auth, en.fromAddress, en.toAddresses, []byte(message))
 	if err != nil {
 		return fmt.Errorf("failed to send email: %w", err)

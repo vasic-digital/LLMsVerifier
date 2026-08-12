@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"digital.vasic.llmsverifier/pkg/helixendpoint"
 )
 
 // HelixCodeConfig represents the configuration for HelixCode CLI
@@ -163,7 +165,8 @@ func (g *HelixCodeGenerator) Generate(ctx context.Context, config *GeneratorConf
 	}
 
 	// Configure provider
-	baseURL := fmt.Sprintf("http://%s:%d/v1", config.HelixAgentHost, config.HelixAgentPort)
+	baseURL := helixendpoint.JoinPath(
+		helixendpoint.BaseURL(config.HelixAgentHost, config.HelixAgentPort), "v1")
 	// Use real API key from environment for installed configs
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {

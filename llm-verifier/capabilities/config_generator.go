@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"digital.vasic.llmsverifier/pkg/helixendpoint"
 )
 
 // ConfigGenerator generates optimized CLI agent configurations
@@ -100,7 +102,7 @@ func (cg *ConfigGenerator) GenerateForAgent(agentName string, providerCaps *Prov
 
 // generateOpenCodeConfig generates configuration for OpenCode CLI
 func (cg *ConfigGenerator) generateOpenCodeConfig(config *GeneratedConfig, agent *CLIAgentCapabilities, provider *ProviderCapabilities) {
-	baseURL := fmt.Sprintf("http://%s:%d", cg.baseHost, cg.basePort)
+	baseURL := helixendpoint.BaseURL(cg.baseHost, cg.basePort)
 
 	content := map[string]interface{}{
 		"$schema": "https://opencode.ai/config.json",
@@ -149,7 +151,7 @@ func (cg *ConfigGenerator) generateOpenCodeConfig(config *GeneratedConfig, agent
 // generateClaudeCodeConfig generates configuration for Claude Code CLI
 func (cg *ConfigGenerator) generateClaudeCodeConfig(config *GeneratedConfig, agent *CLIAgentCapabilities, provider *ProviderCapabilities) {
 	content := map[string]interface{}{
-		"apiEndpoint": fmt.Sprintf("http://%s:%d/v1/messages", cg.baseHost, cg.basePort),
+		"apiEndpoint": helixendpoint.JoinPath(helixendpoint.BaseURL(cg.baseHost, cg.basePort), "v1/messages"),
 		"model":       "helixagent-debate",
 	}
 
@@ -182,7 +184,7 @@ func (cg *ConfigGenerator) generateClaudeCodeConfig(config *GeneratedConfig, age
 
 // generateKiloCodeConfig generates configuration for KiloCode
 func (cg *ConfigGenerator) generateKiloCodeConfig(config *GeneratedConfig, agent *CLIAgentCapabilities, provider *ProviderCapabilities) {
-	baseURL := fmt.Sprintf("http://%s:%d", cg.baseHost, cg.basePort)
+	baseURL := helixendpoint.BaseURL(cg.baseHost, cg.basePort)
 
 	content := map[string]interface{}{
 		"provider": map[string]interface{}{
@@ -231,7 +233,7 @@ func (cg *ConfigGenerator) generateKiloCodeConfig(config *GeneratedConfig, agent
 
 // generateClineConfig generates configuration for Cline
 func (cg *ConfigGenerator) generateClineConfig(config *GeneratedConfig, agent *CLIAgentCapabilities, provider *ProviderCapabilities) {
-	baseURL := fmt.Sprintf("http://%s:%d", cg.baseHost, cg.basePort)
+	baseURL := helixendpoint.BaseURL(cg.baseHost, cg.basePort)
 
 	content := map[string]interface{}{
 		"apiProvider": "openai-compatible",
@@ -286,7 +288,7 @@ func (cg *ConfigGenerator) generateClineConfig(config *GeneratedConfig, agent *C
 
 // generateCrushConfig generates configuration for Crush CLI
 func (cg *ConfigGenerator) generateCrushConfig(config *GeneratedConfig, agent *CLIAgentCapabilities, provider *ProviderCapabilities) {
-	baseURL := fmt.Sprintf("http://%s:%d", cg.baseHost, cg.basePort)
+	baseURL := helixendpoint.BaseURL(cg.baseHost, cg.basePort)
 
 	content := map[string]interface{}{
 		"provider": map[string]interface{}{
@@ -305,7 +307,7 @@ func (cg *ConfigGenerator) generateCrushConfig(config *GeneratedConfig, agent *C
 
 // generateHelixCodeConfig generates configuration for HelixCode CLI
 func (cg *ConfigGenerator) generateHelixCodeConfig(config *GeneratedConfig, agent *CLIAgentCapabilities, provider *ProviderCapabilities) {
-	baseURL := fmt.Sprintf("http://%s:%d", cg.baseHost, cg.basePort)
+	baseURL := helixendpoint.BaseURL(cg.baseHost, cg.basePort)
 
 	content := map[string]interface{}{
 		"helixagent": map[string]interface{}{
@@ -367,7 +369,7 @@ func (cg *ConfigGenerator) generateHelixCodeConfig(config *GeneratedConfig, agen
 
 // generateAiderConfig generates configuration for Aider
 func (cg *ConfigGenerator) generateAiderConfig(config *GeneratedConfig, agent *CLIAgentCapabilities, provider *ProviderCapabilities) {
-	baseURL := fmt.Sprintf("http://%s:%d/v1", cg.baseHost, cg.basePort)
+	baseURL := helixendpoint.JoinPath(helixendpoint.BaseURL(cg.baseHost, cg.basePort), "v1")
 
 	// Aider uses YAML format
 	content := map[string]interface{}{
@@ -400,7 +402,7 @@ func (cg *ConfigGenerator) generateAiderConfig(config *GeneratedConfig, agent *C
 
 // generatePlandexConfig generates configuration for Plandex
 func (cg *ConfigGenerator) generatePlandexConfig(config *GeneratedConfig, agent *CLIAgentCapabilities, provider *ProviderCapabilities) {
-	baseURL := fmt.Sprintf("http://%s:%d/v1", cg.baseHost, cg.basePort)
+	baseURL := helixendpoint.JoinPath(helixendpoint.BaseURL(cg.baseHost, cg.basePort), "v1")
 
 	content := map[string]interface{}{
 		"baseUrl": baseURL,
@@ -456,7 +458,7 @@ func (cg *ConfigGenerator) generatePlandexConfig(config *GeneratedConfig, agent 
 func (cg *ConfigGenerator) generateKiroConfig(config *GeneratedConfig, agent *CLIAgentCapabilities, provider *ProviderCapabilities) {
 	content := map[string]interface{}{
 		"ai_provider":         "opencode",
-		"helixagent_endpoint": fmt.Sprintf("http://%s:%d/v1", cg.baseHost, cg.basePort),
+		"helixagent_endpoint": helixendpoint.JoinPath(helixendpoint.BaseURL(cg.baseHost, cg.basePort), "v1"),
 	}
 
 	// Enable plan/act modes (3-phase methodology)
@@ -476,7 +478,7 @@ func (cg *ConfigGenerator) generateKiroConfig(config *GeneratedConfig, agent *CL
 
 // generateForgeConfig generates configuration for Forge
 func (cg *ConfigGenerator) generateForgeConfig(config *GeneratedConfig, agent *CLIAgentCapabilities, provider *ProviderCapabilities) {
-	baseURL := fmt.Sprintf("http://%s:%d/v1", cg.baseHost, cg.basePort)
+	baseURL := helixendpoint.JoinPath(helixendpoint.BaseURL(cg.baseHost, cg.basePort), "v1")
 
 	content := map[string]interface{}{
 		"provider": map[string]interface{}{
@@ -510,7 +512,7 @@ func (cg *ConfigGenerator) generateForgeConfig(config *GeneratedConfig, agent *C
 
 // generateAmazonQConfig generates configuration for Amazon Q
 func (cg *ConfigGenerator) generateAmazonQConfig(config *GeneratedConfig, agent *CLIAgentCapabilities, provider *ProviderCapabilities) {
-	baseURL := fmt.Sprintf("http://%s:%d/v1", cg.baseHost, cg.basePort)
+	baseURL := helixendpoint.JoinPath(helixendpoint.BaseURL(cg.baseHost, cg.basePort), "v1")
 
 	content := map[string]interface{}{
 		"endpoint": baseURL,
@@ -554,7 +556,7 @@ func (cg *ConfigGenerator) generateAmazonQConfig(config *GeneratedConfig, agent 
 func (cg *ConfigGenerator) generateOllamaCodeConfig(config *GeneratedConfig, agent *CLIAgentCapabilities, provider *ProviderCapabilities) {
 	content := map[string]interface{}{
 		"ollama": map[string]interface{}{
-			"baseUrl": fmt.Sprintf("http://%s:%d/v1", cg.baseHost, cg.basePort),
+			"baseUrl": helixendpoint.JoinPath(helixendpoint.BaseURL(cg.baseHost, cg.basePort), "v1"),
 			"model":   "helixagent-debate",
 		},
 		"streaming": map[string]interface{}{
@@ -602,7 +604,7 @@ func (cg *ConfigGenerator) generateGeminiCLIConfig(config *GeneratedConfig, agen
 	content := map[string]interface{}{
 		"provider": map[string]interface{}{
 			"type":    "openai-compatible",
-			"baseUrl": fmt.Sprintf("http://%s:%d/v1", cg.baseHost, cg.basePort),
+			"baseUrl": helixendpoint.JoinPath(helixendpoint.BaseURL(cg.baseHost, cg.basePort), "v1"),
 			"model":   "helixagent-debate",
 		},
 		"streaming": map[string]interface{}{
@@ -636,7 +638,7 @@ func (cg *ConfigGenerator) generateGeminiCLIConfig(config *GeneratedConfig, agen
 // generateQwenCodeConfig generates configuration for Qwen Code
 func (cg *ConfigGenerator) generateQwenCodeConfig(config *GeneratedConfig, agent *CLIAgentCapabilities, provider *ProviderCapabilities) {
 	content := map[string]interface{}{
-		"endpoint": fmt.Sprintf("http://%s:%d/v1", cg.baseHost, cg.basePort),
+		"endpoint": helixendpoint.JoinPath(helixendpoint.BaseURL(cg.baseHost, cg.basePort), "v1"),
 		"model":    "helixagent-debate",
 		"streaming": map[string]interface{}{
 			"enabled": agent.Streaming.Supported,
@@ -709,7 +711,7 @@ func (cg *ConfigGenerator) generateDeepSeekCLIConfig(config *GeneratedConfig, ag
 
 // generateGenericConfig generates a generic configuration
 func (cg *ConfigGenerator) generateGenericConfig(config *GeneratedConfig, agent *CLIAgentCapabilities, provider *ProviderCapabilities) {
-	baseURL := fmt.Sprintf("http://%s:%d/v1", cg.baseHost, cg.basePort)
+	baseURL := helixendpoint.JoinPath(helixendpoint.BaseURL(cg.baseHost, cg.basePort), "v1")
 
 	content := map[string]interface{}{
 		"endpoint": baseURL,
