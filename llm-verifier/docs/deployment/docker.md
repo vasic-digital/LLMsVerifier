@@ -155,6 +155,20 @@ services:
       - llm-verifier
 ```
 
+**Trusted-proxy allowlist required for this topology.** Putting nginx (or any
+reverse proxy) in front of `llm-verifier` means the application only ever sees
+nginx's own peer address unless you explicitly configure
+`LLM_VERIFIER_TRUSTED_PROXIES` to nginx's address/CIDR on this docker network
+(by default, this compose stack's bridge network — check the `subnet:` your
+`docker-compose.prod.yml` declares under `llm-verifier-network`, or run
+`docker network inspect llm-verifier-network` to confirm it). Without that
+variable set, `X-Forwarded-For` / `X-Real-IP` are ignored entirely (safe
+default), which means every user behind this nginx shares one rate-limit
+bucket and one audit-log identity — under real traffic that reads as every
+legitimate user getting `429 Too Many Requests`. See "Trusted Proxies
+(X-Forwarded-For / X-Real-IP)" in `../ENVIRONMENT_VARIABLES.md` for the full
+rationale and per-topology example values.
+
 ## Monitoring and Logging
 
 ### Prometheus Metrics

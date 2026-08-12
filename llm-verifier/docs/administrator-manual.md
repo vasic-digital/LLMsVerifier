@@ -531,6 +531,15 @@ server {
 }
 ```
 
+> **Also set `LLM_VERIFIER_TRUSTED_PROXIES`.** The `X-Real-IP` header this nginx
+> config sends is ignored by `llm-verifier` by default (safe default, no
+> forwarding header trusted) until you explicitly configure
+> `LLM_VERIFIER_TRUSTED_PROXIES` to this nginx instance's own address/CIDR —
+> without it, every user behind this load balancer is treated as one caller for
+> rate-limiting purposes, which under real traffic surfaces as `429 Too Many
+> Requests` for every legitimate user. See "Trusted Proxies (X-Forwarded-For /
+> X-Real-IP)" in `ENVIRONMENT_VARIABLES.md`.
+
 ### Database Clustering
 
 ```bash
