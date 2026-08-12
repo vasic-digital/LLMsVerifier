@@ -536,22 +536,78 @@ func TestExtractIPAddress(t *testing.T) {
 	assert.Equal(t, "192.168.1.1", ip)
 }
 
-func TestExtractIPAddressXForwardedFor(t *testing.T) {
+// TestExtractIPAddressXForwardedForUntrustedPeerIgnored — HXC-299 §11.4.120
+// reconciliation. This test previously asserted extractIPAddress trusted
+// X-Forwarded-For VERBATIM from any peer (the pre-fix defect 2). That
+// assertion described a security defect, not a feature — post-fix, with no
+// trusted-proxy allowlist configured (the default), the header MUST be
+// ignored and the caller's own RemoteAddr used instead. See
+// TestExtractIPAddressXForwardedForTrustedPeerHonoured immediately below for
+// the companion case proving the header IS honoured once the peer is
+// explicitly trusted — this reconciliation narrows WHEN the header is
+// trusted, it does not remove X-Forwarded-For support outright.
+func TestExtractIPAddressXForwardedForUntrustedPeerIgnored(t *testing.T) {
+	t.Setenv(securityClientIPTrustedProxiesEnvVar, "")
+
 	req := httptest.NewRequest("GET", "/", nil)
 	req.RemoteAddr = "192.168.1.1:8080"
 	req.Header.Set("X-Forwarded-For", "203.0.113.195, 192.0.2.1")
 
 	ip := extractIPAddress(req)
-	assert.Equal(t, "203.0.113.195", ip)
+	assert.Equal(t, "192.168.1.1", ip,
+		"an untrusted peer's X-Forwarded-For must be ignored by default; the real peer identity must be used")
 }
 
-func TestExtractIPAddressXRealIP(t *testing.T) {
+// TestExtractIPAddressXForwardedForTrustedPeerHonoured is the companion to
+// the reconciled test above: once the immediate peer IS on the
+// operator-configured trusted-proxy allowlist, X-Forwarded-For is honoured
+// — walking the chain RIGHT TO LEFT (the HXC-292 F1 fix, mirrored) and
+// returning the first entry that is not itself trusted.
+func TestExtractIPAddressXForwardedForTrustedPeerHonoured(t *testing.T) {
+	t.Setenv(securityClientIPTrustedProxiesEnvVar, "192.168.1.1")
+
+	req := httptest.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.168.1.1:8080"
+	req.Header.Set("X-Forwarded-For", "203.0.113.195, 192.0.2.1")
+
+	ip := extractIPAddress(req)
+	assert.Equal(t, "192.0.2.1", ip,
+		"a trusted peer's X-Forwarded-For must be honoured, walking right-to-left: the rightmost entry "+
+			"(192.0.2.1) is not itself trusted, so it wins immediately without consulting the leftmost entry")
+}
+
+// TestExtractIPAddressXRealIPUntrustedPeerIgnored — HXC-299 §11.4.120
+// reconciliation. This test previously asserted extractIPAddress trusted
+// X-Real-IP VERBATIM from any peer (part of the pre-fix defect 2). Post-fix,
+// with no trusted-proxy allowlist configured (the default), the header MUST
+// be ignored and the caller's own RemoteAddr used instead. See
+// TestExtractIPAddressXRealIPTrustedPeerHonoured immediately below for the
+// companion case proving the header IS honoured once the peer is explicitly
+// trusted.
+func TestExtractIPAddressXRealIPUntrustedPeerIgnored(t *testing.T) {
+	t.Setenv(securityClientIPTrustedProxiesEnvVar, "")
+
 	req := httptest.NewRequest("GET", "/", nil)
 	req.RemoteAddr = "192.168.1.1:8080"
 	req.Header.Set("X-Real-IP", "198.51.100.42")
 
 	ip := extractIPAddress(req)
-	assert.Equal(t, "198.51.100.42", ip)
+	assert.Equal(t, "192.168.1.1", ip,
+		"an untrusted peer's X-Real-IP must be ignored by default; the real peer identity must be used")
+}
+
+// TestExtractIPAddressXRealIPTrustedPeerHonoured is the companion to the
+// reconciled test above: once the immediate peer IS on the
+// operator-configured trusted-proxy allowlist, X-Real-IP is honoured.
+func TestExtractIPAddressXRealIPTrustedPeerHonoured(t *testing.T) {
+	t.Setenv(securityClientIPTrustedProxiesEnvVar, "192.168.1.1")
+
+	req := httptest.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.168.1.1:8080"
+	req.Header.Set("X-Real-IP", "198.51.100.42")
+
+	ip := extractIPAddress(req)
+	assert.Equal(t, "198.51.100.42", ip, "a trusted peer's X-Real-IP must be honoured")
 }
 
 func TestSanitizeHeaders(t *testing.T) {
