@@ -496,20 +496,25 @@ func extractResourceID(path string) string {
 // bracketed): here, distinct real callers became genuinely
 // indistinguishable to this function's one consumer, AuditTrail.LogRequest
 // — an audit-compliance log record that is supposed to attribute each
-// request to its own caller. Fixed by resolveClientIP /
-// normalizeRemoteAddr (client_ip_trust.go), which use net.SplitHostPort —
-// never a hand-rolled split.
+// request to its own caller. Fixed via resolveClientIP (client_ip_trust.go
+// — post-HXC-298-extraction, that function delegates to clientip.Resolve,
+// whose internal normalizeRemoteAddr step uses net.SplitHostPort — never a
+// hand-rolled split; see clientip/clientip.go's package doc comment for
+// the full extraction rationale, and client_ip_trust.go's own top-of-file
+// comment for why this file no longer contains its own copy of the
+// algorithm).
 //
 // Defect 2 (unconditional forwarding-header trust): X-Forwarded-For and
 // X-Real-IP were honoured verbatim with NO permitted-intermediary list —
 // and, unlike HXC-292's pre-fix state, this function did not even select
 // consistently: it always took the leftmost X-Forwarded-For entry,
-// unconditionally trusting whatever a caller claimed. Fixed by gating both
-// headers on isTrustedProxyPeer (client_ip_trust.go), which trusts nothing
-// unless the immediate TCP peer is on the operator-configured
-// LLM_VERIFIER_TRUSTED_PROXIES allowlist (default: empty, deny), and by
-// resolveForwardedFor, which walks a trusted X-Forwarded-For chain RIGHT TO
-// LEFT (the HXC-292 F1 fix, mirrored here already-corrected) rather than
+// unconditionally trusting whatever a caller claimed. Fixed via
+// resolveClientIP, which now gates both headers on clientip.Resolve's
+// internal peer-trust check, trusting nothing unless the immediate TCP
+// peer is on the operator-configured LLM_VERIFIER_TRUSTED_PROXIES
+// allowlist (default: empty, deny), and walks a trusted X-Forwarded-For
+// chain RIGHT TO LEFT via clientip.Resolve's internal resolveForwardedFor
+// step (the HXC-292 F1 fix, inherited here already-corrected) rather than
 // taking the leftmost — attacker-forgeable — entry.
 //
 // # Consumer census (why this matters in practice)
@@ -529,13 +534,18 @@ func extractResourceID(path string) string {
 // time, and it must be correct when that happens rather than silently
 // forging or collapsing caller identities the moment it is.
 //
-// # Reuse-vs-mirror
+// # Reuse-vs-mirror-vs-extract
 //
-// See client_ip_trust.go's top-of-file doc comment for why this fix
-// mirrors HXC-292's corrected algorithm rather than importing it: the
-// sibling's functions are unexported, and even if they were not, importing
-// from this lower-level security package into the higher-level api package
-// would invert this codebase's normal dependency direction.
+// This fix originally MIRRORED HXC-292's corrected algorithm (api's
+// functions were unexported, and importing from this lower-level security
+// package into the higher-level api package would have inverted this
+// codebase's normal dependency direction — api/ was frozen for that fix's
+// scope). HXC-298 later extracted the algorithm out of both mirrors into
+// the new digital.vasic.llmsverifier/clientip package, so this file's
+// resolveClientIP now DELEGATES rather than mirrors. See
+// client_ip_trust.go's top-of-file doc comment and
+// clientip/clientip.go's package doc comment for the full extraction
+// rationale.
 func extractIPAddress(r *http.Request) string {
 	return resolveClientIP(r)
 }

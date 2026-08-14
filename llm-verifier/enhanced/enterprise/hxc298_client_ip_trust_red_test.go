@@ -1,4 +1,4 @@
-package security
+package enterprise
 
 import (
 	"fmt"
@@ -7,56 +7,98 @@ import (
 	"os"
 	"sync"
 	"testing"
+
+	"digital.vasic.llmsverifier/clientip"
 )
 
-// securityClientIPTrustedProxiesEnvVar is defined in client_ip_trust.go
-// (the production fix). RED-capture evidence for this test (RED_MODE=1,
-// proving both defects on the pre-fix artifact) was captured BEFORE that
-// file existed, using a temporary local placeholder of the same name/value
-// — see docs/qa evidence for this ticket for the captured pre-fix output.
-
-// TestHXC299ExtractIPAddressTrustRED — §11.4.115 RED-baseline-on-the-broken-artifact
-// for HXC-299, registered in the §11.4.135 standing regression-guard suite.
+// TestHXC298ClientIPTrustRED — §11.4.115 RED-baseline-on-the-broken-artifact
+// for HXC-298, registered in the §11.4.135 standing regression-guard suite.
 //
-// # The two defects
+// # The defects
 //
-// extractIPAddress (security/security.go) has two independent defects — a
-// worse sibling of HXC-292's getClientIP (api/middleware.go):
+// EnterpriseAPI.getClientIP (enhanced/enterprise/api.go) had two independent
+// defects, both worse than either already-repaired sibling:
 //
-// Defect 1 (identity-collapse truncation): the RemoteAddr fallback split the
-// address with strings.Split(r.RemoteAddr, ":")[0] — splitting on EVERY
-// colon, not just the port separator. For a direct IPv6 connection Go sets
-// RemoteAddr to "[2001:db8::1]:54321"; splitting on ":" yields
-// ["[2001","db8","","1]","54321"], and index [0] is "[2001" — an opening
-// bracket and the first hextet, discarding everything else. TWO GENUINELY
-// DIFFERENT callers sharing only their first hextet ("[2001:db8::1]:11111"
-// and "[2001:dead:beef::99]:22222") both collapse onto the SAME identity
-// "[2001". This is WORSE than HXC-292's pre-fix defect: HXC-292's defect kept
-// identities DISTINCT (merely inconsistently bracketed); this defect makes
-// distinct callers INDISTINGUISHABLE — anything counting or recording per
-// caller (e.g. AuditTrail.LogRequest's AuditEntry.IPAddress, this function's
-// one production call site) attributes multiple real callers' actions to one
-// shared, truncated, non-address string.
+// Defect 1 (raw RemoteAddr, port included): the RemoteAddr fallback
+// returned r.RemoteAddr completely unprocessed — no net.SplitHostPort, not
+// even a hand-rolled split. Every direct connection therefore resolved to
+// "host:port" verbatim. Since the ephemeral source port is assigned fresh
+// by the OS on every new TCP connection, the SAME caller forks into a
+// DIFFERENT identity on every single connection it makes — a much wider
+// blast radius than HXC-292's bracket-fork (which only forked identity
+// depending on whether a forwarding header happened to be present) or
+// HXC-299's hextet-collapse (which only forked/collapsed identity for
+// bracketed IPv6 literals). Here that identity feeds the enterprise
+// access-control audit log (RBACManager.logAudit's ipAddress parameter, via
+// auditMiddleware, handleLogin's failure/success paths, handleLogout, and
+// the token-refresh handler) — the record of who did what for permission
+// decisions — so a single real caller's own history fragments into
+// unrelated-looking entries purely because of which ephemeral port its OS
+// happened to assign.
 //
-// Defect 2 (unconditional forwarding-header trust): X-Forwarded-For and
-// X-Real-IP are honoured verbatim with NO permitted-intermediary list — an
-// even more direct instance of HXC-292's defect 2, since this function does
-// not even select consistently (it always takes the leftmost X-Forwarded-For
-// entry, unconditionally). Any caller able to reach this function's consumer
-// could state any client identity it liked.
+// Defect 2 (unconditional forwarding-header trust, leftmost selection):
+// X-Forwarded-For and X-Real-IP were honoured verbatim with NO
+// permitted-intermediary list, and — like HXC-299's pre-fix state, unlike
+// HXC-292's — the leftmost X-Forwarded-For entry was taken unconditionally
+// (strings.Split(xff, ",")[0]). Any caller able to reach this API — not
+// merely one behind a legitimate reverse proxy — could dictate any client
+// identity it liked into the audit log, and even a hardened deployment that
+// puts a trusted, APPENDING reverse proxy in front (nginx's
+// $proxy_add_x_forwarded_for) remains exploitable: the attacker's own
+// forged, prepended entry is what leftmost selection returns.
+//
+// # Wiring status (§11.4.108 / §11.4.124 — established, not assumed)
+//
+// A full import-graph census at HXC-298 fix time found NO production entry
+// point constructs EnterpriseManager / EnterpriseAPI or calls Start(ctx):
+// cmd/main.go (the shipped llm-verifier binary) imports api, client,
+// database, llmverifier, seed, and tui — never enhanced/enterprise. The
+// config/{development,staging,production}.yaml files each declare an
+// "enterprise:" section, but cmd/main.go never reads that key, so it cannot
+// activate this subsystem either. The ONLY importers of enhanced/enterprise
+// anywhere in this module are three files under tests/:
+// integration_simple_test.go, working_components_test.go, and
+// system_validation_test_fixed.go — each constructing an EnterpriseConfig
+// for unit-style coverage, none starting the HTTP server. NOTE:
+// system_validation_test_fixed.go does NOT end in "_test.go" (it ends in
+// "_fixed.go") and so is NOT itself a Go test file — `go list` places it in
+// the tests package's regular GoFiles, compiled like any other source file.
+// This does not change the latency conclusion: the load-bearing fact is
+// that digital.vasic.llmsverifier/tests is never imported by any main
+// package (`go list -deps ./cmd/...` has no entry for llmsverifier/tests
+// or llmsverifier/enhanced/enterprise), not the file-suffix of any one
+// importer inside it. This subsystem is therefore LATENT in the
+// currently-shipped binary — same class of finding as HXC-299's
+// AuditTrail, and per that fix's own citation of §11.4.124: not a
+// reason to leave it broken. It is a complete, self-consistent RBAC + audit
+// feature (handleAudit, gated by PermissionLogsView, surfaces exactly the
+// log this fix protects) that could be wired into cmd/main.go at any time,
+// and per §11.4.124 it must be correct when that happens rather than
+// silently forging or collapsing caller identities the moment it is.
+//
+// # Reuse-vs-mirror-vs-extract (HXC-308)
+//
+// enhanced/enterprise, api, and security all live in the SAME Go module
+// (digital.vasic.llmsverifier) — there is no module boundary here. api's
+// getClientIP and security's resolveClientIP are unexported, so neither can
+// be imported directly without exporting something; HXC-299's own doc
+// comment additionally notes that importing FROM security INTO api would
+// have inverted that codebase's dependency direction (api/ was frozen for
+// that fix's scope). Rather than adding a THIRD independent copy — which
+// would only widen the HXC-308 drift risk this fix instead closes — the
+// corrected algorithm was extracted into the new clientip package (a leaf
+// package with no dependents among api/, security/, or enhanced/enterprise/
+// at extraction time, so no cycle is possible). api/middleware.go's
+// getClientIP, security/client_ip_trust.go's resolveClientIP, and this
+// package's EnterpriseAPI.getClientIP all now delegate to clientip.Resolve
+// — one implementation, not three that can drift.
 //
 // # Polarity switch (§11.4.115)
 //
-// RED_MODE=1 reproduces each defect against the CURRENT pre-fix behaviour and
-// PASSes there. RED_MODE=0 (default) is the standing GREEN guard: it FAILs if
-// either defect is reintroduced.
-//
-// # Why the assertions are pinned to literals
-//
-// Every expected identity below is a test-local literal, never a value
-// re-derived from the code under test — a test that asks the code under test
-// what it should have produced cannot fail.
-func TestHXC299ExtractIPAddressTrustRED(t *testing.T) {
+// RED_MODE=1 reproduces each defect against the CURRENT pre-fix behaviour
+// and PASSes there. RED_MODE=0 (default) is the standing GREEN guard: it
+// FAILs if either defect is reintroduced.
+func TestHXC298ClientIPTrustRED(t *testing.T) {
 	redMode := os.Getenv("RED_MODE")
 	if redMode == "" {
 		redMode = "0"
@@ -65,87 +107,89 @@ func TestHXC299ExtractIPAddressTrustRED(t *testing.T) {
 		t.Fatalf("unknown RED_MODE=%q (expected 0 or 1)", redMode)
 	}
 
-	t.Run("defect1_identity_collapse_truncation", func(t *testing.T) {
-		hxc299RunIdentityCollapseCase(t, redMode)
+	t.Run("defect1_raw_remoteaddr_port_identity_fork", func(t *testing.T) {
+		hxc298RunRawRemoteAddrCase(t, redMode)
 	})
 
 	t.Run("defect2_header_forgery", func(t *testing.T) {
-		hxc299RunHeaderForgeryCase(t, redMode)
+		hxc298RunHeaderForgeryCase(t, redMode)
+	})
+
+	t.Run("f1_appending_proxy_leftmost_bypass", func(t *testing.T) {
+		hxc298RunAppendingProxyBypassCase(t, redMode)
 	})
 }
 
-// hxc299RunIdentityCollapseCase reproduces (RED_MODE=1) or guards against
-// (RED_MODE=0) defect 1: two GENUINELY DIFFERENT direct IPv6 callers, sharing
-// only their leading hextet, MUST resolve to two DISTINCT identities. The
-// pre-fix artifact truncates both to the shared literal "[2001" — a
-// collapsed, shared, non-address identity.
-func hxc299RunIdentityCollapseCase(t *testing.T, redMode string) {
+// hxc298RunRawRemoteAddrCase reproduces (RED_MODE=1) or guards against
+// (RED_MODE=0) defect 1: the SAME direct caller connecting twice, on two
+// DIFFERENT ephemeral source ports, must resolve to the SAME identity. The
+// pre-fix artifact instead echoes r.RemoteAddr verbatim, so the port itself
+// becomes part of the "identity" and forks every connection apart.
+func hxc298RunRawRemoteAddrCase(t *testing.T, redMode string) {
 	t.Helper()
 
+	api := &EnterpriseAPI{}
+
 	const (
-		callerARemoteAddr = "[2001:db8::1]:11111"
-		callerBRemoteAddr = "[2001:dead:beef::99]:22222"
-		collapsedIdentity = "[2001"
-		callerAIdentity   = "2001:db8::1"
-		callerBIdentity   = "2001:dead:beef::99"
+		sameCallerIP  = "203.0.113.9"
+		connectionOne = "203.0.113.9:54321"
+		connectionTwo = "203.0.113.9:60002"
 	)
 
-	reqA := httptest.NewRequest(http.MethodGet, "/test", nil)
-	reqA.RemoteAddr = callerARemoteAddr
-	gotA := extractIPAddress(reqA)
+	req1 := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req1.RemoteAddr = connectionOne
+	got1 := api.getClientIP(req1)
 
-	reqB := httptest.NewRequest(http.MethodGet, "/test", nil)
-	reqB.RemoteAddr = callerBRemoteAddr
-	gotB := extractIPAddress(reqB)
+	req2 := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req2.RemoteAddr = connectionTwo
+	got2 := api.getClientIP(req2)
 
 	if redMode == "1" {
-		if gotA != collapsedIdentity || gotB != collapsedIdentity {
-			t.Fatalf("RED_MODE=1: defect1 did NOT reproduce — callers %q and %q resolved to %q and %q, "+
-				"want both to collapse onto the pre-fix truncated identity %q. Run RED_MODE=1 against the "+
-				"pre-fix artifact to see this PASS.", callerARemoteAddr, callerBRemoteAddr, gotA, gotB,
-				collapsedIdentity)
+		if got1 != connectionOne || got2 != connectionTwo {
+			t.Fatalf("RED_MODE=1: defect1 did NOT reproduce as expected — want raw RemoteAddr echoed "+
+				"verbatim (port included): got1=%q want %q; got2=%q want %q. Run RED_MODE=1 against the "+
+				"pre-fix artifact to see this PASS.", got1, connectionOne, got2, connectionTwo)
 		}
-		if gotA != gotB {
-			t.Fatalf("RED_MODE=1: defect1 did NOT reproduce — expected both distinct callers to collapse "+
-				"onto ONE shared identity, got %q vs %q (they did not collapse)", gotA, gotB)
+		if got1 == got2 {
+			t.Fatalf("RED_MODE=1: defect1 did NOT reproduce — same caller %q on two connections resolved "+
+				"to the SAME identity (%q == %q); want the pre-fix behaviour where identity forks with "+
+				"the ephemeral source port", sameCallerIP, got1, got2)
 		}
-		t.Logf("RED_MODE=1 PASS: defect1 reproduced — two genuinely different callers (%q, %q) both "+
-			"truncated to the SAME shared identity %q", callerARemoteAddr, callerBRemoteAddr, gotA)
+		t.Logf("RED_MODE=1 PASS: defect1 reproduced — same caller %q forked into two distinct audit-log "+
+			"identities %q and %q purely because the ephemeral source port differed", sameCallerIP, got1, got2)
 		return
 	}
 
-	// GREEN: the two distinct callers MUST resolve to two distinct,
-	// canonical, unbracketed identities — never collapsed onto a shared
-	// truncated prefix.
-	if gotA != callerAIdentity {
-		t.Fatalf("defect1 regression: caller A RemoteAddr %q resolved to %q, want the canonical "+
-			"unbracketed identity %q", callerARemoteAddr, gotA, callerAIdentity)
+	// GREEN: the SAME caller must resolve to the SAME identity regardless
+	// of which ephemeral source port its TCP connection happened to use,
+	// and that identity must be the bare IP — never host:port.
+	if got1 != sameCallerIP || got2 != sameCallerIP {
+		t.Fatalf("defect1 regression: same caller %q on two connections resolved to %q and %q, want both "+
+			"to resolve to the bare IP %q (net.SplitHostPort must be used, never the raw RemoteAddr)",
+			sameCallerIP, got1, got2, sameCallerIP)
 	}
-	if gotB != callerBIdentity {
-		t.Fatalf("defect1 regression: caller B RemoteAddr %q resolved to %q, want the canonical "+
-			"unbracketed identity %q", callerBRemoteAddr, gotB, callerBIdentity)
+	if got1 != got2 {
+		t.Fatalf("defect1 regression: same caller %q forked into two identities (%q vs %q) across two "+
+			"connections that differ only by ephemeral source port", sameCallerIP, got1, got2)
 	}
-	if gotA == gotB {
-		t.Fatalf("defect1 regression: two genuinely different callers (%q, %q) collapsed onto the SAME "+
-			"identity %q — net.SplitHostPort must be used, never a naive strings.Split on every colon",
-			callerARemoteAddr, callerBRemoteAddr, gotA)
-	}
-	t.Logf("GREEN: caller A %q -> %q, caller B %q -> %q — distinct identities preserved",
-		callerARemoteAddr, gotA, callerBRemoteAddr, gotB)
+	t.Logf("GREEN: same caller %q on two connections (ports 54321 and 60002) both resolve to the stable "+
+		"identity %q", sameCallerIP, got1)
 }
 
-// hxc299RunHeaderForgeryCase reproduces (RED_MODE=1) or guards against
-// (RED_MODE=0) defect 2: a caller with NO trusted-proxy relationship to this
-// service's consumer must NOT be able to mint an arbitrary client identity
-// merely by sending X-Forwarded-For.
-func hxc299RunHeaderForgeryCase(t *testing.T, redMode string) {
+// hxc298RunHeaderForgeryCase reproduces (RED_MODE=1) or guards against
+// (RED_MODE=0) defect 2: a caller with NO trusted-proxy relationship to
+// this API must NOT be able to mint an arbitrary client identity merely by
+// sending X-Forwarded-For.
+func hxc298RunHeaderForgeryCase(t *testing.T, redMode string) {
 	t.Helper()
 
-	// Explicitly unset — the untrusted-by-default posture must hold even if
-	// some other test in this process happened to set the allowlist and a
-	// t.Setenv cleanup raced (defence in depth; each subtest that DOES need
-	// trust uses t.Setenv with its own scoped cleanup).
-	t.Setenv(securityClientIPTrustedProxiesEnvVar, "")
+	// Explicitly unset — the untrusted-by-default posture must hold even
+	// if some other test in this process happened to set the allowlist and
+	// a t.Setenv cleanup raced (defence in depth; each subtest that DOES
+	// need trust uses t.Setenv with its own scoped cleanup).
+	t.Setenv(clientip.TrustedProxiesEnvVar, "")
+
+	api := &EnterpriseAPI{}
 
 	const (
 		realPeer   = "203.0.113.9:53211" // the attacker's own TCP connection
@@ -156,44 +200,98 @@ func hxc299RunHeaderForgeryCase(t *testing.T, redMode string) {
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req.RemoteAddr = realPeer
 	req.Header.Set("X-Forwarded-For", forgedIP)
-	got := extractIPAddress(req)
+	got := api.getClientIP(req)
 
 	if redMode == "1" {
 		if got != forgedIP {
 			t.Fatalf("RED_MODE=1: defect2 did NOT reproduce — forged X-Forwarded-For %q from untrusted "+
-				"peer %q resolved to %q, want the forged identity %q to have been trusted (the "+
-				"pre-fix defect). Run RED_MODE=1 against the pre-fix artifact to see this PASS.",
+				"peer %q resolved to %q, want the forged identity %q to have been trusted (the pre-fix "+
+				"defect). Run RED_MODE=1 against the pre-fix artifact to see this PASS.",
 				forgedIP, realPeer, got, forgedIP)
 		}
-		t.Logf("RED_MODE=1 PASS: defect2 reproduced — forged X-Forwarded-For %q from untrusted peer "+
-			"%q was trusted verbatim", forgedIP, realPeer)
+		t.Logf("RED_MODE=1 PASS: defect2 reproduced — forged X-Forwarded-For %q from untrusted peer %q "+
+			"was trusted verbatim into the audit log", forgedIP, realPeer)
 		return
 	}
 
 	// GREEN: with no trusted-proxy allowlist configured, the header MUST be
 	// ignored and the caller's own TCP peer address used instead.
 	if got != realPeerIP {
-		t.Fatalf("defect2 regression: forged X-Forwarded-For %q from untrusted peer %q resolved to "+
-			"%q, want the real peer identity %q (an unconfigured/non-matching trusted-proxy "+
-			"allowlist must mean the header is NOT honoured)", forgedIP, realPeer, got, realPeerIP)
+		t.Fatalf("defect2 regression: forged X-Forwarded-For %q from untrusted peer %q resolved to %q, "+
+			"want the real peer identity %q (an unconfigured/non-matching trusted-proxy allowlist must "+
+			"mean the header is NOT honoured)", forgedIP, realPeer, got, realPeerIP)
 	}
 	t.Logf("GREEN: forged X-Forwarded-For %q from untrusted peer %q was correctly ignored; resolved "+
 		"identity is the real peer %q", forgedIP, realPeer, got)
 }
 
-// TestHXC299ExtractIPAddressCensus is the §11.4.146 STEP-3 fan-out: every
-// address form and header/trust combination that can reach extractIPAddress,
+// hxc298RunAppendingProxyBypassCase reproduces (RED_MODE=1) or guards
+// against (RED_MODE=0) the leftmost-selection bypass: under a trusted,
+// APPENDING reverse proxy, an attacker's own forged, prepended
+// X-Forwarded-For entry must never win over the real client the proxy
+// appended to its right.
+func hxc298RunAppendingProxyBypassCase(t *testing.T, redMode string) {
+	t.Helper()
+
+	t.Setenv(clientip.TrustedProxiesEnvVar, "172.20.0.0/16")
+
+	api := &EnterpriseAPI{}
+
+	const (
+		trustedPeer = "172.20.0.5:443" // the trusted, appending reverse proxy
+		forgedEntry = "8.8.8.8"        // the attacker's own forged, prepended claim
+		realClient  = "203.0.113.9"    // the attacker's true address, appended by the trusted proxy
+	)
+	xff := forgedEntry + ", " + realClient
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req.RemoteAddr = trustedPeer
+	req.Header.Set("X-Forwarded-For", xff)
+	got := api.getClientIP(req)
+
+	if redMode == "1" {
+		if got != forgedEntry {
+			t.Fatalf("RED_MODE=1: leftmost-selection bypass did NOT reproduce — XFF %q from trusted peer "+
+				"%q resolved to %q, want the forged leftmost entry %q. Run RED_MODE=1 against the pre-fix "+
+				"artifact to see this PASS.", xff, trustedPeer, got, forgedEntry)
+		}
+		t.Logf("RED_MODE=1 PASS: leftmost-selection bypass reproduced — XFF %q resolved to the "+
+			"attacker-forged entry %q, discarding the real, proxy-appended client %q", xff, got, realClient)
+		return
+	}
+
+	// GREEN: the real, proxy-appended, non-trusted client MUST win — never
+	// the attacker's own forged, prepended claim.
+	if got != realClient {
+		t.Fatalf("leftmost-selection regression: XFF %q from trusted peer %q resolved to %q, want the "+
+			"real (rightmost, proxy-appended, non-trusted) client %q", xff, trustedPeer, got, realClient)
+	}
+	t.Logf("GREEN: appending-proxy forgery correctly defeated — XFF %q from trusted peer %q resolved to "+
+		"the real client %q, not the attacker's forged entry %q", xff, trustedPeer, got, forgedEntry)
+}
+
+// TestHXC298ClientIPCensus is the §11.4.146 STEP-3 fan-out: every address
+// form and header/trust combination that can reach EnterpriseAPI.getClientIP,
 // each with its explicit expected outcome. This is the standing GREEN suite
-// (not RED_MODE-gated) — see TestHXC299ExtractIPAddressTrustRED above for the
-// two defect-specific polarity-switch guards.
-func TestHXC299ExtractIPAddressCensus(t *testing.T) {
-	for _, tc := range hxc299ExtractIPAddressCases() {
+// (not RED_MODE-gated) — see TestHXC298ClientIPTrustRED above for the
+// defect-specific polarity-switch guards.
+//
+// This table is also the HXC-308 drift detector this fix's scope permits:
+// it is derived from the SAME algorithm now shared via the clientip
+// package, so if a future change ever made EnterpriseAPI.getClientIP stop
+// delegating to clientip.Resolve, this census — not merely the RED tests
+// above — would immediately catch any behavioural divergence across the
+// full enumerated case space, not just the three headline defects.
+func TestHXC298ClientIPCensus(t *testing.T) {
+	for _, tc := range hxc298ClientIPCases() {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.trustedProxies != "" {
-				t.Setenv(securityClientIPTrustedProxiesEnvVar, tc.trustedProxies)
+				t.Setenv(clientip.TrustedProxiesEnvVar, tc.trustedProxies)
 			} else {
-				t.Setenv(securityClientIPTrustedProxiesEnvVar, "")
+				t.Setenv(clientip.TrustedProxiesEnvVar, "")
 			}
+
+			api := &EnterpriseAPI{}
 
 			req := httptest.NewRequest(http.MethodGet, "/test", nil)
 			req.RemoteAddr = tc.remoteAddr
@@ -234,9 +332,9 @@ func TestHXC299ExtractIPAddressCensus(t *testing.T) {
 				req.Header.Add("X-Real-IP", tc.xri)
 			}
 
-			got := extractIPAddress(req)
+			got := api.getClientIP(req)
 			if got != tc.want {
-				t.Fatalf("%s: extractIPAddress() = %q, want %q\n  remoteAddr=%q xff=%q(present=%v) "+
+				t.Fatalf("%s: getClientIP() = %q, want %q\n  remoteAddr=%q xff=%q(present=%v) "+
 					"xri=%q(present=%v) trustedProxies=%q",
 					tc.outcome, got, tc.want, tc.remoteAddr, tc.xff,
 					tc.xff != "" || tc.xffPresentEmpty, tc.xri, tc.xri != "" || tc.xriPresentEmpty,
@@ -247,9 +345,9 @@ func TestHXC299ExtractIPAddressCensus(t *testing.T) {
 	}
 }
 
-// hxc299ExtractIPAddressCase is one enumerated (address-form x header x
-// trust) combination and its required outcome.
-type hxc299ExtractIPAddressCase struct {
+// hxc298ClientIPCase is one enumerated (address-form x header x trust)
+// combination and its required outcome.
+type hxc298ClientIPCase struct {
 	name            string
 	remoteAddr      string
 	xff             string
@@ -265,20 +363,20 @@ type hxc299ExtractIPAddressCase struct {
 	outcome        string // human-readable description of why `want` is correct
 }
 
-func hxc299ExtractIPAddressCases() []hxc299ExtractIPAddressCase {
-	return []hxc299ExtractIPAddressCase{
+func hxc298ClientIPCases() []hxc298ClientIPCase {
+	return []hxc298ClientIPCase{
 		// ---- valid address forms, no headers, no trust configured ----
 		{
 			name:       "ipv4_remoteaddr_with_port",
 			remoteAddr: "192.0.2.10:54321",
 			want:       "192.0.2.10",
-			outcome:    "plain IPv4 RemoteAddr resolves to the bare host",
+			outcome:    "plain IPv4 RemoteAddr resolves to the bare host, never host:port",
 		},
 		{
 			name:       "ipv6_bracketed_remoteaddr_with_port",
 			remoteAddr: "[2001:db8::1]:54321",
 			want:       "2001:db8::1",
-			outcome:    "defect1 guard: bracketed IPv6 RemoteAddr must resolve UNbracketed, not truncated",
+			outcome:    "bracketed IPv6 RemoteAddr resolves UNbracketed and without the port",
 		},
 		{
 			name:       "ipv6_loopback_remoteaddr_with_port",
@@ -296,7 +394,7 @@ func hxc299ExtractIPAddressCases() []hxc299ExtractIPAddressCase {
 			name:       "hostname_remoteaddr_with_port",
 			remoteAddr: "attacker.example:1234",
 			want:       "attacker.example",
-			outcome:    "control: a non-IP host:port form is unaffected by the fix",
+			outcome:    "control: a non-IP host:port form is unaffected by the port-strip fix",
 		},
 
 		// ---- boundary: no port, empty, malformed ----
@@ -316,7 +414,7 @@ func hxc299ExtractIPAddressCases() []hxc299ExtractIPAddressCase {
 			name:       "empty_remoteaddr",
 			remoteAddr: "",
 			want:       "",
-			outcome:    "boundary: no identity to extract, matches pre-fix behaviour (no invented sentinel)",
+			outcome:    "boundary: no identity to extract, no invented sentinel",
 		},
 		{
 			name:       "malformed_no_colon_remoteaddr",
@@ -329,14 +427,6 @@ func hxc299ExtractIPAddressCases() []hxc299ExtractIPAddressCase {
 			remoteAddr: ":12345",
 			want:       ":12345",
 			outcome:    "boundary: a port with no host portion carries no identity; original string preserved unmodified",
-		},
-		{
-			// The exact HXC-299 forensic case: two genuinely different
-			// callers sharing only their first hextet must NOT collapse.
-			name:       "ipv6_shared_first_hextet_distinct_callers_second",
-			remoteAddr: "[2001:dead:beef::99]:22222",
-			want:       "2001:dead:beef::99",
-			outcome:    "defect1 regression guard: a caller sharing ONLY its first hextet with another caller must still resolve to its OWN distinct identity",
 		},
 
 		// ---- defect 2: forged / untrusted headers must be ignored by default ----
@@ -407,32 +497,24 @@ func hxc299ExtractIPAddressCases() []hxc299ExtractIPAddressCase {
 			outcome:        "a malformed allowlist entry is skipped, not fatal; the remaining valid entry still matches",
 		},
 
-		// ---- F1-class: XFF list semantics — RIGHTMOST NON-TRUSTED entry
-		// wins, walking right to left and skipping entries that are
-		// themselves trusted. NEVER leftmost — extractIPAddress's pre-fix
-		// behaviour picked the leftmost entry unconditionally, which is the
-		// exact bypass HXC-292's F1 review round caught and fixed in the
-		// sibling function; mirrored here rather than re-risking the same
-		// mistake in a fresh implementation. ----
+		// ---- leftmost-vs-rightmost XFF list semantics — RIGHTMOST
+		// NON-TRUSTED entry wins, walking right to left and skipping
+		// entries that are themselves trusted. NEVER leftmost. ----
 		{
 			name:           "xff_multiple_ips_rightmost_untrusted_wins",
 			remoteAddr:     "172.20.0.5:443",
 			xff:            "198.51.100.7, 172.20.0.5, 10.0.0.1",
 			trustedProxies: "172.20.0.0/16",
 			want:           "10.0.0.1",
-			outcome:        "F1-class: walking right to left, the rightmost entry (10.0.0.1) is not itself trusted, so it wins immediately -- the leftmost entry is never even consulted",
+			outcome:        "walking right to left, the rightmost entry (10.0.0.1) is not itself trusted, so it wins immediately -- the leftmost entry is never even consulted",
 		},
 		{
-			// The critical F1-class regression guard: an attacker prepends a
-			// forged claim; the trusted, appending proxy appends the
-			// attacker's REAL address to the right of it. The real
-			// (rightmost, untrusted) client MUST win.
 			name:           "xff_attacker_prepended_forged_real_client_wins",
 			remoteAddr:     "172.20.0.5:443",
 			xff:            "8.8.8.8, 203.0.113.9",
 			trustedProxies: "172.20.0.0/16",
 			want:           "203.0.113.9",
-			outcome:        "F1-class regression guard: attacker-forged leftmost entry (8.8.8.8) discarded; the real, proxy-appended, non-trusted client (203.0.113.9) wins",
+			outcome:        "leftmost-selection regression guard: attacker-forged leftmost entry (8.8.8.8) discarded; the real, proxy-appended, non-trusted client (203.0.113.9) wins",
 		},
 		{
 			name:           "xff_two_trusted_hops_client_beyond_both",
@@ -440,7 +522,7 @@ func hxc299ExtractIPAddressCases() []hxc299ExtractIPAddressCase {
 			xff:            "203.0.113.50, 172.20.0.5",
 			trustedProxies: "172.20.0.0/16",
 			want:           "203.0.113.50",
-			outcome:        "F1-class: two chained trusted proxies are both walked past; the real client beyond them wins",
+			outcome:        "two chained trusted proxies are both walked past; the real client beyond them wins",
 		},
 		{
 			name:           "xff_malformed_entry_beyond_trusted_hop_falls_through",
@@ -464,7 +546,7 @@ func hxc299ExtractIPAddressCases() []hxc299ExtractIPAddressCase {
 			xff:            ",10.0.0.1",
 			trustedProxies: "172.20.0.0/16",
 			want:           "10.0.0.1",
-			outcome:        "boundary: a LEADING empty entry is harmless under right-to-left walking",
+			outcome:        "boundary: a LEADING empty entry is harmless under right-to-left walking -- the rightmost (only real) entry is consulted first and wins",
 		},
 		{
 			name:           "xff_multiple_ips_with_surrounding_whitespace",
@@ -488,7 +570,7 @@ func hxc299ExtractIPAddressCases() []hxc299ExtractIPAddressCase {
 			xff:            "203.0.113.77",
 			trustedProxies: "[2001:db8::5]",
 			want:           "203.0.113.77",
-			outcome:        "a bracketed IPv6 allowlist entry ([2001:db8::5]) matches an IPv6 peer at the same address -> header honoured",
+			outcome:        "a bracketed IPv6 allowlist entry matches an IPv6 peer at the same address -> header honoured",
 		},
 		{
 			name:            "xff_header_present_but_empty_value_treated_as_absent",
@@ -660,14 +742,25 @@ func hxc299ExtractIPAddressCases() []hxc299ExtractIPAddressCase {
 			outcome:        "X-Real-IP alone is honoured once the peer is trusted",
 		},
 
+		// ---- HXC-298 own defect-1 focus: same caller across two
+		// connections, distinguished only by ephemeral source port ----
+		{
+			name:       "same_caller_different_ports_no_headers",
+			remoteAddr: "198.51.100.42:33001",
+			want:       "198.51.100.42",
+			outcome:    "defect1 guard: the ephemeral source port is never part of the resolved identity",
+		},
+
 		// ---- F1 (post-extraction review finding): the net.ParseIP(xri)
 		// validation guard on X-Real-IP, deleted by a reviewer's mutation,
 		// left ALL FOUR delegating packages' suites green -- and, from a
 		// trusted peer, "X-Real-IP: '; DROP TABLE audit; --" came back as
-		// the RESOLVED IDENTITY. This case pins the guard directly: a
-		// non-IP X-Real-IP value from a TRUSTED peer must NEVER be
-		// returned -- it must fall through to the normalized RemoteAddr,
-		// exactly as an untrusted peer's forged header would. ----
+		// the RESOLVED IDENTITY, landing directly in the enterprise RBAC
+		// audit log (RBACManager.logAudit's ipAddress parameter). This case
+		// pins the guard directly: a non-IP X-Real-IP value from a TRUSTED
+		// peer must NEVER be returned -- it must fall through to the
+		// normalized RemoteAddr, exactly as an untrusted peer's forged
+		// header would. ----
 		{
 			name:           "xri_non_ip_value_rejected_trusted_peer",
 			remoteAddr:     "172.20.0.5:443",
@@ -681,19 +774,17 @@ func hxc299ExtractIPAddressCases() []hxc299ExtractIPAddressCase {
 		// inside isTrustedProxyPeer -- `if peerIP == nil { return false }`
 		// -- is what makes an UNRECOGNISABLE peer untrusted BEFORE the
 		// allowlist is consulted at all. It is the same defect class as F1,
-		// one guard over, feeding the same sink (AuditTrail.LogRequest's
-		// AuditEntry.IPAddress), and a reviewer's mutation flipping it to
-		// `return true` left ALL FOUR delegating packages' suites green.
+		// one guard over, feeding the same sink (the enterprise RBAC audit
+		// log, via RBACManager.logAudit's ipAddress parameter), and a
+		// reviewer's mutation flipping it to `return true` left ALL FOUR
+		// delegating packages' suites green.
 		//
 		// The gap was structural: this census already carried non-IP peers
 		// (hostname_remoteaddr_with_port, malformed_no_colon_remoteaddr,
 		// empty_remoteaddr) and already carried forwarding headers -- but
 		// never the two TOGETHER, and the guard is only observable when a
 		// header is present to be wrongly honoured. These rows supply that
-		// pairing. Reachability is especially direct here: LogRequest takes
-		// a caller-constructed *http.Request whose RemoteAddr is whatever
-		// the caller set, not one net/http populated from an accepted TCP
-		// conn. Mirrored from clientip's own TestResolveCensus, where the
+		// pairing. Mirrored from clientip's own TestResolveCensus, where the
 		// guard actually lives. ----
 		{
 			name:       "xff_present_malformed_peer_stays_untrusted",
@@ -739,16 +830,17 @@ func hxc299ExtractIPAddressCases() []hxc299ExtractIPAddressCase {
 		// more. Each was PROVED by a surviving mutation (the guard deleted,
 		// ALL FOUR delegating packages' suites still green), and each row
 		// below was reproduced RED against its own mutant before being
-		// trusted as a guard. All three feed this package's sink,
-		// AuditTrail.LogRequest's AuditEntry.IPAddress.
+		// trusted as a guard. All three feed this package's sink, the
+		// enterprise RBAC audit log (RBACManager.logAudit's ipAddress
+		// parameter).
 		//
 		// F6 is the most serious of the three: F1, F2, F7 and F8 all fail
 		// CLOSED when their guard is removed, but F6's surviving mutant
 		// WIDENS TRUST -- it grants trusted-proxy status to a peer the
 		// operator never allowlisted, then writes that peer's
-		// attacker-supplied X-Forwarded-For into the audit trail. Mirrored
-		// from clientip's own TestResolveCensus, where the guards actually
-		// live. ----
+		// attacker-supplied X-Forwarded-For into the RBAC audit log.
+		// Mirrored from clientip's own TestResolveCensus, where the guards
+		// actually live. ----
 		{
 			name:           "xff_present_unterminated_bracket_allowlist_entry_stays_untrusted",
 			remoteAddr:     "10.0.0.1:5000",
@@ -785,12 +877,12 @@ func hxc299ExtractIPAddressCases() []hxc299ExtractIPAddressCase {
 		// F9: isTrustedProxyIP TRIMS EACH ALLOWLIST ENTRY, not just the
 		// env var as a whole. The reason it needed a row at all is a
 		// property of every allowlist written above it: none of them puts
-		// a SPACE after a comma. The outer strings.TrimSpace(os.Getenv(...))
-		// strips only the two ends of the whole env var, so with no
-		// INTERIOR padding anywhere, no entry ever reached the split loop
-		// needing a trim of its own and the per-entry trim was never
-		// exercised BY THE CENSUS TABLE. That premise is checkable in one
-		// command rather than taken on trust:
+		// a SPACE after a comma. The outer
+		// strings.TrimSpace(os.Getenv(...)) strips only the two ends of
+		// the whole env var, so with no INTERIOR padding anywhere, no
+		// entry ever reached the split loop needing a trim of its own and
+		// the per-entry trim was never exercised BY THE CENSUS TABLE. That
+		// premise is checkable in one command rather than taken on trust:
 		//
 		//	grep -c 'trustedProxies: *"[^"]*, ' <this file>
 		//
@@ -953,13 +1045,15 @@ func hxc299ExtractIPAddressCases() []hxc299ExtractIPAddressCase {
 	}
 }
 
-// TestHXC299ExtractIPAddressConcurrent is the §11.4.85 concurrent-contention
-// case: N goroutines simultaneously resolving distinct callers (some
-// trusted, some not, some forging headers) must each get their own correct,
-// uncorrupted identity — no shared mutable state in extractIPAddress /
+// TestHXC298ClientIPConcurrent is the §11.4.85 concurrent-contention case:
+// N goroutines simultaneously resolving distinct callers (some trusted,
+// some not, some forging headers) must each get their own correct,
+// uncorrupted identity — no shared mutable state in getClientIP /
 // clientip.Resolve may leak one caller's resolution into another's.
-func TestHXC299ExtractIPAddressConcurrent(t *testing.T) {
-	t.Setenv(securityClientIPTrustedProxiesEnvVar, "172.20.0.0/16")
+func TestHXC298ClientIPConcurrent(t *testing.T) {
+	t.Setenv(clientip.TrustedProxiesEnvVar, "172.20.0.0/16")
+
+	api := &EnterpriseAPI{}
 
 	const n = 64
 	var wg sync.WaitGroup
@@ -984,7 +1078,7 @@ func TestHXC299ExtractIPAddressConcurrent(t *testing.T) {
 				want = forwarded
 			} else {
 				// Untrusted peer forging a header: must be ignored, own
-				// peer address used.
+				// peer address (port stripped) used.
 				peer := fmt.Sprintf("203.0.113.%d:%d", i%256, 1000+i)
 				req = httptest.NewRequest(http.MethodGet, "/test", nil)
 				req.RemoteAddr = peer
@@ -992,9 +1086,9 @@ func TestHXC299ExtractIPAddressConcurrent(t *testing.T) {
 				want = peer[:len(peer)-len(fmt.Sprintf(":%d", 1000+i))]
 			}
 
-			got := extractIPAddress(req)
+			got := api.getClientIP(req)
 			if got != want {
-				errs[i] = fmt.Sprintf("goroutine %d: extractIPAddress() = %q, want %q", i, got, want)
+				errs[i] = fmt.Sprintf("goroutine %d: getClientIP() = %q, want %q", i, got, want)
 			}
 		}(i)
 	}

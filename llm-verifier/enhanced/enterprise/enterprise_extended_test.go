@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"digital.vasic.llmsverifier/clientip"
 	"digital.vasic.llmsverifier/monitoring"
 
 	"github.com/stretchr/testify/assert"
@@ -1413,7 +1414,22 @@ func TestSAMLAuthenticator_ExtractUserFromAssertion_FriendlyName(t *testing.T) {
 }
 
 // ==================== GetClientIP Tests ====================
-
+//
+// Reconciled per §11.4.120 for HXC-298. Pre-fix, EnterpriseAPI.getClientIP
+// trusted X-Forwarded-For / X-Real-IP verbatim from ANY caller (no
+// permitted-intermediary list) and returned the raw RemoteAddr, port
+// included, on fallback. This table previously asserted that
+// trusting/raw behaviour directly (all four original cases used an
+// unconfigured trust allowlist yet still expected the header to be
+// honoured, and the "RemoteAddr fallback" case explicitly expected the
+// port to survive). It now asserts the corrected, trust-gated + normalized
+// mechanism: the first four cases prove headers are IGNORED and the port
+// is stripped when no trusted-proxy allowlist is configured (the default);
+// three additional cases -- not present pre-fix -- prove the SAME headers
+// ARE honoured once the immediate peer is on the
+// LLM_VERIFIER_TRUSTED_PROXIES allowlist, so this reconciliation
+// strengthens coverage rather than merely removing the old (wrong)
+// assertions.
 func TestEnterpriseAPI_GetClientIP(t *testing.T) {
 	manager := &EnterpriseManager{
 		RBAC: NewRBACManager(),
@@ -1421,39 +1437,91 @@ func TestEnterpriseAPI_GetClientIP(t *testing.T) {
 	api := NewEnterpriseAPI(manager)
 
 	tests := []struct {
-		name       string
-		headers    map[string]string
-		remoteAddr string
-		expected   string
+		name           string
+		headers        map[string]string
+		remoteAddr     string
+		trustedProxies string // LLM_VERIFIER_TRUSTED_PROXIES value; "" = unset (default-deny)
+		expected       string
 	}{
 		{
-			name:       "X-Forwarded-For header",
+			name:       "X-Forwarded-For header untrusted peer ignored",
 			headers:    map[string]string{"X-Forwarded-For": "192.168.1.1, 10.0.0.1"},
 			remoteAddr: "127.0.0.1:8080",
-			expected:   "192.168.1.1",
+			expected:   "127.0.0.1",
 		},
 		{
-			name:       "X-Real-IP header",
+			name:       "X-Real-IP header untrusted peer ignored",
 			headers:    map[string]string{"X-Real-IP": "192.168.1.2"},
 			remoteAddr: "127.0.0.1:8080",
-			expected:   "192.168.1.2",
+			expected:   "127.0.0.1",
 		},
 		{
-			name:       "RemoteAddr fallback",
+			name:       "RemoteAddr fallback strips ephemeral port",
 			headers:    map[string]string{},
 			remoteAddr: "10.0.0.5:12345",
-			expected:   "10.0.0.5:12345",
+			expected:   "10.0.0.5",
 		},
 		{
-			name:       "X-Forwarded-For takes precedence",
+			name:       "X-Forwarded-For and X-Real-IP both ignored when peer untrusted",
 			headers:    map[string]string{"X-Forwarded-For": "192.168.1.1", "X-Real-IP": "192.168.1.2"},
 			remoteAddr: "127.0.0.1:8080",
-			expected:   "192.168.1.1",
+			expected:   "127.0.0.1",
+		},
+		{
+			name:           "X-Forwarded-For header honoured once peer trusted",
+			headers:        map[string]string{"X-Forwarded-For": "192.168.1.1, 172.20.0.9"},
+			remoteAddr:     "172.20.0.5:443",
+			trustedProxies: "172.20.0.0/16",
+			expected:       "192.168.1.1",
+		},
+		{
+			name:           "X-Real-IP header honoured once peer trusted",
+			headers:        map[string]string{"X-Real-IP": "192.168.1.2"},
+			remoteAddr:     "172.20.0.5:443",
+			trustedProxies: "172.20.0.0/16",
+			expected:       "192.168.1.2",
+		},
+		// R7-1 -> R10 reconcile (§11.4.120, NOT a deletion), SECOND pass.
+		//
+		// Round 7 rewrote this case to assert a cross-header corroboration
+		// guard: disagreeing X-Forwarded-For and X-Real-IP were BOTH
+		// refused. Round 9 proved that guard a live regression on entirely
+		// UNFORGED traffic and round 10 removed it, so the rule THAT pass
+		// pinned is itself gone and the case is reconciled again -- to
+		// strict PRECEDENCE, which is what Resolve does now.
+		//
+		// Both directions are still pinned, but on their real values:
+		// agreeing headers resolve through the X-Forwarded-For walk, and
+		// DISAGREEING headers resolve through it too -- X-Real-IP is a
+		// fallback, never a veto. The second case below is the documented
+		// residual exposure (a proxy that sets X-Real-IP while relaying an
+		// unmanaged X-Forwarded-For), deliberately pinned rather than
+		// guarded; see clientip.Resolve's "# Header PRECEDENCE, and its
+		// threat model" comment for why the guard cost more than it bought.
+		{
+			name:           "X-Forwarded-For honoured over X-Real-IP when the two agree",
+			headers:        map[string]string{"X-Forwarded-For": "192.168.1.1, 10.9.9.9", "X-Real-IP": "10.9.9.9"},
+			remoteAddr:     "172.20.0.5:443",
+			trustedProxies: "172.20.0.0/16,10.9.9.9",
+			expected:       "192.168.1.1",
+		},
+		{
+			name:           "disagreeing X-Forwarded-For and X-Real-IP resolve through the X-Forwarded-For walk",
+			headers:        map[string]string{"X-Forwarded-For": "192.168.1.1", "X-Real-IP": "192.168.1.2"},
+			remoteAddr:     "172.20.0.5:443",
+			trustedProxies: "172.20.0.0/16",
+			expected:       "192.168.1.1",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.trustedProxies != "" {
+				t.Setenv(clientip.TrustedProxiesEnvVar, tt.trustedProxies)
+			} else {
+				t.Setenv(clientip.TrustedProxiesEnvVar, "")
+			}
+
 			req := httptest.NewRequest("GET", "/", nil)
 			for k, v := range tt.headers {
 				req.Header.Set(k, v)

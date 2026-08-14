@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"digital.vasic.llmsverifier/clientip"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -239,7 +240,7 @@ func (api *EnterpriseAPI) applyGlobalMiddleware(handler http.Handler) http.Handl
 	return handler
 }
 
-// AuthMiddleware handles authentication
+// authMiddleware handles authentication
 func (api *EnterpriseAPI) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check for token in Authorization header
@@ -814,15 +815,87 @@ func (api *EnterpriseAPI) getRequiredPermission(path, method string) Permission 
 	}
 }
 
+// getClientIP extracts the caller's identity from r for the enterprise
+// RBAC audit log (its consumers: auditMiddleware, rateLimitMiddleware,
+// handleLogin's failure/success paths, the logout handler, and the
+// token-refresh handler — all of which pass the result to
+// RBACManager.logAudit's ipAddress parameter, surfaced via handleAudit at
+// /api/enterprise/audit).
+//
+// HXC-298 fixed two independent defects here — both worse than either
+// already-repaired sibling (HXC-292's api/middleware.go getClientIP,
+// HXC-299's security/security.go extractIPAddress):
+//
+// Defect 1 (raw RemoteAddr, port included): the RemoteAddr fallback
+// returned r.RemoteAddr completely unprocessed — no net.SplitHostPort, not
+// even a hand-rolled split. Every direct connection resolved to
+// "host:port" verbatim, so the SAME caller forked into a DIFFERENT
+// identity on every single connection (the OS assigns a fresh ephemeral
+// source port each time) — a wider blast radius than either sibling's
+// pre-fix behaviour, which at worst forked identity depending on which
+// header path was taken, not on every connection. Fixed by clientip.Resolve
+// (below), whose internal normalizeRemoteAddr step uses net.SplitHostPort —
+// never a hand-rolled split, never the raw string.
+//
+// Defect 2 (unconditional forwarding-header trust, leftmost selection):
+// X-Forwarded-For and X-Real-IP were honoured verbatim with NO
+// permitted-intermediary list, and the leftmost X-Forwarded-For entry was
+// taken unconditionally (strings.Split(xff, ",")[0]) — the same bypass a
+// review caught as the more serious half of the HXC-292 fix: under a
+// trusted, APPENDING reverse proxy (nginx's $proxy_add_x_forwarded_for),
+// an attacker's own forged, prepended entry wins over the real client the
+// proxy appends to its right. Fixed by clientip.Resolve gating both
+// headers on its internal peer-trust check (default: empty allowlist,
+// deny) and walking a trusted X-Forwarded-For chain RIGHT TO LEFT via its
+// internal resolveForwardedFor step (both unexported — see
+// clientip/clientip.go's Resolve doc comment for why only Resolve and
+// TrustedProxiesEnvVar are this package's public API).
+//
+// # Wiring status (§11.4.108 / §11.4.124)
+//
+// A full import-graph census at fix time found no production entry point
+// constructs EnterpriseManager / EnterpriseAPI: cmd/main.go (the shipped
+// llm-verifier binary) imports api, client, database, llmverifier, seed,
+// and tui — never enhanced/enterprise. config/{development,staging,
+// production}.yaml each declare an "enterprise:" section, but cmd/main.go
+// never reads that key. The only importers of enhanced/enterprise anywhere
+// in this module are three files under tests/: integration_simple_test.go,
+// working_components_test.go, and system_validation_test_fixed.go.
+// CORRECTION (post-fix review): system_validation_test_fixed.go does NOT
+// end in "_test.go" (it ends in "_fixed.go") and is therefore NOT a Go test
+// file — `go list -f '{{.GoFiles}}'` places it in the tests package's
+// regular GoFiles, compiled by `go build ./tests/...` like any other
+// source file, not excluded the way *_test.go is. The latency conclusion
+// is unaffected: what matters is not each importer's own file-suffix, but
+// whether digital.vasic.llmsverifier/tests ITSELF is ever imported by a
+// main package, and it is not — `go list -deps ./cmd/...` contains no
+// entry for llmsverifier/tests or llmsverifier/enhanced/enterprise. This
+// subsystem — including this method's audit-log consumers — is therefore
+// LATENT in the currently shipped binary, same class of finding as
+// HXC-299's AuditTrail. Per §11.4.124 that is not a reason to leave it
+// broken: this is a complete, self-consistent RBAC + audit feature
+// (handleAudit, gated by
+// PermissionLogsView, surfaces exactly this log) that could be wired into
+// cmd/main.go at any time, and must be correct when that happens.
+//
+// # Reuse-vs-mirror-vs-extract (HXC-308)
+//
+// enhanced/enterprise, api, and security all live in the SAME Go module
+// (digital.vasic.llmsverifier); there is no module boundary preventing
+// reuse. api's getClientIP and security's resolveClientIP are unexported,
+// so neither could be imported directly, and HXC-299's own doc comment
+// notes importing FROM security INTO api would have inverted that
+// codebase's dependency direction — api/ was deliberately frozen for that
+// fix's narrower scope. Rather than adding a THIRD independent copy (which
+// would only widen the drift risk HXC-308 tracks), the corrected algorithm
+// was extracted into the new clientip package — a dependency-neutral leaf
+// package with no import-cycle risk against api/, security/, or
+// enhanced/enterprise/. api/middleware.go's getClientIP and
+// security/client_ip_trust.go's resolveClientIP now delegate to
+// clientip.Resolve as well: there is exactly one implementation of this
+// algorithm in this codebase.
 func (api *EnterpriseAPI) getClientIP(r *http.Request) string {
-	// Get client IP from request headers or remote address
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		return strings.Split(xff, ",")[0]
-	}
-	if xri := r.Header.Get("X-Real-IP"); xri != "" {
-		return xri
-	}
-	return r.RemoteAddr
+	return clientip.Resolve(r)
 }
 
 // responseWriter wrapper to capture status code

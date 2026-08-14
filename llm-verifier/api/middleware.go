@@ -3,14 +3,12 @@ package api
 import (
 	"bytes"
 	"fmt"
-	"log"
-	"net"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
+
+	"digital.vasic.llmsverifier/clientip"
 )
 
 // RateLimiter provides thread-safe rate limiting using token bucket algorithm
@@ -350,10 +348,12 @@ func RateLimitMiddleware(limiter interface{}) func(http.Handler) http.Handler {
 
 // clientIPTrustedProxiesEnvVar is the environment variable operators use to
 // declare which immediate peers are permitted to have their
-// X-Forwarded-For / X-Real-IP headers trusted by getClientIP. See
-// isTrustedProxyPeer for the full rationale behind defaulting this to
-// empty (nothing trusted) rather than a guessed value.
-const clientIPTrustedProxiesEnvVar = "LLM_VERIFIER_TRUSTED_PROXIES"
+// X-Forwarded-For / X-Real-IP headers trusted by getClientIP. Kept as its
+// own named constant (rather than referencing clientip.TrustedProxiesEnvVar
+// inline everywhere) purely for call-site readability in this file and its
+// tests; its VALUE is guaranteed identical to clientip's — see the
+// HXC-298-extraction note below.
+const clientIPTrustedProxiesEnvVar = clientip.TrustedProxiesEnvVar
 
 // getClientIP extracts the real client IP from the request.
 //
@@ -373,143 +373,24 @@ const clientIPTrustedProxiesEnvVar = "LLM_VERIFIER_TRUSTED_PROXIES"
 // whether a forwarding header happened to be present on a given request.
 // External precedent for the exact hazard of comparing a bracketed literal
 // against an unbracketed one without reconciling them first:
-// CVE-2026-39361 (OpenObserve, GHSA-gcwf-3p7h-wm79). Fixed below by taking
+// CVE-2026-39361 (OpenObserve, GHSA-gcwf-3p7h-wm79). Fixed by taking
 // RemoteAddr apart with net.SplitHostPort — which always returns the host
-// UNbracketed — never a hand-rolled split; see normalizeRemoteAddr.
+// UNbracketed — never a hand-rolled split; see clientip.Resolve's internal
+// normalizeRemoteAddr step (unexported — see that package's doc comment
+// for why only Resolve itself is exported).
 //
 // Defect 2 (unconditional forwarding-header trust): X-Forwarded-For and
 // X-Real-IP were honoured verbatim with NO permitted-intermediary list. Any
 // caller able to reach this service — not merely one behind a legitimate
-// reverse proxy — could state any client identity it liked. Fixed below by
-// gating BOTH headers on isTrustedProxyPeer, which trusts nothing unless
-// the immediate TCP peer is explicitly allow-listed via
-// clientIPTrustedProxiesEnvVar; see that function's doc comment for why the
-// default is empty (deny) rather than a value guessed into source.
-//
-// F1 (review-caught, the more serious half): the FIRST cut of the defect-2
-// fix selected the LEFTMOST X-Forwarded-For entry once the peer was
-// trusted, on the theory that "every entry to its right was appended by an
-// intermediary this function has already confirmed trusted." That theory
-// was false: isTrustedProxyPeer confirms only the LAST hop — r.RemoteAddr,
-// the immediate TCP peer — never any earlier hop recorded inside the
-// header itself. With nginx's common `$proxy_add_x_forwarded_for`
-// configuration, the trusted proxy APPENDS to whatever XFF it received
-// rather than replacing it, so an attacker sending
-// "X-Forwarded-For: 8.8.8.8" through that proxy causes this function to
-// receive "8.8.8.8, <attacker's real IP>" — leftmost selection handed back
-// the attacker's own forged claim, reopening defect 2 behind precisely the
-// deployment topology this fix's default-deny posture was written to
-// respect (configuring the allowlist, exactly as this function's own
-// documentation instructs an operator to do, is what exposed the bypass).
-// Fixed below by resolveForwardedFor, which walks the list RIGHT to LEFT —
-// the order proxies actually append in — skipping any entry that is
-// ITSELF on the trusted allowlist, and returning the first entry that is
-// not: the address closest to the client this function cannot itself
-// verify came from a hop it trusts. This is safe under both an appending
-// proxy (the forged leftmost entry is walked past once its real, appended,
-// untrusted origin is reached) and a replacing proxy (there is only ever
-// one entry, and it is not trusted, so it is returned immediately); worst
-// case — an unparseable or all-trusted chain — it degrades to RemoteAddr,
-// never forges. Every candidate is validated with net.ParseIP so an
-// attacker-chosen non-IP string can never land in the audit-log ClientIP
-// field.
-//
-// # Defect-class census, not just this function (HXC-292 F2 follow-up)
-//
-// This function's OWN two consumers (RateLimitMiddleware below,
-// api/audit_logger.go's LogHTTPRequest) were examined completely and
-// correctly — but "how many consumers does THIS function have" is a
-// different question from "how many functions in this component do THIS."
-// A census of the latter found two further, independent instances of the
-// same defect class elsewhere in this repository, tracked separately and
-// deliberately NOT touched by this fix (scope discipline, HXC-293 note
-// below): HXC-299 (security/security.go:482 extractIPAddress — splits at
-// the FIRST colon, so a bracketed IPv6 literal truncates to "[2001",
-// collapsing genuinely different callers onto one shared identity, worse
-// than this function's pre-fix behaviour, which at least kept identities
-// distinct; also trusts its header verbatim) and HXC-298
-// (enhanced/enterprise/api.go:817 — verbatim header trust plus a raw
-// RemoteAddr, port included, feeding the RBAC audit log). Per §11.4.146
-// STEP 3 / §11.4.118: fixing a function's identified callers is not the
-// same as censusing the defect CLASS across the component — the second
-// question is the one that surfaces siblings like these.
-func getClientIP(r *http.Request) string {
-	if isTrustedProxyPeer(r.RemoteAddr) {
-		// Check X-Forwarded-For header first (for proxies/load balancers).
-		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-			if ip := resolveForwardedFor(xff); ip != "" {
-				return ip
-			}
-			// No usable entry: either every entry was itself trusted (a
-			// fully-trusted chain with no client beyond it) or the walk hit
-			// an unparseable entry before finding a real one. Either way,
-			// fall through rather than return "" or an unvalidated string.
-		}
-
-		// Check X-Real-IP header. Conventionally set (not appended) by the
-		// immediate proxy — e.g. nginx's `proxy_set_header X-Real-IP
-		// $remote_addr` overwrites rather than accumulates — so it carries
-		// no list/appending semantics and no F1-class risk; it is still
-		// validated as a real IP for the same reason XFF entries are: an
-		// attacker-chosen non-IP string must never reach the audit log.
-		if xri := normalizeHostLiteral(r.Header.Get("X-Real-IP")); xri != "" {
-			if net.ParseIP(xri) != nil {
-				return xri
-			}
-		}
-	}
-
-	// Fall back to RemoteAddr — always net.SplitHostPort, never a manual split.
-	return normalizeRemoteAddr(r.RemoteAddr)
-}
-
-// resolveForwardedFor picks the caller's identity out of a trusted
-// X-Forwarded-For header value.
-//
-// It walks the comma-separated entry list from RIGHT to LEFT — the order
-// each hop actually appends in (see getClientIP's F1 doc section) —
-// skipping any entry that is ITSELF on the trusted-proxy allowlist, and
-// returns the first entry that is not: the closest-to-the-client address
-// this function cannot itself verify came from another hop it trusts. This
-// mirrors the standard approach mature reverse-proxy stacks use once they
-// bother validating XFF trust at all (nginx's realip module with
-// `real_ip_recursive on`; Express's `trust proxy` with a numeric hop count
-// or CIDR list) — walk backward through the chain, trust only as far as
-// the configured proxies go, and stop at the first untrusted hop.
-//
-// Every candidate is validated with net.ParseIP before being trusted OR
-// skipped: an entry that does not parse as an IP at all is neither
-// something this function can confirm is a trusted intermediary NOR
-// something safe to hand out as a caller identity (an attacker-chosen
-// non-IP string must never reach the audit log or the rate-limit key), so
-// the walk stops there and getClientIP falls through to X-Real-IP /
-// RemoteAddr rather than guessing.
-func resolveForwardedFor(xff string) string {
-	entries := strings.Split(xff, ",")
-	for i := len(entries) - 1; i >= 0; i-- {
-		candidate := normalizeHostLiteral(entries[i])
-		ip := net.ParseIP(candidate)
-		if ip == nil {
-			// Unparseable (or empty) entry: cannot be confirmed as a
-			// trusted hop, and cannot be handed out as an identity either.
-			// Stop here rather than skip past it or return it.
-			return ""
-		}
-		if isTrustedProxyIP(ip) {
-			// This hop is itself a declared, trusted intermediary —
-			// presumed to have appended its own observed peer to its
-			// right (already walked, or, if this was the rightmost entry,
-			// IS the confirmed TCP peer per isTrustedProxyPeer). Keep
-			// walking left through the chain.
-			continue
-		}
-		return candidate
-	}
-	return ""
-}
-
-// isTrustedProxyPeer decides whether X-Forwarded-For / X-Real-IP may be
-// honoured for a request whose immediate TCP peer is remoteAddr.
+// reverse proxy — could state any client identity it liked. Fixed by
+// gating BOTH headers on clientip.Resolve's internal peer-trust check,
+// which trusts nothing unless the immediate TCP peer is explicitly
+// allow-listed via
+// clientIPTrustedProxiesEnvVar; see that function's doc comment (in
+// clientip/clientip.go) for why the default is empty (deny) rather than a
+// value guessed into source, and see this file's own topology-finding
+// rationale below for why no single guessed default would even be SAFE for
+// every deployment this repository sanctions.
 //
 // Topology finding (HXC-292, captured against this repository's own
 // deployment configs): BOTH a direct-exposure topology and a
@@ -532,193 +413,83 @@ func resolveForwardedFor(xff string) string {
 // already reach this service's port directly, so a blanket
 // "trust all of RFC 1918" default would let any ONE of those, if
 // compromised, forge a client identity exactly as easily as the nginx
-// container such a default would have been trying to describe.
+// container such a default would have been trying to describe. Operators
+// deploying behind docker-compose.prod.yml, llm-verifier/docker-compose.yml,
+// or k8s-manifests.yaml's ingress-nginx MUST set LLM_VERIFIER_TRUSTED_PROXIES
+// to their actual proxy's address/CIDR to regain per-client granularity;
+// the empty default's cost is a bounded, instantly-reversible degradation
+// in identity GRANULARITY (every caller behind an unconfigured proxy
+// resolves to the proxy's own address), never an outage and never a
+// forged-identity hole. See HXC-293 for the framework-wide version of this
+// same default-deny posture in the sibling helix_agent submodule; this
+// item (HXC-292) is scoped to this function only and does not widen
+// HXC-293's scope.
 //
-// The allowlist is therefore entirely operator-supplied via
-// clientIPTrustedProxiesEnvVar (LLM_VERIFIER_TRUSTED_PROXIES — a
-// comma-separated list of bare IPs and/or CIDRs, e.g. "172.20.0.0/16" for
-// the docker-compose.prod.yml topology, or the ingress-controller's pod
-// CIDR on Kubernetes) and DEFAULTS TO EMPTY: nothing is trusted,
-// X-Forwarded-For / X-Real-IP are ignored, and every caller's identity is
-// its own RemoteAddr. This mirrors where the ecosystem has moved after
-// repeated XFF-spoofing incidents (Go's own chi middleware's RealIP no
-// longer trusts XFF unless a trusted-proxy list is configured; Express's
-// `trust proxy` defaults to false; Django / Rails require explicit
-// configuration before SECURE_PROXY_SSL_HEADER / trusted_proxies take
-// effect) and matches OWASP's guidance: do not use X-Forwarded-For for
-// security-relevant decisions unless you control and know the proxies in
-// the chain.
+// F1 (review-caught, the more serious half): the FIRST cut of the defect-2
+// fix selected the LEFTMOST X-Forwarded-For entry once the peer was
+// trusted, on the theory that "every entry to its right was appended by an
+// intermediary this function has already confirmed trusted." That theory
+// was false: the peer-trust check confirms only the LAST hop —
+// r.RemoteAddr, the immediate TCP peer — never any earlier hop recorded
+// inside the header itself. With nginx's common
+// `$proxy_add_x_forwarded_for` configuration, the trusted proxy APPENDS to
+// whatever XFF it received rather than replacing it, so an attacker
+// sending "X-Forwarded-For: 8.8.8.8" through that proxy causes this
+// function to receive "8.8.8.8, <attacker's real IP>" — leftmost selection
+// handed back the attacker's own forged claim, reopening defect 2 behind
+// precisely the deployment topology this fix's default-deny posture was
+// written to respect (configuring the allowlist, exactly as this
+// function's own documentation instructs an operator to do, is what
+// exposed the bypass). Fixed by clientip.Resolve's internal
+// resolveForwardedFor step, which walks the list RIGHT to LEFT — the order
+// proxies actually append in — skipping any entry that is ITSELF on the
+// trusted allowlist, and returning the first entry that is not.
 //
-// What the empty default costs a genuinely-proxied deployment that has
-// not yet set the env var: every caller behind that proxy resolves to the
-// PROXY's own peer address rather than its own — i.e. exactly the
-// behaviour this service would already have with no proxy in front of it
-// at all. Rate limiting (RateLimitMiddleware, below) becomes shared
-// across every user of that proxy, and audit-log ClientIP values
-// (api/audit_logger.go) collapse to the proxy's address, until the
-// operator configures the allowlist — but the service keeps answering
-// every request either way. That is a deliberate, bounded, and instantly
-// reversible degradation in identity GRANULARITY, never an outage, and
-// never a forged-identity hole. It is traded against the alternative of
-// guessing one specific network's identity into source code, which
-// CONST-045 forbids outright and which would silently be WRONG — and
-// therefore either still-forgeable (an over-broad guess like "all of RFC
-// 1918") or entirely inert (an under-broad guess that doesn't match the
-// operator's actual topology) — for every deployment except the one
-// guessed.
+// # Defect-class census, not just this function (HXC-292 F2 follow-up)
 //
-// Operators deploying behind docker-compose.prod.yml,
-// llm-verifier/docker-compose.yml, or k8s-manifests.yaml's ingress-nginx
-// MUST set LLM_VERIFIER_TRUSTED_PROXIES to their actual proxy's
-// address/CIDR to regain per-client granularity. See HXC-293 for the
-// framework-wide version of this same default-deny posture in the
-// sibling helix_agent submodule; this item (HXC-292) is scoped to this
-// function only and does not widen HXC-293's scope.
-func isTrustedProxyPeer(remoteAddr string) bool {
-	peerHost, _, err := net.SplitHostPort(remoteAddr)
-	if err != nil {
-		peerHost = stripBrackets(remoteAddr)
-	}
-	peerIP := net.ParseIP(peerHost)
-	if peerIP == nil {
-		return false
-	}
-	return isTrustedProxyIP(peerIP)
-}
-
-// isTrustedProxyIP decides whether ip itself is on the operator-configured
-// trusted-proxy allowlist (clientIPTrustedProxiesEnvVar). Used both for the
-// immediate TCP peer (isTrustedProxyPeer, above) and, in
-// resolveForwardedFor, for each earlier hop recorded inside a trusted
-// X-Forwarded-For chain — an address this function has no independent way
-// to verify actually sits where the header claims, but which the operator
-// has explicitly declared trustworthy by address.
-func isTrustedProxyIP(ip net.IP) bool {
-	configured := strings.TrimSpace(os.Getenv(clientIPTrustedProxiesEnvVar))
-	if configured == "" {
-		return false
-	}
-	warnOnMalformedTrustedProxiesEntries(configured)
-
-	for _, entry := range strings.Split(configured, ",") {
-		entry = strings.TrimSpace(entry)
-		if entry == "" {
-			continue
-		}
-		if !strings.Contains(entry, "/") {
-			// F5: strip a redundant bracket pair around a bare IPv6
-			// allowlist entry ("[2001:db8::1]") before parsing —
-			// net.ParseIP rejects brackets outright, so an unstripped
-			// bracketed entry would silently never match its peer,
-			// regardless of how the operator wrote it.
-			if candidate := net.ParseIP(stripBrackets(entry)); candidate != nil && candidate.Equal(ip) {
-				return true
-			}
-			continue
-		}
-		if _, cidr, err := net.ParseCIDR(entry); err == nil && cidr.Contains(ip) {
-			return true
-		}
-	}
-	return false
-}
-
-// clientIPLastWarnedTrustedProxies de-duplicates the malformed-allowlist
-// diagnostic (below): it remembers the exact clientIPTrustedProxiesEnvVar
-// value most recently warned about, so a fixed (mis)configuration produces
-// AT MOST one warning per distinct value rather than once per request —
-// isTrustedProxyIP runs on every request that reaches a trust decision.
-var clientIPLastWarnedTrustedProxies atomic.Value // holds string
-
-// warnOnMalformedTrustedProxiesEntries logs a single, de-duplicated
-// diagnostic warning when clientIPTrustedProxiesEnvVar contains an entry
-// that is neither a valid bare IP nor a valid CIDR. This is deliberately
-// non-fatal and changes no trust decision whatsoever — a malformed entry
-// is, and remains, silently skipped by isTrustedProxyIP above (fails
-// closed for that one entry) — it exists solely so a misconfigured
-// allowlist is diagnosable from logs rather than only from behaviour that
-// looks identical to "not configured yet."
-func warnOnMalformedTrustedProxiesEntries(configured string) {
-	if last, ok := clientIPLastWarnedTrustedProxies.Load().(string); ok && last == configured {
-		return
-	}
-	clientIPLastWarnedTrustedProxies.Store(configured)
-
-	var malformed []string
-	for _, entry := range strings.Split(configured, ",") {
-		entry = strings.TrimSpace(entry)
-		if entry == "" {
-			continue
-		}
-		if strings.Contains(entry, "/") {
-			if _, _, err := net.ParseCIDR(entry); err != nil {
-				malformed = append(malformed, entry)
-			}
-			continue
-		}
-		if net.ParseIP(stripBrackets(entry)) == nil {
-			malformed = append(malformed, entry)
-		}
-	}
-	if len(malformed) > 0 {
-		log.Printf("llm-verifier: %s contains %d entr(y/ies) that are neither a valid IP nor a valid "+
-			"CIDR and will be ignored (fails closed for those entries): %v — check your deployment "+
-			"configuration", clientIPTrustedProxiesEnvVar, len(malformed), malformed)
-	}
-}
-
-// stripBrackets removes a single matching pair of square brackets wrapping
-// an otherwise-bare IPv6 literal (e.g. "[2001:db8::1]" -> "2001:db8::1").
-// It is a no-op for anything else. This is the one shape
-// net.SplitHostPort itself does not cover — a bracketed host with no port
-// at all — so it is applied explicitly wherever that degenerate form can
-// occur, preventing it from silently forking into a second, distinct
-// identity from its "[2001:db8::1]:<port>" sibling.
-func stripBrackets(host string) string {
-	if len(host) >= 2 && host[0] == '[' && host[len(host)-1] == ']' {
-		return host[1 : len(host)-1]
-	}
-	return host
-}
-
-// normalizeRemoteAddr extracts the caller's address from
-// http.Request.RemoteAddr, which Go always sets to "host:port" (bracketing
-// an IPv6 host per net.SplitHostPort's own contract). net.SplitHostPort —
-// never a hand-rolled split — is the only correct way to take it apart: it
-// always returns the host UNbracketed, which is the fix for HXC-292 defect
-// 1 (see getClientIP's doc comment for the full defect description).
-func normalizeRemoteAddr(remoteAddr string) string {
-	if host, _, err := net.SplitHostPort(remoteAddr); err == nil {
-		if host == "" {
-			// A port was present but the host portion was empty (e.g.
-			// ":12345"). There is no caller identity to extract here at all;
-			// the original string is returned unmodified rather than an
-			// invented sentinel, matching this function's pre-fix behaviour
-			// for this exact degenerate shape.
-			return remoteAddr
-		}
-		return host
-	}
-	// No ":port" suffix to split off. This is not automatically malformed —
-	// a bare host with no port needs nothing stripped — so it is used AS-IS,
-	// except for the one degenerate shape that would otherwise silently fork
-	// into a second identity: a redundant bracket pair around an otherwise-
-	// bare host ("[2001:db8::1]" with no port at all).
-	return stripBrackets(remoteAddr)
-}
-
-// normalizeHostLiteral trims and bracket-strips a caller-address literal
-// taken from a forwarding header (an X-Forwarded-For entry or
-// X-Real-IP). Unlike RemoteAddr, a header-supplied literal is not
-// guaranteed to carry a port, so net.SplitHostPort is not the right tool
-// here — an unbracketed IPv6 literal such as "2001:db8::1" contains
-// colons that SplitHostPort would misinterpret as a host:port separator.
-// The defensive bracket-strip alone is sufficient: it normalizes a
-// bracketed header literal onto the SAME identity a direct connection from
-// the same address would resolve to (see normalizeRemoteAddr) without
-// risking that misparse.
-func normalizeHostLiteral(literal string) string {
-	return stripBrackets(strings.TrimSpace(literal))
+// This function's OWN two consumers (RateLimitMiddleware below,
+// api/audit_logger.go's LogHTTPRequest) were examined completely and
+// correctly — but "how many consumers does THIS function have" is a
+// different question from "how many functions in this component do THIS."
+// A census of the latter found two further, independent instances of the
+// same defect class elsewhere in this repository: HXC-299
+// (security/security.go's extractIPAddress — which THEN split at the
+// FIRST colon, so a bracketed IPv6 literal truncated to "[2001",
+// collapsing genuinely different callers onto one shared identity, worse
+// than this function's pre-fix behaviour, which at least kept identities
+// distinct, and which also trusted its header verbatim) and HXC-298
+// (enhanced/enterprise/api.go's EnterpriseAPI.getClientIP — verbatim
+// header trust plus a raw RemoteAddr, port included, feeding the RBAC
+// audit log). Both are cited by SYMBOL rather than by file:line, because
+// a line citation here drifts: this comment previously named
+// security.go:482, which sat 57 lines above extractIPAddress at HEAD and
+// 67 above it in the working tree — and line 482 is itself only a comment
+// fragment. Both defects are since FIXED — extractIPAddress, this
+// function, and EnterpriseAPI.getClientIP now all resolve through
+// clientip.Resolve. Per §11.4.146 STEP 3 / §11.4.118: fixing a function's
+// identified callers is not the same as censusing the defect CLASS across
+// the component — the second question is the one that surfaces siblings
+// like these.
+//
+// # HXC-298 extraction (closes HXC-308)
+//
+// HXC-299's own fix could not import this (then-unexported) function
+// without inverting this codebase's dependency direction, so it mirrored
+// the corrected algorithm instead — leaving two independently-maintained
+// copies with nothing to stop them drifting apart (HXC-308). Fixing
+// HXC-298's third, independent copy in enhanced/enterprise/api.go by
+// re-deriving yet another mirror would only have widened that risk.
+// Instead, the corrected algorithm was extracted into the new clientip
+// package (digital.vasic.llmsverifier/clientip) — a dependency-neutral
+// leaf package with no import-cycle risk against api/, security/, or
+// enhanced/enterprise/ (none of the three import each other). This
+// function, security/client_ip_trust.go's resolveClientIP, and
+// enhanced/enterprise/api.go's EnterpriseAPI.getClientIP now all delegate
+// to clientip.Resolve: there is exactly one implementation of this
+// algorithm in this codebase. See clientip/clientip.go's package doc
+// comment for the full extraction rationale.
+func getClientIP(r *http.Request) string {
+	return clientip.Resolve(r)
 }
 
 // isRateLimited checks if the client is rate limited using the global rate limiter
