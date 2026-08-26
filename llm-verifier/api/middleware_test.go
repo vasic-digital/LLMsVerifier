@@ -112,31 +112,69 @@ func TestRateLimitMiddleware(t *testing.T) {
 	assert.NotEmpty(t, rec.Header().Get("X-RateLimit-Reset"))
 }
 
+// TestGetClientIP — reconciled per §11.4.120 for HXC-292, TWICE.
+//
+// First reconciliation: the pre-fix version of this test asserted that
+// X-Forwarded-For and X-Real-IP were honoured UNCONDITIONALLY, from any
+// peer, with no trust relationship required — that was itself the
+// HXC-292 defect 2 bug this test was inadvertently pinning as "correct"
+// behaviour. Every case below that expects a forwarded header to be
+// honoured explicitly configures its peer as trusted via
+// LLM_VERIFIER_TRUSTED_PROXIES (t.Setenv, scoped to the subtest); cases
+// with no trustedProxies value exercise the untrusted-by-default path.
+//
+// Second reconciliation (F1): the "multiple IPs" case originally asserted
+// LEFTMOST-entry selection ("10.0.0.1, 172.16.0.1, 192.168.1.1" -> the
+// leftmost "10.0.0.1"), which was itself the F1 bug — see
+// hxc292_client_ip_trust_red_test.go's hxc292RunAppendingProxyBypassCase
+// for the exploit this enabled. The XFF value below was rewritten to
+// represent a REALISTIC single-hop appending-proxy chain (client
+// "10.0.0.1" connects through the trusted proxy at "127.0.0.1", which
+// appends ITS OWN observed peer — its own address, in this minimal
+// example — to the right) so the case still demonstrates multi-entry
+// parsing while asserting the F1-corrected right-to-left,
+// skip-trusted-entries selection.
 func TestGetClientIP(t *testing.T) {
 	tests := []struct {
-		name       string
-		xff        string
-		xri        string
-		remoteAddr string
-		expected   string
+		name           string
+		xff            string
+		xri            string
+		remoteAddr     string
+		trustedProxies string // LLM_VERIFIER_TRUSTED_PROXIES; "" = default-deny
+		expected       string
 	}{
 		{
-			name:       "X-Forwarded-For single IP",
+			name:           "X-Forwarded-For single IP, trusted peer",
+			xff:            "10.0.0.1",
+			remoteAddr:     "192.168.1.1:12345",
+			trustedProxies: "192.168.1.1",
+			expected:       "10.0.0.1",
+		},
+		{
+			name:           "X-Forwarded-For multiple IPs, trusted peer (F1-corrected: rightmost non-trusted entry wins)",
+			xff:            "10.0.0.1, 127.0.0.1",
+			remoteAddr:     "127.0.0.1:12345",
+			trustedProxies: "127.0.0.1",
+			expected:       "10.0.0.1",
+		},
+		{
+			name:           "X-Real-IP, trusted peer",
+			xri:            "10.0.0.2",
+			remoteAddr:     "192.168.1.1:12345",
+			trustedProxies: "192.168.1.1",
+			expected:       "10.0.0.2",
+		},
+		{
+			name:       "X-Forwarded-For ignored from untrusted peer (HXC-292 defect2 guard)",
 			xff:        "10.0.0.1",
 			remoteAddr: "192.168.1.1:12345",
-			expected:   "10.0.0.1",
+			expected:   "192.168.1.1",
 		},
 		{
-			name:       "X-Forwarded-For multiple IPs",
-			xff:        "10.0.0.1, 172.16.0.1, 192.168.1.1",
-			remoteAddr: "127.0.0.1:12345",
-			expected:   "10.0.0.1",
-		},
-		{
-			name:       "X-Real-IP",
+			name:       "X-Real-IP ignored from untrusted peer (HXC-292 defect2 guard)",
 			xri:        "10.0.0.2",
 			remoteAddr: "192.168.1.1:12345",
-			expected:   "10.0.0.2",
+			expected:   "192.168.1.1",
 		},
 		{
 			name:       "RemoteAddr with port",
@@ -152,6 +190,8 @@ func TestGetClientIP(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv(clientIPTrustedProxiesEnvVar, tt.trustedProxies)
+
 			req := httptest.NewRequest("GET", "/test", nil)
 			req.RemoteAddr = tt.remoteAddr
 			if tt.xff != "" {

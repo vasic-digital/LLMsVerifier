@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"digital.vasic.llmsverifier/pkg/helixendpoint"
 )
 
 // OpenCodeConfig represents the configuration for OpenCode CLI
@@ -143,7 +145,8 @@ func (g *OpenCodeGenerator) Generate(ctx context.Context, config *GeneratorConfi
 	}
 
 	// Configure provider
-	baseURL := fmt.Sprintf("http://%s:%d/v1", config.HelixAgentHost, config.HelixAgentPort)
+	baseURL := helixendpoint.JoinPath(
+		helixendpoint.BaseURL(config.HelixAgentHost, config.HelixAgentPort), "v1")
 	// Use real API key from environment for installed configs;
 	// env var references like "{env:VAR}" are NOT supported by OpenCode
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")

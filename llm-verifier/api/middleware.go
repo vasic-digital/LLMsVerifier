@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"digital.vasic.llmsverifier/clientip"
 )
 
 // RateLimiter provides thread-safe rate limiting using token bucket algorithm
@@ -344,29 +346,150 @@ func RateLimitMiddleware(limiter interface{}) func(http.Handler) http.Handler {
 	}
 }
 
-// getClientIP extracts the real client IP from the request
+// clientIPTrustedProxiesEnvVar is the environment variable operators use to
+// declare which immediate peers are permitted to have their
+// X-Forwarded-For / X-Real-IP headers trusted by getClientIP. Kept as its
+// own named constant (rather than referencing clientip.TrustedProxiesEnvVar
+// inline everywhere) purely for call-site readability in this file and its
+// tests; its VALUE is guaranteed identical to clientip's — see the
+// HXC-298-extraction note below.
+const clientIPTrustedProxiesEnvVar = clientip.TrustedProxiesEnvVar
+
+// getClientIP extracts the real client IP from the request.
+//
+// HXC-292 fixed two independent defects here, plus one review-caught defect
+// (F1) in the fix for the second.
+//
+// Defect 1 (bracket-fork / identity split): the RemoteAddr fallback used a
+// hand-rolled strings.LastIndex(r.RemoteAddr, ":") split. It correctly
+// located the port separator, but for a direct IPv6 connection — where Go
+// sets RemoteAddr to "[2001:db8::1]:54321" — it left the surrounding
+// brackets in the returned host, yielding the identity "[2001:db8::1]",
+// while the X-Forwarded-For / X-Real-IP paths returned the header value
+// verbatim (conventionally UNbracketed). The SAME real caller therefore
+// forked into two distinct rate-limit / audit identities (see
+// RateLimitMiddleware's rl.Allow(clientIP) below and
+// api/audit_logger.go's LogHTTPRequest ClientIP field) depending only on
+// whether a forwarding header happened to be present on a given request.
+// External precedent for the exact hazard of comparing a bracketed literal
+// against an unbracketed one without reconciling them first:
+// CVE-2026-39361 (OpenObserve, GHSA-gcwf-3p7h-wm79). Fixed by taking
+// RemoteAddr apart with net.SplitHostPort — which always returns the host
+// UNbracketed — never a hand-rolled split; see clientip.Resolve's internal
+// normalizeRemoteAddr step (unexported — see that package's doc comment
+// for why only Resolve itself is exported).
+//
+// Defect 2 (unconditional forwarding-header trust): X-Forwarded-For and
+// X-Real-IP were honoured verbatim with NO permitted-intermediary list. Any
+// caller able to reach this service — not merely one behind a legitimate
+// reverse proxy — could state any client identity it liked. Fixed by
+// gating BOTH headers on clientip.Resolve's internal peer-trust check,
+// which trusts nothing unless the immediate TCP peer is explicitly
+// allow-listed via
+// clientIPTrustedProxiesEnvVar; see that function's doc comment (in
+// clientip/clientip.go) for why the default is empty (deny) rather than a
+// value guessed into source, and see this file's own topology-finding
+// rationale below for why no single guessed default would even be SAFE for
+// every deployment this repository sanctions.
+//
+// Topology finding (HXC-292, captured against this repository's own
+// deployment configs): BOTH a direct-exposure topology and a
+// reverse-proxied topology are sanctioned here. docker-compose.yml — the
+// README "quick start" path — exposes this service with no proxy in
+// front. docker-compose.prod.yml, llm-verifier/docker-compose.yml,
+// k8s-manifests.yaml, and every guide under docs/deployment/ instead put
+// nginx, Traefik, or an nginx-ingress controller in front of it. Which one
+// is live for any given deployment is not knowable from this source tree
+// — and even where a proxy IS present, its actual network identity varies
+// by topology: a docker-compose bridge subnet is operator-chosen (e.g.
+// docker-compose.prod.yml's own "subnet: 172.20.0.0/16"), a Kubernetes
+// ingress controller's pod/service CIDR is cluster-specific, and an AWS
+// ALB's source ranges are AWS-managed and change over time. CONST-045 (no
+// hardcoded distribution hosts) and this project's general
+// configuration-injection discipline both forbid baking any single one of
+// those into source — and no guessed default would even be SAFE across
+// all of them: every other container sharing docker-compose.prod.yml's
+// bridge network (postgres, redis, prometheus, grafana, watchtower) can
+// already reach this service's port directly, so a blanket
+// "trust all of RFC 1918" default would let any ONE of those, if
+// compromised, forge a client identity exactly as easily as the nginx
+// container such a default would have been trying to describe. Operators
+// deploying behind docker-compose.prod.yml, llm-verifier/docker-compose.yml,
+// or k8s-manifests.yaml's ingress-nginx MUST set LLM_VERIFIER_TRUSTED_PROXIES
+// to their actual proxy's address/CIDR to regain per-client granularity;
+// the empty default's cost is a bounded, instantly-reversible degradation
+// in identity GRANULARITY (every caller behind an unconfigured proxy
+// resolves to the proxy's own address), never an outage and never a
+// forged-identity hole. See HXC-293 for the framework-wide version of this
+// same default-deny posture in the sibling helix_agent submodule; this
+// item (HXC-292) is scoped to this function only and does not widen
+// HXC-293's scope.
+//
+// F1 (review-caught, the more serious half): the FIRST cut of the defect-2
+// fix selected the LEFTMOST X-Forwarded-For entry once the peer was
+// trusted, on the theory that "every entry to its right was appended by an
+// intermediary this function has already confirmed trusted." That theory
+// was false: the peer-trust check confirms only the LAST hop —
+// r.RemoteAddr, the immediate TCP peer — never any earlier hop recorded
+// inside the header itself. With nginx's common
+// `$proxy_add_x_forwarded_for` configuration, the trusted proxy APPENDS to
+// whatever XFF it received rather than replacing it, so an attacker
+// sending "X-Forwarded-For: 8.8.8.8" through that proxy causes this
+// function to receive "8.8.8.8, <attacker's real IP>" — leftmost selection
+// handed back the attacker's own forged claim, reopening defect 2 behind
+// precisely the deployment topology this fix's default-deny posture was
+// written to respect (configuring the allowlist, exactly as this
+// function's own documentation instructs an operator to do, is what
+// exposed the bypass). Fixed by clientip.Resolve's internal
+// resolveForwardedFor step, which walks the list RIGHT to LEFT — the order
+// proxies actually append in — skipping any entry that is ITSELF on the
+// trusted allowlist, and returning the first entry that is not.
+//
+// # Defect-class census, not just this function (HXC-292 F2 follow-up)
+//
+// This function's OWN two consumers (RateLimitMiddleware below,
+// api/audit_logger.go's LogHTTPRequest) were examined completely and
+// correctly — but "how many consumers does THIS function have" is a
+// different question from "how many functions in this component do THIS."
+// A census of the latter found two further, independent instances of the
+// same defect class elsewhere in this repository: HXC-299
+// (security/security.go's extractIPAddress — which THEN split at the
+// FIRST colon, so a bracketed IPv6 literal truncated to "[2001",
+// collapsing genuinely different callers onto one shared identity, worse
+// than this function's pre-fix behaviour, which at least kept identities
+// distinct, and which also trusted its header verbatim) and HXC-298
+// (enhanced/enterprise/api.go's EnterpriseAPI.getClientIP — verbatim
+// header trust plus a raw RemoteAddr, port included, feeding the RBAC
+// audit log). Both are cited by SYMBOL rather than by file:line, because
+// a line citation here drifts: this comment previously named
+// security.go:482, which sat 57 lines above extractIPAddress at HEAD and
+// 67 above it in the working tree — and line 482 is itself only a comment
+// fragment. Both defects are since FIXED — extractIPAddress, this
+// function, and EnterpriseAPI.getClientIP now all resolve through
+// clientip.Resolve. Per §11.4.146 STEP 3 / §11.4.118: fixing a function's
+// identified callers is not the same as censusing the defect CLASS across
+// the component — the second question is the one that surfaces siblings
+// like these.
+//
+// # HXC-298 extraction (closes HXC-308)
+//
+// HXC-299's own fix could not import this (then-unexported) function
+// without inverting this codebase's dependency direction, so it mirrored
+// the corrected algorithm instead — leaving two independently-maintained
+// copies with nothing to stop them drifting apart (HXC-308). Fixing
+// HXC-298's third, independent copy in enhanced/enterprise/api.go by
+// re-deriving yet another mirror would only have widened that risk.
+// Instead, the corrected algorithm was extracted into the new clientip
+// package (digital.vasic.llmsverifier/clientip) — a dependency-neutral
+// leaf package with no import-cycle risk against api/, security/, or
+// enhanced/enterprise/ (none of the three import each other). This
+// function, security/client_ip_trust.go's resolveClientIP, and
+// enhanced/enterprise/api.go's EnterpriseAPI.getClientIP now all delegate
+// to clientip.Resolve: there is exactly one implementation of this
+// algorithm in this codebase. See clientip/clientip.go's package doc
+// comment for the full extraction rationale.
 func getClientIP(r *http.Request) string {
-	// Check X-Forwarded-For header first (for proxies/load balancers)
-	xff := r.Header.Get("X-Forwarded-For")
-	if xff != "" {
-		// X-Forwarded-For can contain multiple IPs, take the first one
-		if idx := strings.Index(xff, ","); idx > 0 {
-			return strings.TrimSpace(xff[:idx])
-		}
-		return strings.TrimSpace(xff)
-	}
-
-	// Check X-Real-IP header
-	if xri := r.Header.Get("X-Real-IP"); xri != "" {
-		return strings.TrimSpace(xri)
-	}
-
-	// Fall back to RemoteAddr
-	if idx := strings.LastIndex(r.RemoteAddr, ":"); idx > 0 {
-		return r.RemoteAddr[:idx]
-	}
-
-	return r.RemoteAddr
+	return clientip.Resolve(r)
 }
 
 // isRateLimited checks if the client is rate limited using the global rate limiter

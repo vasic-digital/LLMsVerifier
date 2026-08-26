@@ -73,6 +73,9 @@ config.yaml
 config.yml
 *.env
 .env.*
+# ...except the committed, secret-free template that documents which variables
+# a deployment must supply (see README.md "HelixAgent Endpoint Configuration").
+!.env.example
 
 # IDE and editor files
 .vscode/

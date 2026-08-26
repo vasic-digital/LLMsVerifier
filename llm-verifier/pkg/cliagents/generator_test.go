@@ -3,7 +3,10 @@ package cliagents
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
+
+	"digital.vasic.llmsverifier/pkg/helixendpoint"
 )
 
 func TestNewUnifiedGenerator(t *testing.T) {
@@ -27,23 +30,56 @@ func TestNewUnifiedGenerator(t *testing.T) {
 	}
 }
 
+// HXC-250 §11.4.120 reconciliation: this gate previously asserted the endpoint
+// literal unconditionally, which encoded the very behaviour HXC-250 removes
+// (a hardcoded consumer endpoint). It now asserts the MECHANISM — the
+// documented placeholder when nothing is injected, and the injected endpoint
+// when something is. Env is controlled explicitly so an injected ambient
+// environment cannot flip the verdict.
 func TestDefaultGeneratorConfig(t *testing.T) {
-	config := DefaultGeneratorConfig()
-	if config == nil {
-		t.Fatal("DefaultGeneratorConfig returned nil")
-	}
-	if config.HelixAgentHost != "localhost" {
-		t.Errorf("Expected host 'localhost', got '%s'", config.HelixAgentHost)
-	}
-	if config.HelixAgentPort != 8100 {
-		t.Errorf("Expected port 8100, got %d", config.HelixAgentPort)
-	}
-	if !config.IncludeScores {
-		t.Error("Expected IncludeScores to be true")
-	}
+	t.Run("placeholder when nothing injected", func(t *testing.T) {
+		t.Setenv(helixendpoint.EnvBaseURL, "")
+		t.Setenv(helixendpoint.EnvHost, "")
+		t.Setenv(helixendpoint.EnvPort, "")
+
+		config := DefaultGeneratorConfig()
+		if config == nil {
+			t.Fatal("DefaultGeneratorConfig returned nil")
+		}
+		if config.HelixAgentHost != helixendpoint.DefaultHost {
+			t.Errorf("Expected host '%s', got '%s'", helixendpoint.DefaultHost, config.HelixAgentHost)
+		}
+		if config.HelixAgentPort != helixendpoint.DefaultPort {
+			t.Errorf("Expected port %d, got %d", helixendpoint.DefaultPort, config.HelixAgentPort)
+		}
+		if !config.IncludeScores {
+			t.Error("Expected IncludeScores to be true")
+		}
+	})
+
+	t.Run("injected endpoint is honoured", func(t *testing.T) {
+		t.Setenv(helixendpoint.EnvHost, "agent.internal")
+		t.Setenv(helixendpoint.EnvPort, "7061")
+
+		config := DefaultGeneratorConfig()
+		if config.HelixAgentHost != "agent.internal" || config.HelixAgentPort != 7061 {
+			t.Errorf("injected endpoint ignored: got %s:%d",
+				config.HelixAgentHost, config.HelixAgentPort)
+		}
+	})
 }
 
+// HXC-250 §11.4.120 reconciliation: the HelixAgent-endpoint check previously
+// compared a fixed 21-byte prefix against the literal endpoint. It now
+// compares against the RESOLVED endpoint, so the gate follows the injection
+// mechanism instead of pinning the removed hardcode.
 func TestDefaultMCPServers(t *testing.T) {
+	t.Setenv(helixendpoint.EnvBaseURL, "")
+	t.Setenv(helixendpoint.EnvHost, "")
+	t.Setenv(helixendpoint.EnvPort, "")
+
+	resolvedBase := helixendpoint.DefaultBaseURL()
+
 	servers := DefaultMCPServers()
 	if len(servers) == 0 {
 		t.Fatal("DefaultMCPServers returned empty slice")
@@ -60,9 +96,9 @@ func TestDefaultMCPServers(t *testing.T) {
 	freeRemoteCount := 0
 	for _, server := range servers {
 		if server.Type == "remote" && len(server.URL) > 0 {
-			if len(server.URL) > 20 && server.URL[:21] == "http://localhost:8100" {
+			if strings.HasPrefix(server.URL, resolvedBase+"/") {
 				helixAgentCount++
-			} else if server.URL[:5] == "https" {
+			} else if strings.HasPrefix(server.URL, "https") {
 				freeRemoteCount++
 			}
 		}

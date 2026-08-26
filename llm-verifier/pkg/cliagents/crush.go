@@ -9,6 +9,7 @@ import (
 	"time"
 
 	crush_config "digital.vasic.llmsverifier/pkg/crush/config"
+	"digital.vasic.llmsverifier/pkg/helixendpoint"
 )
 
 // CrushConfig represents the configuration for Crush CLI with HelixAgent extensions
@@ -67,7 +68,8 @@ func (g *CrushGenerator) Generate(ctx context.Context, config *GeneratorConfig) 
 		apiKey = "<YOUR_HELIXAGENT_API_KEY>"
 	}
 
-	baseURL := fmt.Sprintf("http://%s:%d/v1", config.HelixAgentHost, config.HelixAgentPort)
+	baseURL := helixendpoint.JoinPath(
+		helixendpoint.BaseURL(config.HelixAgentHost, config.HelixAgentPort), "v1")
 
 	// Configure providers (map by provider ID)
 	// Single "Helix Agent" provider with TWO models:

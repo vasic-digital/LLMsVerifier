@@ -221,6 +221,20 @@ spec:
               number: 80
 ```
 
+**Trusted-proxy allowlist required for this topology.** An ingress-nginx
+controller sits between the client and this Deployment's pods, so
+`llm-verifier` only sees the ingress controller's own peer address unless you
+explicitly configure `LLM_VERIFIER_TRUSTED_PROXIES` to your cluster's actual
+ingress-controller pod/Service CIDR (cluster-specific — find yours with
+`kubectl get pods -n ingress-nginx -o wide` or your CNI's documented pod
+CIDR). Without it set, `X-Forwarded-For` / `X-Real-IP` are ignored entirely
+(the safe default), which means every user routed through the ingress
+controller shares one rate-limit bucket and one audit-log identity — under
+real traffic that reads as every legitimate user getting `429 Too Many
+Requests`, not a broken deployment. See "Trusted Proxies (X-Forwarded-For /
+X-Real-IP)" in `../ENVIRONMENT_VARIABLES.md` for the full rationale and
+per-topology example values.
+
 ## High Availability Configuration
 
 ### Multi-zone Deployment

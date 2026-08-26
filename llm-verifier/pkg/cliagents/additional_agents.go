@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"digital.vasic.llmsverifier/pkg/helixendpoint"
 )
 
 // GenericAgentConfig represents a generic configuration for various CLI agents
@@ -821,7 +823,8 @@ func (g *GenericAgentGenerator) Generate(ctx context.Context, config *GeneratorC
 	}
 
 	// Configure provider
-	baseURL := fmt.Sprintf("http://%s:%d/v1", config.HelixAgentHost, config.HelixAgentPort)
+	baseURL := helixendpoint.JoinPath(
+		helixendpoint.BaseURL(config.HelixAgentHost, config.HelixAgentPort), "v1")
 	// Use real API key from environment for installed configs;
 	// env var references are NOT supported by most CLI agents
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")

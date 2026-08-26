@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"digital.vasic.llmsverifier/clientip"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -612,6 +613,20 @@ func TestWriteJSON_Success(t *testing.T) {
 }
 
 // ==================== getClientIP Tests ====================
+//
+// Reconciled per §11.4.120 for HXC-298. Pre-fix, EnterpriseAPI.getClientIP
+// trusted X-Forwarded-For / X-Real-IP verbatim from ANY caller (no
+// permitted-intermediary list) and returned the raw RemoteAddr, port
+// included, on fallback. These three tests previously asserted that
+// trusting/raw behaviour directly. They now assert the corrected,
+// trust-gated + normalized mechanism (clientip.Resolve, delegated to via
+// getClientIP): a forwarding header is honoured ONLY when the immediate
+// TCP peer is on the LLM_VERIFIER_TRUSTED_PROXIES allowlist (default:
+// empty, deny), and the RemoteAddr fallback never includes the ephemeral
+// source port. Each test exercises BOTH the untrusted-peer (header
+// ignored) and trusted-peer (header honoured) paths, so the reconciled
+// assertion genuinely exercises the fixed mechanism rather than merely
+// confirming the old bug is gone.
 
 func TestGetClientIP_FromXForwardedFor(t *testing.T) {
 	config := EnterpriseConfig{
@@ -622,11 +637,34 @@ func TestGetClientIP_FromXForwardedFor(t *testing.T) {
 	jwtSecret := []byte("test-jwt-secret")
 	api := NewEnterpriseAPIWithSecret(manager, jwtSecret, time.Hour)
 
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
-	req.Header.Set("X-Forwarded-For", "192.168.1.100, 10.0.0.1")
+	t.Run("untrusted_peer_header_ignored", func(t *testing.T) {
+		t.Setenv(clientip.TrustedProxiesEnvVar, "")
 
-	ip := api.getClientIP(req)
-	assert.Equal(t, "192.168.1.100", ip)
+		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		req.RemoteAddr = "203.0.113.9:54321"
+		req.Header.Set("X-Forwarded-For", "192.168.1.100, 10.0.0.1")
+
+		ip := api.getClientIP(req)
+		assert.Equal(t, "203.0.113.9", ip,
+			"HXC-298: with no trusted-proxy allowlist configured, X-Forwarded-For must be ignored and "+
+				"the real TCP peer used instead")
+	})
+
+	t.Run("trusted_peer_header_honoured", func(t *testing.T) {
+		t.Setenv(clientip.TrustedProxiesEnvVar, "172.20.0.0/16")
+
+		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		req.RemoteAddr = "172.20.0.5:443"
+		// "172.20.0.9" is itself inside the trusted CIDR -- an earlier
+		// trusted hop the walk must skip past -- landing on the real,
+		// non-trusted client "192.168.1.100".
+		req.Header.Set("X-Forwarded-For", "192.168.1.100, 172.20.0.9")
+
+		ip := api.getClientIP(req)
+		assert.Equal(t, "192.168.1.100", ip,
+			"HXC-298: once the peer is on the trusted-proxy allowlist, the rightmost non-trusted "+
+				"X-Forwarded-For entry must be honoured")
+	})
 }
 
 func TestGetClientIP_FromXRealIP(t *testing.T) {
@@ -638,11 +676,30 @@ func TestGetClientIP_FromXRealIP(t *testing.T) {
 	jwtSecret := []byte("test-jwt-secret")
 	api := NewEnterpriseAPIWithSecret(manager, jwtSecret, time.Hour)
 
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
-	req.Header.Set("X-Real-IP", "192.168.1.50")
+	t.Run("untrusted_peer_header_ignored", func(t *testing.T) {
+		t.Setenv(clientip.TrustedProxiesEnvVar, "")
 
-	ip := api.getClientIP(req)
-	assert.Equal(t, "192.168.1.50", ip)
+		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		req.RemoteAddr = "203.0.113.9:54321"
+		req.Header.Set("X-Real-IP", "192.168.1.50")
+
+		ip := api.getClientIP(req)
+		assert.Equal(t, "203.0.113.9", ip,
+			"HXC-298: with no trusted-proxy allowlist configured, X-Real-IP must be ignored and the "+
+				"real TCP peer used instead")
+	})
+
+	t.Run("trusted_peer_header_honoured", func(t *testing.T) {
+		t.Setenv(clientip.TrustedProxiesEnvVar, "172.20.0.0/16")
+
+		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		req.RemoteAddr = "172.20.0.5:443"
+		req.Header.Set("X-Real-IP", "192.168.1.50")
+
+		ip := api.getClientIP(req)
+		assert.Equal(t, "192.168.1.50", ip,
+			"HXC-298: once the peer is on the trusted-proxy allowlist, X-Real-IP must be honoured")
+	})
 }
 
 func TestGetClientIP_FromRemoteAddr(t *testing.T) {
@@ -655,10 +712,13 @@ func TestGetClientIP_FromRemoteAddr(t *testing.T) {
 	api := NewEnterpriseAPIWithSecret(manager, jwtSecret, time.Hour)
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
-	// RemoteAddr is set by httptest.NewRequest
+	req.RemoteAddr = "10.0.0.5:12345"
 
 	ip := api.getClientIP(req)
 	assert.NotEmpty(t, ip)
+	assert.Equal(t, "10.0.0.5", ip,
+		"HXC-298: the RemoteAddr fallback must never include the ephemeral source port -- a raw "+
+			"\"host:port\" identity forks the same caller apart on every connection")
 }
 
 // ==================== corsMiddleware Tests ====================

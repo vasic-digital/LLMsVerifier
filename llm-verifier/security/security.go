@@ -477,15 +477,77 @@ func extractResourceID(path string) string {
 	return ""
 }
 
+// extractIPAddress extracts the caller's identity from r for the audit
+// trail (its one production call site: LogRequest below, populating
+// AuditEntry.IPAddress).
+//
+// HXC-299 fixed two independent defects here — a worse sibling of HXC-292's
+// getClientIP (api/middleware.go), fixed the same way:
+//
+// Defect 1 (identity-collapse truncation): the RemoteAddr fallback used
+// strings.Split(r.RemoteAddr, ":")[0] — splitting on EVERY colon in the
+// string, not just the port separator. For a direct IPv6 connection Go sets
+// RemoteAddr to "[2001:db8::1]:54321"; splitting on ":" and taking index
+// [0] yields "[2001" — an opening bracket and the first hextet, discarding
+// everything else. TWO GENUINELY DIFFERENT callers sharing only their first
+// hextet ("[2001:db8::1]:11111" and "[2001:dead:beef::99]:22222") both
+// collapsed onto the SAME identity "[2001". This was WORSE than HXC-292's
+// pre-fix defect (which kept identities distinct, merely inconsistently
+// bracketed): here, distinct real callers became genuinely
+// indistinguishable to this function's one consumer, AuditTrail.LogRequest
+// — an audit-compliance log record that is supposed to attribute each
+// request to its own caller. Fixed via resolveClientIP (client_ip_trust.go
+// — post-HXC-298-extraction, that function delegates to clientip.Resolve,
+// whose internal normalizeRemoteAddr step uses net.SplitHostPort — never a
+// hand-rolled split; see clientip/clientip.go's package doc comment for
+// the full extraction rationale, and client_ip_trust.go's own top-of-file
+// comment for why this file no longer contains its own copy of the
+// algorithm).
+//
+// Defect 2 (unconditional forwarding-header trust): X-Forwarded-For and
+// X-Real-IP were honoured verbatim with NO permitted-intermediary list —
+// and, unlike HXC-292's pre-fix state, this function did not even select
+// consistently: it always took the leftmost X-Forwarded-For entry,
+// unconditionally trusting whatever a caller claimed. Fixed via
+// resolveClientIP, which now gates both headers on clientip.Resolve's
+// internal peer-trust check, trusting nothing unless the immediate TCP
+// peer is on the operator-configured LLM_VERIFIER_TRUSTED_PROXIES
+// allowlist (default: empty, deny), and walks a trusted X-Forwarded-For
+// chain RIGHT TO LEFT via clientip.Resolve's internal resolveForwardedFor
+// step (the HXC-292 F1 fix, inherited here already-corrected) rather than
+// taking the leftmost — attacker-forgeable — entry.
+//
+// # Consumer census (why this matters in practice)
+//
+// extractIPAddress has exactly ONE production call site: LogRequest below,
+// which stores the result in AuditEntry.IPAddress via the AuditStore
+// interface (a GDPR-compliance audit record, 7-year retention per
+// LogRequest) and logs it via at.logger.Printf. As of this fix, NOTHING in
+// this codebase outside security_test.go's MockAuditStore implements
+// AuditStore, and nothing outside security_test.go constructs an
+// AuditTrail or calls LogRequest — this audit-logging subsystem is
+// currently unwired into any live HTTP handler or middleware in this
+// repository. The defects therefore have no live network attack surface
+// TODAY (no request path invokes extractIPAddress in production), but per
+// §11.4.124 that is not a reason to leave it broken: AuditTrail is a
+// legitimate compliance feature that could be wired into a handler at any
+// time, and it must be correct when that happens rather than silently
+// forging or collapsing caller identities the moment it is.
+//
+// # Reuse-vs-mirror-vs-extract
+//
+// This fix originally MIRRORED HXC-292's corrected algorithm (api's
+// functions were unexported, and importing from this lower-level security
+// package into the higher-level api package would have inverted this
+// codebase's normal dependency direction — api/ was frozen for that fix's
+// scope). HXC-298 later extracted the algorithm out of both mirrors into
+// the new digital.vasic.llmsverifier/clientip package, so this file's
+// resolveClientIP now DELEGATES rather than mirrors. See
+// client_ip_trust.go's top-of-file doc comment and
+// clientip/clientip.go's package doc comment for the full extraction
+// rationale.
 func extractIPAddress(r *http.Request) string {
-	// Try X-Forwarded-For first, then X-Real-IP, then RemoteAddr
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		return strings.Split(xff, ",")[0]
-	}
-	if xri := r.Header.Get("X-Real-IP"); xri != "" {
-		return xri
-	}
-	return strings.Split(r.RemoteAddr, ":")[0]
+	return resolveClientIP(r)
 }
 
 func extractRequestDetails(r *http.Request) map[string]interface{} {

@@ -46,6 +46,37 @@ cd llm-verifier
 go build -o llm-verifier cmd/main.go
 ```
 
+### HelixAgent endpoint injection
+
+The CLI-agent configurations this module generates embed URLs pointing at a
+**HelixAgent** deployment. That endpoint is injected by the consuming deployment —
+never hardcoded here — and is resolved by `pkg/helixendpoint` from three environment
+variables, highest precedence first:
+
+| Variable | Expects |
+|----------|---------|
+| `HELIX_AGENT_BASE_URL` | A complete base URL, used verbatim (trailing slash trimmed) |
+| `HELIX_AGENT_HOST` | Host only — never `host:port` |
+| `HELIX_AGENT_PORT` | Port only — 1–65535 |
+
+With none set, generated endpoints resolve to the documented placeholder
+`http://localhost:8100`, which is a syntactically valid last resort and **not** a
+working HelixAgent endpoint.
+
+`HELIX_AGENT_BASE_URL` is honoured by the Crush provider base URL but **not** by the
+`pkg/cliagents` MCP / skill / extension URLs, which follow `HELIX_AGENT_HOST` and
+`HELIX_AGENT_PORT`. Set the host/port pair to reach every generated artifact.
+
+A value you supply that cannot be used is never applied silently — a rejected host, a
+rejected port, and a base URL set without a usable host each warn once on stderr.
+Leaving a variable unset is the supported zero-configuration path and is not warned
+about.
+
+The full contract — per-artifact resolution table, fallback semantics, IPv6 and
+malformed-value handling — is documented under **HelixAgent Endpoint Configuration**
+in the repository-root `README.md`, with a copy-ready listing in the root
+`.env.example`.
+
 ## Usage
 
 ### Command Line Interface

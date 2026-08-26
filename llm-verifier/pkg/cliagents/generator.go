@@ -7,9 +7,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
+
+	"digital.vasic.llmsverifier/pkg/helixendpoint"
 )
 
 // SupportedAgents lists all 48 CLI agents supported by LLMsVerifier
@@ -304,7 +308,7 @@ type SkillConfig struct {
 
 // DefaultHelixAgentExtensions returns the default set of extensions for a given host/port
 func DefaultHelixAgentExtensions(host string, port int) *HelixAgentExtensions {
-	baseURL := fmt.Sprintf("http://%s:%d", host, port)
+	baseURL := helixendpoint.BaseURL(host, port)
 	return &HelixAgentExtensions{
 		Plugins: DefaultPlugins(),
 		LSP: &LSPConfig{
@@ -347,7 +351,7 @@ func DefaultPlugins() []string {
 
 // DefaultSkills returns the default set of skills for HelixAgent-powered CLI agents
 func DefaultSkills(host string, port int) []SkillConfig {
-	baseURL := fmt.Sprintf("http://%s:%d", host, port)
+	baseURL := helixendpoint.BaseURL(host, port)
 	return []SkillConfig{
 		{Name: "code-review", Description: "AI-powered code review with multi-LLM debate", Endpoint: baseURL + "/v1/debate", Enabled: true},
 		{Name: "code-format", Description: "Format code using 32+ formatters", Endpoint: baseURL + "/v1/format", Enabled: true},
@@ -370,7 +374,15 @@ func DefaultSkillsCount() int {
 	return 8
 }
 
-// NewUnifiedGenerator creates a new unified configuration generator
+// NewUnifiedGenerator creates a new unified configuration generator.
+//
+// Ownership / mutation semantics (HXC-250): config is retained BY REFERENCE
+// (unchanged from before HXC-250) and its MCPServers field is REASSIGNED to a
+// slice whose HelixAgent entries target HelixAgentHost:HelixAgentPort, so a
+// caller re-reading config.MCPServers after construction observes the
+// retargeted entries. The caller's original backing array is never written
+// through (RetargetHelixAgentMCPServers returns a copy) and the operation is
+// idempotent. Callers who need their slice left untouched should pass a copy.
 func NewUnifiedGenerator(config *GeneratorConfig) *UnifiedGenerator {
 	if config == nil {
 		config = DefaultGeneratorConfig()
@@ -381,34 +393,112 @@ func NewUnifiedGenerator(config *GeneratorConfig) *UnifiedGenerator {
 		generators: make(map[AgentType]AgentGenerator),
 	}
 
+	// HXC-250: make HelixAgentHost/HelixAgentPort authoritative for the
+	// HelixAgent MCP endpoints. Without this a consumer doing the natural
+	// thing — DefaultGeneratorConfig() then setting Host/Port — kept the
+	// MCP URLs built at DefaultGeneratorConfig() time, so every generated
+	// agent config pointed at the placeholder endpoint instead of the
+	// injected one. Consumer-supplied non-HelixAgent MCP entries are
+	// untouched.
+	//
+	// Side effect, deliberate and documented: config is caller-owned and is
+	// retained by reference (unchanged from before HXC-250), so the caller
+	// observes its MCPServers field pointing at the retargeted slice. The
+	// caller's original backing array is NOT written through — Retarget
+	// returns a copy — and the operation is idempotent, so re-constructing a
+	// generator from the same config, or from one already retargeted to a
+	// different endpoint, yields the same result as a fresh derivation.
+	ug.config.MCPServers = RetargetHelixAgentMCPServers(
+		ug.config.MCPServers, ug.config.HelixAgentHost, ug.config.HelixAgentPort)
+
 	// Register all supported generators
 	ug.registerGenerators()
 
 	return ug
 }
 
-// DefaultGeneratorConfig returns default generator configuration
+// helixAgentMCPNamePrefix marks the MCP entries whose endpoint is owned by the
+// HelixAgent service (and therefore follows HelixAgentHost/HelixAgentPort).
+const helixAgentMCPNamePrefix = "helixagent-"
+
+// RetargetHelixAgentMCPServers returns servers with every HelixAgent-owned
+// remote entry re-pointed at host:port, preserving each entry's path and query.
+// Entries that are not HelixAgent-owned (npx-local servers, third-party remote
+// MCPs, anything the consumer added) are returned unchanged.
+//
+// A nil/empty input yields the full default set for host:port, so a consumer
+// that leaves MCPServers unset still ships the documented MCP servers pointed
+// at its own endpoint.
+func RetargetHelixAgentMCPServers(servers []MCPServerConfig, host string, port int) []MCPServerConfig {
+	if len(servers) == 0 {
+		return DefaultMCPServersForHost(host, port)
+	}
+
+	baseURL := helixendpoint.BaseURL(host, port)
+	out := make([]MCPServerConfig, len(servers))
+	copy(out, servers)
+
+	for i := range out {
+		if out[i].Type != "remote" || !strings.HasPrefix(out[i].Name, helixAgentMCPNamePrefix) {
+			continue
+		}
+		parsed, err := url.Parse(out[i].URL)
+		// A scheme-less or opaque URL ("localhost:8100/v1/mcp", "mailto:x")
+		// parses without error but carries no recoverable host/path, so
+		// treat it as unusable alongside a hard parse error rather than
+		// silently emitting a bare base URL with the path dropped.
+		if err != nil || parsed.Scheme == "" || parsed.Host == "" || parsed.Opaque != "" {
+			// Unusable URL: rebuild from the entry name so the endpoint is
+			// still injected rather than silently left stale (§11.4.6 — do not
+			// guess that a broken URL was already correct).
+			out[i].URL = helixendpoint.JoinPath(baseURL,
+				"v1/"+strings.TrimPrefix(out[i].Name, helixAgentMCPNamePrefix))
+			continue
+		}
+		suffix := parsed.EscapedPath()
+		if parsed.RawQuery != "" {
+			suffix += "?" + parsed.RawQuery
+		}
+		if parsed.Fragment != "" {
+			suffix += "#" + parsed.EscapedFragment()
+		}
+		out[i].URL = helixendpoint.JoinPath(baseURL, suffix)
+	}
+
+	return out
+}
+
+// DefaultGeneratorConfig returns default generator configuration.
+//
+// The HelixAgent endpoint is RESOLVED, not hardcoded: it comes from the
+// consuming project's injected environment when present and from the
+// documented placeholder otherwise. See package helixendpoint.
 func DefaultGeneratorConfig() *GeneratorConfig {
 	homeDir, _ := os.UserHomeDir()
+	host := helixendpoint.Host()
+	port := helixendpoint.Port()
 	return &GeneratorConfig{
-		HelixAgentHost: "localhost",
-		HelixAgentPort: 8100,
+		HelixAgentHost: host,
+		HelixAgentPort: port,
 		OutputDir:      filepath.Join(homeDir, "Downloads"),
 		IncludeScores:  true,
-		MCPServers:     DefaultMCPServers(),
+		MCPServers:     DefaultMCPServersForHost(host, port),
 	}
 }
 
 // DefaultMCPServers returns default MCP server configurations (15+ servers)
 // Includes: HelixAgent remote endpoints + npx-based local servers + free remote MCPs
-// All agents MUST ship with 15+ MCP servers out of the box
+// All agents MUST ship with 15+ MCP servers out of the box.
+//
+// The HelixAgent endpoint is resolved from the consuming project's injected
+// configuration (see package helixendpoint), never hardcoded here.
 func DefaultMCPServers() []MCPServerConfig {
-	return DefaultMCPServersForHost("localhost", 8100)
+	return DefaultMCPServersForHost(helixendpoint.Host(), helixendpoint.Port())
 }
 
 // DefaultMCPServersForHost returns default MCP servers for a given host and port
 func DefaultMCPServersForHost(host string, port int) []MCPServerConfig {
-	baseURL := fmt.Sprintf("http://%s:%d", host, port)
+	baseURL := helixendpoint.BaseURL(host, port)
 	return []MCPServerConfig{
 		// ============================================
 		// HelixAgent Remote Endpoints (6)
@@ -472,145 +562,162 @@ func HelixLLMMCPServers(host string, port int) []MCPServerConfig {
 // ZERO npm/npx dependencies - all MCPs run as Docker containers
 // Use with: docker-compose -f docker/mcp/docker-compose.mcp-full.yml up -d
 func ContainerizedMCPServers(host string) []MCPServerConfig {
-	if host == "" {
-		host = "localhost"
+	return ContainerizedMCPServersForHostPort(host, helixendpoint.Port())
+}
+
+// ContainerizedMCPServersForHostPort returns the containerized MCP servers with
+// the HelixAgent endpoint injected explicitly.
+//
+// HXC-250: the six HelixAgent entries previously ignored the caller's host and
+// pinned a literal endpoint, so a consumer generating configs for a non-local
+// deployment still shipped URLs pointing at the generating machine.
+func ContainerizedMCPServersForHostPort(host string, port int) []MCPServerConfig {
+	if strings.TrimSpace(host) == "" {
+		host = helixendpoint.Host()
 	}
+
+	helixBase := helixendpoint.BaseURL(host, port)
+	// sse builds the containerized-MCP URLs, IPv6-safe (an unbracketed literal
+	// would otherwise produce "http://::1:9101/sse").
+	sse := func(p int) string { return helixendpoint.JoinPath(helixendpoint.BaseURL(host, p), "sse") }
 
 	return []MCPServerConfig{
 		// ============================================
 		// HelixAgent Remote Endpoints (6)
 		// ============================================
-		{Name: "helixagent-mcp", Type: "remote", URL: "http://localhost:8100/v1/mcp"},
-		{Name: "helixagent-acp", Type: "remote", URL: "http://localhost:8100/v1/acp"},
-		{Name: "helixagent-lsp", Type: "remote", URL: "http://localhost:8100/v1/lsp"},
-		{Name: "helixagent-embeddings", Type: "remote", URL: "http://localhost:8100/v1/embeddings"},
-		{Name: "helixagent-vision", Type: "remote", URL: "http://localhost:8100/v1/vision"},
-		{Name: "helixagent-cognee", Type: "remote", URL: "http://localhost:8100/v1/cognee"},
+		{Name: "helixagent-mcp", Type: "remote", URL: helixendpoint.JoinPath(helixBase, "v1/mcp")},
+		{Name: "helixagent-acp", Type: "remote", URL: helixendpoint.JoinPath(helixBase, "v1/acp")},
+		{Name: "helixagent-lsp", Type: "remote", URL: helixendpoint.JoinPath(helixBase, "v1/lsp")},
+		{Name: "helixagent-embeddings", Type: "remote", URL: helixendpoint.JoinPath(helixBase, "v1/embeddings")},
+		{Name: "helixagent-vision", Type: "remote", URL: helixendpoint.JoinPath(helixBase, "v1/vision")},
+		{Name: "helixagent-cognee", Type: "remote", URL: helixendpoint.JoinPath(helixBase, "v1/cognee")},
 
 		// ============================================
 		// Core MCP Servers (10) - Ports 9101-9110
 		// ============================================
-		{Name: "fetch", Type: "remote", URL: "http://" + host + ":9101/sse"},
-		{Name: "git", Type: "remote", URL: "http://" + host + ":9102/sse"},
-		{Name: "time", Type: "remote", URL: "http://" + host + ":9103/sse"},
-		{Name: "filesystem", Type: "remote", URL: "http://" + host + ":9104/sse"},
-		{Name: "memory", Type: "remote", URL: "http://" + host + ":9105/sse"},
-		{Name: "everything", Type: "remote", URL: "http://" + host + ":9106/sse"},
-		{Name: "sequential-thinking", Type: "remote", URL: "http://" + host + ":9107/sse"},
-		{Name: "sqlite", Type: "remote", URL: "http://" + host + ":9108/sse"},
-		{Name: "puppeteer", Type: "remote", URL: "http://" + host + ":9109/sse"},
-		{Name: "postgres", Type: "remote", URL: "http://" + host + ":9110/sse"},
+		{Name: "fetch", Type: "remote", URL: sse(9101)},
+		{Name: "git", Type: "remote", URL: sse(9102)},
+		{Name: "time", Type: "remote", URL: sse(9103)},
+		{Name: "filesystem", Type: "remote", URL: sse(9104)},
+		{Name: "memory", Type: "remote", URL: sse(9105)},
+		{Name: "everything", Type: "remote", URL: sse(9106)},
+		{Name: "sequential-thinking", Type: "remote", URL: sse(9107)},
+		{Name: "sqlite", Type: "remote", URL: sse(9108)},
+		{Name: "puppeteer", Type: "remote", URL: sse(9109)},
+		{Name: "postgres", Type: "remote", URL: sse(9110)},
 
 		// ============================================
 		// Database MCP Servers (5) - Ports 9201-9205
 		// ============================================
-		{Name: "mongodb", Type: "remote", URL: "http://" + host + ":9201/sse"},
-		{Name: "redis", Type: "remote", URL: "http://" + host + ":9202/sse"},
-		{Name: "mysql", Type: "remote", URL: "http://" + host + ":9203/sse"},
-		{Name: "elasticsearch", Type: "remote", URL: "http://" + host + ":9204/sse"},
-		{Name: "supabase", Type: "remote", URL: "http://" + host + ":9205/sse"},
+		{Name: "mongodb", Type: "remote", URL: sse(9201)},
+		{Name: "redis", Type: "remote", URL: sse(9202)},
+		{Name: "mysql", Type: "remote", URL: sse(9203)},
+		{Name: "elasticsearch", Type: "remote", URL: sse(9204)},
+		{Name: "supabase", Type: "remote", URL: sse(9205)},
 
 		// ============================================
 		// Vector DB MCP Servers (4) - Ports 9301-9304
 		// ============================================
-		{Name: "qdrant", Type: "remote", URL: "http://" + host + ":9301/sse"},
-		{Name: "chroma", Type: "remote", URL: "http://" + host + ":9302/sse"},
-		{Name: "pinecone", Type: "remote", URL: "http://" + host + ":9303/sse"},
-		{Name: "weaviate", Type: "remote", URL: "http://" + host + ":9304/sse"},
+		{Name: "qdrant", Type: "remote", URL: sse(9301)},
+		{Name: "chroma", Type: "remote", URL: sse(9302)},
+		{Name: "pinecone", Type: "remote", URL: sse(9303)},
+		{Name: "weaviate", Type: "remote", URL: sse(9304)},
 
 		// ============================================
 		// DevOps MCP Servers (14) - Ports 9401-9414
 		// ============================================
-		{Name: "github", Type: "remote", URL: "http://" + host + ":9401/sse"},
-		{Name: "gitlab", Type: "remote", URL: "http://" + host + ":9402/sse"},
-		{Name: "sentry", Type: "remote", URL: "http://" + host + ":9403/sse"},
-		{Name: "kubernetes", Type: "remote", URL: "http://" + host + ":9404/sse"},
-		{Name: "docker", Type: "remote", URL: "http://" + host + ":9405/sse"},
-		{Name: "ansible", Type: "remote", URL: "http://" + host + ":9406/sse"},
-		{Name: "aws", Type: "remote", URL: "http://" + host + ":9407/sse"},
-		{Name: "gcp", Type: "remote", URL: "http://" + host + ":9408/sse"},
-		{Name: "heroku", Type: "remote", URL: "http://" + host + ":9409/sse"},
-		{Name: "cloudflare", Type: "remote", URL: "http://" + host + ":9410/sse"},
-		{Name: "vercel", Type: "remote", URL: "http://" + host + ":9411/sse"},
-		{Name: "workers", Type: "remote", URL: "http://" + host + ":9412/sse"},
-		{Name: "jetbrains", Type: "remote", URL: "http://" + host + ":9413/sse"},
+		{Name: "github", Type: "remote", URL: sse(9401)},
+		{Name: "gitlab", Type: "remote", URL: sse(9402)},
+		{Name: "sentry", Type: "remote", URL: sse(9403)},
+		{Name: "kubernetes", Type: "remote", URL: sse(9404)},
+		{Name: "docker", Type: "remote", URL: sse(9405)},
+		{Name: "ansible", Type: "remote", URL: sse(9406)},
+		{Name: "aws", Type: "remote", URL: sse(9407)},
+		{Name: "gcp", Type: "remote", URL: sse(9408)},
+		{Name: "heroku", Type: "remote", URL: sse(9409)},
+		{Name: "cloudflare", Type: "remote", URL: sse(9410)},
+		{Name: "vercel", Type: "remote", URL: sse(9411)},
+		{Name: "workers", Type: "remote", URL: sse(9412)},
+		{Name: "jetbrains", Type: "remote", URL: sse(9413)},
 
 		// ============================================
 		// Browser MCP Servers (4) - Ports 9501-9504
 		// ============================================
-		{Name: "playwright", Type: "remote", URL: "http://" + host + ":9501/sse"},
-		{Name: "browserbase", Type: "remote", URL: "http://" + host + ":9502/sse"},
-		{Name: "firecrawl", Type: "remote", URL: "http://" + host + ":9503/sse"},
-		{Name: "crawl4ai", Type: "remote", URL: "http://" + host + ":9504/sse"},
+		{Name: "playwright", Type: "remote", URL: sse(9501)},
+		{Name: "browserbase", Type: "remote", URL: sse(9502)},
+		{Name: "firecrawl", Type: "remote", URL: sse(9503)},
+		{Name: "crawl4ai", Type: "remote", URL: sse(9504)},
 
 		// ============================================
 		// Communication MCP Servers (3) - Ports 9601-9603
 		// ============================================
-		{Name: "slack", Type: "remote", URL: "http://" + host + ":9601/sse"},
-		{Name: "discord", Type: "remote", URL: "http://" + host + ":9602/sse"},
-		{Name: "telegram", Type: "remote", URL: "http://" + host + ":9603/sse"},
+		{Name: "slack", Type: "remote", URL: sse(9601)},
+		{Name: "discord", Type: "remote", URL: sse(9602)},
+		{Name: "telegram", Type: "remote", URL: sse(9603)},
 
 		// ============================================
 		// Productivity MCP Servers (10) - Ports 9701-9710
 		// ============================================
-		{Name: "notion", Type: "remote", URL: "http://" + host + ":9701/sse"},
-		{Name: "linear", Type: "remote", URL: "http://" + host + ":9702/sse"},
-		{Name: "jira", Type: "remote", URL: "http://" + host + ":9703/sse"},
-		{Name: "asana", Type: "remote", URL: "http://" + host + ":9704/sse"},
-		{Name: "trello", Type: "remote", URL: "http://" + host + ":9705/sse"},
-		{Name: "todoist", Type: "remote", URL: "http://" + host + ":9706/sse"},
-		{Name: "monday", Type: "remote", URL: "http://" + host + ":9707/sse"},
-		{Name: "airtable", Type: "remote", URL: "http://" + host + ":9708/sse"},
-		{Name: "obsidian", Type: "remote", URL: "http://" + host + ":9709/sse"},
-		{Name: "atlassian", Type: "remote", URL: "http://" + host + ":9710/sse"},
+		{Name: "notion", Type: "remote", URL: sse(9701)},
+		{Name: "linear", Type: "remote", URL: sse(9702)},
+		{Name: "jira", Type: "remote", URL: sse(9703)},
+		{Name: "asana", Type: "remote", URL: sse(9704)},
+		{Name: "trello", Type: "remote", URL: sse(9705)},
+		{Name: "todoist", Type: "remote", URL: sse(9706)},
+		{Name: "monday", Type: "remote", URL: sse(9707)},
+		{Name: "airtable", Type: "remote", URL: sse(9708)},
+		{Name: "obsidian", Type: "remote", URL: sse(9709)},
+		{Name: "atlassian", Type: "remote", URL: sse(9710)},
 
 		// ============================================
 		// Search/AI MCP Servers (10) - Ports 9801-9810
 		// ============================================
-		{Name: "brave-search", Type: "remote", URL: "http://" + host + ":9801/sse"},
-		{Name: "exa", Type: "remote", URL: "http://" + host + ":9802/sse"},
-		{Name: "tavily", Type: "remote", URL: "http://" + host + ":9803/sse"},
-		{Name: "perplexity", Type: "remote", URL: "http://" + host + ":9804/sse"},
-		{Name: "kagi", Type: "remote", URL: "http://" + host + ":9805/sse"},
-		{Name: "omnisearch", Type: "remote", URL: "http://" + host + ":9806/sse"},
-		{Name: "context7", Type: "remote", URL: "http://" + host + ":9807/sse"},
-		{Name: "llamaindex", Type: "remote", URL: "http://" + host + ":9808/sse"},
-		{Name: "langchain", Type: "remote", URL: "http://" + host + ":9809/sse"},
-		{Name: "openai", Type: "remote", URL: "http://" + host + ":9810/sse"},
+		{Name: "brave-search", Type: "remote", URL: sse(9801)},
+		{Name: "exa", Type: "remote", URL: sse(9802)},
+		{Name: "tavily", Type: "remote", URL: sse(9803)},
+		{Name: "perplexity", Type: "remote", URL: sse(9804)},
+		{Name: "kagi", Type: "remote", URL: sse(9805)},
+		{Name: "omnisearch", Type: "remote", URL: sse(9806)},
+		{Name: "context7", Type: "remote", URL: sse(9807)},
+		{Name: "llamaindex", Type: "remote", URL: sse(9808)},
+		{Name: "langchain", Type: "remote", URL: sse(9809)},
+		{Name: "openai", Type: "remote", URL: sse(9810)},
 
 		// ============================================
 		// Google MCP Servers (5) - Ports 9901-9905
 		// ============================================
-		{Name: "google-drive", Type: "remote", URL: "http://" + host + ":9901/sse"},
-		{Name: "google-calendar", Type: "remote", URL: "http://" + host + ":9902/sse"},
-		{Name: "google-maps", Type: "remote", URL: "http://" + host + ":9903/sse"},
-		{Name: "youtube", Type: "remote", URL: "http://" + host + ":9904/sse"},
-		{Name: "gmail", Type: "remote", URL: "http://" + host + ":9905/sse"},
+		{Name: "google-drive", Type: "remote", URL: sse(9901)},
+		{Name: "google-calendar", Type: "remote", URL: sse(9902)},
+		{Name: "google-maps", Type: "remote", URL: sse(9903)},
+		{Name: "youtube", Type: "remote", URL: sse(9904)},
+		{Name: "gmail", Type: "remote", URL: sse(9905)},
 
 		// ============================================
 		// Monitoring MCP Servers (3) - Ports 9921-9923
 		// ============================================
-		{Name: "datadog", Type: "remote", URL: "http://" + host + ":9921/sse"},
-		{Name: "grafana", Type: "remote", URL: "http://" + host + ":9922/sse"},
-		{Name: "prometheus", Type: "remote", URL: "http://" + host + ":9923/sse"},
+		{Name: "datadog", Type: "remote", URL: sse(9921)},
+		{Name: "grafana", Type: "remote", URL: sse(9922)},
+		{Name: "prometheus", Type: "remote", URL: sse(9923)},
 
 		// ============================================
 		// Finance MCP Servers (3) - Ports 9941-9943
 		// ============================================
-		{Name: "stripe", Type: "remote", URL: "http://" + host + ":9941/sse"},
-		{Name: "hubspot", Type: "remote", URL: "http://" + host + ":9942/sse"},
-		{Name: "zendesk", Type: "remote", URL: "http://" + host + ":9943/sse"},
+		{Name: "stripe", Type: "remote", URL: sse(9941)},
+		{Name: "hubspot", Type: "remote", URL: sse(9942)},
+		{Name: "zendesk", Type: "remote", URL: sse(9943)},
 
 		// ============================================
 		// Design MCP Servers (1) - Port 9961
 		// ============================================
-		{Name: "figma", Type: "remote", URL: "http://" + host + ":9961/sse"},
+		{Name: "figma", Type: "remote", URL: sse(9961)},
 	}
 }
 
 // ContainerizedMCPServersCount returns the total number of containerized MCPs
 func ContainerizedMCPServersCount() int {
-	return len(ContainerizedMCPServers("localhost"))
+	// The count is host-independent; "" selects the resolved default host
+	// rather than pinning a literal here (HXC-250).
+	return len(ContainerizedMCPServers(""))
 }
 
 // registerGenerators registers all 48 agent-specific generators

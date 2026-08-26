@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/go-ldap/ldap/v3"
+
+	"digital.vasic.llmsverifier/pkg/helixendpoint"
 )
 
 // LDAPConfig holds LDAP configuration
@@ -270,9 +272,25 @@ func (lm *LDAPManager) GetUserCount() (int, error) {
 	return len(users), nil
 }
 
+// dialAddress returns the "host:port" this manager dials.
+//
+// HXC-268: composed through helixendpoint.DialAddress rather than
+// fmt.Sprintf("%s:%d") so an IPv6 literal is bracketed per RFC 3986 §3.2.2.
+// Unbracketed, "fe80::1" + ":389" concatenates to "fe80::1:389", which is not the
+// address that was configured.
+//
+// DialAddress, not BaseURL: this value is handed to ldap.Dial and is never
+// URL-parsed, so it must carry no scheme, no RFC 6874 zone encoding, and — above
+// all — no HelixAgent placeholder fallback, which would silently redirect the
+// directory client to the placeholder HOST while keeping this directory's own
+// port, so it would dial the wrong machine instead of failing on a bad host.
+func (lm *LDAPManager) dialAddress() string {
+	return helixendpoint.DialAddress(lm.config.Host, lm.config.Port)
+}
+
 // connect establishes LDAP connection with proper TLS security
 func (lm *LDAPManager) connect() (*ldap.Conn, error) {
-	address := fmt.Sprintf("%s:%d", lm.config.Host, lm.config.Port)
+	address := lm.dialAddress()
 
 	var conn *ldap.Conn
 	var err error

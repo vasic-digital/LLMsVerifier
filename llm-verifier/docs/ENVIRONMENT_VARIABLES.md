@@ -376,6 +376,89 @@ export LLM_VERIFIER_SECURITY_IP_WHITELIST_ENABLED="true"
 export LLM_VERIFIER_SECURITY_IP_WHITELIST="192.168.1.0/24,10.0.0.0/8"
 ```
 
+#### Trusted Proxies (X-Forwarded-For / X-Real-IP)
+
+This is a distinct concern from IP Whitelisting above: whitelisting gates which
+clients may connect to the API at all; `LLM_VERIFIER_TRUSTED_PROXIES` gates which
+**already-connected peer** the API will trust to tell it who the *real* client is,
+via the `X-Forwarded-For` / `X-Real-IP` headers.
+
+```bash
+# Comma-separated bare IPs and/or CIDRs. Read directly by api/middleware.go
+# (not the LLM_VERIFIER_SECURITY_* structured-config namespace above).
+export LLM_VERIFIER_TRUSTED_PROXIES="172.20.0.0/16"
+```
+
+**Why this exists.** `getClientIP` (`api/middleware.go`) feeds both the rate
+limiter (`RateLimitMiddleware`) and the audit log
+(`api/audit_logger.go`'s `ClientIP` field). Without a trusted-proxy allowlist,
+any caller that can reach this service — not only one behind your reverse
+proxy — could set `X-Forwarded-For`/`X-Real-IP` to an arbitrary value and
+evade its own rate-limit bucket or forge its identity in the audit trail.
+
+**Default: unset = nothing trusted.** With `LLM_VERIFIER_TRUSTED_PROXIES`
+unset (the default), `X-Forwarded-For` and `X-Real-IP` are ignored entirely
+and every caller's identity is its own TCP peer address (`RemoteAddr`). This
+is deliberate, industry-standard "deny by default" (the same posture Express's
+`trust proxy`, Django, and Rails all ship with) — this repository documents
+BOTH a direct-exposure quick-start topology (root `docker-compose.yml`, no
+proxy) and reverse-proxied production topologies
+(`docker-compose.prod.yml` + Traefik, `llm-verifier/docker-compose.yml` +
+nginx, `k8s-manifests.yaml` + nginx-ingress — see `docs/deployment/docker.md`
+and `docs/deployment/kubernetes.md`), and the *specific* trusted address or
+CIDR varies by which of those you actually run, so no single default could be
+both safe and correct for all of them. A hardcoded guess (e.g. "trust all of
+RFC 1918") would also be unsafe on a shared bridge network, where every other
+container on that network — not only your reverse proxy — could reach this
+service directly.
+
+**The honest cost of leaving it unset behind a real proxy.** If you deploy
+behind nginx/Traefik/an ingress controller and do NOT set this variable,
+every request arrives from the proxy's own peer address, so every real user
+behind that proxy is treated as ONE caller for rate-limiting purposes. Under
+load this is not a cosmetic degradation — an aggregate request volume that
+exceeds one client's rate-limit budget will start returning `429 Too Many
+Requests` to *every* legitimate user sharing that proxy, which is
+operationally an outage for a busy deployment, even though the service
+itself is healthy and answering. Audit-log `ClientIP` values likewise
+collapse to the proxy's own address. **Set this variable as part of standing
+up any reverse-proxied deployment** — it is not optional tuning, it is part
+of making that topology work correctly.
+
+**Per-topology example values** (illustrative — always use YOUR deployment's
+actual proxy address/CIDR, never copy these verbatim):
+
+```bash
+# docker-compose.prod.yml topology: nginx + Traefik share the bridge network
+# whose subnet that compose file itself declares (see its "subnet:" line under
+# the `llm-verifier-network` definition). Trust that subnet, not a guess.
+export LLM_VERIFIER_TRUSTED_PROXIES="172.20.0.0/16"
+
+# Multiple trusted hops (e.g. an internal load balancer AND nginx in front of
+# it) — comma-separated, mixing bare IPs and CIDRs is fine:
+export LLM_VERIFIER_TRUSTED_PROXIES="172.20.0.5,10.1.0.0/16"
+
+# Kubernetes: trust your ingress-controller's actual pod/Service CIDR for
+# your cluster — this is cluster-specific; find yours with
+# `kubectl get pods -n ingress-nginx -o wide` or your CNI's documented pod
+# CIDR, then narrow to the smallest range that actually covers it.
+export LLM_VERIFIER_TRUSTED_PROXIES="10.244.0.0/16"
+```
+
+**How the header is used once a peer is trusted.** `X-Forwarded-For` is a
+comma-separated list built left-to-right as each hop appends its own
+observed peer to the right of whatever it received. This service walks that
+list **right to left**, skipping any entry that is *itself* on the trusted
+allowlist, and uses the first entry that is not — never the leftmost entry
+unconditionally. (An earlier draft of this feature picked the leftmost entry
+outright; that let an attacker prepend an arbitrary forged address ahead of
+whatever a trusted, header-*appending* proxy — e.g. nginx's
+`$proxy_add_x_forwarded_for` — added for its own observed peer. That defect
+was caught in review before it shipped and is covered by a permanent
+regression guard: see `api/hxc292_client_ip_trust_red_test.go`.) Every
+candidate is validated as a real IP address before being trusted or
+returned, so a malformed or non-IP entry can never reach the audit log.
+
 ## Troubleshooting
 
 ### JWT Secret Warning

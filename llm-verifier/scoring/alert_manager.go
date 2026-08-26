@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"digital.vasic.llmsverifier/logging"
+	"digital.vasic.llmsverifier/pkg/helixendpoint"
 )
 
 // AlertManagerFixed handles sending alerts for various system events
@@ -220,8 +221,25 @@ func (am *AlertManagerFixed) buildEmailMessage(subject, body string) []byte {
 	return []byte(msg.String())
 }
 
+// dialAddress returns the "host:port" this manager hands to smtp.SendMail /
+// tls.Dial.
+//
+// HXC-268: composed through helixendpoint.DialAddress rather than
+// fmt.Sprintf("%s:%d") so an IPv6 literal is bracketed per RFC 3986 §3.2.2 —
+// unbracketed, "::1" + ":587" concatenates to "::1:587", which is not the address
+// that was configured.
+//
+// DialAddress, not BaseURL: this value is handed to smtp.SendMail / tls.Dial and
+// is never URL-parsed, so it must carry no scheme, no RFC 6874 zone encoding,
+// and — above all — no HelixAgent placeholder fallback, which would silently
+// redirect the mail client to the placeholder HOST while keeping this relay's
+// own port, so it would dial the wrong machine instead of failing on a bad host.
+func (am *AlertManagerFixed) dialAddress() string {
+	return helixendpoint.DialAddress(am.config.SMTPHost, am.config.SMTPPort)
+}
+
 func (am *AlertManagerFixed) sendSMTPEmail(message []byte) error {
-	addr := fmt.Sprintf("%s:%d", am.config.SMTPHost, am.config.SMTPPort)
+	addr := am.dialAddress()
 
 	// Create authentication if credentials provided
 	var auth smtp.Auth
