@@ -75,17 +75,15 @@ log_info "Log file: $LOG_FILE"
 log_info "Downloads directory: $DOWNLOADS_DIR"
 echo ""
 
-# Check binary exists
-if [ ! -x "$BINARY" ]; then
-    log_error "Binary not found or not executable: $BINARY"
-    log_info "Building binary..."
-    go build -o "$BINARY" ./cmd 2>&1 | tee -a "$LOG_FILE"
-    if [ ! -x "$BINARY" ]; then
-        log_error "Failed to build binary"
-        exit 1
-    fi
-    log_success "Binary built successfully"
+# Always rebuild (go build is incremental/cached): scoring providers with a
+# stale binary after a source change is silent wrong evidence (LMV-003).
+log_info "Building binary..."
+go build -o "$BINARY" ./cmd 2>&1 | tee -a "$LOG_FILE"
+if [ "${PIPESTATUS[0]}" -ne 0 ] || [ ! -x "$BINARY" ]; then
+    log_error "Failed to build binary"
+    exit 1
 fi
+log_success "Binary built successfully"
 
 # ============================================
 # CHALLENGE 1: Binary Health Check

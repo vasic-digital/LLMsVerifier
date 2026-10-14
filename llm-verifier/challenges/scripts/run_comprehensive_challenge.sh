@@ -76,12 +76,11 @@ else
     exit 1
 fi
 
-# Verify binary exists
-if [ ! -f "$BINARY" ]; then
-    log "⚙️ Building llm-verifier binary..."
-    cd "$PROJECT_DIR"
-    exec_cmd "go build -o llm-verifier ./cmd"
-fi
+# Always rebuild (go build is incremental/cached); an absent-only guard ran a
+# stale binary after source changes (LMV-003).
+log "⚙️ Building llm-verifier binary..."
+cd "$PROJECT_DIR"
+exec_cmd "go build -o llm-verifier ./cmd"
 
 log ""
 log "═══════════════════════════════════════════════════════════════════════════"

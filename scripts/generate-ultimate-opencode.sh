@@ -9,14 +9,13 @@ echo "🚀 ULTIMATE OPENCODE CONFIGURATION GENERATOR"
 echo "=============================================="
 echo
 
-# Check if binary exists
-if [ ! -f "../bin/ultimate-challenge" ]; then
-    echo "❌ Ultimate challenge binary not found. Building..."
-    cd ../llm-verifier
-    go build -o ../bin/ultimate-challenge ./cmd/ultimate-challenge
-    cd ..
-    echo "✅ Binary built successfully"
-fi
+# Always rebuild (go build is incremental and cached): an existence-only guard
+# ran a stale binary after any source change (LMV-003).
+echo "🔧 Building ultimate challenge binary..."
+cd ../llm-verifier
+go build -o ../bin/ultimate-challenge ./cmd/ultimate-challenge
+cd ..
+echo "✅ Binary built successfully"
 
 # Set output path
 OUTPUT_FILE="opencode_ultimate_$(date +%Y%m%d_%H%M%S).json"
