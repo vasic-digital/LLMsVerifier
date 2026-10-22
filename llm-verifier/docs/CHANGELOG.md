@@ -1,3 +1,10 @@
+## Unreleased - Consumer packages moved in from Catalogizer
+
+- Added `pkg/bridge`, `pkg/catalogizer`, `pkg/chat`, `pkg/local`, `pkg/recipe`, `pkg/selector`, `pkg/strategy`, `pkg/vision`. These existed only in the Catalogizer superproject (plain copy `submodules/llms_verifier`, 42 files) and were not previously in this repository.
+- `pkg/helixqa`: replaced the 70-line stub with the Catalogizer implementation (`VisionModelRegistry() []strategy.ModelInfo`, recipe, strategy). `VisionModel` is kept as an alias of `strategy.ModelInfo`; the stub's 10 entries are superseded by the 18 in the new registry.
+- `.gitignore`: added `!pkg/local/` because the existing `local/` rule ignored `pkg/local`.
+- Docs: `docs/consumer_packages_architecture.md`, `docs/PROVIDER_USAGE_CONFIGURATION.md`.
+
 ## Latest Changes - Version 2026.01.03
 
 ### Security Improvements (P0 Priority)
