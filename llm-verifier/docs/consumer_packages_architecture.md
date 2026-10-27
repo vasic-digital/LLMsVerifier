@@ -6,9 +6,8 @@ They were authored inside the Catalogizer superproject (plain directory `LLMsVer
 ## Environment variables: what the code actually reads
 
 The Catalogizer copy of `.env.example` lists `LLMSVERIFIER_STRATEGY=default`. **No code in these packages reads `LLMSVERIFIER_STRATEGY`** (grep over `pkg/` finds nothing); it has no effect.
-Provider API keys ARE read, as presence checks only (`os.Getenv(key) != ""`), through the maps `providerEnvKeys` in `pkg/selector/selector.go` and `pkg/catalogizer/strategy.go`:
+Provider API keys ARE read, as presence checks only (via an injectable `EnvChecker` in `selector`; `os.Getenv` in `catalogizer`), through the maps `providerEnvKeys` in `pkg/selector/selector.go` and `pkg/catalogizer/strategy.go`:
 `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_API_KEY`, `KIMI_API_KEY`, `DEEPSEEK_API_KEY`, `GROQ_API_KEY`, `CEREBRAS_API_KEY` (both maps); additionally in `selector`: `STEPFUN_API_KEY`, `QWEN_API_KEY`, `ASTICA_API_KEY`, `NVIDIA_API_KEY`, `GITHUB_MODELS_API_KEY`, `XAI_API_KEY`, `OPENROUTER_API_KEY`, `HUGGINGFACE_API_KEY`, `CHUTES_API_KEY`, `SILICONFLOW_API_KEY`. `ollama` needs no key.
-(The review request stated only ANTHROPIC and GROQ are read and ASTICA is not; the code shows more keys are read and `ASTICA_API_KEY` is read in `selector`. Only `LLMSVERIFIER_STRATEGY` is unread.)
 
 ## `pkg/helixqa` change on import
 
@@ -111,7 +110,7 @@ The HelixQA strategy selects vision models for Execute/Curiosity phases and chat
 Ollama-hosted models are included in the scoring pool:
 
 ```
-HELIX_OLLAMA_URL=http://thinker.local:11434
+# NOTE: HELIX_OLLAMA_URL is not read by these packages; hosts are passed to ProbeLocalModels as a parameter.
                     │
                     ▼
         ┌───────────────────────┐
@@ -661,9 +660,9 @@ The HelixQA QAStrategy weights vision capability higher when selecting models fo
 ## Local Model Support
 
 LLMsVerifier can probe and score locally-running models via Ollama:
-- Models running on `HELIX_OLLAMA_URL` are discovered and included in the scoring pool
+- Models on hosts passed to `ProbeLocalModels` are discovered and included in the scoring pool
 - Local models get a cost score of 1.0 (free) and compete on quality/speed/reliability
-- Distributed hosts (`HELIX_VISION_HOSTS`) are each probed for available models via SSH
+- Distributed hosts (caller-supplied list) are each probed for available models via SSH
 - `pkg/local/` probes hosts, parses `ollama list` output, estimates quality from parameter count
 - `pkg/selector/` combines cloud and local candidates into a unified ranked list
 - Vision-capable local models (LLaVA, MiniCPM-V, Qwen-VL, etc.) are auto-detected by name patterns
@@ -774,9 +773,9 @@ All model selection is score-based with configurable dimension weights:
 - Both types go through the same scoring pipeline
 
 ### Local Model Probing
-- Ollama instances are discovered via `HELIX_OLLAMA_URL`
+- Ollama instances are discovered via the host list passed to `ProbeLocalModels`
 - Local models receive cost=1.0 (free) and compete on other dimensions
-- Distributed hosts (`HELIX_VISION_HOSTS`) are probed individually
+- Distributed hosts (caller-supplied list) are probed individually
 
 ### Testing
 ```bash
