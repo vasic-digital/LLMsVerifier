@@ -26,8 +26,11 @@ run M3-skip-host-validate 'if err := validateHost(host); err != nil {' 'if err :
 run M4-skip-user-validate 'if err := validateUser(user); err != nil {' 'if err := error(nil); err != nil {'
 run M5-skip-kh-validate   'if err := validateKnownHostsFile(opts.KnownHostsFile); err != nil {' 'if err := error(nil); err != nil {'
 run M6-drop-kh-arg        'args = append(args, "-o", "UserKnownHostsFile="+opts.KnownHostsFile)' '_ = args'
-run M7-host-leading-dash  '`^[A-Za-z0-9]([A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$`' '`^[A-Za-z0-9-]([A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$`'
+run M7-host-leading-dash  '`^[A-Za-z0-9]([A-Za-z0-9._-]{0,251}[A-Za-z0-9])?$`' '`^[A-Za-z0-9-]([A-Za-z0-9._-]{0,251}[A-Za-z0-9])?$`'
 run M8-user-leading-dash  '`^[A-Za-z_][A-Za-z0-9._-]{0,31}$`' '`^[A-Za-z_-][A-Za-z0-9._-]{0,31}$`'
-run M9-allow-dev-null     '|| p == "/dev/null"' ''
+run M9-allow-trailing-slash '|| strings.HasSuffix(p, "/") ||' '||'
 run M10-env-ignored       'KnownHostsFile: os.Getenv(KnownHostsEnv)' 'KnownHostsFile: ""'
+run M11-entry-ignores-env  'ProbeLocalModelsWithOptions(hosts, user, ProbeOptionsFromEnv(), runner)' 'ProbeLocalModelsWithOptions(hosts, user, ProbeOptions{}, runner)'
+run M12-allow-dotdot-host  ' && !strings.Contains(host, "..")' ''
+run M13-allow-dev-path     'strings.HasPrefix(filepath.Clean(p), "/dev/") ||' 'false ||'
 exit $survived

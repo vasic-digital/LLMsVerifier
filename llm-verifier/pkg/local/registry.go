@@ -160,7 +160,8 @@ const KnownHostsEnv = "LLMSVERIFIER_SSH_KNOWN_HOSTS"
 type ProbeOptions struct {
 	// KnownHostsFile, when non-empty, is passed to ssh as
 	// UserKnownHostsFile. It must be an absolute path made of
-	// [A-Za-z0-9._/-] only and must not be /dev/null.
+	// [A-Za-z0-9._/-] only, without ".." or a trailing "/", and not under
+	// /dev or /proc.
 	KnownHostsFile string
 }
 
@@ -170,7 +171,7 @@ func ProbeOptionsFromEnv() ProbeOptions {
 }
 
 var (
-	hostnamePattern = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$`)
+	hostnamePattern = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9._-]{0,251}[A-Za-z0-9])?$`)
 	userPattern     = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9._-]{0,31}$`)
 	knownHostsChars = regexp.MustCompile(`^[A-Za-z0-9._/-]+$`)
 )
@@ -203,7 +204,9 @@ func validateKnownHostsFile(p string) error {
 	if p == "" {
 		return nil
 	}
-	if !filepath.IsAbs(p) || !knownHostsChars.MatchString(p) || p == "/dev/null" {
+	if !filepath.IsAbs(p) || !knownHostsChars.MatchString(p) ||
+		strings.Contains(p, "..") || strings.HasSuffix(p, "/") ||
+		strings.HasPrefix(filepath.Clean(p), "/dev/") || strings.HasPrefix(filepath.Clean(p), "/proc/") {
 		return fmt.Errorf("local: invalid known_hosts file %q", p)
 	}
 	return nil
@@ -242,7 +245,13 @@ func buildSSHArgs(host, user string, opts ProbeOptions) ([]string, error) {
 // all discovered models across all reachable hosts. Host keys must
 // already be trusted (see KnownHostsEnv / ProbeLocalModelsWithOptions).
 func ProbeLocalModels(hosts []string, user string) ([]LocalModelInfo, error) {
-	return ProbeLocalModelsWithOptions(hosts, user, ProbeOptionsFromEnv(), DefaultRunner())
+	return probeLocalModels(hosts, user, DefaultRunner())
+}
+
+// probeLocalModels is ProbeLocalModels with an injectable runner so the
+// env-var wiring of the public entry point is testable.
+func probeLocalModels(hosts []string, user string, runner CommandRunner) ([]LocalModelInfo, error) {
+	return ProbeLocalModelsWithOptions(hosts, user, ProbeOptionsFromEnv(), runner)
 }
 
 // ProbeLocalModelsWithRunner is like ProbeLocalModels but accepts

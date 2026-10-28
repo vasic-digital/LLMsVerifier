@@ -19,7 +19,7 @@ type recordingRunner struct {
 
 func (r *recordingRunner) Run(name string, args ...string) ([]byte, error) {
 	r.calls = append(r.calls, append([]string{name}, args...))
-	return []byte("NAME ID SIZE MODIFIED\nllava:7b abc 4.5 GB 1 day ago\n"), nil
+	return []byte(okList), nil
 }
 
 const okList = "NAME ID SIZE MODIFIED\nllava:7b abc 4.5 GB 1 day ago\n"
@@ -66,7 +66,7 @@ func TestProbe_RejectsOptionInjectionHosts(t *testing.T) {
 		"-oProxyCommand=touch /tmp/pwn",
 		"-o", "-F/etc/passwd", "--", "-",
 		"host name", "host;rm", "host$(id)", "a@b", "host\nx", "",
-		"host`id`", "ho st", "host/../x", ".leading", "trailing.", "-leading",
+		"host`id`", "a..b", "ho st", "host/../x", ".leading", "trailing.", "-leading",
 		strings.Repeat("a", 254),
 	}
 	for _, h := range bad {
@@ -88,7 +88,7 @@ func TestProbe_RejectsBadUsers(t *testing.T) {
 }
 
 func TestProbe_AcceptsLegitimateTargets(t *testing.T) {
-	for _, h := range []string{"localhost", "thinker.local", "amber-1.lan", "192.168.1.10", "::1", "2001:db8::1", "A1"} {
+	for _, h := range []string{"localhost", "thinker.local", "amber-1.lan", "192.168.1.10", "::1", "2001:db8::1", "A1", "a_b.local"} {
 		r := &recordingRunner{}
 		_, err := ProbeLocalModelsWithRunner([]string{h}, "svc_user-1.x", r)
 		assert.NoError(t, err, "host %q must be accepted", h)
@@ -127,7 +127,7 @@ func TestProbeWithOptions_EmptyOptionsMatchDefaultArgv(t *testing.T) {
 }
 
 func TestProbeWithOptions_RejectsBadKnownHostsFile(t *testing.T) {
-	for _, p := range []string{"-oProxyCommand=x", "relative/known_hosts", "/a b/kh", "/a\nb", "/dev/null", "/a,b", "/a=b"} {
+	for _, p := range []string{"-oProxyCommand=x", "relative/known_hosts", "/a b/kh", "/a\nb", "/dev/null", "/dev//null", "/dev/./null", "/proc/self/fd/0", "/x/", "/a/../b", "/a,b", "/a=b"} {
 		r := &recordingRunner{}
 		_, err := ProbeLocalModelsWithOptions([]string{"h.local"}, "", ProbeOptions{KnownHostsFile: p}, r)
 		assert.Error(t, err, "known_hosts %q must be rejected", p)
@@ -149,4 +149,12 @@ func indexOf(s []string, v string) int {
 		}
 	}
 	return -1
+}
+
+func TestProbeLocalModels_EntryPointWiresEnvKnownHosts(t *testing.T) {
+	t.Setenv(KnownHostsEnv, "/srv/kh")
+	r := &recordingRunner{}
+	_, err := probeLocalModels([]string{"h.local"}, "u", r)
+	require.NoError(t, err)
+	assert.Contains(t, r.calls[0], "UserKnownHostsFile=/srv/kh")
 }

@@ -1,10 +1,10 @@
 ## Unreleased - Security: SSH host key verification in pkg/local (MEDIUM)
 
-- `pkg/local`: `ProbeLocalModels*` no longer runs `ssh -o StrictHostKeyChecking=no` (MITM-able: a forged host could return fake model inventories). It now always uses `StrictHostKeyChecking=yes`; hosts must already be in known_hosts. Optional managed file: `ProbeOptions.KnownHostsFile` or env `LLMSVERIFIER_SSH_KNOWN_HOSTS` (absolute path, `[A-Za-z0-9._/-]`, not `/dev/null`) -> `-o UserKnownHostsFile=...`. `accept-new` is deliberately not offered.
+- `pkg/local`: `ProbeLocalModels*` no longer runs `ssh -o StrictHostKeyChecking=no` (MITM-able: a forged host could return fake model inventories). It now always uses `StrictHostKeyChecking=yes`; hosts must already be in known_hosts. Optional managed file: `ProbeOptions.KnownHostsFile` or env `LLMSVERIFIER_SSH_KNOWN_HOSTS` (absolute path, `[A-Za-z0-9._/-]`, no `..`, not under /dev or /proc) -> `-o UserKnownHostsFile=...`. `accept-new` is deliberately not offered.
 - Option injection: the ssh target is now placed after `--`; host (DNS name, IPv4/IPv6 literal) and user (`^[A-Za-z_][A-Za-z0-9._-]{0,31}$`) are validated and values such as `-oProxyCommand=...` are rejected before the runner is invoked (a bad host is skipped like an unreachable one).
 - New API: `ProbeLocalModelsWithOptions`, `ProbeOptions`, `ProbeOptionsFromEnv`, `KnownHostsEnv`. Existing signatures unchanged.
 - Repo-wide audit: `pkg/local/registry.go` is the only ssh/scp invocation and the only place host/user strings are built into a command.
-- Tests: `pkg/local/ssh_hardening_test.go` (exact argv through the real code path, injection negatives); paired mutations: `scripts/mutation_ssh_hardening.sh` (10 mutants).
+- Tests: `pkg/local/ssh_hardening_test.go` (exact argv through the real code path, injection negatives); paired mutations: `scripts/mutation_ssh_hardening.sh` (13 mutants).
 - Operational note: first-time hosts must be trusted out of band, e.g. `ssh-keyscan -H host >> known_hosts` after verifying the fingerprint.
 
 ## Unreleased - Consumer packages moved in from Catalogizer
