@@ -459,8 +459,13 @@ import "digital.vasic.llmsverifier/pkg/local"
 
 // Probe hosts for available models
 hosts := []string{"thinker.local", "amber.local"}
-localModels := local.DiscoverModels(hosts)
+localModels, err := local.ProbeLocalModels(hosts, "") // or ProbeLocalModelsWithOptions
 ```
+
+SSH probing always uses `StrictHostKeyChecking=yes`: hosts must already be in
+known_hosts. Point at a managed file with env `LLMSVERIFIER_SSH_KNOWN_HOSTS`
+(absolute path) or `ProbeOptions.KnownHostsFile`. Hosts and users are validated
+and passed after `--`; option-like values are rejected.
 
 Vision-capable local models (LLaVA, MiniCPM-V, Qwen-VL) are auto-detected by name patterns.
 

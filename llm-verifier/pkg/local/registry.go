@@ -12,7 +12,10 @@ import (
 	"bufio"
 	"fmt"
 	"math"
+	"net"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -147,16 +150,109 @@ func DefaultRunner() CommandRunner {
 	return &defaultRunner{}
 }
 
+// KnownHostsEnv names the optional environment variable that supplies
+// a managed known_hosts file for SSH probing (see ProbeOptionsFromEnv).
+const KnownHostsEnv = "LLMSVERIFIER_SSH_KNOWN_HOSTS"
+
+// ProbeOptions tunes SSH probing. The zero value uses the invoking
+// user's default known_hosts files. Host key verification is ALWAYS
+// enforced (StrictHostKeyChecking=yes); there is no option to disable it.
+type ProbeOptions struct {
+	// KnownHostsFile, when non-empty, is passed to ssh as
+	// UserKnownHostsFile. It must be an absolute path made of
+	// [A-Za-z0-9._/-] only and must not be /dev/null.
+	KnownHostsFile string
+}
+
+// ProbeOptionsFromEnv builds ProbeOptions from LLMSVERIFIER_SSH_KNOWN_HOSTS.
+func ProbeOptionsFromEnv() ProbeOptions {
+	return ProbeOptions{KnownHostsFile: os.Getenv(KnownHostsEnv)}
+}
+
+var (
+	hostnamePattern = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$`)
+	userPattern     = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9._-]{0,31}$`)
+	knownHostsChars = regexp.MustCompile(`^[A-Za-z0-9._/-]+$`)
+)
+
+// validateHost accepts a DNS hostname, IPv4 or IPv6 literal. Anything that
+// could be parsed by ssh as an option or a user@host/port/URI form
+// (leading '-', '@', whitespace, shell or control characters) is rejected.
+func validateHost(host string) error {
+	if host == "" || len(host) > 253 {
+		return fmt.Errorf("local: invalid host %q", host)
+	}
+	if hostnamePattern.MatchString(host) && !strings.Contains(host, "..") {
+		return nil
+	}
+	if net.ParseIP(host) != nil {
+		return nil
+	}
+	return fmt.Errorf("local: invalid host %q", host)
+}
+
+// validateUser accepts a POSIX-style login name.
+func validateUser(user string) error {
+	if user != "" && !userPattern.MatchString(user) {
+		return fmt.Errorf("local: invalid ssh user %q", user)
+	}
+	return nil
+}
+
+func validateKnownHostsFile(p string) error {
+	if p == "" {
+		return nil
+	}
+	if !filepath.IsAbs(p) || !knownHostsChars.MatchString(p) || p == "/dev/null" {
+		return fmt.Errorf("local: invalid known_hosts file %q", p)
+	}
+	return nil
+}
+
+// buildSSHArgs returns the argv (after the "ssh" program name) for probing
+// one host. Host key checking is always strict and the target follows "--"
+// so it can never be interpreted as an ssh option.
+func buildSSHArgs(host, user string, opts ProbeOptions) ([]string, error) {
+	if err := validateHost(host); err != nil {
+		return nil, err
+	}
+	if err := validateUser(user); err != nil {
+		return nil, err
+	}
+	if err := validateKnownHostsFile(opts.KnownHostsFile); err != nil {
+		return nil, err
+	}
+	target := host
+	if user != "" {
+		target = user + "@" + host
+	}
+	args := []string{
+		"-o", "BatchMode=yes",
+		"-o", "ConnectTimeout=5",
+		"-o", "StrictHostKeyChecking=yes",
+	}
+	if opts.KnownHostsFile != "" {
+		args = append(args, "-o", "UserKnownHostsFile="+opts.KnownHostsFile)
+	}
+	return append(args, "--", target, "ollama", "list"), nil
+}
+
 // ProbeLocalModels discovers models available on configured hosts
 // by SSH-ing to each host and running "ollama list". It returns
-// all discovered models across all reachable hosts.
+// all discovered models across all reachable hosts. Host keys must
+// already be trusted (see KnownHostsEnv / ProbeLocalModelsWithOptions).
 func ProbeLocalModels(hosts []string, user string) ([]LocalModelInfo, error) {
-	return ProbeLocalModelsWithRunner(hosts, user, DefaultRunner())
+	return ProbeLocalModelsWithOptions(hosts, user, ProbeOptionsFromEnv(), DefaultRunner())
 }
 
 // ProbeLocalModelsWithRunner is like ProbeLocalModels but accepts
 // a custom CommandRunner for testing.
 func ProbeLocalModelsWithRunner(hosts []string, user string, runner CommandRunner) ([]LocalModelInfo, error) {
+	return ProbeLocalModelsWithOptions(hosts, user, ProbeOptions{}, runner)
+}
+
+// ProbeLocalModelsWithOptions probes hosts with explicit ProbeOptions.
+func ProbeLocalModelsWithOptions(hosts []string, user string, opts ProbeOptions, runner CommandRunner) ([]LocalModelInfo, error) {
 	if len(hosts) == 0 {
 		return nil, fmt.Errorf("local: no hosts provided")
 	}
@@ -165,7 +261,7 @@ func ProbeLocalModelsWithRunner(hosts []string, user string, runner CommandRunne
 	var lastErr error
 
 	for _, host := range hosts {
-		models, err := probeHost(host, user, runner)
+		models, err := probeHost(host, user, opts, runner)
 		if err != nil {
 			lastErr = err
 			continue
@@ -181,18 +277,12 @@ func ProbeLocalModelsWithRunner(hosts []string, user string, runner CommandRunne
 }
 
 // probeHost discovers models on a single host via SSH + "ollama list".
-func probeHost(host, user string, runner CommandRunner) ([]LocalModelInfo, error) {
-	target := host
-	if user != "" {
-		target = user + "@" + host
+func probeHost(host, user string, opts ProbeOptions, runner CommandRunner) ([]LocalModelInfo, error) {
+	args, err := buildSSHArgs(host, user, opts)
+	if err != nil {
+		return nil, err
 	}
-
-	out, err := runner.Run(
-		"ssh", "-o", "BatchMode=yes",
-		"-o", "ConnectTimeout=5",
-		"-o", "StrictHostKeyChecking=no",
-		target, "ollama", "list",
-	)
+	out, err := runner.Run("ssh", args...)
 	if err != nil {
 		return nil, fmt.Errorf("ssh to %s: %w", host, err)
 	}
