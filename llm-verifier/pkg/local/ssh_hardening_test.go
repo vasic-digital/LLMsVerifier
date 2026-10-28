@@ -4,6 +4,9 @@
 package local
 
 import (
+	"bytes"
+	"log"
+	"os"
 	"strings"
 	"testing"
 
@@ -66,7 +69,7 @@ func TestProbe_RejectsOptionInjectionHosts(t *testing.T) {
 		"-oProxyCommand=touch /tmp/pwn",
 		"-o", "-F/etc/passwd", "--", "-",
 		"host name", "host;rm", "host$(id)", "a@b", "host\nx", "",
-		"host`id`", "a..b", "ho st", "host/../x", ".leading", "trailing.", "-leading",
+		"host`id`", "a..b", "a%b", "a:b", "ho st", "host/../x", ".leading", "trailing.", "-leading",
 		strings.Repeat("a", 254),
 	}
 	for _, h := range bad {
@@ -127,7 +130,7 @@ func TestProbeWithOptions_EmptyOptionsMatchDefaultArgv(t *testing.T) {
 }
 
 func TestProbeWithOptions_RejectsBadKnownHostsFile(t *testing.T) {
-	for _, p := range []string{"-oProxyCommand=x", "relative/known_hosts", "/a b/kh", "/a\nb", "/dev/null", "/dev//null", "/dev/./null", "/proc/self/fd/0", "/x/", "/a/../b", "/a,b", "/a=b"} {
+	for _, p := range []string{"-oProxyCommand=x", "relative/known_hosts", "/a b/kh", "/a\nb", "/a%d/kh", "/~x", "/sys/kernel/x", "/dev/null", "/dev//null", "/dev/./null", "/proc/self/fd/0", "/x/", "/a/../b", "/a,b", "/a=b"} {
 		r := &recordingRunner{}
 		_, err := ProbeLocalModelsWithOptions([]string{"h.local"}, "", ProbeOptions{KnownHostsFile: p}, r)
 		assert.Error(t, err, "known_hosts %q must be rejected", p)
@@ -157,4 +160,24 @@ func TestProbeLocalModels_EntryPointWiresEnvKnownHosts(t *testing.T) {
 	_, err := probeLocalModels([]string{"h.local"}, "u", r)
 	require.NoError(t, err)
 	assert.Contains(t, r.calls[0], "UserKnownHostsFile=/srv/kh")
+}
+
+func TestProbeWithRunner_IgnoresEnvKnownHosts(t *testing.T) {
+	t.Setenv(KnownHostsEnv, "/srv/kh")
+	r := &recordingRunner{}
+	_, err := ProbeLocalModelsWithRunner([]string{"h.local"}, "u", r)
+	require.NoError(t, err)
+	assert.NotContains(t, strings.Join(r.calls[0], " "), "UserKnownHostsFile")
+}
+
+func TestProbe_RejectionIsSurfacedEvenWhenOthersSucceed(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+	r := &recordingRunner{}
+	models, err := ProbeLocalModelsWithRunner([]string{"-oProxyCommand=x", "good.local"}, "", r)
+	require.NoError(t, err)
+	assert.Len(t, models, 1)
+	assert.Contains(t, buf.String(), "skipping host")
+	assert.Contains(t, buf.String(), "invalid host")
 }

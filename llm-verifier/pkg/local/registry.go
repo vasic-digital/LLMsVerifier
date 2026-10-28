@@ -11,6 +11,7 @@ package local
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"math"
 	"net"
 	"os"
@@ -161,7 +162,7 @@ type ProbeOptions struct {
 	// KnownHostsFile, when non-empty, is passed to ssh as
 	// UserKnownHostsFile. It must be an absolute path made of
 	// [A-Za-z0-9._/-] only, without ".." or a trailing "/", and not under
-	// /dev or /proc.
+	// /dev, /proc or /sys.
 	KnownHostsFile string
 }
 
@@ -206,7 +207,8 @@ func validateKnownHostsFile(p string) error {
 	}
 	if !filepath.IsAbs(p) || !knownHostsChars.MatchString(p) ||
 		strings.Contains(p, "..") || strings.HasSuffix(p, "/") ||
-		strings.HasPrefix(filepath.Clean(p), "/dev/") || strings.HasPrefix(filepath.Clean(p), "/proc/") {
+		strings.HasPrefix(filepath.Clean(p), "/dev/") || strings.HasPrefix(filepath.Clean(p), "/proc/") ||
+		strings.HasPrefix(filepath.Clean(p), "/sys/") {
 		return fmt.Errorf("local: invalid known_hosts file %q", p)
 	}
 	return nil
@@ -272,6 +274,7 @@ func ProbeLocalModelsWithOptions(hosts []string, user string, opts ProbeOptions,
 	for _, host := range hosts {
 		models, err := probeHost(host, user, opts, runner)
 		if err != nil {
+			log.Printf("local: skipping host %q: %v", host, err)
 			lastErr = err
 			continue
 		}

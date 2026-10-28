@@ -33,4 +33,12 @@ run M10-env-ignored       'KnownHostsFile: os.Getenv(KnownHostsEnv)' 'KnownHosts
 run M11-entry-ignores-env  'ProbeLocalModelsWithOptions(hosts, user, ProbeOptionsFromEnv(), runner)' 'ProbeLocalModelsWithOptions(hosts, user, ProbeOptions{}, runner)'
 run M12-allow-dotdot-host  ' && !strings.Contains(host, "..")' ''
 run M13-allow-dev-path     'strings.HasPrefix(filepath.Clean(p), "/dev/") ||' 'false ||'
+run R1-no-trailing-slash-check ' || strings.HasSuffix(p, "/") ||' ' ||'
+run R2-kh-charset-pct-tilde 'regexp.MustCompile(`^[A-Za-z0-9._/-]+$`)' 'regexp.MustCompile(`^[A-Za-z0-9._/%~-]+$`)'
+run R3-withrunner-reads-env 'return ProbeLocalModelsWithOptions(hosts, user, ProbeOptions{}, runner)' 'return ProbeLocalModelsWithOptions(hosts, user, ProbeOptionsFromEnv(), runner)'
+run R4-host-charset-pct-colon '`^[A-Za-z0-9]([A-Za-z0-9._-]{0,251}[A-Za-z0-9])?$`' '`^[A-Za-z0-9]([A-Za-z0-9._%:-]{0,251}[A-Za-z0-9])?$`'
+run R5-allow-sys 'strings.HasPrefix(filepath.Clean(p), "/sys/")' 'false'
+run R6-allow-proc 'strings.HasPrefix(filepath.Clean(p), "/proc/") ||' 'false ||'
+run R7-silent-skip 'log.Printf("local: skipping host %q: %v", host, err)' '_ = host'
+run R8-allow-dotdot-path 'strings.Contains(p, "..") ||' 'false ||'
 exit $survived
